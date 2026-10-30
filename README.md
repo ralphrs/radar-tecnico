@@ -2,6 +2,8 @@
 
 Radar pessoal de notícias (Tech, Política e Esportes) rodando no Cloudflare Workers, com banco D1 e login pelo Cloudflare Access.
 
+Configuração no Cloudflare (Worker, Access, variáveis e problemas já vistos): [docs/cloudflare.md](docs/cloudflare.md).
+
 ## Como funciona
 
 - `public/index.html` é a página. Ela conversa com a API do Worker por um adaptador que imita o banco do artifact antigo, então o código da página é o mesmo.
