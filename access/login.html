@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entrar · Lookout</title>
+<style>
+:root {
+  --bg: #eef1f8; --fg: #141a2b; --card: #ffffff; --mut: #5b667f;
+  --line: rgba(30, 45, 80, 0.12); --pri: #7c3aed; --b1: #8b5cf6; --b2: #4f8ff7;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #080b16; --fg: #f4f7ff; --card: #131a2b; --mut: #8592ab; --line: rgba(160, 180, 220, 0.14); --pri: #a78bfa; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.5 "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 24px 16px;
+}
+main {
+  width: 100%; max-width: 400px; background: var(--card);
+  border: 1px solid var(--line); border-radius: 20px;
+  padding: 32px 28px 28px; position: relative; overflow: hidden;
+}
+main::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 4px;
+  background-image: linear-gradient(135deg, var(--b1), var(--b2));
+}
+.marca { display: flex; align-items: center; gap: 10px; color: var(--pri); margin-bottom: 20px; }
+.marca svg { width: 34px; height: 34px; flex: none; }
+.marca span { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 22px; color: var(--fg); letter-spacing: -0.01em; }
+h1 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-size: 24px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
+.sub { color: var(--mut); margin: 0 0 22px; }
+.aviso { background: color-mix(in srgb, var(--pri) 10%, transparent); color: var(--fg); border-radius: 12px; padding: 10px 12px; margin: 0 0 16px; font-size: 14px; }
+.rodape { color: var(--mut); font-size: 13px; margin: 22px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <div class="marca">
+    <svg viewBox="0 0 200 200" aria-hidden="true"><rect x="22" y="22" width="156" height="156" rx="36" fill="none" stroke="currentColor" stroke-width="14"/><circle cx="100" cy="100" r="22" fill="currentColor"/><g fill="currentColor" opacity=".55"><circle cx="100" cy="22" r="12"/><circle cx="178" cy="100" r="12"/><circle cx="100" cy="178" r="12"/><circle cx="22" cy="100" r="12"/></g></svg>
+    <span>Lookout</span>
+  </div>
+  <h1>Entrar no radar</h1>
+  <p class="sub">Tech, política e futebol num lugar só. Use a conta do Google do e-mail em que você recebeu o convite.</p>
+  {% if message.text.size > 0 %}
+  <p class="aviso" role="status">{{ message.text }}</p>
+  {% endif %}
+  <cf-access-authbox></cf-access-authbox>
+  <p class="rodape">Ainda não tem convite? Fale com o Ralph.</p>
+</main>
+</body>
+</html>

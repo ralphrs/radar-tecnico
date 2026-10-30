@@ -79,6 +79,19 @@ Enquanto `ACCESS_TEAM_DOMAIN` e `ACCESS_AUD` não estiverem preenchidas, o site 
 
 A documentação do Cloudflare recomenda validar no Worker o JWT que o Access envia no cabeçalho `Cf-Access-Jwt-Assertion`; sem isso, alguém poderia chamar o Worker sem passar pelo login. O Lookout já faz isso em `src/auth.js`, sem a biblioteca `jose`, usando a Web Crypto do próprio Worker: confere a assinatura RS256 com as chaves públicas em `https://<equipe>.cloudflareaccess.com/cdn-cgi/access/certs`, o `aud`, o emissor e a validade. Token ausente ou inválido é recusado.
 
+## Tela de login do Lookout
+
+**Só Google, sem a opção "Cloudflare":** Zero Trust → Access controls → Applications → `news` → **Authentication** (ou Login methods). Desligue **Accept all available identity providers** e deixe marcado só o **Google**. Salve.
+
+**Página com a cara do Lookout:** o modelo está em `access/login.html` (HTML + Liquid; recurso lançado pelo Cloudflare em 27/10/2026).
+1. Zero Trust → **Reusable components → Custom pages** → card **Access custom pages** → **Manage** → **Create custom page**.
+2. Name `Lookout login`, Type **Login**. Apague o modelo inicial, cole o conteúdo de `access/login.html`, confira a aba **Problems** e clique em **Publish**.
+3. Applications → `news` → **Additional settings** → **Custom block pages** → **Login page**: **Custom page** → `Lookout login` → **Save**.
+
+O `<cf-access-authbox>` é obrigatório e aparece uma vez só: é ali que o Access desenha o botão do Google. A página não aceita JavaScript, e o Cloudflare volta para a tela padrão se o modelo não renderizar.
+
+Alternativa: com só o Google marcado, ligar **Apply instant authentication** faz o Access pular qualquer tela e mandar direto para o Google. Nesse caso a página customizada nunca aparece.
+
 ## Sair (logout)
 
 O ícone de sair no topo do radar (e o link "Sair" no `/admin`) leva para `/cdn-cgi/access/logout`, endereço do próprio Access. Ele encerra a sessão do Access na conta inteira, não só no Lookout. Depois disso, qualquer página pede login de novo.
