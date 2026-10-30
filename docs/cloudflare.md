@@ -79,6 +79,12 @@ Enquanto `ACCESS_TEAM_DOMAIN` e `ACCESS_AUD` não estiverem preenchidas, o site 
 
 A documentação do Cloudflare recomenda validar no Worker o JWT que o Access envia no cabeçalho `Cf-Access-Jwt-Assertion`; sem isso, alguém poderia chamar o Worker sem passar pelo login. O Lookout já faz isso em `src/auth.js`, sem a biblioteca `jose`, usando a Web Crypto do próprio Worker: confere a assinatura RS256 com as chaves públicas em `https://<equipe>.cloudflareaccess.com/cdn-cgi/access/certs`, o `aud`, o emissor e a validade. Token ausente ou inválido é recusado.
 
+## Sair (logout)
+
+O ícone de sair no topo do radar (e o link "Sair" no `/admin`) leva para `/cdn-cgi/access/logout`, endereço do próprio Access. Ele encerra a sessão do Access na conta inteira, não só no Lookout. Depois disso, qualquer página pede login de novo.
+
+Quando a sessão expira com a página aberta, as chamadas à API passam a receber 401 (o front manda `X-Requested-With: XMLHttpRequest`, que faz o Access responder 401 em vez de redirecionar) e a página recarrega sozinha, caindo na tela de login.
+
 ## Problemas já vistos
 
 | Sintoma | Causa | Solução |

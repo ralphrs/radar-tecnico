@@ -56,7 +56,9 @@ header { display: flex; flex-direction: column; gap: 6px; }
 .marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .marca svg { width: 30px; height: 30px; color: var(--primary); flex: none; }
 h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: -0.02em; margin: 0; }
-#aparencia { flex: none; color: var(--muted-foreground); }
+#aparencia { flex: none; color: var(--muted-foreground); margin-left: auto; }
+#sair { flex: none; color: var(--muted-foreground); }
+#sair:hover { color: var(--foreground); }
 #aparencia:hover { color: var(--foreground); }
 .status { font: 400 12px/16px var(--font-mono); color: var(--muted-foreground); margin: 0; }
 .status b { color: var(--foreground); font-weight: 500; }
@@ -297,7 +299,8 @@ footer b { color: var(--foreground); font-weight: 500; }
   header { grid-area: topo; flex-direction: row; align-items: center; gap: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--border); }
   .topo { display: contents; }
   .status { order: 1; margin-left: auto; text-align: right; }
-  #aparencia { order: 2; }
+  #aparencia { order: 2; margin-left: 0; }
+  #sair { order: 3; }
   h1 { font-size: 30px; }
   .centro { grid-area: centro; display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
   .nav-temas, .lateral { position: sticky; top: var(--space-4); max-height: calc(100vh - 2 * var(--space-4)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; min-width: 0; }
@@ -326,6 +329,7 @@ footer b { color: var(--foreground); font-weight: 500; }
         <h1>Radar Técnico</h1>
       </div>
       <button class="dd-btn dd-btn--ghost dd-btn--icon alvo" type="button" id="aparencia"></button>
+      <a class="dd-btn dd-btn--ghost dd-btn--icon alvo" id="sair" href="/cdn-cgi/access/logout" aria-label="Sair" title="Sair"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></a>
     </div>
     <p class="status" id="status"><span class="pulse"></span>Conectando ao feed…</p>
   </header>
@@ -416,7 +420,9 @@ footer b { color: var(--foreground); font-weight: 500; }
   const INTERVALO = 120000;
   const ouvintes = new Set();
   const pedir = async (url, opt) => {
-    const r = await fetch(url, Object.assign({ credentials: "same-origin", cache: "no-store" }, opt || {}));
+    const o = Object.assign({ credentials: "same-origin", cache: "no-store" }, opt || {});
+    o.headers = Object.assign({ "X-Requested-With": "XMLHttpRequest" }, o.headers || {});
+    const r = await fetch(url, o);
     if (r.status === 401 || r.status === 403) { location.reload(); throw new Error("sessão"); }
     if (!r.ok) throw new Error("http " + r.status);
     return r.json();
@@ -487,11 +493,13 @@ footer b { color: var(--foreground); font-weight: 500; }
   /* link para a página de convidados, só para o administrador */
   pedir("/api/me").then((me) => {
     eu = me;
+    const sair = document.getElementById("sair");
+    if (sair && me.email) { sair.title = "Sair (" + me.email + ")"; sair.setAttribute("aria-label", "Sair da conta " + me.email); }
     if (!me.admin) return;
     const pe = document.querySelector("footer");
     if (!pe) return;
     const p = document.createElement("p");
-    p.innerHTML = '<a href="/admin">Gerenciar convidados</a> · <a href="/cdn-cgi/access/logout">Sair</a>';
+    p.innerHTML = '<a href="/admin">Gerenciar convidados</a>';
     pe.appendChild(p);
   }).catch(() => {});
 })();
