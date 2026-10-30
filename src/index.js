@@ -13,7 +13,7 @@ const agoraIso = () => new Date().toISOString();
 
 function pagina(titulo, corpo, status) {
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${titulo} · Lookout</title><style>
+<title>${titulo} · Lookout</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>
 :root{color-scheme:light dark;--bg:#f7f7f8;--fg:#18181b;--mut:#6b6b76;--card:#fff;--line:#e4e4e7;--pri:#5b4bdb}
 @media (prefers-color-scheme:dark){:root{--bg:#111114;--fg:#ececf1;--mut:#9a9aa6;--card:#1b1b20;--line:#2c2c33;--pri:#9d92ff}}
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px;box-sizing:border-box}

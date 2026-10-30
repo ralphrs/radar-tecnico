@@ -31,7 +31,9 @@ main::before {
   background-image: linear-gradient(135deg, var(--b1), var(--b2));
 }
 .marca { display: flex; align-items: center; gap: 10px; color: var(--pri); margin-bottom: 20px; }
-.marca svg { width: 34px; height: 34px; flex: none; }
+.marca svg { width: 40px; height: 40px; flex: none; }
+.lk-olho { fill: #7c3aed; }
+@media (prefers-color-scheme: dark) { .lk-olho { fill: #ffffff; } }
 .marca span { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 22px; color: var(--fg); letter-spacing: -0.01em; }
 h1 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-size: 24px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
 .sub { color: var(--mut); margin: 0 0 22px; }
@@ -41,7 +43,7 @@ h1 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-si
 <body>
 <main>
   <div class="marca">
-    <svg viewBox="0 0 200 200" aria-hidden="true"><rect x="22" y="22" width="156" height="156" rx="36" fill="none" stroke="currentColor" stroke-width="14"/><circle cx="100" cy="100" r="22" fill="currentColor"/><g fill="currentColor" opacity=".55"><circle cx="100" cy="22" r="12"/><circle cx="178" cy="100" r="12"/><circle cx="100" cy="178" r="12"/><circle cx="22" cy="100" r="12"/></g></svg>
+    <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lk-farol" x1="6" y1="4" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset="0.4" stop-color="#7C3AED"/><stop offset="1" stop-color="#4F8FF7"/></linearGradient></defs><path fill="url(#lk-farol)" d="M6 32 A26 26 0 0 1 58 32 L40.5 22 A8.5 8.5 0 0 0 23.5 22 Z M26 29 L28 30 L22 58 A28 28 0 0 1 10 50 Z M38 29 L54 50 A28 28 0 0 1 42 58 L36 30 Z"/><circle class="lk-olho" cx="32" cy="22" r="4"/></svg>
     <span>Lookout</span>
   </div>
   <h1>Entrar no radar</h1>

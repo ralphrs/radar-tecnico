@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Convidados · Lookout</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
 :root{color-scheme:light;--bg:#f7f7f8;--fg:#18181b;--mut:#6b6b76;--card:#fff;--line:#e4e4e7;--pri:#5b4bdb;--pri-fg:#fff;--ok:#15803d;--err:#b91c1c;--chip:#f1f0fe}
 @media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#111114;--fg:#ececf1;--mut:#9a9aa6;--card:#1b1b20;--line:#2c2c33;--pri:#9d92ff;--pri-fg:#111114;--ok:#4ade80;--err:#f87171;--chip:#26233f}}
@@ -11,9 +13,11 @@
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 .wrap{max-width:720px;margin:0 auto;padding:20px 16px 48px}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
-.marca{font-weight:700;letter-spacing:.02em;color:var(--pri);font-size:13px;text-transform:uppercase}
+.marca{display:flex;align-items:center;gap:6px;font-weight:700;letter-spacing:.02em;color:var(--pri);font-size:13px;text-transform:uppercase}
 h1{font-size:22px;margin:2px 0 0}
 a{color:var(--pri)}
+.sim{width:20px;height:20px}.lk-olho{fill:#7c3aed}
+@media (prefers-color-scheme:dark){.lk-olho{fill:#fff}}
 .links{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
 .card h2{font-size:15px;margin:0 0 12px}
@@ -40,7 +44,7 @@ li:first-child{border-top:0}
 <div class="wrap">
   <header>
     <div>
-      <div class="marca">Lookout</div>
+      <div class="marca"><svg viewBox="0 0 64 64" aria-hidden="true" class="sim"><defs><linearGradient id="lk-farol" x1="6" y1="4" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset="0.4" stop-color="#7C3AED"/><stop offset="1" stop-color="#4F8FF7"/></linearGradient></defs><path fill="url(#lk-farol)" d="M6 32 A26 26 0 0 1 58 32 L40.5 22 A8.5 8.5 0 0 0 23.5 22 Z M26 29 L28 30 L22 58 A28 28 0 0 1 10 50 Z M38 29 L54 50 A28 28 0 0 1 42 58 L36 30 Z"/><circle class="lk-olho" cx="32" cy="22" r="4"/></svg>Lookout</div>
       <h1>Convidados</h1>
     </div>
     <nav class="links"><a href="/">Voltar ao radar</a><a href="/cdn-cgi/access/logout">Sair</a></nav>

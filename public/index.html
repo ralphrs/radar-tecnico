@@ -1,5 +1,7 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Lookout</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap">
@@ -7,7 +9,7 @@
 /* Design system DokDraw. Layout: abaixo de 900 px, coluna de leitura com cabeçalho enxuto, carrossel de destaques, barra fixa de uma linha (tipos, Filtros, busca) que abre um painel e seções por tema com título grudado. De 900 px: navegação de temas à esquerda e busca na barra. De 1200 px: trilho direito com destaques, novos, favoritos e status. */
 :root {
   --background: #eef1f8; --foreground: #141a2b; --card: #ffffff; --secondary: #f5f7fc; --muted-foreground: #5b667f;
-  --accent: #f6f8fd; --primary: #7c3aed; --primary-foreground: #ffffff; --brand-start: #8b5cf6; --brand-end: #4f8ff7;
+  --accent: #f6f8fd; --primary: #7c3aed; --primary-foreground: #ffffff; --brand-start: #8b5cf6; --brand-end: #4f8ff7; --olho: #7c3aed;
   --border: rgba(30, 45, 80, 0.12); --input: rgba(30, 45, 80, 0.22); --ring: var(--primary);
   --info: #6b5aa8; --ok: #2f7a5c; --warn: #8a6320; --err: #b03a44; --chart-1: #7a4f93;
   --shadow-sm: 0 1px 2px rgba(30, 26, 39, 0.06); --shadow-md: 0 4px 14px rgba(30, 26, 39, 0.08);
@@ -22,7 +24,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --background: #080b16; --foreground: #f4f7ff; --card: #131a2b; --secondary: #141b2c; --muted-foreground: #8592ab;
-    --accent: #0f1524; --primary: #8b5cf6;
+    --accent: #0f1524; --primary: #8b5cf6; --olho: #ffffff;
     --border: rgba(140, 160, 210, 0.16); --input: rgba(150, 170, 220, 0.3);
     --info: #a79ae0; --ok: #6bbd97; --warn: #d6ab63; --err: #d8737d; --chart-1: #b184c8;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
@@ -32,7 +34,7 @@
 }
 :root[data-theme="dark"] {
   --background: #080b16; --foreground: #f4f7ff; --card: #131a2b; --secondary: #141b2c; --muted-foreground: #8592ab;
-  --accent: #0f1524; --primary: #8b5cf6;
+  --accent: #0f1524; --primary: #8b5cf6; --olho: #ffffff;
   --border: rgba(140, 160, 210, 0.16); --input: rgba(150, 170, 220, 0.3);
   --info: #a79ae0; --ok: #6bbd97; --warn: #d6ab63; --err: #d8737d; --chart-1: #b184c8;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
@@ -54,7 +56,8 @@ body { background: var(--background); color: var(--foreground); font: 400 15px/1
 header { display: flex; flex-direction: column; gap: 6px; }
 .topo { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.marca svg { width: 30px; height: 30px; color: var(--primary); flex: none; }
+.marca svg { width: 34px; height: 34px; flex: none; }
+.lk-olho { fill: var(--olho); }
 h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: -0.02em; margin: 0; }
 #aparencia { flex: none; color: var(--muted-foreground); margin-left: auto; }
 #sair { flex: none; color: var(--muted-foreground); }
@@ -325,7 +328,7 @@ footer b { color: var(--foreground); font-weight: 500; }
   <header>
     <div class="topo">
       <div class="marca">
-        <svg viewBox="0 0 200 200" aria-hidden="true"><rect x="22" y="22" width="156" height="156" rx="36" fill="none" stroke="currentColor" stroke-width="14"/><circle cx="100" cy="100" r="22" fill="currentColor"/><g fill="currentColor" opacity=".55"><circle cx="100" cy="22" r="12"/><circle cx="178" cy="100" r="12"/><circle cx="100" cy="178" r="12"/><circle cx="22" cy="100" r="12"/></g></svg>
+        <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lk-farol" x1="6" y1="4" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset="0.4" stop-color="#7C3AED"/><stop offset="1" stop-color="#4F8FF7"/></linearGradient></defs><path fill="url(#lk-farol)" d="M6 32 A26 26 0 0 1 58 32 L40.5 22 A8.5 8.5 0 0 0 23.5 22 Z M26 29 L28 30 L22 58 A28 28 0 0 1 10 50 Z M38 29 L54 50 A28 28 0 0 1 42 58 L36 30 Z"/><circle class="lk-olho" cx="32" cy="22" r="4"/></svg>
         <h1>Radar Técnico</h1>
       </div>
       <button class="dd-btn dd-btn--ghost dd-btn--icon alvo" type="button" id="aparencia"></button>
