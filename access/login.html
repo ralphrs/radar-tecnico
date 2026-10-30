@@ -11,7 +11,7 @@
   /* Radar do fundo: anéis, feixe que gira e pontos que acendem quando o feixe passa */
   --anel: rgba(124, 58, 237, 0.13); --feixe: rgba(124, 58, 237, 0.16); --feixe-borda: rgba(124, 58, 237, 0.34);
   --blip: #7c3aed; --blip-halo: rgba(124, 58, 237, 0.22);
-  --sombra: 0 24px 60px -24px rgba(60, 40, 140, 0.28);
+  --sombra: 0 24px 60px -24px rgba(60, 40, 140, 0.28); --brilho: rgba(139, 92, 246, 0.22);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -19,7 +19,7 @@
     --bg: #080b16; --fg: #f4f7ff; --card: #131a2b; --mut: #8592ab; --line: rgba(160, 180, 220, 0.14); --pri: #a78bfa;
     --anel: rgba(167, 139, 250, 0.13); --feixe: rgba(139, 92, 246, 0.26); --feixe-borda: rgba(167, 139, 250, 0.55);
     --blip: #c4b5fd; --blip-halo: rgba(139, 92, 246, 0.35);
-    --sombra: 0 24px 70px -20px rgba(0, 0, 0, 0.7);
+    --sombra: 0 24px 70px -20px rgba(0, 0, 0, 0.7); --brilho: rgba(139, 92, 246, 0.35);
     color-scheme: dark;
   }
 }
@@ -76,30 +76,35 @@ html::after {
   html::before, html::after { animation: none; opacity: .7; }
 }
 main {
-  width: 100%; max-width: 400px; background: var(--card);
-  border: 1px solid var(--line); border-radius: 20px;
-  padding: 32px 28px 28px; position: relative; overflow: hidden;
+  width: 100%; max-width: 360px; background: var(--card);
+  border: 1px solid var(--line); border-radius: 24px;
+  margin-top: 56px; padding: 76px 28px 28px; position: relative;
   z-index: 1; box-shadow: var(--sombra);
+  display: flex; flex-direction: column; align-items: center; text-align: center;
 }
-main::before {
-  content: ""; position: absolute; inset: 0 0 auto 0; height: 4px;
-  background-image: linear-gradient(135deg, var(--b1), var(--b2));
+/* Símbolo do farol num círculo, metade para fora do topo do cartão */
+.farol {
+  position: absolute; left: 50%; top: -56px; width: 112px; height: 112px; margin-left: -56px;
+  border-radius: 50%; background: var(--card); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 10px var(--brilho);
 }
-.marca { display: flex; align-items: center; gap: 10px; color: var(--pri); margin-bottom: 20px; }
-.marca .lk-lockup { height: 44px; width: auto; display: block; }
-.lk-nome { fill: var(--fg); }
+.farol svg { width: 76px; height: 76px; display: block; }
 .lk-olho { fill: #7c3aed; }
 @media (prefers-color-scheme: dark) { .lk-olho { fill: #ffffff; } }
-h1 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-size: 24px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
-.sub { color: var(--mut); margin: 0 0 22px; }
-.aviso { background: color-mix(in srgb, var(--pri) 10%, transparent); color: var(--fg); border-radius: 12px; padding: 10px 12px; margin: 0 0 16px; font-size: 14px; }
+.marca { margin: 0 0 10px; font: 600 12px/16px "Inter", ui-sans-serif, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--pri); }
+h1 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-size: 28px; line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.02em; text-wrap: balance; }
+.sub { color: var(--mut); margin: 0 0 24px; text-wrap: pretty; }
+.aviso { align-self: stretch; background: color-mix(in srgb, var(--pri) 10%, transparent); color: var(--fg); border-radius: 12px; padding: 10px 12px; margin: 0 0 16px; font-size: 14px; }
+cf-access-authbox { align-self: stretch; text-align: left; }
 </style>
 </head>
 <body>
 <main>
-  <div class="marca"><svg class="lk-lockup" viewBox="0 0 198 64" role="img" aria-label="Lookout"><defs><linearGradient id="lk-farol-lockup" x1="6" y1="4" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset="0.4" stop-color="#7C3AED"/><stop offset="1" stop-color="#4F8FF7"/></linearGradient></defs><path transform="translate(0 1)" fill="url(#lk-farol-lockup)" d="M6 32 A26 26 0 0 1 58 32 L40.5 22 A8.5 8.5 0 0 0 23.5 22 Z M26 29 L28 30 L22 58 A28 28 0 0 1 10 50 Z M38 29 L54 50 A28 28 0 0 1 42 58 L36 30 Z"/><circle class="lk-olho" cx="32" cy="23" r="4"/><path transform="matrix(.92 0 0 1 5.76 .75)" class="lk-nome" fill-rule="evenodd" d="M72 19 H77 V38 H87 V43 H72 Z M98 25 A9 9 0 1 1 98 43 A9 9 0 1 1 98 25 Z M98 29.5 A4.5 4.5 0 1 0 98 38.5 A4.5 4.5 0 1 0 98 29.5 Z M118 25 A9 9 0 1 1 118 43 A9 9 0 1 1 118 25 Z M118 29.5 A4.5 4.5 0 1 0 118 38.5 A4.5 4.5 0 1 0 118 29.5 Z M130 19 H135 V32 L141.5 25.5 H148 L139.5 33.5 L148.5 43 H142 L135 35.5 V43 H130 Z M158 25 A9 9 0 1 1 158 43 A9 9 0 1 1 158 25 Z M158 29.5 A4.5 4.5 0 1 0 158 38.5 A4.5 4.5 0 1 0 158 29.5 Z M170 25.5 H175 V35.5 Q175 39 178 39 Q182 39 182 34.5 V25.5 H187 V43 H182 V41 Q180 43.5 176.5 43.5 Q170 43.5 170 36 Z M193 20 H198 V25.5 H202 V30 H198 V36.5 Q198 39 200 39 H202 V43 Q200.5 43.5 198.5 43.5 Q193 43.5 193 37.5 V30 H190 V25.5 H193 Z"/></svg></div>
-  <h1>Entrar no radar</h1>
-  <p class="sub">Tech, política e futebol num lugar só. Use a conta do Google do e-mail em que você recebeu o convite.</p>
+  <div class="farol"><svg viewBox="0 0 64 64" role="img" aria-label="Lookout"><defs><linearGradient id="lk-farol" x1="6" y1="4" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset="0.4" stop-color="#7C3AED"/><stop offset="1" stop-color="#4F8FF7"/></linearGradient></defs><path fill="url(#lk-farol)" d="M6 32 A26 26 0 0 1 58 32 L40.5 22 A8.5 8.5 0 0 0 23.5 22 Z M26 29 L28 30 L22 58 A28 28 0 0 1 10 50 Z M38 29 L54 50 A28 28 0 0 1 42 58 L36 30 Z"/><circle class="lk-olho" cx="32" cy="22" r="4"/></svg></div>
+  <p class="marca">Lookout</p>
+  <h1>De olho no que importa</h1>
+  <p class="sub">Tecnologia, política e futebol, filtrados e atualizados ao longo do dia.</p>
   {% if message.text.size > 0 %}
   <p class="aviso" role="status">{{ message.text }}</p>
   {% endif %}
