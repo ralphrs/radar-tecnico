@@ -8,17 +8,17 @@
 :root {
   --bg: #eef1f8; --fg: #141a2b; --card: #ffffff; --mut: #5b667f;
   --line: rgba(30, 45, 80, 0.12); --pri: #7c3aed; --b1: #8b5cf6; --b2: #4f8ff7;
-  /* Aurora do fundo: manchas de cor da marca e uma grade de pontos */
-  --au1: rgba(139, 92, 246, 0.28); --au2: rgba(79, 143, 247, 0.24); --au3: rgba(124, 58, 237, 0.18);
-  --ponto: rgba(30, 45, 80, 0.13);
+  /* Radar do fundo: anéis, feixe que gira e pontos que acendem quando o feixe passa */
+  --anel: rgba(124, 58, 237, 0.13); --feixe: rgba(124, 58, 237, 0.16); --feixe-borda: rgba(124, 58, 237, 0.34);
+  --blip: #7c3aed; --blip-halo: rgba(124, 58, 237, 0.22);
   --sombra: 0 24px 60px -24px rgba(60, 40, 140, 0.28);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #080b16; --fg: #f4f7ff; --card: #131a2b; --mut: #8592ab; --line: rgba(160, 180, 220, 0.14); --pri: #a78bfa;
-    --au1: rgba(139, 92, 246, 0.34); --au2: rgba(79, 143, 247, 0.26); --au3: rgba(124, 58, 237, 0.24);
-    --ponto: rgba(200, 215, 255, 0.09);
+    --anel: rgba(167, 139, 250, 0.13); --feixe: rgba(139, 92, 246, 0.26); --feixe-borda: rgba(167, 139, 250, 0.55);
+    --blip: #c4b5fd; --blip-halo: rgba(139, 92, 246, 0.35);
     --sombra: 0 24px 70px -20px rgba(0, 0, 0, 0.7);
     color-scheme: dark;
   }
@@ -32,31 +32,48 @@ body {
   min-height: 100vh; padding: 24px 16px;
   position: relative; overflow-x: hidden;
 }
-/* Manchas de luz que andam devagar atrás do cartão */
-body::before {
-  content: ""; position: fixed; inset: -25%; z-index: 0; pointer-events: none;
-  background:
-    radial-gradient(38% 32% at 22% 18%, var(--au1), transparent 70%),
-    radial-gradient(34% 30% at 82% 22%, var(--au2), transparent 70%),
-    radial-gradient(42% 36% at 68% 88%, var(--au3), transparent 70%),
-    radial-gradient(30% 26% at 12% 80%, var(--au2), transparent 70%);
-  animation: aurora 28s ease-in-out infinite alternate;
-}
-/* Grade de pontos que some no centro, onde fica o cartão */
+/* Anéis e mira do radar, centrados atrás do cartão e sumindo nas bordas */
 body::after {
   content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image: radial-gradient(var(--ponto) 1px, transparent 1.4px);
-  background-size: 22px 22px;
-  -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 50%, transparent 35%, #000 100%);
-  mask-image: radial-gradient(ellipse 60% 55% at 50% 50%, transparent 35%, #000 100%);
+  background:
+    linear-gradient(var(--anel), var(--anel)) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--anel), var(--anel)) 0 50% / 100% 1px no-repeat,
+    repeating-radial-gradient(circle at 50% 50%, transparent 0 calc(13vmin - 1px), var(--anel) calc(13vmin - 1px) 13vmin);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 35%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 35%, transparent 72%);
 }
-@keyframes aurora {
-  0% { transform: translate3d(-3%, -2%, 0) rotate(0deg) scale(1); }
-  50% { transform: translate3d(3%, 2%, 0) rotate(6deg) scale(1.06); }
-  100% { transform: translate3d(-2%, 4%, 0) rotate(-4deg) scale(1.03); }
+/* Feixe de varredura: uma volta a cada 12 s, no sentido do relógio */
+body::before {
+  content: ""; position: fixed; left: 50%; top: 50%; width: 170vmax; height: 170vmax;
+  z-index: 0; pointer-events: none; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg 285deg, var(--feixe) 345deg, var(--feixe-borda) 359.5deg, transparent 360deg);
+  -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 42%);
+  mask-image: radial-gradient(circle, #000 12%, transparent 42%);
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: varredura 12s linear infinite;
 }
+/* Notícias detectadas: pontos que acendem quando o feixe passa e apagam devagar */
+html::before, html::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0;
+  animation: blip 12s ease-out infinite;
+}
+html::before {
+  background:
+    radial-gradient(circle at calc(50% + 29.4vmin) calc(50% - 17vmin), var(--blip) 0 3px, var(--blip-halo) 4px, transparent 14px),
+    radial-gradient(circle at calc(50% + 40.3vmin) calc(50% - 19.7vmin), var(--blip) 0 2.5px, var(--blip-halo) 3.5px, transparent 11px);
+  animation-delay: 2s;
+}
+html::after {
+  background:
+    radial-gradient(circle at calc(50% - 25.7vmin) calc(50% + 30.6vmin), var(--blip) 0 3px, var(--blip-halo) 4px, transparent 14px),
+    radial-gradient(circle at calc(50% - 36.5vmin) calc(50% + 21.1vmin), var(--blip) 0 2.5px, var(--blip-halo) 3.5px, transparent 11px);
+  animation-delay: 7.4s;
+}
+@keyframes varredura { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes blip { 0% { opacity: 1; } 35% { opacity: 0; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  body::before { animation: none; }
+  body::before { animation: none; transform: translate(-50%, -50%) rotate(70deg); }
+  html::before, html::after { animation: none; opacity: .7; }
 }
 main {
   width: 100%; max-width: 400px; background: var(--card);
