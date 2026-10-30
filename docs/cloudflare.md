@@ -50,7 +50,16 @@ Isso não abre o site: o Access só garante que a pessoa provou quem é. Quem de
 ## 4. Métodos de login
 
 - **Código por e-mail (One-time PIN):** funciona sem configurar nada.
-- **Google:** Zero Trust → Settings → Authentication → **Add new** → Google. Exige criar uma credencial OAuth no Google Cloud.
+- **Google:** exige uma credencial OAuth no Google Cloud:
+  1. Em console.cloud.google.com, crie um projeto (`Lookout`).
+  2. **Google Auth Platform** (antiga "OAuth consent screen") → **Get started**: nome do app, e-mail de suporte, público **External** (para aceitar contas Gmail comuns) e e-mail de contato.
+  3. Em **Audience**, clique em **Publish app**. Enquanto estiver em "Testing", só entram os e-mails cadastrados como usuários de teste. Com os escopos básicos (e-mail e perfil) o Google não pede verificação.
+  4. **Clients** → **Create client** → tipo **Web application**:
+     - Authorized JavaScript origins: `https://bitter-mountain-e37c.cloudflareaccess.com`
+     - Authorized redirect URIs: `https://bitter-mountain-e37c.cloudflareaccess.com/cdn-cgi/access/callback`
+  5. Copie o **Client ID** e o **Client secret** (o secret é senha; não vai para o repositório).
+  6. No Cloudflare: Zero Trust → **Integrations → Identity providers** → **Add new identity provider** → **Google** (não "Google Workspace", que é só para domínios do Workspace). Cole o Client ID no campo App ID e o secret, salve e clique em **Test**.
+  7. Como o app `news` está com **Accept all available identity providers** ligado, o botão do Google aparece sozinho na tela de login, ao lado do código por e-mail.
 
 ## 5. Variáveis do Worker
 
