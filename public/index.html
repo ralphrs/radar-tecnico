@@ -401,7 +401,7 @@ footer b { color: var(--foreground); font-weight: 500; }
 
   <footer>
     <p id="total"></p>
-    <p id="rodape">Atualizado automaticamente a cada 2 horas. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses.</p>
+    <p id="rodape">Atualizado automaticamente várias vezes por dia. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses.</p>
   </footer>
   </div>
 
@@ -609,16 +609,16 @@ const NOME_TIPO = { noticia: "Notícia", artigo: "Artigo", release: "Release", y
 const RADARES = {
   tech: { id: "tech", aba: "Tech", titulo: "Radar Técnico", items: "items", destaques: "destaques", status: "meta/status", sufixo: "",
     temas: TEMAS_TECH, tipos: TIPOS_TECH,
-    rodape: "Atualizado automaticamente a cada 2 horas. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses.",
-    vazio: "A tarefa agendada pesquisa novidades nos seus temas a cada 2 horas e as notícias aparecem aqui." },
+    rodape: "Atualizado automaticamente várias vezes por dia. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses.",
+    vazio: "A tarefa agendada pesquisa novidades nos seus temas várias vezes por dia e as notícias aparecem aqui." },
   politica: { id: "politica", aba: "Política", titulo: "Radar de Política", items: "items-politica", destaques: "destaques-politica", status: "meta/status-politica", sufixo: "-politica",
     temas: TEMAS_POLITICA, tipos: TIPOS_POLITICA,
-    rodape: "Atualizado automaticamente a cada 2 horas, com fontes oficiais (Planalto, DOU, Câmara, Senado, STF, TSE, governo do RS) e imprensa de referência. Notícias ficam 30 dias; análises, vídeos e podcasts, 3 meses; publicações oficiais, 12 meses.",
-    vazio: "A coleta roda a cada 2 horas e traz leis, decisões, Congresso, governo, RS e eleições. Os itens aparecem aqui depois da primeira rodada." },
+    rodape: "Atualizado automaticamente várias vezes por dia, com fontes oficiais (Planalto, DOU, Câmara, Senado, STF, TSE, governo do RS) e imprensa de referência. Notícias ficam 30 dias; análises, vídeos e podcasts, 3 meses; publicações oficiais, 12 meses.",
+    vazio: "A coleta roda várias vezes por dia e traz leis, decisões, Congresso, governo, RS e eleições. Os itens aparecem aqui depois da primeira rodada." },
   esportes: { id: "esportes", aba: "Esportes", titulo: "Radar de Esportes", items: "items-esportes", destaques: "destaques-esportes", status: "meta/status-esportes", sufixo: "-esportes",
     temas: TEMAS_ESPORTES, tipos: TIPOS_ESPORTES,
-    rodape: "Atualizado automaticamente a cada 2 horas, com o Inter em primeiro lugar, as competições que ele disputa e o vai e vem do mercado. Notícias e resultados ficam 30 dias; análises, vídeos e podcasts, 3 meses.",
-    vazio: "A coleta roda a cada 2 horas e traz Inter, Gauchão, Brasileirão, Libertadores, Copa do Brasil e mercado. Os itens aparecem aqui depois da primeira rodada." },
+    rodape: "Atualizado automaticamente várias vezes por dia, com o Inter em primeiro lugar, as competições que ele disputa e o vai e vem do mercado. Notícias e resultados ficam 30 dias; análises, vídeos e podcasts, 3 meses.",
+    vazio: "A coleta roda várias vezes por dia e traz Inter, Gauchão, Brasileirão, Libertadores, Copa do Brasil e mercado. Os itens aparecem aqui depois da primeira rodada." },
 };
 const ORDEM_RADARES = ["tech", "politica", "esportes"];
 const LIMITE_POR_TEMA = 5;
