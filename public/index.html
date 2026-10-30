@@ -1,0 +1,1349 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Lookout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+/* Design system DokDraw. Layout: abaixo de 900 px, coluna de leitura com cabeçalho enxuto, carrossel de destaques, barra fixa de uma linha (tipos, Filtros, busca) que abre um painel e seções por tema com título grudado. De 900 px: navegação de temas à esquerda e busca na barra. De 1200 px: trilho direito com destaques, novos, favoritos e status. */
+:root {
+  --background: #eef1f8; --foreground: #141a2b; --card: #ffffff; --secondary: #f5f7fc; --muted-foreground: #5b667f;
+  --accent: #f6f8fd; --primary: #7c3aed; --primary-foreground: #ffffff; --brand-start: #8b5cf6; --brand-end: #4f8ff7;
+  --border: rgba(30, 45, 80, 0.12); --input: rgba(30, 45, 80, 0.22); --ring: var(--primary);
+  --info: #6b5aa8; --ok: #2f7a5c; --warn: #8a6320; --err: #b03a44; --chart-1: #7a4f93;
+  --shadow-sm: 0 1px 2px rgba(30, 26, 39, 0.06); --shadow-md: 0 4px 14px rgba(30, 26, 39, 0.08);
+  --overlay: color-mix(in srgb, var(--foreground) 45%, transparent);
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 14px; --radius-xl: 18px;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
+  --control-h: 36px; --control-h-sm: 32px; --toque: 44px; --barra-h: 53px;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #080b16; --foreground: #f4f7ff; --card: #131a2b; --secondary: #141b2c; --muted-foreground: #8592ab;
+    --accent: #0f1524; --primary: #8b5cf6;
+    --border: rgba(140, 160, 210, 0.16); --input: rgba(150, 170, 220, 0.3);
+    --info: #a79ae0; --ok: #6bbd97; --warn: #d6ab63; --err: #d8737d; --chart-1: #b184c8;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+    --overlay: color-mix(in srgb, var(--background) 72%, transparent);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --background: #080b16; --foreground: #f4f7ff; --card: #131a2b; --secondary: #141b2c; --muted-foreground: #8592ab;
+  --accent: #0f1524; --primary: #8b5cf6;
+  --border: rgba(140, 160, 210, 0.16); --input: rgba(150, 170, 220, 0.3);
+  --info: #a79ae0; --ok: #6bbd97; --warn: #d6ab63; --err: #d8737d; --chart-1: #b184c8;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+  --overlay: color-mix(in srgb, var(--background) 72%, transparent);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html.trava, html.trava body { overflow: hidden; }
+body { background: var(--background); color: var(--foreground); font: 400 15px/1.55 var(--font-sans); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 780px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; display: flex; flex-direction: column; gap: var(--space-6); }
+@media (max-width: 699px) { .wrap { padding-block: 16px 48px; gap: var(--space-4); } }
+
+/* Área de toque de 44 px sem mudar o visual */
+.alvo, .chip, .seg button, .fav, .ler-mais { position: relative; }
+.alvo::before, .chip::before, .seg button::before, .fav::before, .ler-mais::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, var(--toque)); height: max(100%, var(--toque)); transform: translate(-50%, -50%); }
+
+/* Cabeçalho */
+header { display: flex; flex-direction: column; gap: 6px; }
+.topo { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.marca svg { width: 30px; height: 30px; color: var(--primary); flex: none; }
+h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: -0.02em; margin: 0; }
+#aparencia { flex: none; color: var(--muted-foreground); }
+#aparencia:hover { color: var(--foreground); }
+.status { font: 400 12px/16px var(--font-mono); color: var(--muted-foreground); margin: 0; }
+.status b { color: var(--foreground); font-weight: 500; }
+.pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); margin-right: 6px; vertical-align: 1px; }
+
+/* Botões e badges DokDraw */
+.dd-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); white-space: nowrap; border-radius: var(--radius-md); font: 500 14px/20px var(--font-sans); height: var(--control-h); padding: 0 var(--space-4); border: 1px solid transparent; cursor: pointer; transition: background-color 120ms, opacity 120ms; color: var(--foreground); background: transparent; }
+.dd-btn:focus-visible, a:focus-visible, .seg button:focus-visible, .chip:focus-visible, .fav:focus-visible, .ler-mais:focus-visible, .pontos button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.dd-btn:disabled { opacity: .5; cursor: not-allowed; }
+.dd-btn--outline { background: var(--card); border-color: var(--input); box-shadow: var(--shadow-sm); }
+.dd-btn--outline:hover:not(:disabled), .dd-btn--ghost:hover { background: var(--accent); }
+.dd-btn--primary { background: var(--primary); color: var(--primary-foreground); }
+.dd-btn--primary:hover { opacity: .9; }
+.dd-btn--icon { width: var(--control-h-sm); height: var(--control-h-sm); padding: 0; }
+.dd-btn--link { color: var(--primary); padding: 0; height: auto; }
+.dd-btn--link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.dd-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.dd-badge { display: inline-flex; align-items: center; border-radius: var(--radius-md); border: 1px solid transparent; padding: 1px 8px; font: 600 11.5px/16px var(--font-sans); white-space: nowrap; }
+/* Tipos: só contorno. Relevante: o selo forte. Novo: tom leve. */
+.b-noticia { border-color: var(--border); color: var(--muted-foreground); font-weight: 500; }
+.b-release { border-color: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--primary); }
+.b-artigo { border-color: color-mix(in srgb, var(--chart-1) 50%, transparent); color: var(--chart-1); }
+.b-youtube, .b-video { border-color: color-mix(in srgb, var(--err) 45%, transparent); color: var(--err); }
+.b-podcast { border-color: color-mix(in srgb, var(--info) 50%, transparent); color: var(--info); }
+.b-curso { border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: var(--ok); }
+.b-review { border-color: color-mix(in srgb, var(--warn) 50%, transparent); color: var(--warn); }
+.b-alta { background: var(--warn); border-color: var(--warn); color: var(--card); }
+.b-novo { background: color-mix(in srgb, var(--primary) 12%, var(--card)); color: var(--primary); }
+/* Tipos e etiquetas dos radares de política e esportes */
+.b-oficial { border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: var(--ok); }
+.b-analise { border-color: color-mix(in srgb, var(--chart-1) 50%, transparent); color: var(--chart-1); }
+.b-resultado { border-color: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--primary); }
+.b-clube { background: var(--secondary); border-color: var(--border); color: var(--foreground); font-weight: 500; }
+.b-urgente { background: var(--err); border-color: var(--err); color: var(--card); }
+
+/* Abas de radar (Tech, Política, Esportes) */
+.radares { display: flex; width: 100%; }
+.radares button { flex: 1 1 0; justify-content: center; height: 32px; font-size: 13.5px; }
+.barra-radares { display: flex; align-items: center; height: var(--toque); }
+
+/* Faixa de urgentes (política): no topo do feed e no trilho direito */
+.urgente { border: 1px solid color-mix(in srgb, var(--err) 40%, transparent); background: color-mix(in srgb, var(--err) 6%, var(--card)); border-radius: var(--radius-lg); padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; }
+.urgente h2 { font: 600 12px/16px var(--font-sans); color: var(--err); text-transform: uppercase; letter-spacing: .06em; margin: 0; display: flex; align-items: center; gap: 8px; }
+.urgente h2::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--err); flex: none; }
+.urgente ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.urgente li { padding-block: 6px; border-top: 1px solid color-mix(in srgb, var(--err) 18%, transparent); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.urgente li:first-child { border-top: 0; }
+.urgente li a { font: 600 14px/1.35 var(--font-sans); color: var(--foreground); text-decoration: none; overflow-wrap: anywhere; text-wrap: pretty; }
+.urgente li a:hover { color: var(--err); text-decoration: underline; text-underline-offset: 3px; }
+.urgente .n { font: 400 11.5px/16px var(--font-mono); color: var(--muted-foreground); }
+#lat-urgente > h3 { color: var(--err); }
+@media (max-width: 699px) {
+  .urgente { padding: 8px 12px; gap: 2px; }
+  .urgente li { padding-block: 4px; }
+  .urgente li a { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .urgente .n { display: none; }
+}
+
+/* Carrossel de destaques */
+.dest { display: flex; flex-direction: column; gap: var(--space-3); }
+.dest-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.dest-top h2 { font: 600 19px/1.2 var(--font-display); letter-spacing: -0.02em; margin: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.dest-top h2 small { font: 400 12px var(--font-mono); color: var(--muted-foreground); letter-spacing: 0; }
+.dest-nav { display: flex; align-items: center; gap: var(--space-2); }
+.dest-nav .pos { font: 500 12px var(--font-mono); color: var(--muted-foreground); min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+.trilho { display: grid; grid-auto-flow: column; grid-auto-columns: min(86%, 340px); gap: var(--space-3); overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding-bottom: var(--space-2); scrollbar-width: none; overscroll-behavior-x: contain; }
+.trilho::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: reduce) { .trilho { scroll-behavior: auto; } }
+.dcard { scroll-snap-align: start; border-radius: var(--radius-xl); border: 1px solid var(--border); background: var(--card); box-shadow: var(--shadow-sm); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; position: relative; }
+.dcard::before { content: ""; position: absolute; inset: 0 auto auto 0; width: 100%; height: 3px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; background-image: linear-gradient(135deg, var(--brand-start), var(--brand-end)); opacity: .9; }
+.dcard .n { font: 500 11px var(--font-mono); color: var(--muted-foreground); display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.dcard a { font: 600 15px/1.35 var(--font-sans); color: var(--foreground); text-decoration: none; overflow-wrap: anywhere; text-wrap: pretty; }
+.dcard a:hover { color: var(--primary); }
+.dcard p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--muted-foreground); }
+.pontos { display: flex; justify-content: center; height: 10px; align-items: center; }
+.pontos button { position: relative; flex: none; width: var(--toque); height: var(--toque); margin-block: -17px; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: var(--radius-md); }
+.pontos button::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; transform: translate(-50%, -50%); border-radius: 50%; background: var(--input); }
+.pontos button[aria-current="true"]::after { background: var(--primary); width: 20px; border-radius: 4px; }
+@media (max-width: 699px) {
+  .dest { gap: var(--space-2); }
+  .dest-nav { display: none; }
+  .dest-top h2 { font-size: 17px; }
+  .dcard { padding: var(--space-3) 14px; gap: 6px; }
+  .dcard p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .trilho { padding-bottom: var(--space-1); }
+}
+
+/* Barra fixa de uma linha */
+.barra { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 3; background: var(--background); border-bottom: 1px solid var(--border); margin-inline: -16px; padding: 4px 16px; }
+.barra-linha { display: flex; align-items: center; gap: var(--space-2); height: var(--toque); }
+.tipos-rolo { position: relative; flex: 1; min-width: 0; height: var(--toque); display: flex; align-items: center; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; }
+.tipos-rolo::-webkit-scrollbar { display: none; }
+.tipos-rolo.corta-fim { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.tipos-rolo.corta-ini { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
+.tipos-rolo.corta-ini.corta-fim { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.barra-btn { flex: none; height: var(--control-h); padding: 0 12px; gap: 6px; }
+.barra-btn.dd-btn--icon { width: var(--control-h); padding: 0; }
+.barra-btn[data-ativo="true"] { border-color: color-mix(in srgb, var(--primary) 60%, transparent); color: var(--primary); }
+.contador { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font: 600 11px/18px var(--font-mono); text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Controle segmentado */
+.seg { display: inline-flex; flex: none; gap: 2px; padding: 3px; background: var(--secondary); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.seg button { flex: none; font: 500 13px/1 var(--font-sans); color: var(--muted-foreground); background: transparent; border: 0; border-radius: 6px; height: 28px; padding: 0 var(--space-3); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.seg button:hover { color: var(--foreground); }
+.seg button:disabled { opacity: .45; cursor: default; }
+.seg button:disabled:hover { color: var(--muted-foreground); }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--foreground); box-shadow: var(--shadow-sm); }
+.seg button .k { font: 500 11px var(--font-mono); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.seg svg { width: 14px; height: 14px; }
+
+/* Painel de filtros: bottom sheet no celular, painel sob a barra no desktop */
+.veu { position: fixed; inset: 0; z-index: 1; background: var(--overlay); }
+.painel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; flex-direction: column; max-height: min(86dvh, 720px); background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-bottom: 0; border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: var(--shadow-md); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.painel:focus { outline: none; }
+.painel-topo { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--border); }
+.painel-topo h2 { font: 600 17px/1.2 var(--font-display); letter-spacing: -0.02em; margin: 0; }
+.painel-corpo { overflow-y: auto; overscroll-behavior: contain; padding: var(--space-4); display: flex; flex-direction: column; gap: 20px; }
+.painel-pe { display: flex; gap: var(--space-2); padding: 12px var(--space-4); border-top: 1px solid var(--border); }
+.painel-pe .dd-btn { flex: 1; height: 40px; }
+.grupo { display: flex; flex-direction: column; gap: 10px; }
+.rotulo { font: 600 12px/16px var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; margin: 0; }
+.painel .dd-input { height: 44px; font-size: 16px; }
+@media (prefers-reduced-motion: no-preference) {
+  .painel:not([hidden]) { animation: sobe 180ms ease-out; }
+  .veu:not([hidden]) { animation: aparece 180ms ease-out; }
+  @keyframes sobe { from { transform: translateY(24px); opacity: 0; } }
+  @keyframes aparece { from { opacity: 0; } }
+}
+@media (min-width: 900px) {
+  .painel { position: absolute; left: auto; right: 16px; bottom: auto; top: calc(100% + 8px); width: 440px; max-height: var(--painel-max, calc(100vh - var(--barra-h) - 48px)); border-bottom: 1px solid var(--border); border-radius: var(--radius-xl); padding-bottom: 0; }
+  @media (prefers-reduced-motion: no-preference) { @keyframes sobe { from { transform: translateY(-8px); opacity: 0; } } }
+}
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip { font: 500 13px/1 var(--font-sans); color: var(--foreground); background: transparent; border: 1px solid var(--border); border-radius: 999px; height: var(--control-h); padding: 0 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip:hover { background: var(--accent); }
+.chip svg { width: 14px; height: 14px; fill: none; }
+.chip .dot { width: 7px; height: 7px; border-radius: 2px; background: var(--c, var(--muted-foreground)); }
+.chip .k { font: 400 11px var(--font-mono); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { border-color: color-mix(in srgb, var(--primary) 60%, transparent); background: color-mix(in srgb, var(--primary) 10%, var(--card)); color: var(--primary); }
+.chip[aria-pressed="true"] .k { color: var(--primary); }
+.t-fav[aria-pressed="true"] svg, .t-rel[aria-pressed="true"] svg { fill: currentColor; }
+.t-fav[aria-pressed="true"] { border-color: color-mix(in srgb, var(--err) 55%, transparent); background: color-mix(in srgb, var(--err) 10%, var(--card)); color: var(--err); }
+.t-fav[aria-pressed="true"] .k { color: var(--err); }
+.sub { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-left: var(--space-3); border-left: 2px solid color-mix(in srgb, var(--primary) 40%, transparent); }
+.dd-input { display: flex; height: var(--control-h); width: 100%; border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--card); padding: 4px var(--space-3); font: 400 14px/20px var(--font-sans); color: var(--foreground); box-shadow: var(--shadow-sm); }
+.dd-input::placeholder { color: var(--muted-foreground); }
+.dd-input:focus-visible { outline: none; box-shadow: 0 0 0 1px var(--ring); }
+
+/* Feed */
+.secoes { display: flex; flex-direction: column; gap: var(--space-8); }
+@media (max-width: 699px) { .secoes { gap: var(--space-6); } }
+section.tema { display: flex; flex-direction: column; --topo-tema: calc(var(--barra-h) + env(safe-area-inset-top, 0px)); }
+section.tema > h2 { position: sticky; top: var(--topo-tema); z-index: 1; background: var(--background); font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; margin: 0; padding: 12px 0 8px; display: flex; align-items: baseline; gap: 10px; }
+section.tema > h2::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--c); flex: none; transform: translateY(-1px); }
+section.tema > h2 .nome { min-width: 0; text-wrap: balance; }
+section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-foreground); letter-spacing: 0; margin-left: 4px; white-space: nowrap; }
+.subgrupo { display: flex; flex-direction: column; }
+.subsecao { position: sticky; top: calc(var(--topo-tema) + var(--h2-h, 42px)); z-index: 1; background: var(--background); font: 600 12px/16px var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; margin: var(--space-3) 0 0; padding: 8px 0 6px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: baseline; }
+.subgrupo:first-of-type .subsecao { margin-top: 0; }
+.subsecao span { font: 400 11px var(--font-mono); letter-spacing: 0; text-transform: none; }
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.item { padding-block: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.item:first-child { border-top: 0; }
+.item a.titulo { font: 600 15.5px/1.35 var(--font-sans); color: var(--foreground); text-decoration: none; text-wrap: pretty; overflow-wrap: anywhere; }
+.item a.titulo:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.meta { font: 400 12px/16px var(--font-mono); color: var(--muted-foreground); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.meta .tags { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.resumo { margin: 0; max-width: 68ch; }
+.resumo.recolhido { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ler-mais { align-self: flex-start; margin-top: -2px; padding: 0; border: 0; background: none; font: 500 13px/20px var(--font-sans); color: var(--primary); cursor: pointer; border-radius: var(--radius-sm); }
+.ler-mais:hover { text-decoration: underline; text-underline-offset: 3px; }
+.item-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.item-topo .titulo { min-width: 0; }
+.fav { flex: none; width: 32px; height: 32px; margin: -5px -6px 0 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--muted-foreground); cursor: pointer; }
+.fav svg { width: 18px; height: 18px; fill: none; }
+.fav:hover { background: var(--accent); color: var(--err); }
+.fav[aria-pressed="true"] { color: var(--err); }
+.fav[aria-pressed="true"] svg { fill: currentColor; }
+.mais { align-self: flex-start; margin-top: var(--space-1); min-height: 24px; }
+
+.vazio { background: var(--card); border: 1px dashed var(--input); border-radius: var(--radius-xl); padding: var(--space-6); color: var(--muted-foreground); }
+.vazio strong { color: var(--foreground); display: block; margin-bottom: 4px; font: 600 16px var(--font-display); letter-spacing: -0.02em; }
+footer { font-size: 12.5px; color: var(--muted-foreground); border-top: 1px solid var(--border); padding-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+footer p { margin: 0; }
+footer b { color: var(--foreground); font-weight: 500; }
+@media (prefers-reduced-motion: no-preference) { .pulse { animation: p 2.4s ease-in-out infinite; } @keyframes p { 50% { opacity: .35; } } }
+
+/* Colunas: só a partir de 900 px. Abaixo disso, .centro não gera caixa e nav, trilho e busca inline ficam fora. */
+.centro { display: contents; }
+.nav-temas, .lateral { display: none; }
+
+/* Navegação de temas */
+.nav-temas .rotulo { padding-inline: 10px; margin-bottom: 2px; }
+.nav-lista { display: flex; flex-direction: column; gap: 0; }
+.nav-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 30px; padding: 3px 10px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--foreground); font: 500 13.5px/1.3 var(--font-sans); text-align: left; cursor: pointer; }
+.nav-item:hover:not(:disabled):not([aria-pressed="true"]) { background: var(--card); }
+.nav-item:disabled { opacity: .45; cursor: default; }
+.nav-item .ic { flex: none; width: 14px; height: 14px; display: inline-flex; color: var(--muted-foreground); }
+.nav-item .ic svg { width: 14px; height: 14px; }
+.nav-item[aria-pressed="true"] .ic { color: var(--primary); }
+.nav-item:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.nav-item .dot { flex: none; margin-inline: 3px; width: 8px; height: 8px; border-radius: 2px; background: var(--c, transparent); box-shadow: inset 0 0 0 1.5px var(--c, var(--muted-foreground)); }
+.nav-item .nome { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.nav-item .k { flex: none; font: 400 11px var(--font-mono); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.nav-item[data-vazio="true"] .nome { color: var(--muted-foreground); }
+.nav-item[aria-pressed="true"] { background: color-mix(in srgb, var(--primary) 10%, var(--card)); color: var(--primary); }
+.nav-item[aria-pressed="true"] .nome, .nav-item[aria-pressed="true"] .k { color: var(--primary); }
+.nav-sub { flex-direction: column; flex-wrap: nowrap; gap: 2px; margin: 2px 0 6px 14px; padding-left: 6px; }
+.nav-sub .nav-item { font-weight: 400; font-size: 13px; min-height: 28px; padding-block: 3px; }
+.nav-grupo { display: flex; flex-direction: column; }
+.nav-mostrar { display: flex; flex-wrap: wrap; gap: 6px; padding-inline: 2px; }
+.nav-mostrar .chip { height: 30px; padding: 0 8px; gap: 5px; font-size: 12.5px; }
+.nav-limpar { height: 30px; margin-left: 6px; font-size: 13px; }
+
+/* Trilho direito */
+.bloco { display: flex; flex-direction: column; min-width: 0; }
+.bloco > h3 { font: 600 12px/16px var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; margin: 0; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.bloco > h3 small { font: 400 11px var(--font-mono); letter-spacing: 0; text-transform: none; text-align: right; }
+.bloco > h3.empilha { flex-direction: column; align-items: flex-start; gap: 2px; }
+.bloco > h3.empilha small { text-align: left; }
+.bloco ol, .bloco ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.bloco li { padding-block: 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bloco li:first-child { border-top: 0; }
+.bloco .n { font: 400 11px/16px var(--font-mono); color: var(--muted-foreground); display: flex; flex-wrap: wrap; gap: 0 var(--space-2); }
+.bloco .n b { font-weight: 500; color: var(--primary); }
+.bloco li a { font: 600 13.5px/1.35 var(--font-sans); color: var(--foreground); text-decoration: none; overflow-wrap: anywhere; text-wrap: pretty; }
+.bloco li a:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.bloco li p { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--muted-foreground); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bloco .nota { margin: 10px 0 0; font-size: 13px; line-height: 1.45; color: var(--muted-foreground); }
+.bloco .ver-todos { align-self: flex-start; margin-top: var(--space-2); font-size: 13px; }
+.coleta { margin: 10px 0 0; font: 400 12px/1.6 var(--font-mono); color: var(--muted-foreground); }
+.coleta b { color: var(--foreground); font-weight: 500; }
+
+@media (min-width: 900px) {
+  .wrap { max-width: 1360px; padding-inline: var(--space-6); display: grid; grid-template-columns: 240px minmax(0, 720px); grid-template-areas: "topo topo" "nav centro"; justify-content: center; align-items: start; column-gap: var(--space-8); row-gap: var(--space-6); }
+  header { grid-area: topo; flex-direction: row; align-items: center; gap: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--border); }
+  .topo { display: contents; }
+  .status { order: 1; margin-left: auto; text-align: right; }
+  #aparencia { order: 2; }
+  h1 { font-size: 30px; }
+  .centro { grid-area: centro; display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+  .nav-temas, .lateral { position: sticky; top: var(--space-4); max-height: calc(100vh - 2 * var(--space-4)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; min-width: 0; }
+  .wrap { padding-top: 20px; row-gap: 20px; }
+  .nav-temas { grid-area: nav; display: flex; flex-direction: column; gap: 10px; padding: 2px 2px var(--space-2); }
+  .nav-busca { flex: none; height: var(--control-h-sm); }
+  /* Todos os filtros ficam na lateral: sem barra fixa no centro, e o título de cada tema gruda no topo */
+  .barra { display: none; }
+  section.tema { --topo-tema: env(safe-area-inset-top, 0px); }
+}
+@media (min-width: 1200px) {
+  .wrap { grid-template-columns: 232px minmax(0, 700px) 280px; grid-template-areas: "topo topo topo" "nav centro lateral"; column-gap: var(--space-6); }
+  #destaques { display: none !important; }
+  .lateral { grid-area: lateral; display: flex; flex-direction: column; gap: var(--space-6); padding-bottom: var(--space-4); }
+}
+@media (min-width: 1440px) {
+  .wrap { grid-template-columns: 240px minmax(0, 720px) 288px; column-gap: var(--space-8); }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="topo">
+      <div class="marca">
+        <svg viewBox="0 0 200 200" aria-hidden="true"><rect x="22" y="22" width="156" height="156" rx="36" fill="none" stroke="currentColor" stroke-width="14"/><circle cx="100" cy="100" r="22" fill="currentColor"/><g fill="currentColor" opacity=".55"><circle cx="100" cy="22" r="12"/><circle cx="178" cy="100" r="12"/><circle cx="100" cy="178" r="12"/><circle cx="22" cy="100" r="12"/></g></svg>
+        <h1>Radar Técnico</h1>
+      </div>
+      <button class="dd-btn dd-btn--ghost dd-btn--icon alvo" type="button" id="aparencia"></button>
+    </div>
+    <p class="status" id="status"><span class="pulse"></span>Conectando ao feed…</p>
+  </header>
+
+  <nav class="nav-temas" id="nav-temas" aria-label="Temas e filtros">
+    <div class="seg radares" id="radares-nav" role="group" aria-label="Escolher radar"></div>
+    <input class="dd-input nav-busca" id="busca-nav" type="search" placeholder="Buscar no feed" aria-label="Buscar no feed" autocomplete="off" enterkeyhint="search">
+    <div class="nav-grupo">
+      <h2 class="rotulo">Temas</h2>
+      <div class="nav-lista" id="nav-lista"></div>
+    </div>
+    <div class="nav-grupo">
+      <h2 class="rotulo">Tipo</h2>
+      <div class="nav-lista" id="nav-tipos" role="group" aria-label="Filtrar por tipo"></div>
+    </div>
+    <div class="nav-grupo">
+      <h2 class="rotulo">Mostrar</h2>
+      <div class="nav-mostrar">
+        <button class="chip t-rel" type="button" id="nav-relevantes" aria-pressed="false"></button>
+        <button class="chip t-fav" type="button" id="nav-favoritos" aria-pressed="false"></button>
+        <button class="chip" type="button" id="nav-resumos"></button>
+        <button class="dd-btn dd-btn--link nav-limpar" type="button" id="nav-limpar" hidden>Limpar filtros</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="centro">
+  <section class="urgente" id="urgente" aria-label="Urgente" hidden></section>
+  <section class="dest" id="destaques" aria-roledescription="carrossel" aria-label="Destaques do dia" hidden></section>
+
+  <div class="barra" id="barra">
+    <div class="barra-radares"><div class="seg radares" id="radares-barra" role="group" aria-label="Escolher radar"></div></div>
+    <div class="barra-linha">
+      <div class="tipos-rolo" id="tipos-rolo"><div class="seg" id="tipos" role="group" aria-label="Filtrar por tipo"></div></div>
+      <button class="dd-btn dd-btn--outline barra-btn alvo" type="button" id="abrir-filtros" aria-haspopup="dialog" aria-expanded="false" aria-controls="painel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/></svg><span>Filtros</span><span class="contador" id="contador" hidden></span></button>
+      <button class="dd-btn dd-btn--outline dd-btn--icon barra-btn alvo" type="button" id="abrir-busca" aria-haspopup="dialog" aria-controls="painel" aria-label="Buscar no feed" title="Buscar no feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+    </div>
+    <div class="veu" id="veu" hidden></div>
+    <div class="painel" id="painel" role="dialog" aria-modal="true" aria-labelledby="painel-titulo" tabindex="-1" hidden>
+      <div class="painel-topo">
+        <h2 id="painel-titulo">Filtros</h2>
+        <button class="dd-btn dd-btn--ghost alvo" type="button" id="fechar-painel">Fechar</button>
+      </div>
+      <div class="painel-corpo">
+        <div class="grupo">
+          <label class="rotulo" for="busca">Busca</label>
+          <input class="dd-input" id="busca" type="search" placeholder="Título, resumo ou fonte" autocomplete="off" enterkeyhint="search">
+        </div>
+        <div class="grupo">
+          <h3 class="rotulo">Tema</h3>
+          <div class="chips" id="chips" role="group" aria-label="Filtrar por tema"></div>
+          <div class="sub" id="sub" role="group" aria-label="Filtrar por subtema" hidden></div>
+        </div>
+        <div class="grupo">
+          <h3 class="rotulo">Mostrar</h3>
+          <div class="chips">
+            <button class="chip t-rel" type="button" id="so-relevantes" aria-pressed="false"></button>
+            <button class="chip t-fav" type="button" id="so-favoritos" aria-pressed="false"></button>
+            <button class="chip" type="button" id="modo-resumos"></button>
+          </div>
+        </div>
+      </div>
+      <div class="painel-pe">
+        <button class="dd-btn dd-btn--outline" type="button" id="limpar-filtros">Limpar filtros</button>
+        <button class="dd-btn dd-btn--primary" type="button" id="ver-itens">Ver resultados</button>
+      </div>
+    </div>
+  </div>
+
+  <main id="feed">
+    <div class="vazio"><strong>Carregando o feed</strong>As notícias aparecem aqui, agrupadas por tema e resumidas em português.</div>
+  </main>
+
+  <footer>
+    <p id="total"></p>
+    <p id="rodape">Atualizado automaticamente a cada 2 horas. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses.</p>
+  </footer>
+  </div>
+
+  <aside class="lateral" id="lateral" aria-label="Resumo do dia"></aside>
+</div>
+
+<script>
+/* Lookout: adaptador que imita o banco do artifact (window.claude.use) usando a API do Worker.
+   Leituras viram GET em /api/q e /api/doc; "onSnapshot" vira consulta a cada 2 minutos e quando a aba volta ao foco.
+   Favoritos ficam em /api/favs, ligados ao e-mail de quem fez login. */
+(function () {
+  const INTERVALO = 120000;
+  const ouvintes = new Set();
+  const pedir = async (url, opt) => {
+    const r = await fetch(url, Object.assign({ credentials: "same-origin", cache: "no-store" }, opt || {}));
+    if (r.status === 401 || r.status === 403) { location.reload(); throw new Error("sessão"); }
+    if (!r.ok) throw new Error("http " + r.status);
+    return r.json();
+  };
+  const snapDoc = (d) => ({ id: d.id, exists: true, data: () => d.data });
+  const snapLista = (docs) => ({ docs: docs.map(snapDoc), size: docs.length, empty: !docs.length });
+  function assinar(carregar, prox, erro) {
+    let vivo = true;
+    const rodar = () => carregar().then((s) => { if (vivo) prox(s); }, (e) => { if (vivo && erro) erro(e); });
+    const ouvinte = { rodar };
+    ouvintes.add(ouvinte);
+    rodar();
+    const t = setInterval(rodar, INTERVALO);
+    return () => { vivo = false; clearInterval(t); ouvintes.delete(ouvinte); };
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) ouvintes.forEach((o) => o.rodar()); });
+
+  function consulta(c, filtros) {
+    const f = Object.assign({ limit: 100 }, filtros || {});
+    const q = {
+      where(campo, op, valor) { return consulta(c, Object.assign({}, f, { wf: campo, wo: op, wv: valor })); },
+      orderBy(campo, dir) { return consulta(c, Object.assign({}, f, { order: campo, dir: dir || "asc" })); },
+      limit(n) { return consulta(c, Object.assign({}, f, { limit: n })); },
+      async get() {
+        const p = new URLSearchParams({ c });
+        for (const k of ["order", "dir", "limit", "wf", "wo", "wv"]) if (f[k] != null) p.set(k, String(f[k]));
+        const r = await pedir("/api/q?" + p);
+        return snapLista(r.docs);
+      },
+      onSnapshot(prox, erro) { return assinar(() => q.get(), prox, erro); },
+    };
+    return q;
+  }
+
+  function favs() {
+    const col = {
+      async get() { return snapLista((await pedir("/api/favs")).docs); },
+      onSnapshot(prox, erro) { return assinar(() => col.get(), prox, erro); },
+      doc(id) {
+        const u = "/api/favs/" + encodeURIComponent(id);
+        return {
+          set: (dados) => pedir(u, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(dados) }),
+          delete: () => pedir(u, { method: "DELETE" }),
+        };
+      },
+    };
+    return col;
+  }
+
+  const db = {
+    collection(caminho) {
+      if (caminho.startsWith("data/users/")) return favs();
+      return consulta(caminho);
+    },
+    doc(caminho) {
+      const i = caminho.lastIndexOf("/");
+      const c = caminho.slice(0, i), id = caminho.slice(i + 1);
+      const ler = async () => {
+        const r = await pedir("/api/doc?" + new URLSearchParams({ c, id }));
+        return r.existe ? { id, exists: true, data: () => r.data } : { id, exists: false, data: () => undefined };
+      };
+      return { get: ler, onSnapshot: (prox, erro) => assinar(ler, prox, erro) };
+    },
+  };
+  let eu = null;
+  const user = { id: async () => { eu = eu || await pedir("/api/me"); return eu.email ? "me" : null; } };
+  window.claude = { use: async (nome) => (nome === "db" ? db : nome === "user" ? user : null) };
+  /* link para a página de convidados, só para o administrador */
+  pedir("/api/me").then((me) => {
+    eu = me;
+    if (!me.admin) return;
+    const pe = document.querySelector("footer");
+    if (!pe) return;
+    const p = document.createElement("p");
+    p.innerHTML = '<a href="/admin">Gerenciar convidados</a> · <a href="/cdn-cgi/access/logout">Sair</a>';
+    pe.appendChild(p);
+  }).catch(() => {});
+})();
+</script>
+
+<script>
+const G = { arq: "var(--info)", dev: "var(--primary)", ia: "var(--brand-end)", seg: "var(--err)", pag: "var(--warn)", ops: "var(--ok)", doc: "var(--chart-1)", set: "var(--muted-foreground)" };
+const ESTRELA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>';
+/* Grupos de tema mostrados como filtro. O banco guarda o id original em "tema"; temas parecidos viram um grupo, e cada um vira subfiltro. */
+const TEMAS_TECH = [
+  { id: "arquitetura", curto: "Arquitetura", nome: "Arquitetura", cor: G.arq, temas: ["arquitetura", "eip", "legado", "docs", "diagramas"],
+    subs: [
+      { id: "arquitetura", nome: "Corporativa, soluções e software" }, { id: "eip", nome: "Integração e EIP" },
+      { id: "legado", nome: "Migração e legado" }, { id: "docs", nome: "Docs as code" }, { id: "diagramas", nome: "Diagramas e modelagem" },
+    ] },
+  { id: "dados", curto: "Dados", nome: "Dados", cor: G.arq, temas: ["dados"],
+    subs: [{ id: "engenharia", nome: "Engenharia de dados" }, { id: "bancos", nome: "Bancos de dados" }, { id: "analytics", nome: "Analytics e governança" }] },
+  { id: "programacao", curto: "Programação", nome: "Programação", cor: G.dev, temas: ["programacao"],
+    subs: [
+      { id: "linguagens", nome: "Linguagens e ferramentas" }, { id: "backend", nome: "Backend e APIs" }, { id: "frontend", nome: "Frontend web" },
+      { id: "mobile", nome: "Mobile" }, { id: "desktop", nome: "Desktop" }, { id: "praticas", nome: "Práticas, padrões e testes" },
+    ] },
+  { id: "infra", curto: "DevOps e infra", nome: "DevOps, SRE e infra", cor: G.ops, temas: ["infra"],
+    subs: [{ id: "cicd", nome: "CI/CD e automação" }, { id: "plataforma", nome: "Kubernetes, containers e IaC" }, { id: "cloud", nome: "Cloud" }, { id: "sre", nome: "Observabilidade e SRE" }] },
+  { id: "ia", curto: "Universo IA", nome: "Universo IA", cor: G.ia, temas: ["ia"],
+    subs: [
+      { id: "modelos", nome: "Modelos e inferência" }, { id: "agentes", nome: "Agentes e ferramentas de código" }, { id: "aplicacoes", nome: "IA em produtos" },
+      { id: "ml", nome: "Machine learning e data science" }, { id: "mercado", nome: "Mercado e sociedade" },
+    ] },
+  { id: "seguranca", curto: "Segurança", nome: "Segurança", cor: G.seg, temas: ["seguranca", "seguranca-ia"],
+    subs: [{ id: "seguranca", nome: "Aplicações e supply chain" }, { id: "seguranca-ia", nome: "IA e agentes" }] },
+  { id: "plataformas", curto: "Fintechs", nome: "Fintechs", cor: G.pag, temas: ["plataformas", "startups"],
+    subs: [
+      { id: "pagamentos", nome: "Pagamentos" }, { id: "cartoes", nome: "Cartões e bandeiras" }, { id: "pix", nome: "Pix" },
+      { id: "open-finance", nome: "Open Finance" }, { id: "credito", nome: "Crédito e empréstimos" }, { id: "banking", nome: "Banking e BaaS" },
+      { id: "regulacao", nome: "Regulação" }, { id: "stablecoins", nome: "Cripto, stablecoins e Drex" },
+      { id: "comercio-agentes", nome: "Comércio por agentes de IA" }, { id: "startups", nome: "Startups e venture capital" },
+    ] },
+  { id: "carreira", curto: "Carreira", nome: "Carreira e liderança técnica", cor: G.dev, temas: ["carreira"] },
+  { id: "cursos", curto: "Cursos", nome: "Cursos e treinamentos em pt-BR", cor: G.dev, temas: ["cursos"] },
+  { id: "eventos", curto: "Eventos", nome: "Eventos, palestras e call for papers", cor: G.doc, temas: ["eventos"] },
+  { id: "setup", curto: "Setup e gadgets", nome: "Setup de dev e gadgets", cor: G.set, temas: ["setup", "aliexpress"],
+    subs: [{ id: "setup", nome: "Setup de dev" }, { id: "aliexpress", nome: "Achados do AliExpress" }] },
+];
+const TEMAS_POLITICA = [
+  { id: "leis", curto: "Leis e normas", nome: "Leis e normas", cor: G.doc, temas: ["leis"],
+    subs: [
+      { id: "federal", nome: "Federal (Planalto, Congresso, DOU)" }, { id: "estadual", nome: "Estadual (RS)" },
+      { id: "judiciario", nome: "STF e Judiciário" }, { id: "regulacao", nome: "Agências e regulação" },
+    ] },
+  { id: "congresso", curto: "Congresso", nome: "Congresso", cor: G.arq, temas: ["congresso"],
+    subs: [{ id: "camara", nome: "Câmara" }, { id: "senado", nome: "Senado" }, { id: "cpi", nome: "CPIs e comissões" }] },
+  { id: "governo", curto: "Governo federal", nome: "Governo federal", cor: G.dev, temas: ["governo"] },
+  { id: "rs", curto: "Rio Grande do Sul", nome: "Rio Grande do Sul", cor: G.ops, temas: ["rs"],
+    subs: [{ id: "piratini", nome: "Governo do estado" }, { id: "alrs", nome: "Assembleia" }, { id: "poa", nome: "Porto Alegre" }] },
+  { id: "escandalos", curto: "Escândalos", nome: "Escândalos e investigações", cor: G.seg, temas: ["escandalos"],
+    subs: [
+      { id: "investigacoes", nome: "Operações e investigações (PF, MPF)" }, { id: "corrupcao", nome: "Corrupção e TCU" },
+      { id: "conflitos", nome: "Crises e conflitos institucionais" },
+    ] },
+  { id: "eleicoes", curto: "Eleições 2026", nome: "Eleições 2026", cor: G.ia, temas: ["eleicoes"],
+    subs: [{ id: "resultado", nome: "Resultados e transição" }, { id: "tse", nome: "TSE e Justiça Eleitoral" }, { id: "bastidores", nome: "Bastidores e articulação" }] },
+  { id: "economia", curto: "Economia", nome: "Economia e política econômica", cor: G.pag, temas: ["economia"],
+    subs: [{ id: "fiscal", nome: "Fiscal e orçamento" }, { id: "bc", nome: "Banco Central e juros" }, { id: "reformas", nome: "Reformas" }] },
+  { id: "mundo", curto: "Internacional", nome: "Internacional", cor: G.set, temas: ["mundo"] },
+];
+const TEMAS_ESPORTES = [
+  { id: "inter", curto: "Inter", nome: "Internacional", cor: G.seg, temas: ["inter"],
+    subs: [
+      { id: "jogos", nome: "Jogos e resultados" }, { id: "elenco", nome: "Elenco e lesões" },
+      { id: "bastidores", nome: "Diretoria, técnico e bastidores" }, { id: "base", nome: "Base e feminino" },
+    ] },
+  { id: "gauchao", curto: "Gauchão", nome: "Gauchão", cor: G.ops, temas: ["gauchao"] },
+  { id: "brasileirao", curto: "Brasileirão", nome: "Brasileirão", cor: G.arq, temas: ["brasileirao"],
+    subs: [{ id: "rodada", nome: "Rodada e tabela" }, { id: "clubes", nome: "Clubes" }, { id: "arbitragem", nome: "Arbitragem e CBF" }] },
+  { id: "libertadores", curto: "Libertadores", nome: "Libertadores", cor: G.pag, temas: ["libertadores"] },
+  { id: "copadobrasil", curto: "Copa do Brasil", nome: "Copa do Brasil", cor: G.doc, temas: ["copadobrasil"] },
+  { id: "mercado", curto: "Vai e vem", nome: "Vai e vem", cor: G.ia, temas: ["mercado"],
+    subs: [{ id: "brasil", nome: "Mercado brasileiro" }, { id: "internacional", nome: "Mercado internacional" }, { id: "inter", nome: "Inter no mercado" }] },
+];
+/* TEMAS, TIPOS e os mapas abaixo apontam para o radar aberto e são trocados em aplicarRadar() */
+let TEMAS = TEMAS_TECH, GRUPO_DE = {}, TEMA = {};
+const grp = (i) => GRUPO_DE[i.tema];
+/* Subseção de um item: o subtema gravado, quando o grupo dele conhece esse id; senão o próprio tema (grupos que juntam temas) */
+const subDe = (i) => {
+  const g = TEMA[GRUPO_DE[i.tema]];
+  if (!g || !g.subs) return i.tema;
+  const st = i.subtema === "pix-open-finance" ? "pix" : i.subtema;
+  return st && g.subs.some((x) => x.id === st) ? st : i.tema;
+};
+const IC_VIDEO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg>';
+const IC_PODCAST = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>';
+const TIPOS_TECH = [
+  { id: "todos", nome: "Tudo" },
+  { id: "noticia", nome: "Notícias" }, { id: "artigo", nome: "Artigos" }, { id: "release", nome: "Releases" },
+  { id: "video", nome: "Vídeos", icone: IC_VIDEO },
+  { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
+  { id: "review", nome: "Reviews" },
+];
+const TIPOS_POLITICA = [
+  { id: "todos", nome: "Tudo" },
+  { id: "noticia", nome: "Notícias" }, { id: "oficial", nome: "Oficial" }, { id: "analise", nome: "Análises" },
+  { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
+  { id: "video", nome: "Vídeos", icone: IC_VIDEO },
+];
+const TIPOS_ESPORTES = [
+  { id: "todos", nome: "Tudo" },
+  { id: "noticia", nome: "Notícias" }, { id: "resultado", nome: "Resultados" }, { id: "analise", nome: "Análises" },
+  { id: "video", nome: "Vídeos", icone: IC_VIDEO },
+  { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
+];
+let TIPOS = TIPOS_TECH;
+const NOME_TIPO = { noticia: "Notícia", artigo: "Artigo", release: "Release", youtube: "Vídeo", video: "Vídeo", podcast: "Podcast", review: "Review", curso: "Curso", oficial: "Oficial", analise: "Análise", resultado: "Resultado" };
+/* Cada radar lê as próprias collections. O tech mantém os nomes e as chaves de localStorage de sempre. */
+const RADARES = {
+  tech: { id: "tech", aba: "Tech", titulo: "Radar Técnico", items: "items", destaques: "destaques", status: "meta/status", sufixo: "",
+    temas: TEMAS_TECH, tipos: TIPOS_TECH,
+    rodape: "Atualizado automaticamente a cada 2 horas. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses.",
+    vazio: "A tarefa agendada pesquisa novidades nos seus temas a cada 2 horas e as notícias aparecem aqui." },
+  politica: { id: "politica", aba: "Política", titulo: "Radar de Política", items: "items-politica", destaques: "destaques-politica", status: "meta/status-politica", sufixo: "-politica",
+    temas: TEMAS_POLITICA, tipos: TIPOS_POLITICA,
+    rodape: "Atualizado automaticamente a cada 2 horas, com fontes oficiais (Planalto, DOU, Câmara, Senado, STF, TSE, governo do RS) e imprensa de referência. Notícias ficam 30 dias; análises, vídeos e podcasts, 3 meses; publicações oficiais, 12 meses.",
+    vazio: "A coleta roda a cada 2 horas e traz leis, decisões, Congresso, governo, RS e eleições. Os itens aparecem aqui depois da primeira rodada." },
+  esportes: { id: "esportes", aba: "Esportes", titulo: "Radar de Esportes", items: "items-esportes", destaques: "destaques-esportes", status: "meta/status-esportes", sufixo: "-esportes",
+    temas: TEMAS_ESPORTES, tipos: TIPOS_ESPORTES,
+    rodape: "Atualizado automaticamente a cada 2 horas, com o Inter em primeiro lugar, as competições que ele disputa e o vai e vem do mercado. Notícias e resultados ficam 30 dias; análises, vídeos e podcasts, 3 meses.",
+    vazio: "A coleta roda a cada 2 horas e traz Inter, Gauchão, Brasileirão, Libertadores, Copa do Brasil e mercado. Os itens aparecem aqui depois da primeira rodada." },
+};
+const ORDEM_RADARES = ["tech", "politica", "esportes"];
+const LIMITE_POR_TEMA = 5;
+const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
+const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+let subfiltro = "todos";
+const JANELA = 1000;
+let dbRef = null, recentes = [], antigos = [], podeMais = false, carregando = false;
+let itens = [], meta = null, destaque = null, filtro = "todos", tipo = "todos", busca = "", expandidos = new Set(), slide = 0;
+let soRel = false, soFav = false, favs = {}, favCol = null;
+let radar = "tech", carregado = false;
+try {
+  soRel = localStorage.getItem("radar-relevantes") === "1";
+  favs = JSON.parse(localStorage.getItem("radar-favoritos") || "{}") || {};
+} catch (e) {}
+/* Radar aberto: o hash da URL (#politica, #esportes) vence o que ficou salvo neste navegador */
+const radarDoHash = () => { const h = (location.hash || "").replace(/^#/, ""); return RADARES[h] ? h : (h ? null : ""); };
+{
+  const h = radarDoHash();
+  let salvo = null; try { salvo = localStorage.getItem("radar-atual"); } catch (e) {}
+  radar = h || (h === "" && RADARES[salvo] ? salvo : "tech");
+}
+const R = () => RADARES[radar];
+/* Liga TEMAS, TIPOS, mapas e filtros salvos ao radar aberto */
+function aplicarRadar() {
+  const r = R();
+  TEMAS = r.temas; TIPOS = r.tipos;
+  GRUPO_DE = {}; TEMAS.forEach((g) => g.temas.forEach((t) => { GRUPO_DE[t] = g.id; }));
+  TEMA = Object.fromEntries(TEMAS.map((t) => [t.id, t]));
+  filtro = "todos"; tipo = "todos";
+  try { filtro = localStorage.getItem("radar-filtro" + r.sufixo) || "todos"; tipo = localStorage.getItem("radar-tipo" + r.sufixo) || "todos"; } catch (e) {}
+  if (filtro !== "todos" && !TEMA[filtro]) filtro = GRUPO_DE[filtro] || "todos";
+  if (tipo === "alta") { tipo = "todos"; soRel = true; }
+  if (tipo === "youtube") tipo = "video";
+  if (!TIPOS.some((t) => t.id === tipo)) tipo = "todos";
+  subfiltro = "todos"; busca = ""; soFav = false; slide = 0;
+  recentes = []; antigos = []; itens = []; meta = null; destaque = null; podeMais = false; carregando = false; carregado = false;
+  expandidos = new Set();
+  document.title = r.titulo + " · Lookout";
+  const h1 = document.querySelector("h1"); if (h1) h1.textContent = r.titulo;
+  const rod = document.getElementById("rodape"); if (rod) rod.textContent = r.rodape;
+}
+aplicarRadar();
+/* Favoritos: no tech a chave é só o doc_id (como já está gravado); nos outros radares é "<collection>/<doc_id>" */
+const idItem = (col, docId) => (col === "items" ? docId : col + "/" + docId);
+const radarDoFav = (k) => { const i = String(k).indexOf("/"); if (i < 0) return "tech"; const col = k.slice(0, i); return ORDEM_RADARES.find((r) => RADARES[r].items === col) || "tech"; };
+/* No banco, o id de documento não aceita "/": a barra vira ":" só na hora de gravar em data/users */
+const idNaConta = (k) => String(k).replace("/", ":");
+const idDaConta = (d) => (/^items-[a-z]+:/.test(d) ? d.replace(":", "/") : d);
+const favsDoRadar = () => Object.entries(favs).filter(([id]) => radarDoFav(id) === radar);
+
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k === "style") n.style.cssText = v; else if (k === "html") n.innerHTML = v; else n.setAttribute(k, v);
+  }
+  for (const k of kids) if (k != null) n.append(k);
+  return n;
+};
+const fmtRel = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso); if (isNaN(d)) return "";
+  const min = Math.round((Date.now() - d) / 60000);
+  if (min < -60 * 24) return `em ${Math.round(-min / 1440)} dias`;
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min} min`;
+  const h = Math.round(min / 60); if (h < 24) return `há ${h} h`;
+  const dias = Math.round(h / 24);
+  if (dias === 1) return "ontem";
+  if (dias < 45) return `há ${dias} dias`;
+  const meses = Math.round(dias / 30.4);
+  if (meses < 12) return `há ${meses} meses`;
+  const anos = Math.floor(dias / 365); return anos === 1 ? "há 1 ano" : `há ${anos} anos`;
+};
+const fmtData = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); };
+const fmtDia = (ymd) => { const d = new Date(ymd + "T12:00:00"); return isNaN(d) ? (ymd || "") : d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }); };
+const hostDe = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } };
+const tipoDe = (i) => (i.tipo === "youtube" ? "video" : i.tipo);
+const passaTipo = (i, t) => t === "todos" || tipoDe(i) === t;
+const passaRel = (i) => !soRel || Number(i.relevancia) >= 3;
+const passaBase = (i) => passaBusca(i) && passaRel(i);
+/* Lista de onde os filtros partem: o feed inteiro ou só os favoritos */
+const fonteItens = () => (soFav ? favsDoRadar().map(([id, f]) => ({ ...f, _id: id })).sort(ordem) : itens);
+const agora = () => new Date().toISOString();
+/* Release futuro não passa na frente do que já saiu: ordena pela data de coleta até a data prevista chegar */
+const chave = (i) => { const p = i.publicado || ""; return p && p <= agora() ? p : (i.coletado || p); };
+const ordem = (a, b) => String(chave(b)).localeCompare(String(chave(a)));
+const passaBusca = (i) => { const q = busca.trim().toLowerCase(); return !q || [i.titulo, i.resumo, i.fonte].join(" ").toLowerCase().includes(q); };
+
+function renderStatus() {
+  const s = $("status"); s.textContent = "";
+  const tot = $("total");
+  if (tot) { tot.textContent = ""; if (itens.length) tot.append(el("b", {}, String(itens.length)), itens.length === 1 ? " item no feed" : " itens no feed"); }
+  if (!meta) { s.removeAttribute("title"); s.append(el("span", { class: "pulse" }), "Aguardando a primeira coleta"); return; }
+  const rel = fmtRel(meta.ultimaRodada), novos = Number(meta.novosNaUltima ?? 0);
+  if (meta.ultimaRodada) s.title = "Última coleta: " + fmtData(meta.ultimaRodada);
+  s.append(el("span", { class: "pulse" }), rel ? `Atualizado ${rel}` : "Atualizado", " · ",
+    el("b", {}, String(novos)), novos === 1 ? " novo nesta rodada" : " novos nesta rodada");
+}
+
+/* Urgentes (política): itens com urgente: true coletados nas últimas 24 h */
+const URGENTE_MS = 24 * 3600 * 1000;
+const urgentes = () => itens.filter((i) => i.urgente === true && i.coletado && Date.now() - new Date(i.coletado) <= URGENTE_MS);
+function renderUrgente() {
+  const box = $("urgente"); box.textContent = "";
+  const lista = urgentes();
+  if (!lista.length) { box.hidden = true; return; }
+  box.hidden = false;
+  const ul = el("ul", {});
+  lista.forEach((i) => ul.append(el("li", {},
+    el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo || i.url),
+    el("span", { class: "n" }, [i.fonte || hostDe(i.url), fmtRel(i.publicado || i.coletado)].filter(Boolean).join(" · ")))));
+  box.append(el("h2", {}, lista.length === 1 ? "Urgente" : `Urgente · ${lista.length}`), ul);
+}
+
+function renderRadares() {
+  [["radares-barra", "aba-"], ["radares-nav", "navaba-"]].forEach(([id, pre]) => {
+    const s = $(id); s.textContent = "";
+    ORDEM_RADARES.forEach((r) => {
+      const b = el("button", { type: "button", id: pre + r, "aria-pressed": String(radar === r) }, RADARES[r].aba);
+      b.addEventListener("click", () => trocarRadar(r));
+      s.append(b);
+    });
+  });
+}
+
+function renderDestaques() {
+  const box = $("destaques"); box.textContent = "";
+  const lista = destaque && Array.isArray(destaque.itens) ? destaque.itens.filter((d) => d && d.url) : [];
+  if (!lista.length) { box.hidden = true; return; }
+  box.hidden = false;
+  slide = Math.min(slide, lista.length - 1);
+  const pos = el("span", { class: "pos", "aria-live": "polite" });
+  const ant = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon", type: "button", id: "dest-ant", "aria-label": "Destaque anterior", html: CHEV_L });
+  const prox = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon", type: "button", id: "dest-prox", "aria-label": "Próximo destaque", html: CHEV_R });
+  const trilho = el("div", { class: "trilho", tabindex: "0", "aria-label": "Lista de destaques" });
+  const pontos = el("div", { class: "pontos" });
+  lista.forEach((d, idx) => {
+    const t = TEMA[GRUPO_DE[d.tema]];
+    trilho.append(el("article", { class: "dcard", "aria-roledescription": "slide", "aria-label": `${idx + 1} de ${lista.length}` },
+      el("div", { class: "n" }, el("span", {}, String(idx + 1).padStart(2, "0")), t ? el("span", { style: `color:${t.cor}` }, t.curto) : null, el("span", {}, d.fonte || hostDe(d.url))),
+      el("a", { href: d.url, target: "_blank", rel: "noopener" }, d.titulo || d.url),
+      d.porque ? el("p", {}, d.porque) : null));
+    const b = el("button", { type: "button", "aria-label": `Ir para o destaque ${idx + 1}` });
+    b.addEventListener("click", () => ir(idx));
+    pontos.append(b);
+  });
+  const cards = () => [...trilho.children];
+  function ir(i) { const c = cards()[Math.max(0, Math.min(lista.length - 1, i))]; if (c) trilho.scrollTo({ left: c.offsetLeft - trilho.offsetLeft }); }
+  function marcar() {
+    const x = trilho.scrollLeft; let melhor = 0, dist = Infinity;
+    cards().forEach((c, i) => { const dd = Math.abs(c.offsetLeft - trilho.offsetLeft - x); if (dd < dist) { dist = dd; melhor = i; } });
+    if (trilho.scrollLeft > 0 && trilho.scrollLeft + trilho.clientWidth >= trilho.scrollWidth - 4) melhor = lista.length - 1;
+    slide = melhor;
+    pos.textContent = `${slide + 1} de ${lista.length}`;
+    ant.disabled = slide === 0; prox.disabled = slide === lista.length - 1;
+    [...pontos.children].forEach((p, i) => p.setAttribute("aria-current", String(i === slide)));
+  }
+  ant.addEventListener("click", () => ir(slide - 1));
+  prox.addEventListener("click", () => ir(slide + 1));
+  let raf; trilho.addEventListener("scroll", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(marcar); }, { passive: true });
+  trilho.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") { e.preventDefault(); ir(slide + 1); } if (e.key === "ArrowLeft") { e.preventDefault(); ir(slide - 1); } });
+  box.append(
+    el("div", { class: "dest-top" },
+      el("h2", {}, "Destaques do dia", el("small", {}, fmtDia(destaque.data))),
+      el("div", { class: "dest-nav" }, ant, pos, prox)),
+    trilho, pontos);
+  requestAnimationFrame(() => { if (slide) ir(slide); marcar(); });
+}
+
+function marcarRolo() {
+  const r = $("tipos-rolo");
+  r.classList.toggle("corta-ini", r.scrollLeft > 2);
+  r.classList.toggle("corta-fim", r.scrollLeft + r.clientWidth < r.scrollWidth - 2);
+}
+/* Mantém o tipo escolhido à vista na barra que rola de lado */
+function mostrarTipoAtivo() {
+  const r = $("tipos-rolo"), b = r.querySelector('[aria-pressed="true"]');
+  if (b) {
+    const ini = b.offsetLeft, fim = ini + b.offsetWidth;
+    if (ini < r.scrollLeft + 8) r.scrollLeft = Math.max(0, ini - 24);
+    else if (fim > r.scrollLeft + r.clientWidth - 8) r.scrollLeft = fim - r.clientWidth + 24;
+  }
+  marcarRolo();
+}
+/* Depois de trocar um filtro lá embaixo no feed, volta para o começo da lista */
+function irParaFeed() {
+  const f = $("feed"), barra = $("barra");
+  const y = f.getBoundingClientRect().top + window.scrollY - barra.offsetHeight - 8;
+  if (window.scrollY > y) window.scrollTo({ top: y });
+}
+
+function escolherTipo(id) { tipo = id; try { localStorage.setItem("radar-tipo" + R().sufixo, id); } catch (e) {} render(); irParaFeed(); }
+function renderTipos() {
+  const s = $("tipos"); s.textContent = "";
+  const base = fonteItens().filter((i) => passaBase(i) && (filtro === "todos" || grp(i) === filtro));
+  for (const t of TIPOS) {
+    const n = base.filter((i) => passaTipo(i, t.id)).length;
+    const b = el("button", { type: "button", id: "tipo-" + t.id, "aria-pressed": String(tipo === t.id) });
+    if (n === 0 && tipo !== t.id && t.id !== "todos") { b.disabled = true; b.title = "Nenhum item deste tipo no tema e na busca atuais"; }
+    if (t.icone) b.insertAdjacentHTML("beforeend", t.icone);
+    b.append(t.nome, el("span", { class: "k" }, String(n)));
+    b.addEventListener("click", () => escolherTipo(t.id));
+    s.append(b);
+  }
+  mostrarTipoAtivo();
+}
+
+/* Contagens de tema e subtema: as mesmas para os chips do painel e para a navegação lateral */
+function contarTemas() {
+  const base = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo));
+  const cont = {}; base.forEach((i) => { const g = grp(i); cont[g] = (cont[g] || 0) + 1; });
+  return { total: base.length, cont };
+}
+function contarSubs() {
+  const subs = TEMA[filtro] && TEMA[filtro].subs;
+  if (!subs) return null;
+  const base = fonteItens().filter((i) => grp(i) === filtro && passaBase(i) && passaTipo(i, tipo));
+  const cont = {}; subs.forEach((x) => { cont[x.id] = base.filter((i) => subDe(i) === x.id).length; });
+  return { subs, total: base.length, cont };
+}
+function escolherTema(id) { filtro = id; subfiltro = "todos"; try { localStorage.setItem("radar-filtro" + R().sufixo, id); } catch (e) {} render(); }
+function escolherSub(id) { subfiltro = id; render(); }
+
+function renderChips() {
+  const c = $("chips"); c.textContent = "";
+  const { total, cont } = contarTemas();
+  const mk = (id, nome, cor, n) => {
+    const b = el("button", { class: "chip", type: "button", id: "chip-" + id, "aria-pressed": String(filtro === id), style: cor ? `--c:${cor}` : "" },
+      cor ? el("span", { class: "dot" }) : null, nome, el("span", { class: "k" }, String(n)));
+    b.addEventListener("click", () => escolherTema(id));
+    return b;
+  };
+  c.append(mk("todos", "Todos os temas", null, total));
+  TEMAS.forEach((t) => c.append(mk(t.id, t.curto, t.cor, cont[t.id] || 0)));
+}
+
+function renderSub() {
+  const s = $("sub"); s.textContent = "";
+  const cs = contarSubs();
+  if (!cs) { s.hidden = true; return; }
+  s.hidden = false;
+  const mk = (id, nome, n) => {
+    const b = el("button", { class: "chip", type: "button", id: "sub-" + id, "aria-pressed": String(subfiltro === id) }, nome, el("span", { class: "k" }, String(n)));
+    b.addEventListener("click", () => escolherSub(id));
+    return b;
+  };
+  s.append(mk("todos", "Todos os subtemas", cs.total));
+  cs.subs.forEach((x) => { const n = cs.cont[x.id]; if (n || subfiltro === x.id) s.append(mk(x.id, x.nome, n)); });
+}
+
+/* Navegação lateral (900 px ou mais): mesma lista de temas e subtemas dos chips, em coluna */
+function renderNav() {
+  const box = $("nav-lista"); box.textContent = "";
+  const { total, cont } = contarTemas();
+  const cs = contarSubs();
+  const mk = (id, nome, cor, n, ativo, acao, pre) => {
+    const b = el("button", { class: "nav-item", type: "button", id: pre + id, "aria-pressed": String(ativo), "data-vazio": String(!n), style: cor ? `--c:${cor}` : "" },
+      pre === "nav-" ? el("span", { class: "dot" }) : null, el("span", { class: "nome" }, nome), el("span", { class: "k" }, String(n)));
+    b.addEventListener("click", () => { acao(id); irParaFeed(); });
+    return b;
+  };
+  box.append(mk("todos", "Todos os temas", null, total, filtro === "todos", escolherTema, "nav-"));
+  TEMAS.forEach((t) => {
+    box.append(mk(t.id, t.curto, t.cor, cont[t.id] || 0, filtro === t.id, escolherTema, "nav-"));
+    if (cs && filtro === t.id) {
+      const sub = el("div", { class: "sub nav-sub", role: "group", "aria-label": "Subtemas de " + t.curto });
+      sub.append(mk("todos", "Todos os subtemas", null, cs.total, subfiltro === "todos", escolherSub, "navsub-"));
+      cs.subs.forEach((x) => { const n = cs.cont[x.id]; if (n || subfiltro === x.id) sub.append(mk(x.id, x.nome, null, n, subfiltro === x.id, escolherSub, "navsub-")); });
+      box.append(sub);
+    }
+  });
+}
+
+/* Tipos na lateral: a contagem respeita busca, tema e subtema */
+function renderNavTipos() {
+  const box = $("nav-tipos"); box.textContent = "";
+  const comSub = subfiltro !== "todos" && TEMA[filtro] && TEMA[filtro].subs;
+  const base = fonteItens().filter((i) => passaBase(i) && (filtro === "todos" || grp(i) === filtro) && (!comSub || subDe(i) === subfiltro));
+  for (const t of TIPOS) {
+    const n = base.filter((i) => passaTipo(i, t.id)).length;
+    const b = el("button", { class: "nav-item", type: "button", id: "navtipo-" + t.id, "aria-pressed": String(tipo === t.id) },
+      el("span", { class: "ic", html: t.icone || "" }), el("span", { class: "nome" }, t.nome), el("span", { class: "k" }, String(n)));
+    if (n === 0 && tipo !== t.id && t.id !== "todos") { b.disabled = true; b.title = "Nenhum item deste tipo no tema e na busca atuais"; }
+    b.addEventListener("click", () => escolherTipo(t.id));
+    box.append(b);
+  }
+}
+
+/* Trilho direito (1200 px ou mais): destaques, novos da rodada, favoritos e status da coleta */
+const NOVOS_MAX = 8, FAVS_MAX = 5;
+function renderLateral() {
+  const box = $("lateral"); box.textContent = "";
+  const temaCurto = (tema) => { const t = TEMA[GRUPO_DE[tema]]; return t ? el("span", { style: `color:${t.cor}` }, t.curto) : null; };
+  const link = (url, titulo) => el("a", { href: url, target: "_blank", rel: "noopener" }, titulo || url);
+
+  const urg = urgentes();
+  if (urg.length) {
+    const ul = el("ul", {});
+    urg.forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" }, temaCurto(i.tema), el("span", {}, i.fonte || hostDe(i.url))))));
+    box.append(el("section", { class: "bloco", id: "lat-urgente" }, el("h3", {}, "Urgente", el("small", {}, "últimas 24 h")), ul));
+  }
+
+  const dest = destaque && Array.isArray(destaque.itens) ? destaque.itens.filter((d) => d && d.url) : [];
+  if (dest.length) {
+    const ol = el("ol", {});
+    dest.forEach((d, idx) => ol.append(el("li", {},
+      el("div", { class: "n" }, el("b", {}, String(idx + 1).padStart(2, "0")), temaCurto(d.tema), el("span", {}, d.fonte || hostDe(d.url))),
+      link(d.url, d.titulo), d.porque ? el("p", {}, d.porque) : null)));
+    box.append(el("section", { class: "bloco", id: "lat-destaques" }, el("h3", { class: "empilha" }, "Destaques do dia", el("small", {}, fmtDia(destaque.data))), ol));
+  }
+
+  const novos = meta && meta.ultimaRodada ? itens.filter((i) => i.rodada === meta.ultimaRodada) : [];
+  const bNovos = el("section", { class: "bloco", id: "lat-novos" },
+    el("h3", {}, "Novos nesta rodada", novos.length > NOVOS_MAX ? el("small", {}, `+${novos.length - NOVOS_MAX}`) : null));
+  if (novos.length) {
+    const ul = el("ul", {});
+    novos.slice(0, NOVOS_MAX).forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" }, temaCurto(i.tema)))));
+    bNovos.append(ul);
+  } else bNovos.append(el("p", { class: "nota" }, "Nada novo na última coleta."));
+  box.append(bNovos);
+
+  const lista = Object.entries(favs).map(([id, f]) => ({ ...f, _id: id }))
+    .sort((a, b) => String(b.favoritadoEm || "").localeCompare(String(a.favoritadoEm || "")));
+  const bFav = el("section", { class: "bloco", id: "lat-favoritos" },
+    el("h3", {}, "Seus favoritos", lista.length ? el("small", {}, String(lista.length)) : null));
+  if (lista.length) {
+    const ul = el("ul", {});
+    /* favoritos de todos os radares; os de outro radar levam o nome dele */
+    lista.slice(0, FAVS_MAX).forEach((i) => {
+      const r = radarDoFav(i._id);
+      ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" },
+        r !== radar ? el("b", {}, RADARES[r].aba) : null, el("span", {}, i.fonte || hostDe(i.url)))));
+    });
+    bFav.append(ul);
+    if (favsDoRadar().length) {
+      const ver = el("button", { class: "dd-btn dd-btn--link ver-todos", type: "button", id: "lat-ver-favs" }, soFav ? "Mostrando no feed" : "Ver todos");
+      if (soFav) ver.disabled = true;
+      ver.addEventListener("click", () => { soFav = true; render(); irParaFeed(); });
+      bFav.append(ver);
+    }
+  } else bFav.append(el("p", { class: "nota" }, "Toque no coração ao lado de um título para guardar o item. Ele aparece aqui."));
+  box.append(bFav);
+
+  const col = el("p", { class: "coleta" });
+  if (meta && meta.ultimaRodada) {
+    const n = Number(meta.novosNaUltima ?? 0);
+    col.append("Última coleta ", el("b", {}, fmtData(meta.ultimaRodada)), " · ", el("b", {}, String(n)), n === 1 ? " novo" : " novos");
+  } else col.append("Aguardando a primeira coleta");
+  if (itens.length) col.append(" · ", el("b", {}, String(itens.length)), itens.length === 1 ? " item no feed" : " itens no feed");
+  box.append(el("section", { class: "bloco", id: "lat-coleta" }, el("h3", {}, "Coleta"), col));
+}
+
+const CORACAO = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></svg>';
+function favBotao(i) {
+  const on = !!favs[i._id];
+  const b = el("button", { class: "fav", type: "button", "aria-pressed": String(on), "aria-label": on ? "Remover dos favoritos" : "Favoritar", title: on ? "Remover dos favoritos" : "Favoritar", html: CORACAO });
+  b.addEventListener("click", () => alternarFav(i));
+  return b;
+}
+/* Resumos: duas linhas por padrão, com "ler mais" por item; o painel liga o modo expandido para todos */
+let resumosAbertos = false;
+try { resumosAbertos = localStorage.getItem("radar-resumos") === "expandido"; } catch (e) {}
+const resumoAberto = new Set();
+function itemEl(i) {
+  const novo = meta && i.rodada === meta.ultimaRodada;
+  const k = i._id || i.url || i.titulo;
+  let resumo = null, lerMais = null;
+  if (i.resumo) {
+    const aberto = resumosAbertos || resumoAberto.has(k);
+    resumo = el("p", { class: aberto ? "resumo" : "resumo recolhido" }, i.resumo);
+    if (!resumosAbertos) {
+      lerMais = el("button", { class: "ler-mais", type: "button", "aria-expanded": String(aberto) }, aberto ? "recolher" : "ler mais");
+      if (!aberto) lerMais.hidden = true;
+      lerMais.addEventListener("click", () => {
+        const abrir = !resumoAberto.has(k);
+        if (abrir) resumoAberto.add(k); else resumoAberto.delete(k);
+        resumo.classList.toggle("recolhido", !abrir);
+        lerMais.textContent = abrir ? "recolher" : "ler mais";
+        lerMais.setAttribute("aria-expanded", String(abrir));
+      });
+    }
+  }
+  return el("li", { class: "item" },
+    el("div", { class: "item-topo" },
+      el("a", { class: "titulo", href: i.url, target: "_blank", rel: "noopener" }, i.titulo || i.url),
+      i._id ? favBotao(i) : null),
+    el("div", { class: "meta" },
+      el("span", { class: "tags" },
+        NOME_TIPO[i.tipo] ? el("span", { class: "dd-badge b-" + tipoDe(i) }, NOME_TIPO[i.tipo]) : null,
+        Number(i.relevancia) >= 3 ? el("span", { class: "dd-badge b-alta" }, "Relevante") : null,
+        novo ? el("span", { class: "dd-badge b-novo" }, "Novo") : null,
+        i.urgente === true ? el("span", { class: "dd-badge b-urgente" }, "Urgente") : null,
+        i.clube ? el("span", { class: "dd-badge b-clube" }, String(i.clube)) : null),
+      el("span", {}, i.fonte || hostDe(i.url)),
+      el("span", {}, i.publicado ? (fmtRel(i.publicado).startsWith("em ") ? "previsto " : "publicado ") + fmtRel(i.publicado) : "coletado " + fmtRel(i.coletado))),
+    resumo, lerMais);
+}
+/* Mede depois do render: só mostra "ler mais" quando o texto passa de duas linhas. Lê tudo antes de escrever. */
+function medirFeed() {
+  const ps = [...document.querySelectorAll("#feed .resumo.recolhido")];
+  const corta = ps.map((p) => p.scrollHeight > p.clientHeight + 1);
+  const secs = [...document.querySelectorAll("#feed section.tema")].filter((s) => s.querySelector(".subgrupo"));
+  const alturas = secs.map((s) => s.firstElementChild.offsetHeight);
+  ps.forEach((p, n) => { const b = p.nextElementSibling; if (b && b.classList.contains("ler-mais")) b.hidden = !corta[n]; });
+  secs.forEach((s, n) => s.style.setProperty("--h2-h", alturas[n] + "px"));
+}
+
+function renderFeed() {
+  const f = $("feed"); f.textContent = "";
+  if (soFav && !favsDoRadar().length) { f.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum favorito ainda"), "Toque no coração ao lado de um título para guardar o item aqui. Favoritos continuam na lista mesmo depois que o item sai do feed.")); return; }
+  if (!soFav && !itens.length) {
+    if (!carregado) f.append(el("div", { class: "vazio" }, el("strong", {}, "Carregando o feed"), "As notícias aparecem aqui, agrupadas por tema e resumidas em português."));
+    else f.append(el("div", { class: "vazio", id: "feed-vazio" }, el("strong", {}, meta ? "O feed ainda está vazio" : "A primeira coleta ainda não rodou"), R().vazio));
+    return;
+  }
+  const lista = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo));
+  const temas = filtro === "todos" ? TEMAS : TEMAS.filter((t) => t.id === filtro);
+  const bloco = el("div", { class: "secoes" });
+  for (const t of temas) {
+    let doTema = lista.filter((i) => grp(i) === t.id);
+    const subs = t.subs;
+    if (subs && filtro === t.id && subfiltro !== "todos") doTema = doTema.filter((i) => subDe(i) === subfiltro);
+    if (!doTema.length) continue;
+    const aberto = expandidos.has(t.id) || filtro !== "todos" || soFav;
+    const sec = el("section", { class: "tema", style: `--c:${t.cor}` },
+      el("h2", {}, el("span", { class: "nome" }, t.nome, el("small", {}, String(doTema.length)))));
+    if (subs && aberto) {
+      const grupos = [...subs, { id: "__outros", nome: "Outros" }];
+      for (const g of grupos) {
+        const doSub = doTema.filter((i) => g.id === "__outros" ? !subs.some((x) => x.id === subDe(i)) : subDe(i) === g.id);
+        if (!doSub.length) continue;
+        const ul = el("ul", { class: "lista" });
+        doSub.forEach((i) => ul.append(itemEl(i)));
+        sec.append(el("div", { class: "subgrupo" }, el("h3", { class: "subsecao" }, g.nome, el("span", {}, String(doSub.length))), ul));
+      }
+    } else {
+      const ul = el("ul", { class: "lista" });
+      (aberto ? doTema : doTema.slice(0, LIMITE_POR_TEMA)).forEach((i) => ul.append(itemEl(i)));
+      sec.append(ul);
+    }
+    if (!aberto && doTema.length > LIMITE_POR_TEMA) {
+      const b = el("button", { class: "dd-btn dd-btn--link mais alvo", type: "button", id: "mais-" + t.id }, `Ver mais ${doTema.length - LIMITE_POR_TEMA}`);
+      b.addEventListener("click", () => { expandidos.add(t.id); render(); });
+      sec.append(b);
+    }
+    bloco.append(sec);
+  }
+  f.append(bloco.children.length ? bloco : el("div", { class: "vazio" }, el("strong", {}, "Nada encontrado"), "Nenhum item corresponde aos filtros ou à busca. Tente outro tipo ou tema, ou limpe os filtros."));
+  if (podeMais && !soFav) {
+    const b = el("button", { class: "dd-btn dd-btn--outline alvo", type: "button", id: "carregar-antigos", style: "align-self:center;margin-top:var(--space-6)" }, carregando ? "Carregando…" : "Carregar mais antigos");
+    if (carregando) b.disabled = true;
+    b.addEventListener("click", carregarAntigos);
+    f.append(el("div", { style: "display:flex;justify-content:center" }, b));
+  }
+  medirFeed();
+}
+
+function juntar() {
+  const vistos = new Set(); const todos = [];
+  for (const i of [...recentes, ...antigos]) { const k = i.url || i.titulo; if (k && !vistos.has(k)) { vistos.add(k); todos.push(i); } }
+  todos.sort(ordem);
+  itens = todos;
+  render();
+}
+
+async function carregarAntigos() {
+  if (!dbRef || carregando) return;
+  carregando = true; renderFeed();
+  const g = geracao, col = R().items;
+  try {
+    const maisVelho = [...recentes, ...antigos].reduce((m, i) => (i.coletado && (!m || i.coletado < m) ? i.coletado : m), "");
+    const snap = await dbRef.collection(col).where("coletado", "<=", maisVelho).orderBy("coletado", "desc").limit(JANELA).get();
+    if (g !== geracao) return;
+    const novos = snap.docs.map((d) => d.exists && { ...d.data(), _id: idItem(col, d.id) }).filter(Boolean);
+    const antes = itens.length;
+    antigos = antigos.concat(novos);
+    juntar();
+    podeMais = novos.length >= JANELA && itens.length > antes;
+  } catch (e) {
+    if (g !== geracao) return;
+    podeMais = true;
+    $("status").append(el("span", {}, "Não foi possível carregar itens mais antigos. Tente de novo."));
+  }
+  carregando = false; renderFeed();
+}
+function renderAlternancias() {
+  [["so-relevantes", "so-favoritos", "modo-resumos"], ["nav-relevantes", "nav-favoritos", "nav-resumos"]].forEach(([rid, fid, mid]) => {
+    const r = $(rid); r.textContent = "";
+    r.setAttribute("aria-pressed", String(soRel));
+    r.insertAdjacentHTML("beforeend", ESTRELA); r.append("Relevantes");
+    const f = $(fid); f.textContent = "";
+    f.setAttribute("aria-pressed", String(soFav));
+    f.insertAdjacentHTML("beforeend", CORACAO); f.append("Favoritos", el("span", { class: "k" }, String(favsDoRadar().length)));
+    $(mid).textContent = resumosAbertos ? "Recolher resumos" : "Expandir resumos";
+  });
+}
+/* Contador de filtros ativos no botão da barra e total no rodapé do painel */
+function renderContador() {
+  const n = (filtro !== "todos") + (subfiltro !== "todos") + soRel + soFav + (busca.trim() ? 1 : 0);
+  const c = $("contador"), b = $("abrir-filtros");
+  c.hidden = !n; c.textContent = String(n);
+  b.dataset.ativo = String(n > 0);
+  b.setAttribute("aria-label", n ? `Filtros, ${n} ${n === 1 ? "ativo" : "ativos"}` : "Filtros");
+  $("abrir-busca").dataset.ativo = String(!!busca.trim());
+  $("limpar-filtros").disabled = !n;
+  $("nav-limpar").hidden = !n;
+  const total = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo) && (filtro === "todos" || grp(i) === filtro)
+    && (subfiltro === "todos" || !(TEMA[filtro] && TEMA[filtro].subs) || subDe(i) === subfiltro)).length;
+  $("ver-itens").textContent = total ? `Ver ${total} ${total === 1 ? "item" : "itens"}` : "Nenhum item";
+}
+function render() {
+  const foco = document.activeElement && document.activeElement.id;
+  for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
+  renderRadares(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
+  /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
+  if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
+}
+
+
+/* Favoritos: cada pessoa tem os seus. Na conta (data/users/<id>) quando a página permite gravar; senão, neste navegador. */
+const CAMPOS_FAV = ["titulo", "url", "tema", "subtema", "tipo", "fonte", "publicado", "coletado", "resumo", "relevancia", "clube"];
+function salvarLocal() { try { localStorage.setItem("radar-favoritos", JSON.stringify(favs)); } catch (e) {} }
+async function alternarFav(i) {
+  const id = i._id; if (!id) return;
+  const tirar = !!favs[id];
+  let snap = null;
+  if (tirar) delete favs[id];
+  else { snap = { favoritadoEm: agora() }; CAMPOS_FAV.forEach((k) => { if (i[k] != null) snap[k] = i[k]; }); favs[id] = snap; }
+  render();
+  if (favCol) {
+    try { if (tirar) await favCol.doc(idNaConta(id)).delete(); else await favCol.doc(idNaConta(id)).set(snap); return; }
+    catch (e) { favCol = null; }
+  }
+  salvarLocal();
+}
+async function ligarFavoritosNaConta(db) {
+  try {
+    const user = await window.claude?.use?.("user");
+    const uid = user ? await user.id() : null;
+    if (!uid) return;
+    const col = db.collection("data/users/" + uid);
+    const locais = { ...favs };
+    let primeiro = true;
+    col.onSnapshot(async (snap) => {
+      const daConta = {};
+      snap.docs.forEach((d) => { if (d.exists) daConta[idDaConta(d.id)] = d.data(); });
+      if (primeiro) {
+        primeiro = false;
+        favCol = col;
+        /* leva para a conta o que estava salvo só neste navegador */
+        for (const [id, f] of Object.entries(locais)) {
+          if (daConta[id]) continue;
+          try { await col.doc(idNaConta(id)).set(f); daConta[id] = f; } catch (e) { favCol = null; favs = locais; render(); return; }
+        }
+        try { localStorage.removeItem("radar-favoritos"); } catch (e) {}
+      }
+      if (favCol) { favs = daConta; render(); }
+    }, () => { favCol = null; });
+  } catch (e) {}
+}
+
+function alternarRel() { soRel = !soRel; try { localStorage.setItem("radar-relevantes", soRel ? "1" : "0"); } catch (e) {} render(); }
+function alternarSoFav() { soFav = !soFav; render(); }
+function alternarResumos() {
+  resumosAbertos = !resumosAbertos; resumoAberto.clear();
+  try { localStorage.setItem("radar-resumos", resumosAbertos ? "expandido" : "recolhido"); } catch (e) {}
+  render();
+}
+function limparFiltros() {
+  filtro = "todos"; subfiltro = "todos"; soRel = false; soFav = false; busca = "";
+  try { localStorage.setItem("radar-filtro" + R().sufixo, "todos"); localStorage.setItem("radar-relevantes", "0"); } catch (e) {}
+  render();
+}
+$("so-relevantes").addEventListener("click", alternarRel);
+$("so-favoritos").addEventListener("click", alternarSoFav);
+$("modo-resumos").addEventListener("click", alternarResumos);
+$("limpar-filtros").addEventListener("click", limparFiltros);
+/* Na navegação lateral os mesmos botões levam de volta ao começo do feed */
+$("nav-relevantes").addEventListener("click", () => { alternarRel(); irParaFeed(); });
+$("nav-favoritos").addEventListener("click", () => { alternarSoFav(); irParaFeed(); });
+$("nav-resumos").addEventListener("click", alternarResumos);
+$("nav-limpar").addEventListener("click", () => { limparFiltros(); irParaFeed(); $("nav-todos").focus({ preventScroll: true }); });
+
+/* Painel de filtros */
+let abridor = null, assinatura = "";
+const estado = () => [filtro, subfiltro, soRel, soFav, busca, tipo].join("|");
+function abrirPainel(foco) {
+  const p = $("painel");
+  if (p.hidden) {
+    abridor = document.activeElement; assinatura = estado();
+    const html = document.documentElement, barra = $("barra");
+    /* no desktop o painel abre sob a barra: limita a altura ao espaço que sobra na tela */
+    html.style.setProperty("--painel-max", Math.max(320, window.innerHeight - barra.getBoundingClientRect().bottom - 24) + "px");
+    /* compensa a barra de rolagem que some ao travar a página, para nada pular de lado */
+    const sb = window.innerWidth - html.clientWidth;
+    if (sb > 0) html.style.paddingRight = sb + "px";
+    $("veu").hidden = false; p.hidden = false;
+    html.classList.add("trava");
+    $("abrir-filtros").setAttribute("aria-expanded", "true");
+  }
+  (foco || p).focus({ preventScroll: true });
+}
+function fecharPainel() {
+  const p = $("painel"); if (p.hidden) return;
+  p.hidden = true; $("veu").hidden = true;
+  document.documentElement.classList.remove("trava");
+  document.documentElement.style.paddingRight = "";
+  $("abrir-filtros").setAttribute("aria-expanded", "false");
+  if (abridor && abridor.isConnected && abridor.focus) abridor.focus({ preventScroll: true });
+  if (estado() !== assinatura) irParaFeed();
+}
+$("abrir-filtros").addEventListener("click", () => abrirPainel());
+$("abrir-busca").addEventListener("click", () => abrirPainel($("busca")));
+$("fechar-painel").addEventListener("click", fecharPainel);
+$("ver-itens").addEventListener("click", fecharPainel);
+$("veu").addEventListener("click", fecharPainel);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("painel").hidden) { e.preventDefault(); fecharPainel(); } });
+$("painel").addEventListener("keydown", (e) => {
+  if (e.key !== "Tab") return;
+  const foc = [...$("painel").querySelectorAll("button:not(:disabled), input")].filter((x) => x.offsetParent !== null);
+  if (!foc.length) return;
+  const pri = foc[0], ult = foc[foc.length - 1];
+  if (e.shiftKey && (document.activeElement === pri || document.activeElement === $("painel"))) { e.preventDefault(); ult.focus(); }
+  else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); pri.focus(); }
+});
+$("busca").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); fecharPainel(); } });
+
+/* Altura real da barra para os títulos de tema grudarem logo abaixo dela */
+const fixarBarra = () => document.documentElement.style.setProperty("--barra-h", $("barra").offsetHeight + "px");
+if (window.ResizeObserver) new ResizeObserver(fixarBarra).observe($("barra")); else fixarBarra();
+$("tipos-rolo").addEventListener("scroll", marcarRolo, { passive: true });
+let rafMedir;
+window.addEventListener("resize", () => { cancelAnimationFrame(rafMedir); rafMedir = requestAnimationFrame(() => { medirFeed(); marcarRolo(); }); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { medirFeed(); marcarRolo(); });
+
+/* Aparência: um botão que alterna sistema, claro e escuro */
+const SOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const LUA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>';
+const TELA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>';
+const APARENCIAS = { sistema: { nome: "igual ao sistema", ic: TELA, prox: "claro" }, claro: { nome: "claro", ic: SOL, prox: "escuro" }, escuro: { nome: "escuro", ic: LUA, prox: "sistema" } };
+let aparencia = "sistema";
+try { aparencia = localStorage.getItem("radar-aparencia") || "sistema"; } catch (e) {}
+if (!APARENCIAS[aparencia]) aparencia = "sistema";
+function aplicarAparencia() {
+  const r = document.documentElement;
+  if (aparencia === "claro") r.setAttribute("data-theme", "light");
+  else if (aparencia === "escuro") r.setAttribute("data-theme", "dark");
+  else r.removeAttribute("data-theme");
+  const a = APARENCIAS[aparencia], b = $("aparencia");
+  b.innerHTML = a.ic;
+  const rot = `Aparência: ${a.nome}. Toque para mudar para ${APARENCIAS[a.prox].nome}.`;
+  b.setAttribute("aria-label", rot); b.title = rot;
+}
+$("aparencia").addEventListener("click", () => {
+  aparencia = APARENCIAS[aparencia].prox;
+  try { localStorage.setItem("radar-aparencia", aparencia); } catch (e) {}
+  aplicarAparencia();
+});
+aplicarAparencia();
+
+$("busca").addEventListener("input", (e) => { busca = e.target.value; render(); });
+/* Busca da lateral (900 px ou mais): mesmo estado da busca do painel */
+$("busca-nav").addEventListener("input", (e) => { busca = e.target.value; render(); irParaFeed(); });
+$("busca-nav").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); irParaFeed(); } if (e.key === "Escape" && busca) { e.preventDefault(); busca = ""; render(); } });
+/* Mesmos cortes do CSS. A partir de 900 px o botão Filtros some: se o painel estiver aberto, fecha. */
+const MQ_COLUNAS = window.matchMedia("(min-width: 900px)");
+const aoMudarColunas = (e) => { if (e.matches) fecharPainel(); };
+if (MQ_COLUNAS.addEventListener) MQ_COLUNAS.addEventListener("change", aoMudarColunas); else MQ_COLUNAS.addListener(aoMudarColunas);
+/* Assinaturas do radar aberto. Ao trocar de radar, as anteriores são desligadas e respostas atrasadas são ignoradas pela geração. */
+let desligar = [], geracao = 0;
+function ligarRadar() {
+  desligar.forEach((f) => { try { if (typeof f === "function") f(); } catch (e) {} });
+  desligar = [];
+  const g = ++geracao, db = dbRef, r = R();
+  if (!db) return;
+  const col = r.items;
+  desligar.push(db.collection(col).orderBy("coletado", "desc").limit(JANELA).onSnapshot((snap) => {
+    if (g !== geracao) return;
+    recentes = snap.docs.map((d) => d.exists && { ...d.data(), _id: idItem(col, d.id) }).filter(Boolean);
+    carregado = true;
+    if (!antigos.length) podeMais = recentes.length >= JANELA;
+    juntar();
+  }, () => { if (g !== geracao) return; carregado = true; renderFeed(); $("status").textContent = "O feed parou de atualizar. Recarregue a página."; }));
+  desligar.push(db.doc(r.status).onSnapshot((s) => {
+    if (g !== geracao) return;
+    meta = s.exists ? s.data() : null; renderStatus(); renderFeed(); renderLateral();
+  }, () => {}));
+  desligar.push(db.collection(r.destaques).orderBy("data", "desc").limit(1).onSnapshot((snap) => {
+    if (g !== geracao) return;
+    const d = snap.docs[0]; destaque = d ? d.data() : null; renderDestaques(); renderLateral();
+  }, () => {}));
+}
+function escreverHash() {
+  const alvo = radar === "tech" ? "" : "#" + radar;
+  if ((location.hash || "") === alvo) return;
+  try { history.replaceState(null, "", location.pathname + location.search + alvo); }
+  catch (e) { try { location.hash = alvo; } catch (e2) {} }
+}
+function trocarRadar(id, porHash) {
+  if (!RADARES[id] || id === radar) return;
+  fecharPainel();
+  radar = id;
+  try { localStorage.setItem("radar-atual", id); } catch (e) {}
+  if (!porHash) escreverHash();
+  aplicarRadar();
+  resumoAberto.clear();
+  renderDestaques();
+  render();
+  ligarRadar();
+  window.scrollTo({ top: 0 });
+}
+window.addEventListener("hashchange", () => { const h = radarDoHash(); trocarRadar(h || "tech", true); });
+escreverHash();
+render();
+
+(async () => {
+  const db = await window.claude?.use?.("db");
+  if (!db) { carregado = true; renderFeed(); $("status").textContent = "Não foi possível carregar o feed nesta visualização."; return; }
+  dbRef = db;
+  ligarFavoritosNaConta(db);
+  ligarRadar();
+  setInterval(() => { renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral(); }, 60000);
+})();
+</script>
+
+</body></html>
