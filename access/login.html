@@ -31,10 +31,10 @@ main::before {
   background-image: linear-gradient(135deg, var(--b1), var(--b2));
 }
 .marca { display: flex; align-items: center; gap: 10px; color: var(--pri); margin-bottom: 20px; }
-.marca svg { width: 40px; height: 40px; flex: none; }
+.marca .lk-lockup { height: 44px; width: auto; display: block; }
+.lk-nome { fill: var(--fg); }
 .lk-olho { fill: #7c3aed; }
 @media (prefers-color-scheme: dark) { .lk-olho { fill: #ffffff; } }
-.marca span { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 22px; color: var(--fg); letter-spacing: -0.01em; }
 h1 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-size: 24px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
 .sub { color: var(--mut); margin: 0 0 22px; }
 .aviso { background: color-mix(in srgb, var(--pri) 10%, transparent); color: var(--fg); border-radius: 12px; padding: 10px 12px; margin: 0 0 16px; font-size: 14px; }
@@ -42,10 +42,7 @@ h1 { font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif; font-si
 </head>
 <body>
 <main>
-  <div class="marca">
-    <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lk-farol" x1="6" y1="4" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset="0.4" stop-color="#7C3AED"/><stop offset="1" stop-color="#4F8FF7"/></linearGradient></defs><path fill="url(#lk-farol)" d="M6 32 A26 26 0 0 1 58 32 L40.5 22 A8.5 8.5 0 0 0 23.5 22 Z M26 29 L28 30 L22 58 A28 28 0 0 1 10 50 Z M38 29 L54 50 A28 28 0 0 1 42 58 L36 30 Z"/><circle class="lk-olho" cx="32" cy="22" r="4"/></svg>
-    <span>Lookout</span>
-  </div>
+  <div class="marca"><svg class="lk-lockup" viewBox="0 0 198 64" role="img" aria-label="Lookout"><defs><linearGradient id="lk-farol-lockup" x1="6" y1="4" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset="0.4" stop-color="#7C3AED"/><stop offset="1" stop-color="#4F8FF7"/></linearGradient></defs><path transform="translate(0 1)" fill="url(#lk-farol-lockup)" d="M6 32 A26 26 0 0 1 58 32 L40.5 22 A8.5 8.5 0 0 0 23.5 22 Z M26 29 L28 30 L22 58 A28 28 0 0 1 10 50 Z M38 29 L54 50 A28 28 0 0 1 42 58 L36 30 Z"/><circle class="lk-olho" cx="32" cy="23" r="4"/><path transform="matrix(.92 0 0 1 5.76 .75)" class="lk-nome" fill-rule="evenodd" d="M72 19 H77 V38 H87 V43 H72 Z M98 25 A9 9 0 1 1 98 43 A9 9 0 1 1 98 25 Z M98 29.5 A4.5 4.5 0 1 0 98 38.5 A4.5 4.5 0 1 0 98 29.5 Z M118 25 A9 9 0 1 1 118 43 A9 9 0 1 1 118 25 Z M118 29.5 A4.5 4.5 0 1 0 118 38.5 A4.5 4.5 0 1 0 118 29.5 Z M130 19 H135 V32 L141.5 25.5 H148 L139.5 33.5 L148.5 43 H142 L135 35.5 V43 H130 Z M158 25 A9 9 0 1 1 158 43 A9 9 0 1 1 158 25 Z M158 29.5 A4.5 4.5 0 1 0 158 38.5 A4.5 4.5 0 1 0 158 29.5 Z M170 25.5 H175 V35.5 Q175 39 178 39 Q182 39 182 34.5 V25.5 H187 V43 H182 V41 Q180 43.5 176.5 43.5 Q170 43.5 170 36 Z M193 20 H198 V25.5 H202 V30 H198 V36.5 Q198 39 200 39 H202 V43 Q200.5 43.5 198.5 43.5 Q193 43.5 193 37.5 V30 H190 V25.5 H193 Z"/></svg></div>
   <h1>Entrar no radar</h1>
   <p class="sub">Tech, política e futebol num lugar só. Use a conta do Google do e-mail em que você recebeu o convite.</p>
   {% if message.text.size > 0 %}
