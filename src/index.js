@@ -26,19 +26,46 @@ h1{font-size:20px;margin:0 0 8px}p{color:var(--mut);margin:8px 0}a{color:var(--p
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
-async function quemEntra(request, env) {
+// Lista de convidados guardada na memória do Worker por 60 s, para não ir ao banco a cada requisição.
+// Quem é removido da lista perde o acesso em no máximo 1 minuto.
+const convidados = new Map();
+const CONVITE_TTL = 60_000;
+async function buscarConvidado(env, email) {
+  const c = convidados.get(email);
+  if (c && Date.now() - c.em < CONVITE_TTL) return c.u;
+  const u = await env.DB.prepare("SELECT email, nome, ultimo_acesso FROM usuarios WHERE email = ?").bind(email).first();
+  convidados.set(email, { u, em: Date.now() });
+  // marca o último acesso no máximo uma vez por hora, fora do caminho da resposta
+  const umaHora = new Date(Date.now() - 3600_000).toISOString();
+  if (u && (!u.ultimo_acesso || u.ultimo_acesso < umaHora)) {
+    u.ultimo_acesso = agoraIso();
+    const gravar = env.DB.prepare("UPDATE usuarios SET ultimo_acesso = ? WHERE email = ?").bind(u.ultimo_acesso, email).run();
+    if (env.ctx) env.ctx.waitUntil(gravar); else await gravar;
+  }
+  return u;
+}
+
+async function quemEntra(request, env, conferirLista = true) {
   if (!env.DEV_EMAIL && !accessConfigurado(env)) return { erro: "config" };
   const email = await emailDoAccess(request, env);
   if (!email) return { erro: "login" };
   const admin = email === String(env.ADMIN_EMAIL || "").trim().toLowerCase();
-  const u = await env.DB.prepare("SELECT email, nome, ultimo_acesso FROM usuarios WHERE email = ?").bind(email).first();
+  if (!conferirLista) return { email, admin, nome: "" };
+  const u = await buscarConvidado(env, email);
   if (!admin && !u) return { erro: "convite", email };
-  // marca o último acesso no máximo uma vez por hora
-  const umaHora = new Date(Date.now() - 3600_000).toISOString();
-  if (u && (!u.ultimo_acesso || u.ultimo_acesso < umaHora)) {
-    await env.DB.prepare("UPDATE usuarios SET ultimo_acesso = ? WHERE email = ?").bind(agoraIso(), email).run();
-  }
   return { email, admin, nome: u?.nome || "" };
+}
+
+// Respostas das listas guardadas na memória por 30 s. São iguais para todo mundo e só mudam quando as coletas rodam.
+const respostas = new Map();
+const RESPOSTA_TTL = 30_000;
+async function comCache(chave, gerar) {
+  const c = respostas.get(chave);
+  if (c && Date.now() - c.em < RESPOSTA_TTL) return json(c.dados);
+  const dados = await gerar();
+  if (respostas.size > 200) respostas.clear();
+  respostas.set(chave, { dados, em: Date.now() });
+  return json(dados);
 }
 
 function linhaParaDoc(r) {
@@ -64,16 +91,20 @@ async function consultar(url, env) {
   }
   sql += ` ORDER BY ${campoOrdem} ${dir} LIMIT ?`;
   args.push(limite);
-  const { results } = await env.DB.prepare(sql).bind(...args).all();
-  return json({ docs: results.map(linhaParaDoc) });
+  return comCache(sql + "|" + args.join("|"), async () => {
+    const { results } = await env.DB.prepare(sql).bind(...args).all();
+    return { docs: results.map(linhaParaDoc) };
+  });
 }
 
 async function lerDoc(url, env) {
   const c = url.searchParams.get("c");
   const id = url.searchParams.get("id") || "";
   if (!DOCS.has(c) || !id) return json({ erro: "doc" }, 400);
-  const r = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = ?").bind(c, id).first();
-  return json(r ? { existe: true, ...linhaParaDoc(r) } : { existe: false, id });
+  return comCache("doc|" + c + "|" + id, async () => {
+    const r = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = ?").bind(c, id).first();
+    return r ? { existe: true, ...linhaParaDoc(r) } : { existe: false, id };
+  });
 }
 
 async function favoritos(request, env, quem, idFav) {
@@ -131,13 +162,17 @@ function servirAsset(request, env, caminho) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
+    env = Object.assign({}, env, { ctx });
     const url = new URL(request.url);
     const p = url.pathname;
 
     if (p.startsWith("/seed/")) return new Response("Não encontrado", { status: 404 });
 
-    const quem = await quemEntra(request, env);
+    // Arquivos estáticos (ícones, imagens) só precisam do login. A lista de convidados é conferida
+    // na página principal, no /admin e na API, que é onde estão os dados.
+    const estatico = p !== "/" && p !== "/index.html" && !p.startsWith("/api/") && !p.startsWith("/admin");
+    const quem = await quemEntra(request, env, !estatico);
     if (quem.erro === "config")
       return pagina("Configuração pendente", "<h1>Falta ligar o login</h1><p>O Cloudflare Access ainda não foi configurado para este site. Assim que as variáveis ACCESS_TEAM_DOMAIN e ACCESS_AUD estiverem no painel, o acesso abre.</p>", 503);
     if (quem.erro === "login")

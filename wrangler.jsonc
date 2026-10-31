@@ -16,5 +16,8 @@
   "triggers": { "crons": ["* * * * *"] },
   // ADMIN_EMAIL, ACCESS_TEAM_DOMAIN e ACCESS_AUD ficam nas variáveis do painel do Cloudflare (não no repositório).
   "keep_vars": true,
+  // Roda o Worker perto do banco D1 (leste dos EUA): cada requisição faz consultas ao banco,
+  // e é mais rápido fazer uma viagem longa do usuário até o Worker do que várias até o banco.
+  "placement": { "mode": "smart" },
   "observability": { "enabled": true }
 }
