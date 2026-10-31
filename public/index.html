@@ -278,11 +278,15 @@ footer b { color: var(--foreground); font-weight: 500; }
 .nav-sub { flex-direction: column; flex-wrap: nowrap; gap: 2px; margin: 2px 0 6px 14px; padding-left: 6px; }
 .nav-sub .nav-item { font-weight: 400; font-size: 13px; min-height: 28px; padding-block: 3px; }
 .nav-grupo { display: flex; flex-direction: column; }
-.nav-mostrar { display: flex; flex-wrap: wrap; gap: 6px; padding-inline: 2px; }
-.nav-mostrar .chip { height: 30px; padding: 0 8px; gap: 5px; font-size: 12.5px; }
 .sub .quebra { flex-basis: 100%; height: 0; }
+.feed-topo { display: none; }
+.feed-ordem { display: flex; align-items: center; gap: 8px; }
+.feed-ordem .rotulo { margin: 0; }
+.feed-mostrar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.feed-mostrar .chip { height: 30px; padding: 0 10px; gap: 5px; font-size: 12.5px; }
+.feed-div { width: 1px; height: 18px; background: var(--border); margin-inline: 4px; }
 .rotulo .dica { font: 400 11px var(--font-sans); text-transform: none; letter-spacing: 0; color: var(--muted-foreground); margin-left: 4px; }
-.nav-limpar { height: 30px; margin-left: 6px; font-size: 13px; }
+.nav-limpar { align-self: flex-start; height: 30px; margin-left: 4px; font-size: 13px; }
 
 /* Trilho direito */
 .bloco { display: flex; flex-direction: column; min-width: 0; }
@@ -320,6 +324,7 @@ footer b { color: var(--foreground); font-weight: 500; }
   .nav-busca { flex: none; height: var(--control-h-sm); }
   /* Todos os filtros ficam na lateral: sem barra fixa no centro, e o título de cada tema gruda no topo */
   .barra { display: none; }
+  .feed-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px var(--space-4); padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: calc(-1 * var(--space-3)); }
   section.tema { --topo-tema: env(safe-area-inset-top, 0px); }
 }
 @media (min-width: 1200px) {
@@ -356,15 +361,7 @@ footer b { color: var(--foreground); font-weight: 500; }
       <h2 class="rotulo">Temas <small class="dica">vários</small></h2>
       <div class="nav-lista" id="nav-lista"></div>
     </div>
-    <div class="nav-grupo">
-      <h2 class="rotulo">Mostrar</h2>
-      <div class="nav-mostrar">
-        <button class="chip t-rel" type="button" id="nav-relevantes" aria-pressed="false"></button>
-        <button class="chip t-fav" type="button" id="nav-favoritos" aria-pressed="false"></button>
-        <button class="chip" type="button" id="nav-resumos"></button>
-        <button class="dd-btn dd-btn--link nav-limpar" type="button" id="nav-limpar" hidden>Limpar filtros</button>
-      </div>
-    </div>
+    <button class="dd-btn dd-btn--link nav-limpar" type="button" id="nav-limpar" hidden>Limpar filtros</button>
   </nav>
 
   <div class="centro">
@@ -395,6 +392,10 @@ footer b { color: var(--foreground); font-weight: 500; }
           <div class="sub" id="sub" role="group" aria-label="Filtrar por subtema" hidden></div>
         </div>
         <div class="grupo">
+          <h3 class="rotulo" id="rot-ordem-painel">Ordem</h3>
+          <div class="seg" id="ordem-painel" role="group" aria-labelledby="rot-ordem-painel"></div>
+        </div>
+        <div class="grupo">
           <h3 class="rotulo">Mostrar</h3>
           <div class="chips">
             <button class="chip t-rel" type="button" id="so-relevantes" aria-pressed="false"></button>
@@ -407,6 +408,19 @@ footer b { color: var(--foreground); font-weight: 500; }
         <button class="dd-btn dd-btn--outline" type="button" id="limpar-filtros">Limpar filtros</button>
         <button class="dd-btn dd-btn--primary" type="button" id="ver-itens">Ver resultados</button>
       </div>
+    </div>
+  </div>
+
+  <div class="feed-topo" role="toolbar" aria-label="Ordem e exibição do feed">
+    <div class="feed-ordem">
+      <span class="rotulo" id="rot-ordem-topo">Ordem</span>
+      <div class="seg" id="ordem-topo" role="group" aria-labelledby="rot-ordem-topo"></div>
+    </div>
+    <div class="feed-mostrar">
+      <button class="chip t-rel" type="button" id="topo-relevantes" aria-pressed="false"></button>
+      <button class="chip t-fav" type="button" id="topo-favoritos" aria-pressed="false"></button>
+      <span class="feed-div" aria-hidden="true"></span>
+      <button class="chip" type="button" id="topo-resumos"></button>
     </div>
   </div>
 
@@ -660,6 +674,15 @@ const JANELA = 1000;
 let dbRef = null, recentes = [], antigos = [], podeMais = false, carregando = false;
 let itens = [], meta = null, destaque = null, tipo = "todos", busca = "", expandidos = new Set(), slide = 0;
 let soRel = false, soFav = false, favs = {}, favCol = null;
+/* Ordem dos itens dentro de cada tema */
+const ORDENS = [
+  { id: "data", nome: "Data", dica: "Publicados mais recentemente primeiro" },
+  { id: "relevancia", nome: "Relevância", dica: "Mais relevantes primeiro; no empate, os mais recentes" },
+  { id: "entrada", nome: "Novidades", dica: "O que entrou por último no radar primeiro" },
+];
+let ordenacao = "data";
+try { ordenacao = localStorage.getItem("radar-ordem") || "data"; } catch (e) {}
+if (!ORDENS.some((o) => o.id === ordenacao)) ordenacao = "data";
 let radar = "tech", carregado = false;
 try {
   soRel = localStorage.getItem("radar-relevantes") === "1";
@@ -759,6 +782,11 @@ const agora = () => new Date().toISOString();
 /* Release futuro não passa na frente do que já saiu: ordena pela data de coleta até a data prevista chegar */
 const chave = (i) => { const p = i.publicado || ""; return p && p <= agora() ? p : (i.coletado || p); };
 const ordem = (a, b) => String(chave(b)).localeCompare(String(chave(a)));
+function ordenar(lista) {
+  if (ordenacao === "relevancia") return lista.slice().sort((a, b) => (Number(b.relevancia) || 0) - (Number(a.relevancia) || 0) || ordem(a, b));
+  if (ordenacao === "entrada") return lista.slice().sort((a, b) => String(b.coletado || "").localeCompare(String(a.coletado || "")) || ordem(a, b));
+  return lista;
+}
 const passaBusca = (i) => { const q = busca.trim().toLowerCase(); return !q || [i.titulo, i.resumo, i.fonte].join(" ").toLowerCase().includes(q); };
 
 function renderStatus() {
@@ -1101,7 +1129,7 @@ function renderFeed() {
     else f.append(el("div", { class: "vazio", id: "feed-vazio" }, el("strong", {}, meta ? "O feed ainda está vazio" : "A primeira coleta ainda não rodou"), R().vazio));
     return;
   }
-  const lista = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo));
+  const lista = ordenar(fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo)));
   const temas = temasSel.size ? TEMAS.filter((t) => temasSel.has(t.id)) : TEMAS;
   const bloco = el("div", { class: "secoes" });
   for (const t of temas) {
@@ -1170,8 +1198,20 @@ async function carregarAntigos() {
   }
   carregando = false; renderFeed();
 }
+function escolherOrdem(id) { ordenacao = id; try { localStorage.setItem("radar-ordem", id); } catch (e) {} render(); }
+function renderOrdem() {
+  for (const id of ["ordem-topo", "ordem-painel"]) {
+    const s = $(id); s.textContent = "";
+    ORDENS.forEach((o) => {
+      const b = el("button", { type: "button", id: id + "-" + o.id, title: o.dica, "aria-pressed": String(ordenacao === o.id) }, o.nome);
+      b.addEventListener("click", () => escolherOrdem(o.id));
+      s.append(b);
+    });
+  }
+}
 function renderAlternancias() {
-  [["so-relevantes", "so-favoritos", "modo-resumos"], ["nav-relevantes", "nav-favoritos", "nav-resumos"]].forEach(([rid, fid, mid]) => {
+  renderOrdem();
+  [["so-relevantes", "so-favoritos", "modo-resumos"], ["topo-relevantes", "topo-favoritos", "topo-resumos"]].forEach(([rid, fid, mid]) => {
     const r = $(rid); r.textContent = "";
     r.setAttribute("aria-pressed", String(soRel));
     r.insertAdjacentHTML("beforeend", ESTRELA); r.append("Relevantes");
@@ -1262,14 +1302,14 @@ $("so-favoritos").addEventListener("click", alternarSoFav);
 $("modo-resumos").addEventListener("click", alternarResumos);
 $("limpar-filtros").addEventListener("click", limparFiltros);
 /* Na navegação lateral os mesmos botões levam de volta ao começo do feed */
-$("nav-relevantes").addEventListener("click", () => { alternarRel(); irParaFeed(); });
-$("nav-favoritos").addEventListener("click", () => { alternarSoFav(); irParaFeed(); });
-$("nav-resumos").addEventListener("click", alternarResumos);
+$("topo-relevantes").addEventListener("click", alternarRel);
+$("topo-favoritos").addEventListener("click", alternarSoFav);
+$("topo-resumos").addEventListener("click", alternarResumos);
 $("nav-limpar").addEventListener("click", () => { limparFiltros(); irParaFeed(); $("nav-todos").focus({ preventScroll: true }); });
 
 /* Painel de filtros */
 let abridor = null, assinatura = "";
-const estado = () => [[...temasSel].join(","), [...subsSel].join(","), soRel, soFav, busca, tipo].join("|");
+const estado = () => [[...temasSel].join(","), [...subsSel].join(","), ordenacao, soRel, soFav, busca, tipo].join("|");
 function abrirPainel(foco) {
   const p = $("painel");
   if (p.hidden) {
