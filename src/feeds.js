@@ -5,17 +5,17 @@
 // Uber Engineering e CNN Brasil Política sumiram (HTTP 404); Record não publica itens reconhecíveis. A busca da curadoria cobre essas fontes.
 export const FEEDS = [
   // Tech: engenharia e arquitetura
-  ["tech", "InfoQ", "", "https://feed.infoq.com/"],
+  ["tech", "InfoQ", "CA", "https://feed.infoq.com/"],
   ["tech", "The New Stack", "US", "https://thenewstack.io/feed/"],
-  ["tech", "Martin Fowler", "", "https://martinfowler.com/feed.atom"],
-  ["tech", "Simon Willison", "", "https://simonwillison.net/atom/everything/"],
+  ["tech", "Martin Fowler", "US", "https://martinfowler.com/feed.atom"],
+  ["tech", "Simon Willison", "US", "https://simonwillison.net/atom/everything/"],
   ["tech", "ByteByteGo", "US", "https://blog.bytebytego.com/feed"],
   ["tech", "The Pragmatic Engineer", "NL", "https://newsletter.pragmaticengineer.com/feed"],
   ["tech", "Marc Brooker", "US", "https://brooker.co.za/blog/rss.xml"],
   ["tech", "Murat Demirbas", "US", "https://muratbuffalo.blogspot.com/feeds/posts/default"],
-  ["tech", "Julia Evans", "", "https://jvns.ca/atom.xml"],
+  ["tech", "Julia Evans", "CA", "https://jvns.ca/atom.xml"],
   ["tech", "Charity Majors", "US", "https://charity.wtf/feed/"],
-  ["tech", "Architecture Weekly", "", "https://www.architecture-weekly.com/feed"],
+  ["tech", "Architecture Weekly", "PL", "https://www.architecture-weekly.com/feed"],
   ["tech", "Microservices.io", "US", "https://microservices.io/feed.xml"],
   ["tech", "The Architect Elevator", "", "https://architectelevator.com/feed.xml"],
   ["tech", "Stack Overflow", "US", "https://stackoverflow.blog/feed/"],
@@ -63,11 +63,11 @@ export const FEEDS = [
   ["tech", "Project Zero", "US", "https://googleprojectzero.blogspot.com/feeds/posts/default"],
   ["tech", "The Register", "GB", "https://www.theregister.com/headlines.atom"],
   // Tech: linguagens e plataformas
-  ["tech", "Kubernetes", "", "https://kubernetes.io/feed.xml"],
-  ["tech", "The Go Blog", "", "https://go.dev/blog/feed.atom"],
+  ["tech", "Kubernetes", "US", "https://kubernetes.io/feed.xml"],
+  ["tech", "The Go Blog", "US", "https://go.dev/blog/feed.atom"],
   ["tech", "PostgreSQL", "", "https://www.postgresql.org/news.rss"],
   ["tech", "Rust", "", "https://blog.rust-lang.org/feed.xml"],
-  ["tech", "React", "", "https://react.dev/rss.xml"],
+  ["tech", "React", "US", "https://react.dev/rss.xml"],
   ["tech", "Android Developers", "US", "https://android-developers.googleblog.com/feeds/posts/default"],
   ["tech", "Kotlin", "", "https://blog.jetbrains.com/kotlin/feed/"],
   // Tech: fintech e pagamentos
