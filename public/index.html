@@ -84,6 +84,7 @@ h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: 
 .b-noticia { border-color: var(--border); color: var(--muted-foreground); font-weight: 500; }
 .b-release { border-color: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--primary); }
 .b-artigo { border-color: color-mix(in srgb, var(--chart-1) 50%, transparent); color: var(--chart-1); }
+.b-whitepaper { border-color: color-mix(in srgb, var(--foreground) 35%, transparent); color: var(--foreground); }
 .b-youtube, .b-video { border-color: color-mix(in srgb, var(--err) 45%, transparent); color: var(--err); }
 .b-podcast { border-color: color-mix(in srgb, var(--info) 50%, transparent); color: var(--info); }
 .b-curso { border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: var(--ok); }
@@ -411,7 +412,7 @@ footer b { color: var(--foreground); font-weight: 500; }
 
   <footer>
     <p id="total"></p>
-    <p id="rodape">Atualizado automaticamente várias vezes por dia. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses.</p>
+    <p id="rodape">Atualizado automaticamente várias vezes por dia. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses. Whitepapers ficam 12 meses.</p>
   </footer>
   </div>
 
@@ -598,11 +599,13 @@ const subDe = (i) => {
 };
 const IC_VIDEO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg>';
 const IC_PODCAST = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>';
+const IC_DOC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>';
 const TIPOS_TECH = [
   { id: "todos", nome: "Tudo" },
   { id: "noticia", nome: "Notícias" }, { id: "artigo", nome: "Artigos" }, { id: "release", nome: "Releases" },
   { id: "video", nome: "Vídeos", icone: IC_VIDEO },
   { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
+  { id: "whitepaper", nome: "Whitepapers", icone: IC_DOC },
   { id: "review", nome: "Reviews" },
 ];
 const TIPOS_POLITICA = [
@@ -618,12 +621,12 @@ const TIPOS_ESPORTES = [
   { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
 ];
 let TIPOS = TIPOS_TECH;
-const NOME_TIPO = { noticia: "Notícia", artigo: "Artigo", release: "Release", youtube: "Vídeo", video: "Vídeo", podcast: "Podcast", review: "Review", curso: "Curso", oficial: "Oficial", analise: "Análise", resultado: "Resultado" };
+const NOME_TIPO = { noticia: "Notícia", artigo: "Artigo", release: "Release", youtube: "Vídeo", video: "Vídeo", podcast: "Podcast", review: "Review", curso: "Curso", oficial: "Oficial", analise: "Análise", resultado: "Resultado", whitepaper: "Whitepaper" };
 /* Cada radar lê as próprias collections. O tech mantém os nomes e as chaves de localStorage de sempre. */
 const RADARES = {
   tech: { id: "tech", aba: "Tech", titulo: "Radar Técnico", items: "items", destaques: "destaques", status: "meta/status", sufixo: "",
     temas: TEMAS_TECH, tipos: TIPOS_TECH,
-    rodape: "Atualizado automaticamente várias vezes por dia. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses.",
+    rodape: "Atualizado automaticamente várias vezes por dia. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses. Whitepapers ficam 12 meses.",
     vazio: "A tarefa agendada pesquisa novidades nos seus temas várias vezes por dia e as notícias aparecem aqui." },
   politica: { id: "politica", aba: "Política", titulo: "Radar de Política", items: "items-politica", destaques: "destaques-politica", status: "meta/status-politica", sufixo: "-politica",
     temas: TEMAS_POLITICA, tipos: TIPOS_POLITICA,
