@@ -8,7 +8,7 @@
 ## Agora: coleta mais barata
 - [x] Coleta por RSS no cron do Worker, tabela de candidatos e limpeza automática (docs/coleta.md)
 - [ ] Tech com curadoria nova em teste lado a lado; trocar depois da comparação
-- [ ] Política e Esportes no modelo novo; parar de gravar no artifact
+- [x] Notícias e Política (antes Política) e Esportes no modelo novo, só no D1 (Sonnet 3x/dia); filtro Nacional/Internacional
 - [ ] Abas Negócios e Investimentos, já no modelo novo (plano abaixo)
 
 ## Próximo: Negócios e Investimentos
