@@ -83,6 +83,8 @@ A documentação do Cloudflare recomenda validar no Worker o JWT que o Access en
 
 **Como está hoje (30/10/2026):** no app `news`, Authentication com **Accept all available identity providers** desligado, só **Google** marcado e **Apply instant authentication** ligado. Quem abre o site vai direto para a tela do Google, sem passar pela tela do Cloudflare. Não existe One-time PIN configurado: só entra quem tem conta Google.
 
+**Personalização simples (salva em 31/10/2026):** Custom pages → Access login page → Manage. Nome da organização `Lookout`; logo `https://cdn.jsdelivr.net/gh/ralphrs/radar-tecnico@main/public/favicon.svg` (o repositório é público; o próprio Worker não serve, porque fica atrás do login); texto do cabeçalho "De olho no que importa. Tecnologia, política e futebol, filtrados e atualizados ao longo do dia."; cor de fundo padrão, para o tema escuro continuar funcionando. Com a entrada instantânea ligada essa tela não aparece; ela só aparece se a entrada instantânea for desligada.
+
 **Página com a cara do Lookout:** o modelo está em `access/login.html` (HTML + Liquid, recurso lançado pelo Cloudflare em 27/10/2026), mas a conta ainda não tem a opção. Em Reusable components → Custom pages aparece só o "Access login page" antigo (nome, logo, cabeçalho, cor de fundo), e em Additional settings → Custom block pages não há a linha **Login page**. Quando o card **Access custom pages** aparecer:
 1. **Create custom page** → Name `Lookout login`, Type **Login**. Cole `access/login.html`, confira **Problems**, **Publish**.
 2. Applications → `news` → **Additional settings** → **Custom block pages** → **Login page**: **Custom page** → `Lookout login` → **Save**.
