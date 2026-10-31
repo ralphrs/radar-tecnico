@@ -230,6 +230,9 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .item a.titulo { font: 600 15.5px/1.35 var(--font-sans); color: var(--foreground); text-decoration: none; text-wrap: pretty; overflow-wrap: anywhere; }
 .item a.titulo:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
 .meta { font: 400 12px/16px var(--font-mono); color: var(--muted-foreground); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.bandeira { display: inline-block; margin-right: 5px; font-size: 0.95em; line-height: 1; opacity: .85; filter: saturate(.8); vertical-align: -1px; }
+.bandeira.txt { font: 500 9.5px/14px var(--font-mono); padding: 0 3px; border: 1px solid var(--border); border-radius: 3px; filter: none; vertical-align: 1px; }
+.fonte { white-space: nowrap; }
 .meta .tags { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .resumo { margin: 0; max-width: 68ch; }
 .resumo.recolhido { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -708,6 +711,27 @@ const fmtRel = (iso) => {
 const fmtData = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); };
 const fmtDia = (ymd) => { const d = new Date(ymd + "T12:00:00"); return isNaN(d) ? (ymd || "") : d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }); };
 const hostDe = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } };
+/* País de origem da fonte: campo "pais" do item, senão a tabela abaixo, senão o domínio do link */
+const PAIS_FONTE = {"The New Stack":"US","TechCrunch":"US","Payments Dive":"US","BleepingComputer":"US","Cloudflare":"US","GitHub Changelog":"US","GitHub":"US","Anthropic":"US","Claude Code":"US","Claude Code Docs":"US","Udemy":"US","Uber Engineering":"US","Netflix":"US","Meta":"US","OpenAI":"US","Latent Space":"US","DoorDash":"US","Stripe":"US","Stripe Support":"US","Tom's Hardware":"US","Tom's Guide":"US","Software Engineering Radio":"US","Software Engineering Daily":"US","Pinterest":"US","Slack":"US","Airbnb":"US","AWS Architecture Blog":"US","AWS News Blog":"US","AWS":"US","AWS Events":"US","All Things Distributed":"US","Dropbox":"US","Will Larson":"US","Marc Brooker":"US","Murat Demirbas":"US","Charity Majors":"US","Google":"US","Google Cloud":"US","Google Research":"US","Google Open Source Blog":"US","Android Developers":"US","Chrome for Developers":"US","web.dev":"US","Datadog":"US","Datadog Security Labs":"US","Discord":"US","Crunchbase News":"US","Lyft":"US","Instacart":"US","Etsy":"US","Figma":"US","Notion":"US","Hackaday":"US","American Banker":"US","PYMNTS":"US","Axios":"US","Fortune":"US","Forbes":"US","VentureBeat":"US","MIT Technology Review":"US","Federal Reserve":"US","Trail of Bits":"US","Krebs on Security":"US","The Record":"US","Semafor":"US","Rest of World":"US","Engadget":"US","GeekWire":"US","Fox Business":"US","Banking Dive":"US","CIO Dive":"US","Y Combinator":"US","a16z Podcast":"US","Lenny's Podcast":"US","Dwarkesh Podcast":"US","No Priors":"US","Hugging Face":"US","Thoughtworks":"US","Confluent":"US","ClickHouse":"US","MotherDuck":"US","PlanetScale":"US","Vercel":"US","Jane Street":"US","J.P. Morgan":"US","Visa":"US","Mastercard":"US","American Express":"US","Coinbase":"US","CoinDesk":"US","PayPal":"US","Block":"US","Plaid":"US","Apple Newsroom":"US","Apple Machine Learning Research":"US","Microsoft DevBlogs":"US","Microsoft AI":"US","Microsoft Developer":"US","Microsoft Azure":"US","Microsoft All Things Azure":"US","NVIDIA Developer Blog":"US","Intel":"US","IBM":"US","Oracle":"US","Amazon":"US","Amazon Press Center":"US","CrowdStrike":"US","Unit 42":"US","GitLab":"US","HashiCorp":"US","Grafana Labs":"US","Red Hat":"US","Linux Foundation":"US","CNCF":"US","NIST":"US","USENIX":"US","Stanford Online":"US","Stanford HAI":"US","Epoch AI":"US","METR":"US","Ai2":"US","Perplexity":"US","Character.ai":"US","DigitalOcean":"US","Netlify":"US","Railway":"US","Temporal":"US","Cockroach Labs":"US","Snowflake":"US","Salesforce":"US","Zapier":"US","Yelp":"US","Squarespace":"US","The Athletic":"US","AP News":"US","Politico":"US","NPR":"US","ESPN":"US","Ars Technica":"US","The Verge":"US","Wired":"US","Fintech Business Weekly":"US","ByteByteGo":"US","Fireship":"US","Stack Overflow":"US","The Stack Overflow Podcast":"US","SiliconANGLE":"US","DevOps.com":"US","SecurityWeek":"US","Security Boulevard":"US","CSO Online":"US","Quartz":"US","9to5Google":"US","Android Authority":"US","Windows Central":"US","24/7 Wall St.":"US","The Next Web":"US","Smashing Magazine":"US","CSS-Tricks":"US","Kent Beck":"US","Dan Luu":"US","Julia Evans":"US","Hillel Wayne":"US","Mitchell Hashimoto":"US","Jepsen":"US","Oxide":"US","Oxide and Friends":"US","Honeycomb":"US","Cursor":"US","Practical AI":"US","Syntax":"US","Developer Voices":"US","The Changelog":"US","CoRecursive":"US","Kubernetes Podcast":"US","Lambda Labs":"US","Interconnects":"US","One Useful Thing":"US","Ahead of AI (Sebastian Raschka)":"US","Schneier on Security":"US","Risky Business":"US","Project Zero":"US","Elastic Security Labs":"US","Wix Engineering":"US","Nubank":"BR","Finsiders Brasil":"BR","Let's Money":"BR","Hipsters Ponto Tech":"BR","Agência Brasil":"BR","Jornal do Comércio":"BR","CNN Brasil":"BR","NeoFeed":"BR","Itaú":"BR","Brazil Journal":"BR","Fabio Akita":"BR","QuintoAndar":"BR","Agência Câmara":"BR","Agência Senado":"BR","STF":"BR","TSE":"BR","Governo do RS":"BR","Prefeitura de Porto Alegre":"BR","AWS Brasil":"BR","Internacional":"BR","Metrópoles":"BR","Febraban":"BR","Exame":"BR","Mobile Time":"BR","Fronteiras da Engenharia de Software":"BR","iFood":"BR","VTEX":"BR","Tecnoblog":"BR","PicPay":"BR","O Assunto":"BR","Lambda3 Podcast":"BR","Gazeta Esportiva":"BR","Convergência Digital":"BR","Terra":"BR","SBT News":"BR","Poder360":"BR","InfoMoney":"BR","Creditas":"BR","ConJur":"BR","Elton Minetto":"BR","Um Dois Esportes":"BR","Trivela":"BR","TabNews":"BR","TOTVS":"BR","Placar":"BR","Os Agilistas":"BR","O Tempo":"BR","Luizalabs":"BR","Correio Braziliense":"BR","BitNotícias":"BR","Lance!":"BR","Leouve":"BR","Máquina do Esporte":"BR","Estadão":"BR","Estado de Minas":"BR","Gazeta do Povo":"BR","CartaCapital":"BR","Forbes Brasil":"BR","Código Fonte TV":"BR","Rádio Senado":"BR","TV Senado":"BR","TV Inter":"BR","Rádio Pampa":"BR","Porto Alegre 24 horas":"BR","Serpro":"BR","Banco Central":"BR","Ministério da Fazenda":"BR","Agência Gov":"BR","Startupi":"BR","Baguete":"BR","iMasters":"BR","PwC Brasil":"BR","Pluggy":"BR","CI&T":"BR","CERC":"BR","Diario de Pernambuco":"BR","O Povo":"BR","O Liberal":"BR","Jornal de Brasília":"BR","Jornal Minuano":"BR","Itatiaia":"BR","A Hora do Sul":"BR","A Crítica":"BR","O Alto Uruguai":"BR","Olhar Direto":"BR","Tribuna de Jundiaí":"BR","Fidc News":"BR","Contábeis":"BR","Seu Crédito Digital":"BR","BPMoney":"BR","BM&C News":"BR","Money Times":"BR","Mattos Filho":"BR","VBSO Advogados":"BR","Brasil Inovador":"BR","TI Inside":"BR","Rádio Fandango":"BR","GZH":"BR","Correio do Povo":"BR","Rádio Guaíba":"BR","Rádio Gaúcha":"BR","ge RS":"BR","ge":"BR","ESPN Brasil":"BR","UOL Esporte":"BR","UOL":"BR","CBF":"BR","FGF":"BR","Folha":"BR","O Globo":"BR","g1":"BR","Valor":"BR","Nexo":"BR","JOTA":"BR","Congresso em Foco":"BR","Agência Pública":"BR","piauí":"BR","Matinal":"BR","Planalto":"BR","Diário Oficial da União":"BR","Câmara dos Deputados":"BR","Senado Federal":"BR","CNJ":"BR","Assembleia Legislativa do RS":"BR","Café da Manhã":"BR","Durma com Essa":"BR","Foro de Teresina":"BR","Ao Ponto":"BR","Aprenda Go no YouTube":"BR","GambiConf":"BR","Tropical on Rails":"BR","Data Science Summit Brasil":"BR","GDG Goiânia":"BR","GDG Cloud São Paulo":"BR","TDC":"BR","FinTech Futures":"GB","LeadDev":"GB","The Register":"GB","Finextra":"GB","AltFi":"GB","Sifted":"GB","Fintech Insider":"GB","Monzo":"GB","Revolut":"GB","Wise":"GB","FCA":"GB","City AM":"GB","BBC Sport":"GB","BBC News Brasil":"GB","BBC":"GB","Reuters":"GB","Sky Sports":"GB","Financial Times":"GB","The Guardian":"GB","The Economist":"GB","TEAMtalk":"GB","Payment Expert":"GB","Fintech Brainfood":"GB","Finance Magnates":"GB","Architecture Weekly":"GB","Mathias Verraes":"GB","Gunnar Morling":"GB","LWN.net":"GB","A Bola":"PT","Record":"PT","O Jogo":"PT","Maisfutebol":"PT","Público":"PT","Expresso":"PT","Observador":"PT","Observador Tech":"PT","Lusa":"PT","RTP":"PT","ECO":"PT","Exame Informática":"PT","Shifter":"PT","ANSA":"IT","ANSA Brasil":"IT","Corriere della Sera":"IT","Il Post":"IT","La Repubblica":"IT","Il Sole 24 Ore":"IT","Wired Italia":"IT","StartupItalia":"IT","Gazzetta dello Sport":"IT","Corriere dello Sport":"IT","Tuttosport":"IT","Calciomercato.com":"IT","Gianluca Di Marzio":"IT","Cassa Centrale Banca":"IT","TASS":"RU","Interfax":"RU","Kommersant":"RU","Habr":"RU","Sport-Express":"RU","Championat":"RU","Xinhua":"CN","Global Times":"CN","CGTN":"CN","Caixin":"CN","Caixin Global":"CN","TechNode":"CN","DeepSeek":"CN","Kimi":"CN","MiniMax":"CN","StepFun":"CN","KrASIA":"CN","36Kr":"CN","South China Morning Post":"HK","SCMP":"HK","Hong Kong Monetary Authority":"HK","Gulf News":"AE","The National":"AE","Khaleej Times":"AE","WAM":"AE","Wamda":"AE","Arabian Business":"AE","Gulf Business":"AE","Sport360":"AE","GITEX":"AE","The Hacker News":"IN","Inc42":"IN","Business Standard":"IN","Business Today":"IN","Entrackr":"IN","MediaNama":"IN","Razorpay":"IN","PhonePe":"IN","Flipkart":"IN","RBI":"IN","CERT-In":"IN","The Tribune":"IN","Grab":"SG","Agoda":"SG","Fintech News Singapore":"SG","Monetary Authority of Singapore":"SG","TechNode Global":"SG","DealStreetAsia":"SG","The Paypers":"NL","Booking.com":"NL","Adyen":"NL","DuckDB":"NL","The Pragmatic Engineer":"NL","The Pragmatic Engineer Podcast":"NL","Tweede golf":"NL","Zalando":"DE","Transfermarkt":"DE","Aleph Alpha":"DE","Hetzner":"DE","Spotify":"SE","Klarna":"SE","GOTO Conferences":"DK","Mercari":"JP","LY Corporation":"JP","Gojek":"ID","Atlassian":"AU","Canva":"AU","Commonwealth Bank":"AU","Shopify Engineering":"CA","Cohere":"CA","BetaKit":"CA","CIBC":"CA","Mistral AI":"FR","Doctolib":"FR","L'Équipe":"FR","Marca":"ES","AS":"ES","Allegro":"PL","Trendyol":"TR","monday.com":"IL","Wix":"IL","Samsung":"KR","CERN":"CH","Mercado Livre":"AR","El Cronista":"AR","Infobae":"AR","La Nación":"AR","iProUP":"AR","La Tercera":"CL","El Observador":"UY","Forbes México":"MX","Banco de la República":"CO","CONMEBOL":"PY","Banco Central Europeu":"EU","EBA":"EU","The Manila Times":"PH","Fintech News Philippines":"PH","Context.ph":"PH","Egyptian Streets":"EG"};
+const PAIS_TLD = { br: "BR", pt: "PT", it: "IT", uk: "GB", ru: "RU", cn: "CN", ae: "AE", in: "IN", sg: "SG", ar: "AR", cl: "CL", mx: "MX", uy: "UY", pe: "PE", py: "PY", de: "DE", fr: "FR", es: "ES", nl: "NL", se: "SE", dk: "DK", no: "NO", fi: "FI", pl: "PL", at: "AT", ch: "CH", be: "BE", ie: "IE", jp: "JP", kr: "KR", hk: "HK", tw: "TW", au: "AU", nz: "NZ", ca: "CA", il: "IL", za: "ZA", ph: "PH", gov: "US", edu: "US" };
+const nomesPais = (() => { try { return new Intl.DisplayNames(["pt-BR"], { type: "region" }); } catch (e) { return null; } })();
+const semEmojiDeBandeira = /Windows/i.test(navigator.userAgent);
+const paisDe = (i) => {
+  const p = String(i.pais || "").trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(p)) return p;
+  if (PAIS_FONTE[i.fonte]) return PAIS_FONTE[i.fonte];
+  const h = hostDe(i.url).split(".");
+  return PAIS_TLD[h[h.length - 1]] || "";
+};
+const bandeira = (i) => {
+  const cc = paisDe(i);
+  if (!cc) return null;
+  const nome = (nomesPais && nomesPais.of(cc)) || cc;
+  if (semEmojiDeBandeira) return el("span", { class: "bandeira txt", title: "Fonte de " + nome, "aria-label": "Fonte de " + nome }, cc);
+  const emoji = String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+  return el("span", { class: "bandeira", role: "img", title: "Fonte de " + nome, "aria-label": "Fonte de " + nome }, emoji);
+};
+const fonteEl = (i) => el("span", { class: "fonte" }, bandeira(i), i.fonte || hostDe(i.url));
 const tipoDe = (i) => (i.tipo === "youtube" ? "video" : i.tipo);
 const passaTipo = (i, t) => t === "todos" || tipoDe(i) === t;
 const passaRel = (i) => !soRel || Number(i.relevancia) >= 3;
@@ -742,7 +766,7 @@ function renderUrgente() {
   const ul = el("ul", {});
   lista.forEach((i) => ul.append(el("li", {},
     el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo || i.url),
-    el("span", { class: "n" }, [i.fonte || hostDe(i.url), fmtRel(i.publicado || i.coletado)].filter(Boolean).join(" · ")))));
+    el("span", { class: "n" }, fonteEl(i), fmtRel(i.publicado || i.coletado) ? " · " + fmtRel(i.publicado || i.coletado) : ""))));
   box.append(el("h2", {}, lista.length === 1 ? "Urgente" : `Urgente · ${lista.length}`), ul);
 }
 
@@ -771,7 +795,7 @@ function renderDestaques() {
   lista.forEach((d, idx) => {
     const t = TEMA[GRUPO_DE[d.tema]];
     trilho.append(el("article", { class: "dcard", "aria-roledescription": "slide", "aria-label": `${idx + 1} de ${lista.length}` },
-      el("div", { class: "n" }, el("span", {}, String(idx + 1).padStart(2, "0")), t ? el("span", { style: `color:${t.cor}` }, t.curto) : null, el("span", {}, d.fonte || hostDe(d.url))),
+      el("div", { class: "n" }, el("span", {}, String(idx + 1).padStart(2, "0")), t ? el("span", { style: `color:${t.cor}` }, t.curto) : null, fonteEl(d)),
       el("a", { href: d.url, target: "_blank", rel: "noopener" }, d.titulo || d.url),
       d.porque ? el("p", {}, d.porque) : null));
     const b = el("button", { type: "button", "aria-label": `Ir para o destaque ${idx + 1}` });
@@ -930,7 +954,7 @@ function renderLateral() {
   const urg = urgentes();
   if (urg.length) {
     const ul = el("ul", {});
-    urg.forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" }, temaCurto(i.tema), el("span", {}, i.fonte || hostDe(i.url))))));
+    urg.forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" }, temaCurto(i.tema), fonteEl(i)))));
     box.append(el("section", { class: "bloco", id: "lat-urgente" }, el("h3", {}, "Urgente", el("small", {}, "últimas 24 h")), ul));
   }
 
@@ -938,7 +962,7 @@ function renderLateral() {
   if (dest.length) {
     const ol = el("ol", {});
     dest.forEach((d, idx) => ol.append(el("li", {},
-      el("div", { class: "n" }, el("b", {}, String(idx + 1).padStart(2, "0")), temaCurto(d.tema), el("span", {}, d.fonte || hostDe(d.url))),
+      el("div", { class: "n" }, el("b", {}, String(idx + 1).padStart(2, "0")), temaCurto(d.tema), fonteEl(d)),
       link(d.url, d.titulo), d.porque ? el("p", {}, d.porque) : null)));
     box.append(el("section", { class: "bloco", id: "lat-destaques" }, el("h3", { class: "empilha" }, "Destaques do dia", el("small", {}, fmtDia(destaque.data))), ol));
   }
@@ -963,7 +987,7 @@ function renderLateral() {
     lista.slice(0, FAVS_MAX).forEach((i) => {
       const r = radarDoFav(i._id);
       ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" },
-        r !== radar ? el("b", {}, RADARES[r].aba) : null, el("span", {}, i.fonte || hostDe(i.url)))));
+        r !== radar ? el("b", {}, RADARES[r].aba) : null, fonteEl(i))));
     });
     bFav.append(ul);
     if (favsDoRadar().length) {
@@ -1025,7 +1049,7 @@ function itemEl(i) {
         novo ? el("span", { class: "dd-badge b-novo" }, "Novo") : null,
         i.urgente === true ? el("span", { class: "dd-badge b-urgente" }, "Urgente") : null,
         i.clube ? el("span", { class: "dd-badge b-clube" }, String(i.clube)) : null),
-      el("span", {}, i.fonte || hostDe(i.url)),
+      fonteEl(i),
       el("span", {}, i.publicado ? (fmtRel(i.publicado).startsWith("em ") ? "previsto " : "publicado ") + fmtRel(i.publicado) : "coletado " + fmtRel(i.coletado))),
     resumo, lerMais);
 }
