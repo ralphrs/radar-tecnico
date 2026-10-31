@@ -229,6 +229,30 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .subgrupo:first-of-type .subsecao { margin-top: 0; }
 .subsecao span { font: 400 11px var(--font-mono); letter-spacing: 0; text-transform: none; }
 .lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+/* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
+.lista.cards { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 10px; }
+@media (min-width: 640px) { .lista.cards { grid-template-columns: 1fr 1fr; } }
+.transf { border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.transf-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.st { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; font: 600 11.5px/1 var(--font-sans); letter-spacing: .02em; background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); }
+.st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.transf-rota { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.clube-l { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; text-align: center; }
+.escudo { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: 700 12px/1 var(--font-sans); letter-spacing: .02em; color: #fff; background: var(--cc, var(--muted-foreground)); box-shadow: inset 0 0 0 2px color-mix(in srgb, #fff 25%, transparent); text-transform: uppercase; }
+.escudo.vazio { background: var(--secondary); color: var(--muted-foreground); box-shadow: inset 0 0 0 1px var(--border); }
+.clube-l .nome { font: 600 13px/1.25 var(--font-sans); color: var(--foreground); overflow-wrap: anywhere; }
+.clube-l .pais { font-size: 12px; color: var(--muted-foreground); }
+.seta { color: var(--muted-foreground); display: inline-flex; }
+.seta svg { width: 22px; height: 22px; }
+.jogador { display: flex; align-items: center; gap: 10px; min-width: 0; padding-top: 2px; border-top: 1px dashed var(--border); padding-top: 10px; }
+.avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--secondary); color: var(--foreground); display: inline-flex; align-items: center; justify-content: center; font: 600 13px/1 var(--font-sans); box-shadow: inset 0 0 0 1px var(--border); }
+.jogador .quem { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.jogador .quem b { font: 600 14px/1.25 var(--font-sans); overflow-wrap: anywhere; }
+.jogador .quem span { font-size: 12.5px; color: var(--muted-foreground); }
+.transf-pe { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font: 400 11.5px/1.4 var(--font-mono); color: var(--muted-foreground); }
+.transf-pe .valor { font-family: var(--font-sans); font-weight: 600; font-size: 12.5px; color: var(--foreground); }
+.transf a.ver { font-size: 13px; color: var(--primary); text-decoration: none; overflow-wrap: anywhere; }
+.transf a.ver:hover { text-decoration: underline; text-underline-offset: 3px; }
 .item { padding-block: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .item:first-child { border-top: 0; }
 .item a.titulo { font: 600 15.5px/1.35 var(--font-sans); color: var(--foreground); text-decoration: none; text-wrap: pretty; overflow-wrap: anywhere; }
@@ -1123,7 +1147,62 @@ function favBotao(i) {
 let resumosAbertos = false;
 try { resumosAbertos = localStorage.getItem("radar-resumos") === "expandido"; } catch (e) {}
 const resumoAberto = new Set();
+/* Status de uma negociação, do mais frio ao desfecho */
+const STATUS_TRANSF = {
+  interesse: { nome: "Interesse", c: "var(--muted-foreground)" },
+  rumor: { nome: "Rumor", c: "var(--muted-foreground)" },
+  negociacao: { nome: "Em negociação", c: "var(--info)" },
+  proposta: { nome: "Proposta feita", c: "var(--info)" },
+  acerto: { nome: "Falta assinar", c: "var(--warn)" },
+  fechado: { nome: "Fechado", c: "var(--ok)" },
+  melou: { nome: "Não rolou", c: "var(--err)" },
+};
+const SETA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
+const emojiPais = (cc) => {
+  const c = String(cc || "").trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(c)) return null;
+  const nome = (nomesPais && nomesPais.of(c)) || c;
+  if (semEmojiDeBandeira) return el("span", { class: "bandeira txt", title: nome, "aria-label": nome }, c);
+  return el("span", { class: "bandeira", role: "img", title: nome, "aria-label": nome }, String.fromCodePoint(...[...c].map((x) => 0x1f1e6 + x.charCodeAt(0) - 65)));
+};
+const sigla = (nome) => {
+  const p = String(nome || "").replace(/[^\p{L}\p{N} ]/gu, " ").split(/\s+/).filter((w) => w && !/^(de|da|do|des|del|la|le|el|fc|cf|ac|sc|ec|afc|club|clube)$/i.test(w));
+  if (!p.length) return "?";
+  return (p.length === 1 ? p[0].slice(0, 3) : p.slice(0, 3).map((w) => w[0]).join("")).toUpperCase();
+};
+const corValida = (c) => (/^#[0-9a-f]{3,8}$/i.test(String(c || "")) ? c : "");
+function clubeEl(c, papel) {
+  if (!c || !c.clube) return el("div", { class: "clube-l" }, el("span", { class: "escudo vazio", "aria-hidden": "true" }, "?"), el("span", { class: "nome" }, papel === "origem" ? "Origem a confirmar" : "Destino a confirmar"));
+  const cor = corValida(c.cor);
+  return el("div", { class: "clube-l" },
+    el("span", { class: "escudo", style: cor ? `--cc:${cor}` : "", "aria-hidden": "true" }, c.sigla ? String(c.sigla).slice(0, 4) : sigla(c.clube)),
+    el("span", { class: "nome" }, c.clube),
+    c.pais ? el("span", { class: "pais" }, emojiPais(c.pais), " ", (nomesPais && nomesPais.of(String(c.pais).toUpperCase())) || c.pais) : null);
+}
+function cardTransf(i) {
+  const t = i.transferencia || {};
+  const st = STATUS_TRANSF[t.status] || STATUS_TRANSF.rumor;
+  const iniciais = String(t.jogador || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const detalhes = [t.posicao, t.idade ? t.idade + " anos" : ""].filter(Boolean).join(" · ");
+  const novo = meta && i.rodada === meta.ultimaRodada;
+  return el("li", { class: "transf" },
+    el("div", { class: "transf-topo" },
+      el("span", { class: "st", style: `--c:${st.c}` }, st.nome),
+      el("span", { style: "display:inline-flex;align-items:center;gap:6px" }, novo ? el("span", { class: "dd-badge b-novo" }, "Novo") : null, i._id ? favBotao(i) : null)),
+    el("div", { class: "transf-rota" }, clubeEl(t.origem, "origem"), el("span", { class: "seta", html: SETA }), clubeEl(t.destino, "destino")),
+    el("div", { class: "jogador" },
+      el("span", { class: "avatar", "aria-hidden": "true" }, iniciais),
+      el("div", { class: "quem" }, el("b", {}, t.jogador || i.titulo), el("span", {}, emojiPais(t.nacionalidade), t.nacionalidade ? " " : "", detalhes))),
+    el("div", { class: "transf-pe" },
+      t.valor ? el("span", { class: "valor" }, t.valor) : null,
+      fonteEl(i),
+      t.fontes > 1 ? el("span", {}, t.fontes + " fontes") : null,
+      el("span", {}, "atualizado " + fmtRel(t.atualizado || i.coletado))),
+    el("a", { class: "ver", href: i.url, target: "_blank", rel: "noopener" }, i.titulo || "Ver a notícia"));
+}
+const ehTransf = (i) => !!(i && i.transferencia && (i.transferencia.jogador || i.transferencia.destino));
 function itemEl(i) {
+  if (ehTransf(i)) return cardTransf(i);
   const novo = meta && i.rodada === meta.ultimaRodada;
   const k = i._id || i.url || i.titulo;
   let resumo = null, lerMais = null;
@@ -1190,13 +1269,14 @@ function renderFeed() {
       for (const g of grupos) {
         const doSub = doTema.filter((i) => g.id === "__outros" ? !subs.some((x) => x.id === subDe(i)) : subDe(i) === g.id);
         if (!doSub.length) continue;
-        const ul = el("ul", { class: "lista" });
+        const ul = el("ul", { class: doSub.every(ehTransf) ? "lista cards" : "lista" });
         doSub.forEach((i) => ul.append(itemEl(i)));
         sec.append(el("div", { class: "subgrupo" }, el("h3", { class: "subsecao" }, g.nome, el("span", {}, String(doSub.length))), ul));
       }
     } else {
-      const ul = el("ul", { class: "lista" });
-      (aberto ? doTema : doTema.slice(0, LIMITE_POR_TEMA)).forEach((i) => ul.append(itemEl(i)));
+      const mostra = aberto ? doTema : doTema.slice(0, LIMITE_POR_TEMA);
+      const ul = el("ul", { class: mostra.length && mostra.every(ehTransf) ? "lista cards" : "lista" });
+      mostra.forEach((i) => ul.append(itemEl(i)));
       sec.append(ul);
     }
     if (!aberto && doTema.length > LIMITE_POR_TEMA) {
@@ -1306,7 +1386,7 @@ function render() {
 
 
 /* Favoritos: cada pessoa tem os seus. Na conta (data/users/<id>) quando a página permite gravar; senão, neste navegador. */
-const CAMPOS_FAV = ["titulo", "url", "tema", "subtema", "tipo", "fonte", "publicado", "coletado", "resumo", "relevancia", "clube"];
+const CAMPOS_FAV = ["titulo", "url", "tema", "subtema", "tipo", "fonte", "pais", "publicado", "coletado", "resumo", "relevancia", "clube", "transferencia"];
 function salvarLocal() { try { localStorage.setItem("radar-favoritos", JSON.stringify(favs)); } catch (e) {} }
 async function alternarFav(i) {
   const id = i._id; if (!id) return;
