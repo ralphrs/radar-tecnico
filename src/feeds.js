@@ -1,6 +1,8 @@
 // Feeds RSS e Atom que o cron do Worker lê. Cada linha: [radar, fonte, país, url].
 // A fonte é o nome que vai para o item (o mesmo padrão de NOMES DE FONTE das tarefas).
 // Feed que falha muitas vezes seguidas aparece em feeds_estado com erros_seguidos alto: corrija a URL ou tire daqui.
+// Fora em 31/10/2026: ACM Queue, BleepingComputer, CNX Software, FinTech Futures e Matinal bloqueiam o Worker (HTTP 403);
+// Uber Engineering e CNN Brasil Política sumiram (HTTP 404); Record não publica itens reconhecíveis. A busca da curadoria cobre essas fontes.
 export const FEEDS = [
   // Tech: engenharia e arquitetura
   ["tech", "InfoQ", "", "https://feed.infoq.com/"],
@@ -16,11 +18,9 @@ export const FEEDS = [
   ["tech", "Architecture Weekly", "", "https://www.architecture-weekly.com/feed"],
   ["tech", "Microservices.io", "US", "https://microservices.io/feed.xml"],
   ["tech", "The Architect Elevator", "", "https://architectelevator.com/feed.xml"],
-  ["tech", "ACM Queue", "US", "https://queue.acm.org/rss/feeds/queuecontent.xml"],
   ["tech", "Stack Overflow", "US", "https://stackoverflow.blog/feed/"],
   // Tech: blogs de engenharia
   ["tech", "Netflix", "US", "https://netflixtechblog.com/feed"],
-  ["tech", "Uber Engineering", "US", "https://www.uber.com/blog/engineering/rss/"],
   ["tech", "Spotify", "SE", "https://engineering.atspotify.com/feed/"],
   ["tech", "Airbnb", "US", "https://medium.com/feed/airbnb-engineering"],
   ["tech", "Stripe", "US", "https://stripe.com/blog/feed.rss"],
@@ -55,7 +55,6 @@ export const FEEDS = [
   ["tech", "Ars Technica", "US", "https://feeds.arstechnica.com/arstechnica/index"],
   // Tech: segurança
   ["tech", "The Hacker News", "IN", "https://feeds.feedburner.com/TheHackersNews"],
-  ["tech", "BleepingComputer", "US", "https://www.bleepingcomputer.com/feed/"],
   ["tech", "Krebs on Security", "US", "https://krebsonsecurity.com/feed/"],
   ["tech", "Schneier on Security", "US", "https://www.schneier.com/feed/atom/"],
   ["tech", "The Record", "US", "https://therecord.media/feed"],
@@ -73,7 +72,6 @@ export const FEEDS = [
   ["tech", "Kotlin", "", "https://blog.jetbrains.com/kotlin/feed/"],
   // Tech: fintech e pagamentos
   ["tech", "Payments Dive", "US", "https://www.paymentsdive.com/feeds/news/"],
-  ["tech", "FinTech Futures", "GB", "https://www.fintechfutures.com/feed/"],
   ["tech", "Finextra", "GB", "https://www.finextra.com/rss/headlines.aspx"],
   ["tech", "Fintech News Singapore", "SG", "https://fintechnews.sg/feed/"],
   ["tech", "Fintech Business Weekly", "US", "https://fintechbusinessweekly.substack.com/feed"],
@@ -94,7 +92,6 @@ export const FEEDS = [
   ["tech", "The Changelog", "US", "https://changelog.com/feed"],
   // Tech: setup e gadgets
   ["tech", "Hackaday", "US", "https://hackaday.com/blog/feed/"],
-  ["tech", "CNX Software", "", "https://www.cnx-software.com/feed/"],
   ["tech", "Tom's Hardware", "US", "https://www.tomshardware.com/feeds/all"],
 
   // Política: fontes oficiais
@@ -108,12 +105,10 @@ export const FEEDS = [
   ["politica", "g1", "BR", "https://g1.globo.com/rss/g1/politica/"],
   ["politica", "g1", "BR", "https://g1.globo.com/rss/g1/rs/rio-grande-do-sul/"],
   ["politica", "Folha", "BR", "https://feeds.folha.uol.com.br/poder/rss091.xml"],
-  ["politica", "CNN Brasil", "BR", "https://www.cnnbrasil.com.br/politica/feed/"],
   ["politica", "BBC News Brasil", "GB", "https://feeds.bbci.co.uk/portuguese/rss.xml"],
   ["politica", "JOTA", "BR", "https://www.jota.info/feed"],
   ["politica", "Congresso em Foco", "BR", "https://www.congressoemfoco.com.br/feed/"],
   ["politica", "Agência Pública", "BR", "https://apublica.org/feed/"],
-  ["politica", "Matinal", "BR", "https://www.matinaljornalismo.com.br/feed/"],
   ["politica", "Sul21", "BR", "https://sul21.com.br/feed/"],
 
   // Esportes
@@ -124,6 +119,5 @@ export const FEEDS = [
   ["esportes", "Trivela", "BR", "https://trivela.com.br/feed/"],
   ["esportes", "Gazeta Esportiva", "BR", "https://www.gazetaesportiva.com/feed/"],
   ["esportes", "BBC Sport", "GB", "https://feeds.bbci.co.uk/sport/football/rss.xml"],
-  ["esportes", "Record", "PT", "https://www.record.pt/rss"],
   ["esportes", "Gazzetta dello Sport", "IT", "https://www.gazzetta.it/rss/home.xml"],
 ];
