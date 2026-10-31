@@ -3,6 +3,7 @@
 // Feed que falha muitas vezes seguidas aparece em feeds_estado com erros_seguidos alto: corrija a URL ou tire daqui.
 // Fora em 31/10/2026: ACM Queue, BleepingComputer, CNX Software, FinTech Futures e Matinal bloqueiam o Worker (HTTP 403);
 // Uber Engineering e CNN Brasil Política sumiram (HTTP 404); Record não publica itens reconhecíveis. A busca da curadoria cobre essas fontes.
+// Fora também: Lance!, Correio do Povo, Di Marzio e KrASIA (404); InfoMoney Negócios e LABS (sem itens reconhecíveis).
 // Transfermarkt não tem RSS e bloqueia robôs: o mercado vem das buscas da curadoria de Esportes.
 export const FEEDS = [
   // Tech: engenharia e arquitetura
@@ -98,11 +99,9 @@ export const FEEDS = [
   ["negocios", "Brazil Journal", "BR", "https://braziljournal.com/feed/"],
   // Negócios: Brasil
   ["negocios", "Exame", "BR", "https://exame.com/feed/"],
-  ["negocios", "InfoMoney", "BR", "https://www.infomoney.com.br/negocios/feed/"],
   ["negocios", "Startupi", "BR", "https://startupi.com.br/feed/"],
   ["negocios", "g1", "BR", "https://g1.globo.com/rss/g1/economia/"],
   ["negocios", "Folha", "BR", "https://feeds.folha.uol.com.br/mercado/rss091.xml"],
-  ["negocios", "LABS", "BR", "https://labsnews.com/en/feed/"],
   // Negócios: mundo
   ["negocios", "TechCrunch", "US", "https://techcrunch.com/category/startups/feed/"],
   ["negocios", "TechCrunch", "US", "https://techcrunch.com/category/venture/feed/"],
@@ -112,7 +111,6 @@ export const FEEDS = [
   ["negocios", "Axios", "US", "https://api.axios.com/feed/"],
   ["negocios", "Stratechery", "US", "https://stratechery.com/feed/"],
   ["negocios", "Sifted", "GB", "https://sifted.eu/feed"],
-  ["negocios", "KrASIA", "SG", "https://kr-asia.com/feed"],
   ["negocios", "TechNode", "CN", "https://technode.com/feed/"],
   ["negocios", "Wamda", "AE", "https://www.wamda.com/feed"],
   ["negocios", "ECO", "PT", "https://eco.sapo.pt/feed/"],
@@ -151,9 +149,6 @@ export const FEEDS = [
 
   // Esportes
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/futebol-internacional/"],
-  ["esportes", "Lance!", "BR", "https://www.lance.com.br/feed"],
-  ["esportes", "Correio do Povo", "BR", "https://www.correiodopovo.com.br/rss"],
-  ["esportes", "Gianluca Di Marzio", "IT", "https://gianlucadimarzio.com/feed"],
   ["esportes", "The Guardian", "GB", "https://www.theguardian.com/football/rss"],
   ["esportes", "ESPN", "US", "https://www.espn.com/espn/rss/soccer/news"],
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/times/internacional/"],
