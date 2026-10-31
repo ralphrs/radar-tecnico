@@ -16,10 +16,11 @@ Ordem das abas: Tech, Negócios, Investimentos, Política, Esportes.
 
 Negócios (só notícias, curadoria Sonnet 3x/dia sobre candidatos do RSS)
 - [ ] Startups e IA como mercado saem de Tech; rodada, aquisição, IPO e resultado de fintech também vêm para cá (produto e infra ficam em Tech)
-- [ ] Temas: startups e VC, fusões e aquisições, big techs, IA como negócio, fintechs e bancos, varejo e consumo digital, trabalho em tech, regulação e antitruste, América Latina, China e Ásia
-- [ ] Feeds: NeoFeed, Brazil Journal, Startups, Crunchbase News, Rest of World e Inc42 passam para negocios; novos: Pipeline, Exame, Bloomberg Línea, Reuters, CNBC, Fortune, Business Insider, Sifted, KrASIA, TechNode, Wamda, ECO, Il Sole 24 Ore
-- [ ] Copiar para Negócios os itens atuais de startups e ia/mercado (lista de ids); tirar de Tech só depois de aprovado
-- [ ] Teste paralelo e troca
+- [x] Temas: startups e VC, fusões e aquisições, big techs, IA como negócio, fintechs e bancos, varejo e consumo digital, trabalho em tech, regulação e antitruste, América Latina, China e Ásia
+- [x] Feeds: NeoFeed, Brazil Journal, Startups, Crunchbase News, Rest of World e Inc42 passam para negocios; novos: Pipeline, Exame, Bloomberg Línea, Reuters, CNBC, Fortune, Business Insider, Sifted, KrASIA, TechNode, Wamda, ECO, Il Sole 24 Ore
+- [x] Copiar para Negócios os itens atuais de startups e ia/mercado (lista de ids); tirar de Tech só depois de aprovado
+- [x] Aba no site e curadoria Sonnet 3x/dia (7h41, 13h41, 19h41), gravando direto em items-negocios (aba nova, sem nada para comparar)
+- [ ] Tirar startups e ia/mercado das tarefas de Tech depois de aprovado
 
 Investimentos
 - [ ] Notícias: bolsa e empresas, FIIs, renda fixa e juros, macro, cripto, regulação, IR; só fatos, sem recomendação de compra ou venda
