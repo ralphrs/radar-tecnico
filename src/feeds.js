@@ -134,7 +134,24 @@ export const FEEDS = [
   ["politica", "Agência Pública", "BR", "https://apublica.org/feed/"],
   ["politica", "Sul21", "BR", "https://sul21.com.br/feed/"],
 
+  // Notícias: Brasil
+  ["politica", "g1", "BR", "https://g1.globo.com/rss/g1/brasil/"],
+  ["politica", "Folha", "BR", "https://feeds.folha.uol.com.br/cotidiano/rss091.xml"],
+  // Notícias: mundo
+  ["politica", "g1", "BR", "https://g1.globo.com/rss/g1/mundo/"],
+  ["politica", "Folha", "BR", "https://feeds.folha.uol.com.br/mundo/rss091.xml"],
+  ["politica", "DW Brasil", "DE", "https://rss.dw.com/rdf/rss-br-all"],
+  ["politica", "RFI Brasil", "FR", "https://www.rfi.fr/br/rss"],
+  ["politica", "Euronews", "FR", "https://pt.euronews.com/rss"],
+  ["politica", "The Guardian", "GB", "https://www.theguardian.com/world/rss"],
+  ["politica", "Al Jazeera", "QA", "https://www.aljazeera.com/xml/rss/all.xml"],
+  ["politica", "NPR", "US", "https://feeds.npr.org/1004/rss.xml"],
+  ["politica", "Público", "PT", "https://feeds.feedburner.com/PublicoRSS"],
+
   // Esportes
+  ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/futebol-internacional/"],
+  ["esportes", "The Guardian", "GB", "https://www.theguardian.com/football/rss"],
+  ["esportes", "ESPN", "US", "https://www.espn.com/espn/rss/soccer/news"],
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/times/internacional/"],
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/brasileirao-serie-a/"],
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/"],
