@@ -235,6 +235,20 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .subgrupo:first-of-type .subsecao { margin-top: 0; }
 .subsecao span { font: 400 11px var(--font-mono); letter-spacing: 0; text-transform: none; }
 .lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+/* Painel de mercado (Investimentos) */
+.mercado { display: flex; flex-direction: column; gap: 10px; }
+.mercado-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.mercado-topo h2 { margin: 0; font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; }
+.mercado-topo small { font: 400 11.5px var(--font-mono); color: var(--muted-foreground); }
+.mercado-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 640px) { .mercado-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tile { border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tile .n { font: 500 12px/1.2 var(--font-sans); color: var(--muted-foreground); }
+.tile .v { font: 600 17px/1.2 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--foreground); overflow-wrap: anywhere; }
+.tile .v small { font-size: 12px; font-weight: 500; color: var(--muted-foreground); margin-left: 3px; }
+.tile .d { font: 500 12px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+.tile .d.sobe { color: var(--ok); } .tile .d.desce { color: var(--err); } .tile .d.igual { color: var(--muted-foreground); }
+.mercado .nota { margin: 0; font-size: 12px; color: var(--muted-foreground); }
 /* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
 .lista.cards { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 10px; }
 @media (min-width: 640px) { .lista.cards { grid-template-columns: 1fr 1fr; } }
@@ -448,6 +462,8 @@ footer b { color: var(--foreground); font-weight: 500; }
     </div>
   </div>
 
+  <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
+
   <div class="feed-topo" role="toolbar" aria-label="Ordem e exibição do feed">
     <div class="feed-ordem">
       <span class="rotulo" id="rot-ordem-topo">Ordem</span>
@@ -646,6 +662,16 @@ const TEMAS_NEGOCIOS = [
   { id: "latam", curto: "América Latina", nome: "América Latina", cor: G.ops, temas: ["latam"] },
   { id: "asia", curto: "China e Ásia", nome: "China e Ásia", cor: G.seg, temas: ["asia"] },
 ];
+const TEMAS_INVESTIMENTOS = [
+  { id: "bolsa", curto: "Bolsa e empresas", nome: "Bolsa e empresas", cor: G.arq, temas: ["bolsa"],
+    subs: [{ id: "resultados", nome: "Resultados" }, { id: "proventos", nome: "Dividendos e JCP" }, { id: "mercado", nome: "Mercado e Ibovespa" }, { id: "ofertas", nome: "IPOs e ofertas" }] },
+  { id: "fiis", curto: "FIIs", nome: "Fundos imobiliários", cor: G.ops, temas: ["fiis"] },
+  { id: "rendafixa", curto: "Renda fixa", nome: "Renda fixa e juros", cor: G.pag, temas: ["rendafixa"] },
+  { id: "macro", curto: "Macro", nome: "Juros, inflação e câmbio", cor: G.doc, temas: ["macro"] },
+  { id: "cripto", curto: "Cripto", nome: "Criptomoedas", cor: G.ia, temas: ["cripto"] },
+  { id: "regulacao", curto: "Regras e IR", nome: "CVM, Banco Central e Imposto de Renda", cor: G.seg, temas: ["regulacao"] },
+  { id: "mundo", curto: "Mercados lá fora", nome: "Mercados lá fora", cor: G.set, temas: ["mundo"] },
+];
 const TEMAS_ESPORTES = [
   { id: "inter", curto: "Inter", nome: "Internacional", cor: G.seg, temas: ["inter"],
     subs: [
@@ -696,6 +722,13 @@ const TIPOS_NEGOCIOS = [
   { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
   { id: "video", nome: "Vídeos", icone: IC_VIDEO },
 ];
+const TIPOS_INVESTIMENTOS = [
+  { id: "todos", nome: "Tudo" },
+  { id: "noticia", nome: "Notícias" }, { id: "analise", nome: "Análises" },
+  { id: "relatorio", nome: "Relatórios", icone: IC_DOC },
+  { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
+  { id: "video", nome: "Vídeos", icone: IC_VIDEO },
+];
 const TIPOS_ESPORTES = [
   { id: "todos", nome: "Tudo" },
   { id: "noticia", nome: "Notícias" }, { id: "resultado", nome: "Resultados" }, { id: "analise", nome: "Análises" },
@@ -714,6 +747,11 @@ const RADARES = {
     temas: TEMAS_NEGOCIOS, tipos: TIPOS_NEGOCIOS,
     rodape: "Atualizado automaticamente três vezes por dia: startups, aquisições, big techs, IA e fintechs como negócio, com Brasil e América Latina primeiro. Notícias ficam 30 dias; análises, balanços, vídeos e podcasts, 3 meses; relatórios, 12 meses.",
     vazio: "A curadoria roda três vezes por dia e traz rodadas, aquisições, resultados de big techs, IA e fintechs como negócio. Os itens aparecem aqui depois da primeira rodada." },
+  investimentos: { id: "investimentos", aba: "Investimentos", titulo: "Investimentos", items: "items-investimentos", destaques: "destaques-investimentos", status: "meta/status-investimentos", sufixo: "-investimentos", mercado: true,
+    escopo: (i) => (i.tema === "mundo" ? "internacional" : "nacional"),
+    temas: TEMAS_INVESTIMENTOS, tipos: TIPOS_INVESTIMENTOS,
+    rodape: "Notícias três vezes por dia; cotações a cada 30 minutos (com atraso) e indicadores do Banco Central duas vezes por dia. Nada aqui é recomendação de investimento.",
+    vazio: "A curadoria roda três vezes por dia e traz bolsa, FIIs, renda fixa, juros, câmbio e cripto. Os itens aparecem aqui depois da primeira rodada." },
   politica: { id: "politica", aba: "Notícias", titulo: "Notícias e Política", escopo: (i) => (i.tema === "mundo" ? "internacional" : "nacional"), items: "items-politica", destaques: "destaques-politica", status: "meta/status-politica", sufixo: "-politica",
     temas: TEMAS_POLITICA, tipos: TIPOS_POLITICA,
     rodape: "Atualizado automaticamente várias vezes por dia, com fontes oficiais (Planalto, DOU, Câmara, Senado, STF, TSE, governo do RS) e imprensa de referência. Notícias ficam 30 dias; análises, vídeos e podcasts, 3 meses; publicações oficiais, 12 meses.",
@@ -723,7 +761,7 @@ const RADARES = {
     rodape: "Atualizado automaticamente várias vezes por dia, com o Inter em primeiro lugar, as competições que ele disputa e o vai e vem do mercado. Notícias e resultados ficam 30 dias; análises, vídeos e podcasts, 3 meses.",
     vazio: "A coleta roda várias vezes por dia e traz Inter, Gauchão, Brasileirão, Libertadores, Copa do Brasil e mercado. Os itens aparecem aqui depois da primeira rodada." },
 };
-const ORDEM_RADARES = ["tech", "negocios", "politica", "esportes"];
+const ORDEM_RADARES = ["tech", "negocios", "investimentos", "politica", "esportes"];
 const LIMITE_POR_TEMA = 5;
 const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
 const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
@@ -749,6 +787,7 @@ const ORDENS = [
   { id: "entrada", nome: "Novidades", dica: "O que entrou por último no radar primeiro" },
 ];
 let ordenacao = "data";
+let painelMercado = null, pedindoMercado = false;
 /* Abrangência (Notícias e Esportes): tudo, só nacional ou só internacional. O item pode trazer "escopo"; senão o radar deduz pelo tema. */
 const ESCOPOS = [{ id: "todos", nome: "Tudo" }, { id: "nacional", nome: "Nacional" }, { id: "internacional", nome: "Internacional" }];
 let escopo = "todos";
@@ -788,6 +827,7 @@ function aplicarRadar() {
   recentes = []; antigos = []; itens = []; meta = null; destaque = null; podeMais = false; carregando = false; carregado = false;
   expandidos = new Set();
   document.title = r.titulo + " · Lookout";
+  painelMercado = null; if (r.mercado) setTimeout(lerMercado, 0);
   const h1 = document.querySelector("h1"); if (h1) h1.textContent = r.titulo;
   const rod = document.getElementById("rodape"); if (rod) rod.textContent = r.rodape;
 }
@@ -879,6 +919,45 @@ function renderStatus() {
 /* Urgentes (política): itens com urgente: true coletados nas últimas 24 h */
 const URGENTE_MS = 24 * 3600 * 1000;
 const urgentes = () => itens.filter((i) => i.urgente === true && i.coletado && Date.now() - new Date(i.coletado) <= URGENTE_MS);
+/* Painel de mercado: lê meta/mercado e permite pedir uma atualização (no máximo uma a cada 5 minutos) */
+async function lerMercado() {
+  if (!R().mercado) return;
+  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "mercado" }), { credentials: "same-origin" }); const j = await r.json(); painelMercado = j.existe ? j.data : null; } catch (e) {}
+  renderMercado();
+}
+async function atualizarMercado() {
+  if (pedindoMercado) return;
+  pedindoMercado = true; renderMercado();
+  try { const r = await fetch("/api/mercado/atualizar", { method: "POST", credentials: "same-origin" }); if (r.ok) painelMercado = await r.json(); } catch (e) {}
+  pedindoMercado = false; renderMercado();
+}
+const fmtNum = (v, casas) => Number(v).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+function renderMercado() {
+  const box = $("mercado");
+  if (!R().mercado) { box.hidden = true; return; }
+  box.hidden = false; box.textContent = "";
+  const p = painelMercado;
+  const b = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "mercado-atualizar" }, pedindoMercado ? "Atualizando…" : "Atualizar agora");
+  if (pedindoMercado) b.disabled = true;
+  if (p && p.aguarde) { b.disabled = true; b.textContent = "Atualizado há pouco"; b.title = "Dá para pedir de novo em " + Math.ceil(p.aguarde / 60) + " min"; }
+  b.addEventListener("click", atualizarMercado);
+  box.append(el("div", { class: "mercado-topo" }, el("h2", {}, "Mercado agora"),
+    el("span", { style: "display:inline-flex;align-items:baseline;gap:10px" }, p && p.atualizado ? el("small", {}, "atualizado " + fmtRel(p.atualizado)) : null, b)));
+  if (!p || !(p.itens || []).length) { box.append(el("p", { class: "nota" }, "As cotações aparecem aqui depois da primeira consulta.")); return; }
+  const g = el("div", { class: "mercado-grade" });
+  for (const i of p.itens) {
+    const v = i.unidade === "R$" ? "R$ " + fmtNum(i.valor, i.casas) : fmtNum(i.valor, i.casas);
+    const un = i.unidade && i.unidade !== "R$" ? el("small", {}, i.unidade) : null;
+    let d = null;
+    if (typeof i.variacao === "number") {
+      const cls = i.variacao > 0 ? "sobe" : i.variacao < 0 ? "desce" : "igual";
+      d = el("span", { class: "d " + cls }, (i.variacao > 0 ? "▲ " : i.variacao < 0 ? "▼ " : "") + fmtNum(Math.abs(i.variacao), 2) + "% no dia");
+    } else if (i.data) d = el("span", { class: "d igual" }, "ref. " + i.data.split("-").reverse().join("/"));
+    g.append(el("div", { class: "tile", title: "Fonte: " + i.fonte }, el("span", { class: "n" }, i.nome), el("span", { class: "v" }, v, un), d));
+  }
+  box.append(g);
+  box.append(el("p", { class: "nota" }, (p.temBolsa ? "" : "O Ibovespa e as listas de ativos entram quando o token da brapi estiver configurado. ") + "Cotações com atraso. Nada aqui é recomendação de investimento."));
+}
 function renderUrgente() {
   const box = $("urgente"); box.textContent = "";
   const lista = urgentes();
@@ -1385,7 +1464,7 @@ function renderContador() {
 function render() {
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
-  renderRadares(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
+  renderRadares(); renderMercado(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
   /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
@@ -1613,6 +1692,7 @@ render();
   ligarFavoritosNaConta(db);
   ligarRadar();
   setInterval(() => { renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral(); }, 60000);
+  setInterval(() => { if (R().mercado && !document.hidden) lerMercado(); }, 120000);
 })();
 </script>
 

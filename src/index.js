@@ -1,8 +1,9 @@
 import { emailDoAccess, accessConfigurado } from "./auth.js";
 import { coletar, limpar } from "./coleta.js";
+import { cronMercado, pedirAtualizacao } from "./mercado.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
-const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios"]);
+const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos"]);
 const DOCS = new Set([...LISTAS, "meta"]);
 const CAMPOS_ORDEM = new Set(["coletado", "data", "publicado"]);
 const OPS = new Set(["<", "<=", ">", ">="]);
@@ -186,6 +187,7 @@ export default {
     if (p === "/api/me") return json({ email: quem.email, nome: quem.nome, admin: quem.admin });
     if (p === "/api/q" && request.method === "GET") return consultar(url, env);
     if (p === "/api/doc" && request.method === "GET") return lerDoc(url, env);
+    if (p === "/api/mercado/atualizar" && request.method === "POST") return json(await pedirAtualizacao(env));
     if (p === "/api/favs" || p.startsWith("/api/favs/"))
       return favoritos(request, env, quem, p.length > 10 ? decodeURIComponent(p.slice(10)) : "");
 
@@ -205,6 +207,7 @@ export default {
   async scheduled(evento, env) {
     const minuto = new Date(evento.scheduledTime || Date.now()).getUTCMinutes();
     try { await coletar(env); } catch (e) { console.error("coleta", e); }
+    try { await cronMercado(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("mercado", e); }
     if (minuto === 7) { try { console.log("limpeza", JSON.stringify(await limpar(env))); } catch (e) { console.error("limpeza", e); } }
     await importarHistorico(env);
   },

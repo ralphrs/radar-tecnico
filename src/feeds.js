@@ -116,6 +116,20 @@ export const FEEDS = [
   ["negocios", "ECO", "PT", "https://eco.sapo.pt/feed/"],
   ["negocios", "Il Sole 24 Ore", "IT", "https://www.ilsole24ore.com/rss/tecnologia.xml"],
 
+  // Investimentos
+  ["investimentos", "Money Times", "BR", "https://www.moneytimes.com.br/feed/"],
+  ["investimentos", "Seu Dinheiro", "BR", "https://www.seudinheiro.com/feed/"],
+  ["investimentos", "Suno", "BR", "https://www.suno.com.br/noticias/feed/"],
+  ["investimentos", "E-Investidor", "BR", "https://einvestidor.estadao.com.br/feed/"],
+  ["investimentos", "InfoMoney", "BR", "https://www.infomoney.com.br/feed/"],
+  ["investimentos", "Clube FII", "BR", "https://www.clubefii.com.br/feed"],
+  ["investimentos", "FIIs", "BR", "https://fiis.com.br/feed/"],
+  ["investimentos", "Livecoins", "BR", "https://livecoins.com.br/feed/"],
+  ["investimentos", "Portal do Bitcoin", "BR", "https://portaldobitcoin.uol.com.br/feed/"],
+  ["investimentos", "CoinDesk", "US", "https://www.coindesk.com/arc/outboundfeeds/rss/"],
+  ["investimentos", "Cointelegraph", "US", "https://cointelegraph.com/rss"],
+  ["investimentos", "CNBC", "US", "https://www.cnbc.com/id/15839069/device/rss/rss.html"],
+
   // Política: fontes oficiais
   ["politica", "Agência Brasil", "BR", "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml"],
   ["politica", "Agência Senado", "BR", "https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS"],
