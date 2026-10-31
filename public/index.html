@@ -394,6 +394,10 @@ footer b { color: var(--foreground); font-weight: 500; }
           <div class="chips" id="chips" role="group" aria-label="Filtrar por tema"></div>
           <div class="sub" id="sub" role="group" aria-label="Filtrar por subtema" hidden></div>
         </div>
+        <div class="grupo" id="escopo-painel-box" hidden>
+          <h3 class="rotulo" id="rot-escopo-painel">Onde</h3>
+          <div class="seg" id="escopo-painel" role="group" aria-labelledby="rot-escopo-painel"></div>
+        </div>
         <div class="grupo">
           <h3 class="rotulo" id="rot-ordem-painel">Ordem</h3>
           <div class="seg" id="ordem-painel" role="group" aria-labelledby="rot-ordem-painel"></div>
@@ -418,6 +422,10 @@ footer b { color: var(--foreground); font-weight: 500; }
     <div class="feed-ordem">
       <span class="rotulo" id="rot-ordem-topo">Ordem</span>
       <div class="seg" id="ordem-topo" role="group" aria-labelledby="rot-ordem-topo"></div>
+    </div>
+    <div class="feed-ordem" id="escopo-topo-box" hidden>
+      <span class="rotulo" id="rot-escopo-topo">Onde</span>
+      <div class="seg" id="escopo-topo" role="group" aria-labelledby="rot-escopo-topo"></div>
     </div>
     <div class="feed-mostrar">
       <button class="chip t-rel" type="button" id="topo-relevantes" aria-pressed="false"></button>
@@ -592,7 +600,9 @@ const TEMAS_POLITICA = [
     subs: [{ id: "resultado", nome: "Resultados e transição" }, { id: "tse", nome: "TSE e Justiça Eleitoral" }, { id: "bastidores", nome: "Bastidores e articulação" }] },
   { id: "economia", curto: "Economia", nome: "Economia e política econômica", cor: G.pag, temas: ["economia"],
     subs: [{ id: "fiscal", nome: "Fiscal e orçamento" }, { id: "bc", nome: "Banco Central e juros" }, { id: "reformas", nome: "Reformas" }] },
-  { id: "mundo", curto: "Internacional", nome: "Internacional", cor: G.set, temas: ["mundo"] },
+  { id: "brasil", curto: "Brasil", nome: "Brasil: cidades, saúde, segurança e clima", cor: G.ops, temas: ["brasil"] },
+  { id: "mundo", curto: "Mundo", nome: "Mundo", cor: G.set, temas: ["mundo"],
+    subs: [{ id: "americas", nome: "Américas" }, { id: "europa", nome: "Europa" }, { id: "asia", nome: "Ásia e Oceania" }, { id: "oriente-medio", nome: "Oriente Médio e África" }] },
 ];
 const TEMAS_NEGOCIOS = [
   { id: "startups", curto: "Startups e VC", nome: "Startups, rodadas e VC", cor: G.dev, temas: ["startups"] },
@@ -619,6 +629,8 @@ const TEMAS_ESPORTES = [
   { id: "copadobrasil", curto: "Copa do Brasil", nome: "Copa do Brasil", cor: G.doc, temas: ["copadobrasil"] },
   { id: "mercado", curto: "Vai e vem", nome: "Vai e vem", cor: G.ia, temas: ["mercado"],
     subs: [{ id: "brasil", nome: "Mercado brasileiro" }, { id: "internacional", nome: "Mercado internacional" }, { id: "inter", nome: "Inter no mercado" }] },
+  { id: "internacional", curto: "Futebol internacional", nome: "Futebol internacional", cor: G.set, temas: ["internacional"],
+    subs: [{ id: "europa", nome: "Ligas da Europa" }, { id: "champions", nome: "Champions e copas europeias" }, { id: "selecoes", nome: "Seleções e Copa do Mundo" }, { id: "brasileiros", nome: "Brasileiros no exterior" }] },
 ];
 /* TEMAS, TIPOS e os mapas abaixo apontam para o radar aberto e são trocados em aplicarRadar() */
 let TEMAS = TEMAS_TECH, GRUPO_DE = {}, TEMA = {};
@@ -672,11 +684,11 @@ const RADARES = {
     temas: TEMAS_NEGOCIOS, tipos: TIPOS_NEGOCIOS,
     rodape: "Atualizado automaticamente três vezes por dia: startups, aquisições, big techs, IA e fintechs como negócio, com Brasil e América Latina primeiro. Notícias ficam 30 dias; análises, balanços, vídeos e podcasts, 3 meses; relatórios, 12 meses.",
     vazio: "A curadoria roda três vezes por dia e traz rodadas, aquisições, resultados de big techs, IA e fintechs como negócio. Os itens aparecem aqui depois da primeira rodada." },
-  politica: { id: "politica", aba: "Política", titulo: "Radar de Política", items: "items-politica", destaques: "destaques-politica", status: "meta/status-politica", sufixo: "-politica",
+  politica: { id: "politica", aba: "Notícias", titulo: "Notícias e Política", escopo: (i) => (i.tema === "mundo" ? "internacional" : "nacional"), items: "items-politica", destaques: "destaques-politica", status: "meta/status-politica", sufixo: "-politica",
     temas: TEMAS_POLITICA, tipos: TIPOS_POLITICA,
     rodape: "Atualizado automaticamente várias vezes por dia, com fontes oficiais (Planalto, DOU, Câmara, Senado, STF, TSE, governo do RS) e imprensa de referência. Notícias ficam 30 dias; análises, vídeos e podcasts, 3 meses; publicações oficiais, 12 meses.",
-    vazio: "A coleta roda várias vezes por dia e traz leis, decisões, Congresso, governo, RS e eleições. Os itens aparecem aqui depois da primeira rodada." },
-  esportes: { id: "esportes", aba: "Esportes", titulo: "Radar de Esportes", items: "items-esportes", destaques: "destaques-esportes", status: "meta/status-esportes", sufixo: "-esportes",
+    vazio: "A coleta roda várias vezes por dia e traz política, leis, governo, RS, o que acontece no Brasil e no mundo. Os itens aparecem aqui depois da primeira rodada." },
+  esportes: { id: "esportes", aba: "Esportes", titulo: "Radar de Esportes", escopo: (i) => (i.tema === "internacional" || i.subtema === "internacional" ? "internacional" : "nacional"), items: "items-esportes", destaques: "destaques-esportes", status: "meta/status-esportes", sufixo: "-esportes",
     temas: TEMAS_ESPORTES, tipos: TIPOS_ESPORTES,
     rodape: "Atualizado automaticamente várias vezes por dia, com o Inter em primeiro lugar, as competições que ele disputa e o vai e vem do mercado. Notícias e resultados ficam 30 dias; análises, vídeos e podcasts, 3 meses.",
     vazio: "A coleta roda várias vezes por dia e traz Inter, Gauchão, Brasileirão, Libertadores, Copa do Brasil e mercado. Os itens aparecem aqui depois da primeira rodada." },
@@ -707,6 +719,11 @@ const ORDENS = [
   { id: "entrada", nome: "Novidades", dica: "O que entrou por último no radar primeiro" },
 ];
 let ordenacao = "data";
+/* Abrangência (Notícias e Esportes): tudo, só nacional ou só internacional. O item pode trazer "escopo"; senão o radar deduz pelo tema. */
+const ESCOPOS = [{ id: "todos", nome: "Tudo" }, { id: "nacional", nome: "Nacional" }, { id: "internacional", nome: "Internacional" }];
+let escopo = "todos";
+const escopoDe = (i) => (i.escopo === "nacional" || i.escopo === "internacional" ? i.escopo : (R().escopo ? R().escopo(i) : "nacional"));
+const passaEscopo = (i) => escopo === "todos" || !R().escopo || escopoDe(i) === escopo;
 try { ordenacao = localStorage.getItem("radar-ordem") || "data"; } catch (e) {}
 if (!ORDENS.some((o) => o.id === ordenacao)) ordenacao = "data";
 let radar = "tech", carregado = false;
@@ -731,6 +748,9 @@ function aplicarRadar() {
   let salvoTemas = "todos"; tipo = "todos";
   try { salvoTemas = localStorage.getItem("radar-filtro" + r.sufixo) || "todos"; tipo = localStorage.getItem("radar-tipo" + r.sufixo) || "todos"; } catch (e) {}
   temasSel = new Set(salvoTemas.split(",").map((x) => TEMA[x] ? x : GRUPO_DE[x]).filter(Boolean)); subsSel = new Set();
+  escopo = "todos";
+  try { escopo = localStorage.getItem("radar-escopo" + r.sufixo) || "todos"; } catch (e) {}
+  if (!r.escopo || !ESCOPOS.some((x) => x.id === escopo)) escopo = "todos";
   if (tipo === "alta") { tipo = "todos"; soRel = true; }
   if (tipo === "youtube") tipo = "video";
   if (!TIPOS.some((t) => t.id === tipo)) tipo = "todos";
@@ -801,7 +821,7 @@ const fonteEl = (i) => el("span", { class: "fonte" }, bandeira(i), i.fonte || ho
 const tipoDe = (i) => (i.tipo === "youtube" ? "video" : i.tipo);
 const passaTipo = (i, t) => t === "todos" || tipoDe(i) === t;
 const passaRel = (i) => !soRel || Number(i.relevancia) >= 3;
-const passaBase = (i) => passaBusca(i) && passaRel(i);
+const passaBase = (i) => passaBusca(i) && passaRel(i) && passaEscopo(i);
 /* Lista de onde os filtros partem: o feed inteiro ou só os favoritos */
 const fonteItens = () => (soFav ? favsDoRadar().map(([id, f]) => ({ ...f, _id: id })).sort(ordem) : itens);
 const agora = () => new Date().toISOString();
@@ -1235,8 +1255,24 @@ function renderOrdem() {
     });
   }
 }
+function escolherEscopo(id) { escopo = id; try { localStorage.setItem("radar-escopo" + R().sufixo, id); } catch (e) {} render(); }
+function renderEscopo() {
+  const tem = !!R().escopo;
+  $("escopo-topo-box").hidden = !tem; $("escopo-painel-box").hidden = !tem;
+  if (!tem) return;
+  const base = fonteItens().filter((i) => passaBusca(i) && passaRel(i) && passaTipo(i, tipo) && passaTema(i));
+  for (const id of ["escopo-topo", "escopo-painel"]) {
+    const s = $(id); s.textContent = "";
+    ESCOPOS.forEach((o) => {
+      const n = o.id === "todos" ? base.length : base.filter((i) => escopoDe(i) === o.id).length;
+      const b = el("button", { type: "button", id: id + "-" + o.id, "aria-pressed": String(escopo === o.id) }, o.nome, el("span", { class: "k" }, String(n)));
+      b.addEventListener("click", () => escolherEscopo(o.id));
+      s.append(b);
+    });
+  }
+}
 function renderAlternancias() {
-  renderOrdem();
+  renderOrdem(); renderEscopo();
   [["so-relevantes", "so-favoritos", "modo-resumos"], ["topo-relevantes", "topo-favoritos", "topo-resumos"]].forEach(([rid, fid, mid]) => {
     const r = $(rid); r.textContent = "";
     r.setAttribute("aria-pressed", String(soRel));
@@ -1249,7 +1285,7 @@ function renderAlternancias() {
 }
 /* Contador de filtros ativos no botão da barra e total no rodapé do painel */
 function renderContador() {
-  const n = temasSel.size + subsSel.size + soRel + soFav + (busca.trim() ? 1 : 0);
+  const n = temasSel.size + subsSel.size + (escopo !== "todos") + soRel + soFav + (busca.trim() ? 1 : 0);
   const c = $("contador"), b = $("abrir-filtros");
   c.hidden = !n; c.textContent = String(n);
   b.dataset.ativo = String(n > 0);
@@ -1319,7 +1355,8 @@ function alternarResumos() {
   render();
 }
 function limparFiltros() {
-  temasSel.clear(); subsSel.clear(); soRel = false; soFav = false; busca = "";
+  temasSel.clear(); subsSel.clear(); escopo = "todos"; soRel = false; soFav = false; busca = "";
+  try { localStorage.setItem("radar-escopo" + R().sufixo, "todos"); } catch (e) {}
   try { localStorage.setItem("radar-filtro" + R().sufixo, "todos"); localStorage.setItem("radar-relevantes", "0"); } catch (e) {}
   render();
 }
@@ -1335,7 +1372,7 @@ $("nav-limpar").addEventListener("click", () => { limparFiltros(); irParaFeed();
 
 /* Painel de filtros */
 let abridor = null, assinatura = "";
-const estado = () => [[...temasSel].join(","), [...subsSel].join(","), ordenacao, soRel, soFav, busca, tipo].join("|");
+const estado = () => [[...temasSel].join(","), [...subsSel].join(","), ordenacao, escopo, soRel, soFav, busca, tipo].join("|");
 function abrirPainel(foco) {
   const p = $("painel");
   if (p.hidden) {
