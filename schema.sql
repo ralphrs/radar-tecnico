@@ -13,3 +13,33 @@ CREATE TABLE IF NOT EXISTS usuarios (
   criado TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   ultimo_acesso TEXT NOT NULL DEFAULT ''
 );
+
+-- Coleta por RSS: o cron do Worker lê os feeds de src/feeds.js e guarda aqui o que é novo.
+-- A tarefa de curadoria lê os candidatos "novo", escolhe, resume e marca como "lido".
+CREATE TABLE IF NOT EXISTS candidatos (
+  id TEXT PRIMARY KEY,            -- "i" + 16 primeiros hex do SHA-256 da URL (o mesmo id dos itens)
+  radar TEXT NOT NULL,            -- tech | politica | esportes
+  url TEXT NOT NULL,
+  titulo TEXT NOT NULL,
+  fonte TEXT NOT NULL,
+  pais TEXT NOT NULL DEFAULT '',
+  publicado TEXT NOT NULL DEFAULT '',
+  trecho TEXT NOT NULL DEFAULT '',
+  feed TEXT NOT NULL,
+  visto TEXT NOT NULL,            -- quando o Worker achou
+  status TEXT NOT NULL DEFAULT 'novo',
+  lote TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_candidatos_radar ON candidatos (radar, status, visto);
+
+CREATE TABLE IF NOT EXISTS feeds_estado (
+  url TEXT PRIMARY KEY,
+  radar TEXT NOT NULL,
+  fonte TEXT NOT NULL,
+  ultima_checagem TEXT NOT NULL DEFAULT '',
+  ultimo_ok TEXT NOT NULL DEFAULT '',
+  erro TEXT NOT NULL DEFAULT '',
+  erros_seguidos INTEGER NOT NULL DEFAULT 0,
+  itens_ultima INTEGER NOT NULL DEFAULT 0,
+  novos_total INTEGER NOT NULL DEFAULT 0
+);

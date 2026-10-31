@@ -1,4 +1,5 @@
 import { emailDoAccess, accessConfigurado } from "./auth.js";
+import { coletar, limpar } from "./coleta.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
 const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes"]);
@@ -200,8 +201,18 @@ export default {
     return env.ASSETS.fetch(request);
   },
 
-  // Importa o histórico em partes (public/seed/NNN.json), uma por minuto, até acabar.
-  async scheduled(_evento, env) {
+  // A cada minuto: importa o histórico (enquanto houver), lê alguns feeds RSS e, uma vez por hora, apaga o que venceu.
+  async scheduled(evento, env) {
+    const minuto = new Date(evento.scheduledTime || Date.now()).getUTCMinutes();
+    try { await coletar(env); } catch (e) { console.error("coleta", e); }
+    if (minuto === 7) { try { console.log("limpeza", JSON.stringify(await limpar(env))); } catch (e) { console.error("limpeza", e); } }
+    await importarHistorico(env);
+  },
+};
+
+// Importa o histórico em partes (public/seed/NNN.json), uma por minuto, até acabar.
+async function importarHistorico(env) {
+  {
     const estado = await env.DB.prepare("SELECT data FROM docs WHERE collection = '_sistema' AND id = 'seed'").first();
     const s = estado ? JSON.parse(estado.data) : { parte: 0, fim: false };
     if (s.fim) return;
@@ -220,8 +231,8 @@ export default {
       await env.DB.batch(docs.slice(i, i + 50).map((d) => stmt.bind(d.c, d.id, JSON.stringify(d.data), d.k || "")));
     }
     await salvarEstado(env, { parte: s.parte + 1, fim: s.parte + 1 >= partes.length, atualizado: agoraIso() });
-  },
-};
+  }
+}
 
 async function salvarEstado(env, s) {
   await env.DB.prepare(
