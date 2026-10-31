@@ -77,14 +77,8 @@ export const FEEDS = [
   ["tech", "Fintech Business Weekly", "US", "https://fintechbusinessweekly.substack.com/feed"],
   ["tech", "PYMNTS", "US", "https://www.pymnts.com/feed/"],
   ["tech", "TechCrunch", "US", "https://techcrunch.com/category/fintech/feed/"],
-  ["tech", "Crunchbase News", "US", "https://news.crunchbase.com/feed/"],
-  ["tech", "Rest of World", "US", "https://restofworld.org/feed/latest/"],
-  ["tech", "Inc42", "IN", "https://inc42.com/feed/"],
   ["tech", "Finsiders Brasil", "BR", "https://finsidersbrasil.com.br/feed/"],
   ["tech", "Let's Money", "BR", "https://letsmoney.com.br/feed/"],
-  ["tech", "Startups", "BR", "https://startups.com.br/feed/"],
-  ["tech", "NeoFeed", "BR", "https://neofeed.com.br/feed/"],
-  ["tech", "Brazil Journal", "BR", "https://braziljournal.com/feed/"],
   ["tech", "Mobile Time", "BR", "https://www.mobiletime.com.br/feed/"],
   ["tech", "Tecnoblog", "BR", "https://tecnoblog.net/feed/"],
   // Tech: podcasts
@@ -93,6 +87,35 @@ export const FEEDS = [
   // Tech: setup e gadgets
   ["tech", "Hackaday", "US", "https://hackaday.com/blog/feed/"],
   ["tech", "Tom's Hardware", "US", "https://www.tomshardware.com/feeds/all"],
+
+  // Negócios: vieram de Tech
+  ["negocios", "Crunchbase News", "US", "https://news.crunchbase.com/feed/"],
+  ["negocios", "Rest of World", "US", "https://restofworld.org/feed/latest/"],
+  ["negocios", "Inc42", "IN", "https://inc42.com/feed/"],
+  ["negocios", "Startups", "BR", "https://startups.com.br/feed/"],
+  ["negocios", "NeoFeed", "BR", "https://neofeed.com.br/feed/"],
+  ["negocios", "Brazil Journal", "BR", "https://braziljournal.com/feed/"],
+  // Negócios: Brasil
+  ["negocios", "Exame", "BR", "https://exame.com/feed/"],
+  ["negocios", "InfoMoney", "BR", "https://www.infomoney.com.br/negocios/feed/"],
+  ["negocios", "Startupi", "BR", "https://startupi.com.br/feed/"],
+  ["negocios", "g1", "BR", "https://g1.globo.com/rss/g1/economia/"],
+  ["negocios", "Folha", "BR", "https://feeds.folha.uol.com.br/mercado/rss091.xml"],
+  ["negocios", "LABS", "BR", "https://labsnews.com/en/feed/"],
+  // Negócios: mundo
+  ["negocios", "TechCrunch", "US", "https://techcrunch.com/category/startups/feed/"],
+  ["negocios", "TechCrunch", "US", "https://techcrunch.com/category/venture/feed/"],
+  ["negocios", "CNBC", "US", "https://www.cnbc.com/id/19854910/device/rss/rss.html"],
+  ["negocios", "Fortune", "US", "https://fortune.com/feed/"],
+  ["negocios", "Business Insider", "US", "https://feeds.businessinsider.com/custom/all"],
+  ["negocios", "Axios", "US", "https://api.axios.com/feed/"],
+  ["negocios", "Stratechery", "US", "https://stratechery.com/feed/"],
+  ["negocios", "Sifted", "GB", "https://sifted.eu/feed"],
+  ["negocios", "KrASIA", "SG", "https://kr-asia.com/feed"],
+  ["negocios", "TechNode", "CN", "https://technode.com/feed/"],
+  ["negocios", "Wamda", "AE", "https://www.wamda.com/feed"],
+  ["negocios", "ECO", "PT", "https://eco.sapo.pt/feed/"],
+  ["negocios", "Il Sole 24 Ore", "IT", "https://www.ilsole24ore.com/rss/tecnologia.xml"],
 
   // Política: fontes oficiais
   ["politica", "Agência Brasil", "BR", "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml"],

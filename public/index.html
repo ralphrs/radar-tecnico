@@ -93,6 +93,8 @@ h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: 
 .b-novo { background: color-mix(in srgb, var(--primary) 12%, var(--card)); color: var(--primary); }
 /* Tipos e etiquetas dos radares de política e esportes */
 .b-oficial { border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: var(--ok); }
+.b-balanco { border-color: color-mix(in srgb, var(--warn) 50%, transparent); color: var(--warn); }
+.b-relatorio { border-color: color-mix(in srgb, var(--info) 50%, transparent); color: var(--info); }
 .b-analise { border-color: color-mix(in srgb, var(--chart-1) 50%, transparent); color: var(--chart-1); }
 .b-resultado { border-color: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--primary); }
 .b-clube { background: var(--secondary); border-color: var(--border); color: var(--foreground); font-weight: 500; }
@@ -101,6 +103,7 @@ h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: 
 /* Abas de radar (Tech, Política, Esportes) */
 .radares { display: flex; width: 100%; }
 .radares button { flex: 1 1 0; justify-content: center; height: 32px; font-size: 13.5px; }
+.nav-temas .radares { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
 .barra-radares { display: flex; align-items: center; height: var(--toque); }
 
 /* Faixa de urgentes (política): no topo do feed e no trilho direito */
@@ -591,6 +594,18 @@ const TEMAS_POLITICA = [
     subs: [{ id: "fiscal", nome: "Fiscal e orçamento" }, { id: "bc", nome: "Banco Central e juros" }, { id: "reformas", nome: "Reformas" }] },
   { id: "mundo", curto: "Internacional", nome: "Internacional", cor: G.set, temas: ["mundo"] },
 ];
+const TEMAS_NEGOCIOS = [
+  { id: "startups", curto: "Startups e VC", nome: "Startups, rodadas e VC", cor: G.dev, temas: ["startups"] },
+  { id: "ma", curto: "Fusões e aquisições", nome: "Fusões, aquisições e IPOs", cor: G.arq, temas: ["ma"] },
+  { id: "bigtech", curto: "Big techs", nome: "Big techs: resultados e estratégia", cor: G.ia, temas: ["bigtech"] },
+  { id: "ia", curto: "IA como negócio", nome: "IA como negócio", cor: G.doc, temas: ["ia"] },
+  { id: "financas", curto: "Fintechs e bancos", nome: "Fintechs e bancos", cor: G.pag, temas: ["financas"] },
+  { id: "varejo", curto: "Varejo e consumo", nome: "Varejo e consumo digital", cor: G.ops, temas: ["varejo"] },
+  { id: "trabalho", curto: "Trabalho em tech", nome: "Trabalho em tech", cor: G.set, temas: ["trabalho"] },
+  { id: "regulacao", curto: "Regulação", nome: "Regulação e antitruste", cor: G.seg, temas: ["regulacao"] },
+  { id: "latam", curto: "América Latina", nome: "América Latina", cor: G.ops, temas: ["latam"] },
+  { id: "asia", curto: "China e Ásia", nome: "China e Ásia", cor: G.seg, temas: ["asia"] },
+];
 const TEMAS_ESPORTES = [
   { id: "inter", curto: "Inter", nome: "Internacional", cor: G.seg, temas: ["inter"],
     subs: [
@@ -632,6 +647,13 @@ const TIPOS_POLITICA = [
   { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
   { id: "video", nome: "Vídeos", icone: IC_VIDEO },
 ];
+const TIPOS_NEGOCIOS = [
+  { id: "todos", nome: "Tudo" },
+  { id: "noticia", nome: "Notícias" }, { id: "analise", nome: "Análises" }, { id: "balanco", nome: "Balanços" },
+  { id: "relatorio", nome: "Relatórios", icone: IC_DOC },
+  { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
+  { id: "video", nome: "Vídeos", icone: IC_VIDEO },
+];
 const TIPOS_ESPORTES = [
   { id: "todos", nome: "Tudo" },
   { id: "noticia", nome: "Notícias" }, { id: "resultado", nome: "Resultados" }, { id: "analise", nome: "Análises" },
@@ -639,13 +661,17 @@ const TIPOS_ESPORTES = [
   { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
 ];
 let TIPOS = TIPOS_TECH;
-const NOME_TIPO = { noticia: "Notícia", artigo: "Artigo", release: "Release", youtube: "Vídeo", video: "Vídeo", podcast: "Podcast", review: "Review", curso: "Curso", oficial: "Oficial", analise: "Análise", resultado: "Resultado", whitepaper: "Whitepaper" };
+const NOME_TIPO = { noticia: "Notícia", artigo: "Artigo", release: "Release", youtube: "Vídeo", video: "Vídeo", podcast: "Podcast", review: "Review", curso: "Curso", oficial: "Oficial", analise: "Análise", resultado: "Resultado", whitepaper: "Whitepaper", balanco: "Balanço", relatorio: "Relatório" };
 /* Cada radar lê as próprias collections. O tech mantém os nomes e as chaves de localStorage de sempre. */
 const RADARES = {
   tech: { id: "tech", aba: "Tech", titulo: "Radar Técnico", items: "items", destaques: "destaques", status: "meta/status", sufixo: "",
     temas: TEMAS_TECH, tipos: TIPOS_TECH,
     rodape: "Atualizado automaticamente várias vezes por dia. Arquitetura (com integração, migração e legado, docs e diagramas), Data Engineering, Programação, DevOps, Carreira e Cursos são acumulativos: a coleta busca conteúdo dos últimos 12 meses e nada sai do feed por idade. Nos outros temas, notícias ficam 30 dias e releases, vídeos e reviews, 3 meses. Whitepapers ficam 12 meses.",
     vazio: "A tarefa agendada pesquisa novidades nos seus temas várias vezes por dia e as notícias aparecem aqui." },
+  negocios: { id: "negocios", aba: "Negócios", titulo: "Radar de Negócios", items: "items-negocios", destaques: "destaques-negocios", status: "meta/status-negocios", sufixo: "-negocios",
+    temas: TEMAS_NEGOCIOS, tipos: TIPOS_NEGOCIOS,
+    rodape: "Atualizado automaticamente três vezes por dia: startups, aquisições, big techs, IA e fintechs como negócio, com Brasil e América Latina primeiro. Notícias ficam 30 dias; análises, balanços, vídeos e podcasts, 3 meses; relatórios, 12 meses.",
+    vazio: "A curadoria roda três vezes por dia e traz rodadas, aquisições, resultados de big techs, IA e fintechs como negócio. Os itens aparecem aqui depois da primeira rodada." },
   politica: { id: "politica", aba: "Política", titulo: "Radar de Política", items: "items-politica", destaques: "destaques-politica", status: "meta/status-politica", sufixo: "-politica",
     temas: TEMAS_POLITICA, tipos: TIPOS_POLITICA,
     rodape: "Atualizado automaticamente várias vezes por dia, com fontes oficiais (Planalto, DOU, Câmara, Senado, STF, TSE, governo do RS) e imprensa de referência. Notícias ficam 30 dias; análises, vídeos e podcasts, 3 meses; publicações oficiais, 12 meses.",
@@ -655,7 +681,7 @@ const RADARES = {
     rodape: "Atualizado automaticamente várias vezes por dia, com o Inter em primeiro lugar, as competições que ele disputa e o vai e vem do mercado. Notícias e resultados ficam 30 dias; análises, vídeos e podcasts, 3 meses.",
     vazio: "A coleta roda várias vezes por dia e traz Inter, Gauchão, Brasileirão, Libertadores, Copa do Brasil e mercado. Os itens aparecem aqui depois da primeira rodada." },
 };
-const ORDEM_RADARES = ["tech", "politica", "esportes"];
+const ORDEM_RADARES = ["tech", "negocios", "politica", "esportes"];
 const LIMITE_POR_TEMA = 5;
 const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
 const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';

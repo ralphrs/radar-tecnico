@@ -2,7 +2,7 @@ import { emailDoAccess, accessConfigurado } from "./auth.js";
 import { coletar, limpar } from "./coleta.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
-const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes"]);
+const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios"]);
 const DOCS = new Set([...LISTAS, "meta"]);
 const CAMPOS_ORDEM = new Set(["coletado", "data", "publicado"]);
 const OPS = new Set(["<", "<=", ">", ">="]);
