@@ -81,16 +81,14 @@ A documentação do Cloudflare recomenda validar no Worker o JWT que o Access en
 
 ## Tela de login do Lookout
 
-**Só Google, sem a opção "Cloudflare":** Zero Trust → Access controls → Applications → `news` → **Authentication** (ou Login methods). Desligue **Accept all available identity providers** e deixe marcado só o **Google**. Salve.
+**Como está hoje (30/10/2026):** no app `news`, Authentication com **Accept all available identity providers** desligado, só **Google** marcado e **Apply instant authentication** ligado. Quem abre o site vai direto para a tela do Google, sem passar pela tela do Cloudflare. Não existe One-time PIN configurado: só entra quem tem conta Google.
 
-**Página com a cara do Lookout:** o modelo está em `access/login.html` (HTML + Liquid; recurso lançado pelo Cloudflare em 27/10/2026).
-1. Zero Trust → **Reusable components → Custom pages** → card **Access custom pages** → **Manage** → **Create custom page**.
-2. Name `Lookout login`, Type **Login**. Apague o modelo inicial, cole o conteúdo de `access/login.html`, confira a aba **Problems** e clique em **Publish**.
-3. Applications → `news` → **Additional settings** → **Custom block pages** → **Login page**: **Custom page** → `Lookout login` → **Save**.
+**Página com a cara do Lookout:** o modelo está em `access/login.html` (HTML + Liquid, recurso lançado pelo Cloudflare em 27/10/2026), mas a conta ainda não tem a opção. Em Reusable components → Custom pages aparece só o "Access login page" antigo (nome, logo, cabeçalho, cor de fundo), e em Additional settings → Custom block pages não há a linha **Login page**. Quando o card **Access custom pages** aparecer:
+1. **Create custom page** → Name `Lookout login`, Type **Login**. Cole `access/login.html`, confira **Problems**, **Publish**.
+2. Applications → `news` → **Additional settings** → **Custom block pages** → **Login page**: **Custom page** → `Lookout login` → **Save**.
+3. Desligue **Apply instant authentication**, senão a página nunca aparece.
 
-O `<cf-access-authbox>` é obrigatório e aparece uma vez só: é ali que o Access desenha o botão do Google. A página não aceita JavaScript, e o Cloudflare volta para a tela padrão se o modelo não renderizar.
-
-Alternativa: com só o Google marcado, ligar **Apply instant authentication** faz o Access pular qualquer tela e mandar direto para o Google. Nesse caso a página customizada nunca aparece.
+O `<cf-access-authbox>` é obrigatório e aparece uma vez só. A página não aceita JavaScript.
 
 ## Sair (logout)
 
