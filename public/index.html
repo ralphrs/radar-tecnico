@@ -280,6 +280,8 @@ footer b { color: var(--foreground); font-weight: 500; }
 .nav-grupo { display: flex; flex-direction: column; }
 .nav-mostrar { display: flex; flex-wrap: wrap; gap: 6px; padding-inline: 2px; }
 .nav-mostrar .chip { height: 30px; padding: 0 8px; gap: 5px; font-size: 12.5px; }
+.sub .quebra { flex-basis: 100%; height: 0; }
+.rotulo .dica { font: 400 11px var(--font-sans); text-transform: none; letter-spacing: 0; color: var(--muted-foreground); margin-left: 4px; }
 .nav-limpar { height: 30px; margin-left: 6px; font-size: 13px; }
 
 /* Trilho direito */
@@ -312,7 +314,9 @@ footer b { color: var(--foreground); font-weight: 500; }
   .centro { grid-area: centro; display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
   .nav-temas, .lateral { position: sticky; top: var(--space-4); max-height: calc(100vh - 2 * var(--space-4)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; min-width: 0; }
   .wrap { padding-top: 20px; row-gap: 20px; }
-  .nav-temas { grid-area: nav; display: flex; flex-direction: column; gap: 10px; padding: 2px 2px var(--space-2); }
+  .nav-temas { grid-area: nav; display: flex; flex-direction: column; gap: 10px; padding: 2px 2px var(--space-6); }
+  /* Sem isto, a coluna encolhe os grupos para caber na altura da tela e o último fica cortado no fim da rolagem */
+  .nav-temas > *, .lateral > *, .nav-grupo > *, .nav-lista > * { flex-shrink: 0; }
   .nav-busca { flex: none; height: var(--control-h-sm); }
   /* Todos os filtros ficam na lateral: sem barra fixa no centro, e o título de cada tema gruda no topo */
   .barra { display: none; }
@@ -321,7 +325,7 @@ footer b { color: var(--foreground); font-weight: 500; }
 @media (min-width: 1200px) {
   .wrap { grid-template-columns: 232px minmax(0, 700px) 280px; grid-template-areas: "topo topo topo" "nav centro lateral"; column-gap: var(--space-6); }
   #destaques { display: none !important; }
-  .lateral { grid-area: lateral; display: flex; flex-direction: column; gap: var(--space-6); padding-bottom: var(--space-4); }
+  .lateral { grid-area: lateral; display: flex; flex-direction: column; gap: var(--space-6); padding-bottom: var(--space-6); }
 }
 @media (min-width: 1440px) {
   .wrap { grid-template-columns: 240px minmax(0, 720px) 288px; column-gap: var(--space-8); }
@@ -345,12 +349,12 @@ footer b { color: var(--foreground); font-weight: 500; }
     <div class="seg radares" id="radares-nav" role="group" aria-label="Escolher radar"></div>
     <input class="dd-input nav-busca" id="busca-nav" type="search" placeholder="Buscar no feed" aria-label="Buscar no feed" autocomplete="off" enterkeyhint="search">
     <div class="nav-grupo">
-      <h2 class="rotulo">Temas</h2>
-      <div class="nav-lista" id="nav-lista"></div>
-    </div>
-    <div class="nav-grupo">
       <h2 class="rotulo">Tipo</h2>
       <div class="nav-lista" id="nav-tipos" role="group" aria-label="Filtrar por tipo"></div>
+    </div>
+    <div class="nav-grupo">
+      <h2 class="rotulo">Temas <small class="dica">vários</small></h2>
+      <div class="nav-lista" id="nav-lista"></div>
     </div>
     <div class="nav-grupo">
       <h2 class="rotulo">Mostrar</h2>
@@ -386,7 +390,7 @@ footer b { color: var(--foreground); font-weight: 500; }
           <input class="dd-input" id="busca" type="search" placeholder="Título, resumo ou fonte" autocomplete="off" enterkeyhint="search">
         </div>
         <div class="grupo">
-          <h3 class="rotulo">Tema</h3>
+          <h3 class="rotulo">Temas <small class="dica">escolha quantos quiser</small></h3>
           <div class="chips" id="chips" role="group" aria-label="Filtrar por tema"></div>
           <div class="sub" id="sub" role="group" aria-label="Filtrar por subtema" hidden></div>
         </div>
@@ -641,10 +645,20 @@ const ORDEM_RADARES = ["tech", "politica", "esportes"];
 const LIMITE_POR_TEMA = 5;
 const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
 const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
-let subfiltro = "todos";
+/* Temas: seleção múltipla. Conjunto vazio = todos. Subtemas guardados como "grupo:sub"; sem nenhum de um grupo, vale o grupo inteiro. */
+let temasSel = new Set(), subsSel = new Set();
+const subsDe = (g) => [...subsSel].filter((k) => k.startsWith(g + ":")).map((k) => k.slice(g.length + 1));
+function passaTema(i) {
+  if (!temasSel.size) return true;
+  const g = grp(i);
+  if (!temasSel.has(g)) return false;
+  const ss = subsDe(g);
+  return !ss.length || ss.includes(subDe(i));
+}
+function salvarTemas() { try { localStorage.setItem("radar-filtro" + R().sufixo, [...temasSel].join(",") || "todos"); } catch (e) {} }
 const JANELA = 1000;
 let dbRef = null, recentes = [], antigos = [], podeMais = false, carregando = false;
-let itens = [], meta = null, destaque = null, filtro = "todos", tipo = "todos", busca = "", expandidos = new Set(), slide = 0;
+let itens = [], meta = null, destaque = null, tipo = "todos", busca = "", expandidos = new Set(), slide = 0;
 let soRel = false, soFav = false, favs = {}, favCol = null;
 let radar = "tech", carregado = false;
 try {
@@ -665,13 +679,13 @@ function aplicarRadar() {
   TEMAS = r.temas; TIPOS = r.tipos;
   GRUPO_DE = {}; TEMAS.forEach((g) => g.temas.forEach((t) => { GRUPO_DE[t] = g.id; }));
   TEMA = Object.fromEntries(TEMAS.map((t) => [t.id, t]));
-  filtro = "todos"; tipo = "todos";
-  try { filtro = localStorage.getItem("radar-filtro" + r.sufixo) || "todos"; tipo = localStorage.getItem("radar-tipo" + r.sufixo) || "todos"; } catch (e) {}
-  if (filtro !== "todos" && !TEMA[filtro]) filtro = GRUPO_DE[filtro] || "todos";
+  let salvoTemas = "todos"; tipo = "todos";
+  try { salvoTemas = localStorage.getItem("radar-filtro" + r.sufixo) || "todos"; tipo = localStorage.getItem("radar-tipo" + r.sufixo) || "todos"; } catch (e) {}
+  temasSel = new Set(salvoTemas.split(",").map((x) => TEMA[x] ? x : GRUPO_DE[x]).filter(Boolean)); subsSel = new Set();
   if (tipo === "alta") { tipo = "todos"; soRel = true; }
   if (tipo === "youtube") tipo = "video";
   if (!TIPOS.some((t) => t.id === tipo)) tipo = "todos";
-  subfiltro = "todos"; busca = ""; soFav = false; slide = 0;
+  busca = ""; soFav = false; slide = 0;
   recentes = []; antigos = []; itens = []; meta = null; destaque = null; podeMais = false; carregando = false; carregado = false;
   expandidos = new Set();
   document.title = r.titulo + " · Lookout";
@@ -853,7 +867,7 @@ function irParaFeed() {
 function escolherTipo(id) { tipo = id; try { localStorage.setItem("radar-tipo" + R().sufixo, id); } catch (e) {} render(); irParaFeed(); }
 function renderTipos() {
   const s = $("tipos"); s.textContent = "";
-  const base = fonteItens().filter((i) => passaBase(i) && (filtro === "todos" || grp(i) === filtro));
+  const base = fonteItens().filter((i) => passaBase(i) && passaTema(i));
   for (const t of TIPOS) {
     const n = base.filter((i) => passaTipo(i, t.id)).length;
     const b = el("button", { type: "button", id: "tipo-" + t.id, "aria-pressed": String(tipo === t.id) });
@@ -872,21 +886,31 @@ function contarTemas() {
   const cont = {}; base.forEach((i) => { const g = grp(i); cont[g] = (cont[g] || 0) + 1; });
   return { total: base.length, cont };
 }
-function contarSubs() {
-  const subs = TEMA[filtro] && TEMA[filtro].subs;
+function contarSubs(g) {
+  const subs = TEMA[g] && TEMA[g].subs;
   if (!subs) return null;
-  const base = fonteItens().filter((i) => grp(i) === filtro && passaBase(i) && passaTipo(i, tipo));
+  const base = fonteItens().filter((i) => grp(i) === g && passaBase(i) && passaTipo(i, tipo));
   const cont = {}; subs.forEach((x) => { cont[x.id] = base.filter((i) => subDe(i) === x.id).length; });
   return { subs, total: base.length, cont };
 }
-function escolherTema(id) { filtro = id; subfiltro = "todos"; try { localStorage.setItem("radar-filtro" + R().sufixo, id); } catch (e) {} render(); }
-function escolherSub(id) { subfiltro = id; render(); }
+/* "todos" limpa; um tema liga ou desliga, e ao sair leva junto os subtemas dele */
+function escolherTema(id) {
+  if (id === "todos") { temasSel.clear(); subsSel.clear(); }
+  else if (temasSel.has(id)) { temasSel.delete(id); subsDe(id).forEach((x) => subsSel.delete(id + ":" + x)); }
+  else temasSel.add(id);
+  salvarTemas(); render();
+}
+function escolherSub(g, id) {
+  if (id === "todos") subsDe(g).forEach((x) => subsSel.delete(g + ":" + x));
+  else { const k = g + ":" + id; subsSel.has(k) ? subsSel.delete(k) : subsSel.add(k); }
+  render();
+}
 
 function renderChips() {
   const c = $("chips"); c.textContent = "";
   const { total, cont } = contarTemas();
   const mk = (id, nome, cor, n) => {
-    const b = el("button", { class: "chip", type: "button", id: "chip-" + id, "aria-pressed": String(filtro === id), style: cor ? `--c:${cor}` : "" },
+    const b = el("button", { class: "chip", type: "button", id: "chip-" + id, "aria-pressed": String(id === "todos" ? !temasSel.size : temasSel.has(id)), style: cor ? `--c:${cor}` : "" },
       cor ? el("span", { class: "dot" }) : null, nome, el("span", { class: "k" }, String(n)));
     b.addEventListener("click", () => escolherTema(id));
     return b;
@@ -897,36 +921,40 @@ function renderChips() {
 
 function renderSub() {
   const s = $("sub"); s.textContent = "";
-  const cs = contarSubs();
-  if (!cs) { s.hidden = true; return; }
-  s.hidden = false;
-  const mk = (id, nome, n) => {
-    const b = el("button", { class: "chip", type: "button", id: "sub-" + id, "aria-pressed": String(subfiltro === id) }, nome, el("span", { class: "k" }, String(n)));
-    b.addEventListener("click", () => escolherSub(id));
-    return b;
-  };
-  s.append(mk("todos", "Todos os subtemas", cs.total));
-  cs.subs.forEach((x) => { const n = cs.cont[x.id]; if (n || subfiltro === x.id) s.append(mk(x.id, x.nome, n)); });
+  const grupos = TEMAS.filter((t) => temasSel.has(t.id) && t.subs);
+  s.hidden = !grupos.length;
+  for (const t of grupos) {
+    const cs = contarSubs(t.id), ss = subsDe(t.id);
+    const mk = (id, nome, n) => {
+      const b = el("button", { class: "chip", type: "button", id: "sub-" + t.id + "-" + id, "aria-pressed": String(id === "todos" ? !ss.length : ss.includes(id)) }, nome, el("span", { class: "k" }, String(n)));
+      b.addEventListener("click", () => escolherSub(t.id, id));
+      return b;
+    };
+    if (s.children.length) s.append(el("span", { class: "quebra", "aria-hidden": "true" }));
+    s.append(mk("todos", grupos.length > 1 ? "Todo " + t.curto : "Todos os subtemas", cs.total));
+    cs.subs.forEach((x) => { const n = cs.cont[x.id]; if (n || ss.includes(x.id)) s.append(mk(x.id, x.nome, n)); });
+  }
 }
 
 /* Navegação lateral (900 px ou mais): mesma lista de temas e subtemas dos chips, em coluna */
 function renderNav() {
   const box = $("nav-lista"); box.textContent = "";
   const { total, cont } = contarTemas();
-  const cs = contarSubs();
   const mk = (id, nome, cor, n, ativo, acao, pre) => {
     const b = el("button", { class: "nav-item", type: "button", id: pre + id, "aria-pressed": String(ativo), "data-vazio": String(!n), style: cor ? `--c:${cor}` : "" },
       pre === "nav-" ? el("span", { class: "dot" }) : null, el("span", { class: "nome" }, nome), el("span", { class: "k" }, String(n)));
     b.addEventListener("click", () => { acao(id); irParaFeed(); });
     return b;
   };
-  box.append(mk("todos", "Todos os temas", null, total, filtro === "todos", escolherTema, "nav-"));
+  box.append(mk("todos", "Todos os temas", null, total, !temasSel.size, escolherTema, "nav-"));
   TEMAS.forEach((t) => {
-    box.append(mk(t.id, t.curto, t.cor, cont[t.id] || 0, filtro === t.id, escolherTema, "nav-"));
-    if (cs && filtro === t.id) {
+    box.append(mk(t.id, t.curto, t.cor, cont[t.id] || 0, temasSel.has(t.id), escolherTema, "nav-"));
+    const cs = temasSel.has(t.id) && contarSubs(t.id);
+    if (cs) {
+      const ss = subsDe(t.id), pre = "navsub-" + t.id + "-", acao = (id) => escolherSub(t.id, id);
       const sub = el("div", { class: "sub nav-sub", role: "group", "aria-label": "Subtemas de " + t.curto });
-      sub.append(mk("todos", "Todos os subtemas", null, cs.total, subfiltro === "todos", escolherSub, "navsub-"));
-      cs.subs.forEach((x) => { const n = cs.cont[x.id]; if (n || subfiltro === x.id) sub.append(mk(x.id, x.nome, null, n, subfiltro === x.id, escolherSub, "navsub-")); });
+      sub.append(mk("todos", "Todos os subtemas", null, cs.total, !ss.length, acao, pre));
+      cs.subs.forEach((x) => { const n = cs.cont[x.id]; if (n || ss.includes(x.id)) sub.append(mk(x.id, x.nome, null, n, ss.includes(x.id), acao, pre)); });
       box.append(sub);
     }
   });
@@ -935,8 +963,7 @@ function renderNav() {
 /* Tipos na lateral: a contagem respeita busca, tema e subtema */
 function renderNavTipos() {
   const box = $("nav-tipos"); box.textContent = "";
-  const comSub = subfiltro !== "todos" && TEMA[filtro] && TEMA[filtro].subs;
-  const base = fonteItens().filter((i) => passaBase(i) && (filtro === "todos" || grp(i) === filtro) && (!comSub || subDe(i) === subfiltro));
+  const base = fonteItens().filter((i) => passaBase(i) && passaTema(i));
   for (const t of TIPOS) {
     const n = base.filter((i) => passaTipo(i, t.id)).length;
     const b = el("button", { class: "nav-item", type: "button", id: "navtipo-" + t.id, "aria-pressed": String(tipo === t.id) },
@@ -1075,14 +1102,13 @@ function renderFeed() {
     return;
   }
   const lista = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo));
-  const temas = filtro === "todos" ? TEMAS : TEMAS.filter((t) => t.id === filtro);
+  const temas = temasSel.size ? TEMAS.filter((t) => temasSel.has(t.id)) : TEMAS;
   const bloco = el("div", { class: "secoes" });
   for (const t of temas) {
-    let doTema = lista.filter((i) => grp(i) === t.id);
+    const doTema = lista.filter((i) => grp(i) === t.id && passaTema(i));
     const subs = t.subs;
-    if (subs && filtro === t.id && subfiltro !== "todos") doTema = doTema.filter((i) => subDe(i) === subfiltro);
     if (!doTema.length) continue;
-    const aberto = expandidos.has(t.id) || filtro !== "todos" || soFav;
+    const aberto = expandidos.has(t.id) || temasSel.size > 0 || soFav;
     const sec = el("section", { class: "tema", style: `--c:${t.cor}` },
       el("h2", {}, el("span", { class: "nome" }, t.nome, el("small", {}, String(doTema.length)))));
     if (subs && aberto) {
@@ -1157,7 +1183,7 @@ function renderAlternancias() {
 }
 /* Contador de filtros ativos no botão da barra e total no rodapé do painel */
 function renderContador() {
-  const n = (filtro !== "todos") + (subfiltro !== "todos") + soRel + soFav + (busca.trim() ? 1 : 0);
+  const n = temasSel.size + subsSel.size + soRel + soFav + (busca.trim() ? 1 : 0);
   const c = $("contador"), b = $("abrir-filtros");
   c.hidden = !n; c.textContent = String(n);
   b.dataset.ativo = String(n > 0);
@@ -1165,8 +1191,7 @@ function renderContador() {
   $("abrir-busca").dataset.ativo = String(!!busca.trim());
   $("limpar-filtros").disabled = !n;
   $("nav-limpar").hidden = !n;
-  const total = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo) && (filtro === "todos" || grp(i) === filtro)
-    && (subfiltro === "todos" || !(TEMA[filtro] && TEMA[filtro].subs) || subDe(i) === subfiltro)).length;
+  const total = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo) && passaTema(i)).length;
   $("ver-itens").textContent = total ? `Ver ${total} ${total === 1 ? "item" : "itens"}` : "Nenhum item";
 }
 function render() {
@@ -1228,7 +1253,7 @@ function alternarResumos() {
   render();
 }
 function limparFiltros() {
-  filtro = "todos"; subfiltro = "todos"; soRel = false; soFav = false; busca = "";
+  temasSel.clear(); subsSel.clear(); soRel = false; soFav = false; busca = "";
   try { localStorage.setItem("radar-filtro" + R().sufixo, "todos"); localStorage.setItem("radar-relevantes", "0"); } catch (e) {}
   render();
 }
@@ -1244,7 +1269,7 @@ $("nav-limpar").addEventListener("click", () => { limparFiltros(); irParaFeed();
 
 /* Painel de filtros */
 let abridor = null, assinatura = "";
-const estado = () => [filtro, subfiltro, soRel, soFav, busca, tipo].join("|");
+const estado = () => [[...temasSel].join(","), [...subsSel].join(","), soRel, soFav, busca, tipo].join("|");
 function abrirPainel(foco) {
   const p = $("painel");
   if (p.hidden) {
@@ -1293,6 +1318,18 @@ $("tipos-rolo").addEventListener("scroll", marcarRolo, { passive: true });
 let rafMedir;
 window.addEventListener("resize", () => { cancelAnimationFrame(rafMedir); rafMedir = requestAnimationFrame(() => { medirFeed(); marcarRolo(); }); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { medirFeed(); marcarRolo(); });
+/* Colunas laterais: no topo da página elas começam abaixo do cabeçalho, então a altura máxima desconta esse espaço; senão o fim da lista fica fora da tela */
+let rafLados;
+function ajustarLados() {
+  for (const id of ["nav-temas", "lateral"]) {
+    const x = $(id); if (!x || !x.offsetParent) continue;
+    x.style.maxHeight = Math.max(240, window.innerHeight - Math.max(0, x.getBoundingClientRect().top) - 16) + "px";
+  }
+}
+const pedirLados = () => { cancelAnimationFrame(rafLados); rafLados = requestAnimationFrame(ajustarLados); };
+window.addEventListener("scroll", pedirLados, { passive: true });
+window.addEventListener("resize", pedirLados);
+pedirLados();
 
 /* Aparência: um botão que alterna sistema, claro e escuro */
 const SOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
