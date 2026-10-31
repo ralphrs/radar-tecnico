@@ -3,6 +3,7 @@
 // Feed que falha muitas vezes seguidas aparece em feeds_estado com erros_seguidos alto: corrija a URL ou tire daqui.
 // Fora em 31/10/2026: ACM Queue, BleepingComputer, CNX Software, FinTech Futures e Matinal bloqueiam o Worker (HTTP 403);
 // Uber Engineering e CNN Brasil Política sumiram (HTTP 404); Record não publica itens reconhecíveis. A busca da curadoria cobre essas fontes.
+// Transfermarkt não tem RSS e bloqueia robôs: o mercado vem das buscas da curadoria de Esportes.
 export const FEEDS = [
   // Tech: engenharia e arquitetura
   ["tech", "InfoQ", "CA", "https://feed.infoq.com/"],
@@ -150,6 +151,9 @@ export const FEEDS = [
 
   // Esportes
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/futebol-internacional/"],
+  ["esportes", "Lance!", "BR", "https://www.lance.com.br/feed"],
+  ["esportes", "Correio do Povo", "BR", "https://www.correiodopovo.com.br/rss"],
+  ["esportes", "Gianluca Di Marzio", "IT", "https://gianlucadimarzio.com/feed"],
   ["esportes", "The Guardian", "GB", "https://www.theguardian.com/football/rss"],
   ["esportes", "ESPN", "US", "https://www.espn.com/espn/rss/soccer/news"],
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/times/internacional/"],
