@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS docs (
   PRIMARY KEY (collection, id)
 );
 CREATE INDEX IF NOT EXISTS docs_col_coletado ON docs (collection, coletado DESC);
+-- A coleta confere a URL de cada link novo contra os itens já publicados; sem este índice cada feed varria a tabela inteira.
+CREATE INDEX IF NOT EXISTS docs_url ON docs (json_extract(data, '$.url'));
 CREATE TABLE IF NOT EXISTS usuarios (
   email TEXT PRIMARY KEY,
   nome TEXT NOT NULL DEFAULT '',

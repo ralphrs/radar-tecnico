@@ -319,7 +319,11 @@ export default {
     try { await cronMercado(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("mercado", e); }
     try { await cronB3(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("b3", e); }
     try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
-    if (minuto === 7) { try { console.log("limpeza", JSON.stringify(await limpar(env))); } catch (e) { console.error("limpeza", e); } }
+    if (minuto === 7) {
+      // Índice que a coleta precisa (barato: só confere o catálogo). Fica aqui para valer mesmo onde o schema.sql não foi reaplicado.
+      try { await env.DB.prepare("CREATE INDEX IF NOT EXISTS docs_url ON docs (json_extract(data, '$.url'))").run(); } catch (e) { console.error("indice", e); }
+      try { console.log("limpeza", JSON.stringify(await limpar(env))); } catch (e) { console.error("limpeza", e); }
+    }
     await importarHistorico(env);
   },
 };
