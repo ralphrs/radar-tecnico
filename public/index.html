@@ -1128,10 +1128,12 @@ function abrirAtivo(x) {
   const links = el("p", { class: "ativo-links" });
   if (f) {
     links.append(el("a", { href: "https://www.fundsexplorer.com.br/funds/" + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Funds Explorer"), " · ",
+      el("a", { href: "https://investidor10.com.br/fiis/" + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"), " · ",
       el("a", { href: "https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo=" + String(f.c || "").replace(/\D/g, ""), target: "_blank", rel: "noopener" }, "Documentos no FNET (B3)"));
     d.append(el("p", { class: "nota" }, `Administrador: ${f.a || "–"} · CNPJ ${f.c || "–"}. Cotistas, patrimônio, VP e DY vêm do informe mensal entregue à CVM (último: ${fmtMes(f.ref)}); o rendimento por cota é estimado a partir do DY do mês sobre o patrimônio. Confira o valor exato no aviso aos cotistas.`));
   } else {
-    links.append(el("a", { href: "https://statusinvest.com.br/" + (cotAba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"));
+    links.append(el("a", { href: "https://statusinvest.com.br/" + (cotAba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"), " · ",
+      el("a", { href: "https://investidor10.com.br/" + (cotAba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"));
   }
   d.append(links);
   d.showModal();
