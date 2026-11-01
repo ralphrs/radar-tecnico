@@ -11,7 +11,7 @@ const TIMEOUT = 8000;
 
 async function pegar(url, headers = {}) {
   const r = await fetch(url, { headers: { "user-agent": "LookoutBot/1.0", accept: "application/json", ...headers }, signal: AbortSignal.timeout(TIMEOUT) });
-  if (!r.ok) throw new Error("HTTP " + r.status + " em " + new URL(url).host);
+  if (!r.ok) throw new Error("HTTP " + r.status + " em " + new URL(url).host + ": " + (await r.text()).slice(0, 200));
   return r.json();
 }
 
@@ -173,7 +173,14 @@ export async function cronB3(env, quando) {
   const noPregao = pregaoAberto(d) && m % 30 === 5;
   const fechamento = h === 21 && m === 35 && d.getUTCDay() >= 1 && d.getUTCDay() <= 5;
   let vazio = false;
-  if (!noPregao && !fechamento && m % 30 === 5) vazio = !(await env.DB.prepare("SELECT 1 FROM docs WHERE collection = 'meta' AND id = 'b3'").first());
-  if (noPregao || fechamento || vazio) return atualizarB3(env);
+  if (!noPregao && !fechamento && m % 10 === 5) vazio = !(await env.DB.prepare("SELECT 1 FROM docs WHERE collection = 'meta' AND id = 'b3'").first());
+  if (noPregao || fechamento || vazio) {
+    try { return await atualizarB3(env); }
+    catch (e) {
+      await env.DB.prepare("INSERT INTO docs (collection, id, data) VALUES ('_sistema', 'b3-erro', ?1) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+        .bind(JSON.stringify({ quando: new Date().toISOString(), erro: String(e.message || e) })).run();
+      throw e;
+    }
+  }
   return null;
 }
