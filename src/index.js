@@ -61,15 +61,29 @@ async function quemEntra(request, env, conferirLista = true) {
   return { email, admin, nome: u?.nome || "", secoes: await secoesDe(env, email, admin) };
 }
 
-// Respostas das listas guardadas na memória por 30 s. São iguais para todo mundo e só mudam quando as coletas rodam.
+// Respostas das listas guardadas em duas camadas: memória do isolate por 30 s e cache de borda da Cloudflare por 3 min.
+// São iguais para todo mundo e só mudam quando as coletas rodam. O cache de borda é o que segura as leituras do D1
+// quando há várias pessoas ou vários isolates: a permissão de seção é conferida antes, por usuário, e não entra aqui.
 const respostas = new Map();
 const RESPOSTA_TTL = 30_000;
+const BORDA_TTL = 180;
 async function comCache(chave, gerar) {
   const c = respostas.get(chave);
   if (c && Date.now() - c.em < RESPOSTA_TTL) return json(c.dados);
+  const borda = typeof caches !== "undefined" ? caches.default : null;
+  const chaveBorda = new Request("https://cache.lookout.local/" + encodeURIComponent(chave));
+  if (borda) {
+    try {
+      const r = await borda.match(chaveBorda);
+      if (r) { const dados = await r.json(); respostas.set(chave, { dados, em: Date.now() }); return json(dados); }
+    } catch (e) {}
+  }
   const dados = await gerar();
   if (respostas.size > 200) respostas.clear();
   respostas.set(chave, { dados, em: Date.now() });
+  if (borda) {
+    try { await borda.put(chaveBorda, new Response(JSON.stringify(dados), { headers: { "content-type": "application/json", "cache-control": "s-maxage=" + BORDA_TTL } })); } catch (e) {}
+  }
   return json(dados);
 }
 
