@@ -6,7 +6,7 @@ import { FEEDS } from "./feeds.js";
 const INTERVALO_MIN = 90;      // cada feed é lido no máximo a cada 90 minutos
 const FEEDS_POR_MINUTO = 6;    // o cron roda de minuto em minuto
 const ITENS_POR_FEED = 20;
-const JANELA_DIAS = { tech: 21, politica: 3, esportes: 3, negocios: 7, investimentos: 3 };
+const JANELA_DIAS = { tech: 21, politica: 3, esportes: 3, negocios: 7, investimentos: 7 };
 const UA = "Mozilla/5.0 (compatible; LookoutBot/1.0; +https://news.ralph-renato.workers.dev)";
 const COLECOES_ITENS = ["items", "items-politica", "items-esportes", "items-negocios", "items-investimentos", "sombra-items"];
 

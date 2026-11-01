@@ -4,6 +4,7 @@
 // Fora em 31/10/2026: ACM Queue, BleepingComputer, CNX Software, FinTech Futures e Matinal bloqueiam o Worker (HTTP 403);
 // Uber Engineering e CNN Brasil Política sumiram (HTTP 404); Record não publica itens reconhecíveis. A busca da curadoria cobre essas fontes.
 // Fora também: Lance!, Correio do Povo, Di Marzio e KrASIA (404); InfoMoney Negócios e LABS (sem itens reconhecíveis).
+// Investimentos fora: Clube FII (404), E-Investidor e Portal do Bitcoin (403).
 // Transfermarkt não tem RSS e bloqueia robôs: o mercado vem das buscas da curadoria de Esportes.
 export const FEEDS = [
   // Tech: engenharia e arquitetura
@@ -120,12 +121,13 @@ export const FEEDS = [
   ["investimentos", "Money Times", "BR", "https://www.moneytimes.com.br/feed/"],
   ["investimentos", "Seu Dinheiro", "BR", "https://www.seudinheiro.com/feed/"],
   ["investimentos", "Suno", "BR", "https://www.suno.com.br/noticias/feed/"],
-  ["investimentos", "E-Investidor", "BR", "https://einvestidor.estadao.com.br/feed/"],
   ["investimentos", "InfoMoney", "BR", "https://www.infomoney.com.br/feed/"],
-  ["investimentos", "Clube FII", "BR", "https://www.clubefii.com.br/feed"],
   ["investimentos", "FIIs", "BR", "https://fiis.com.br/feed/"],
+  ["investimentos", "Money Times", "BR", "https://www.moneytimes.com.br/fundos-imobiliarios/feed/"],
+  ["investimentos", "Seu Dinheiro", "BR", "https://www.seudinheiro.com/fundos-imobiliarios/feed/"],
+  ["investimentos", "Suno", "BR", "https://www.suno.com.br/noticias/fundos-imobiliarios/feed/"],
+  ["investimentos", "InfoMoney", "BR", "https://www.infomoney.com.br/onde-investir/fundos-imobiliarios/feed/"],
   ["investimentos", "Livecoins", "BR", "https://livecoins.com.br/feed/"],
-  ["investimentos", "Portal do Bitcoin", "BR", "https://portaldobitcoin.uol.com.br/feed/"],
   ["investimentos", "CoinDesk", "US", "https://www.coindesk.com/arc/outboundfeeds/rss/"],
   ["investimentos", "Cointelegraph", "US", "https://cointelegraph.com/rss"],
   ["investimentos", "CNBC", "US", "https://www.cnbc.com/id/15839069/device/rss/rss.html"],
