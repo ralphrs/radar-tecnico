@@ -260,6 +260,27 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 @media (prefers-reduced-motion: reduce) { .fita { overflow-x: auto; } .fita-trilho { animation: none; } .fita-grupo + .fita-grupo { display: none; } }
 .mercado-pe { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; font-size: 12px; color: var(--muted-foreground); }
 .mercado-pe .dd-btn { height: auto; padding: 0; font-size: 12.5px; }
+/* Tabelas de ações e FIIs */
+.cotacoes { display: flex; flex-direction: column; gap: 10px; }
+.cot-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.cot-topo h2 { margin: 0; font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; }
+.cot-ferr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cot-ferr .dd-input { height: var(--control-h-sm); width: 150px; }
+.cot-tab { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.cot-caixa { border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); overflow-x: auto; }
+.cot-tab th { position: sticky; top: 0; background: var(--card); text-align: right; font: 600 11.5px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.cot-tab th:first-child, .cot-tab th:nth-child(2), .cot-tab td:first-child, .cot-tab td:nth-child(2) { text-align: left; }
+.cot-tab th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.cot-tab th button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
+.cot-tab th[aria-sort="ascending"] button::after { content: "▲"; font-size: 9px; }
+.cot-tab th[aria-sort="descending"] button::after { content: "▼"; font-size: 9px; }
+.cot-tab td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+.cot-tab tr:last-child td { border-bottom: 0; }
+.cot-tab td:first-child { font: 600 13px var(--font-mono); }
+.cot-tab td:nth-child(2) { max-width: 260px; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); }
+.cot-tab .sobe { color: var(--ok); } .cot-tab .desce { color: var(--err); }
+@media (max-width: 639px) { .cot-tab .so-largo { display: none; } }
+.cot-pe { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
 /* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
 .lista.cards { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 10px; }
 @media (min-width: 640px) { .lista.cards { grid-template-columns: 1fr 1fr; } }
@@ -474,6 +495,7 @@ footer b { color: var(--foreground); font-weight: 500; }
   </div>
 
   <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
+  <section class="cotacoes" id="cotacoes" aria-label="Cotações da B3" hidden></section>
 
   <div class="feed-topo" role="toolbar" aria-label="Ordem e exibição do feed">
     <div class="feed-ordem">
@@ -799,6 +821,7 @@ const ORDENS = [
 ];
 let ordenacao = "data";
 let painelMercado = null, pedindoMercado = false;
+let b3 = null, cotAba = "acoes", cotOrdem = { campo: "vol", dir: -1 }, cotBusca = "", cotTodos = false;
 /* Abrangência (Notícias e Esportes): tudo, só nacional ou só internacional. O item pode trazer "escopo"; senão o radar deduz pelo tema. */
 const ESCOPOS = [{ id: "todos", nome: "Tudo" }, { id: "nacional", nome: "Nacional" }, { id: "internacional", nome: "Internacional" }];
 let escopo = "todos";
@@ -838,7 +861,7 @@ function aplicarRadar() {
   recentes = []; antigos = []; itens = []; meta = null; destaque = null; podeMais = false; carregando = false; carregado = false;
   expandidos = new Set();
   document.title = r.titulo + " · Lookout";
-  painelMercado = null; if (r.mercado) setTimeout(lerMercado, 0);
+  painelMercado = null; b3 = null; if (r.mercado) setTimeout(() => { lerMercado(); lerB3(); }, 0);
   const h1 = document.querySelector("h1"); if (h1) h1.textContent = r.titulo;
   const rod = document.getElementById("rodape"); if (rod) rod.textContent = r.rodape;
 }
@@ -931,6 +954,61 @@ function renderStatus() {
 const URGENTE_MS = 24 * 3600 * 1000;
 const urgentes = () => itens.filter((i) => i.urgente === true && i.coletado && Date.now() - new Date(i.coletado) <= URGENTE_MS);
 /* Painel de mercado: lê meta/mercado e permite pedir uma atualização (no máximo uma a cada 5 minutos) */
+async function lerB3() {
+  if (!R().mercado) return;
+  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "b3" }), { credentials: "same-origin" }); const j = await r.json(); b3 = j.existe ? j.data : null; } catch (e) {}
+  renderCotacoes();
+}
+const fmtVol = (v) => (v >= 1e9 ? fmtNum(v / 1e9, 1) + " bi" : v >= 1e6 ? fmtNum(v / 1e6, 1) + " mi" : v >= 1e3 ? fmtNum(v / 1e3, 0) + " mil" : fmtNum(v || 0, 0));
+const COT_ABAS = [{ id: "acoes", nome: "Ações" }, { id: "fiis", nome: "FIIs" }, { id: "etfs", nome: "ETFs" }];
+function renderCotacoes() {
+  const box = $("cotacoes");
+  if (!R().mercado) { box.hidden = true; return; }
+  box.hidden = false;
+  const foco = document.activeElement && document.activeElement.id;
+  box.textContent = "";
+  const seg = el("div", { class: "seg", role: "group", "aria-label": "Tipo de ativo" });
+  COT_ABAS.forEach((a) => {
+    const n = b3 && b3[a.id] ? b3[a.id].length : 0;
+    const b = el("button", { type: "button", id: "cot-" + a.id, "aria-pressed": String(cotAba === a.id) }, a.nome, el("span", { class: "k" }, String(n)));
+    b.addEventListener("click", () => { cotAba = a.id; cotTodos = false; renderCotacoes(); });
+    seg.append(b);
+  });
+  const busca = el("input", { class: "dd-input", id: "cot-busca", type: "search", placeholder: "Filtrar ticker", "aria-label": "Filtrar ticker ou nome", autocomplete: "off", value: cotBusca });
+  busca.addEventListener("input", () => { cotBusca = busca.value; renderCotacoes(); });
+  box.append(el("div", { class: "cot-topo" }, el("h2", {}, "Cotações da B3"), el("div", { class: "cot-ferr" }, seg, busca)));
+  if (!b3) { box.append(el("p", { class: "nota" }, "As tabelas aparecem depois da primeira consulta.")); return; }
+  const q = cotBusca.trim().toUpperCase();
+  let linhas = (b3[cotAba] || []).filter((x) => !q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q));
+  const { campo, dir } = cotOrdem;
+  linhas = linhas.slice().sort((a, b) => (campo === "t" || campo === "nome" ? String(a[campo]).localeCompare(String(b[campo])) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
+  const mostra = cotTodos || q ? linhas : linhas.slice(0, 15);
+  const colunas = [["t", "Ticker", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["vol", "Volume", "so-largo"]];
+  const thead = el("tr", {}, ...colunas.map(([c, nome, cls]) => {
+    const th = el("th", { scope: "col", class: cls, "aria-sort": campo === c ? (dir > 0 ? "ascending" : "descending") : "none" });
+    const b = el("button", { type: "button" }, nome);
+    b.addEventListener("click", () => { cotOrdem = { campo: c, dir: campo === c ? -dir : (c === "t" || c === "nome" ? 1 : -1) }; renderCotacoes(); });
+    th.append(b); return th;
+  }));
+  const tbody = el("tbody");
+  for (const x of mostra) {
+    const cls = x.var > 0 ? "sobe" : x.var < 0 ? "desce" : "";
+    tbody.append(el("tr", {},
+      el("td", {}, x.t), el("td", { title: x.nome, class: "so-largo" }, x.nome),
+      el("td", {}, "R$ " + fmtNum(x.preco, 2)),
+      el("td", { class: cls }, x.var === null ? "–" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%"),
+      el("td", { class: "so-largo" }, fmtVol(x.vol))));
+  }
+  box.append(el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab" }, el("thead", {}, thead), tbody)));
+  const pe = el("div", { class: "cot-pe" }, el("span", {}, `${linhas.length} ativos, os mais negociados da B3 · atualizado ${fmtRel(b3.atualizado)} · fonte brapi, com atraso`));
+  if (!q && linhas.length > 15) {
+    const mais = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "cot-mais" }, cotTodos ? "Mostrar só os 15 primeiros" : `Ver todos os ${linhas.length}`);
+    mais.addEventListener("click", () => { cotTodos = !cotTodos; renderCotacoes(); });
+    pe.append(mais);
+  }
+  box.append(pe);
+  if (foco && $(foco) && document.activeElement !== $(foco)) { $(foco).focus({ preventScroll: true }); if (foco === "cot-busca") { const v = $(foco).value; $(foco).setSelectionRange(v.length, v.length); } }
+}
 async function lerMercado() {
   if (!R().mercado) return;
   try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "mercado" }), { credentials: "same-origin" }); const j = await r.json(); painelMercado = j.existe ? j.data : null; } catch (e) {}
@@ -940,6 +1018,7 @@ async function atualizarMercado() {
   if (pedindoMercado) return;
   pedindoMercado = true; renderMercado();
   try { const r = await fetch("/api/mercado/atualizar", { method: "POST", credentials: "same-origin" }); if (r.ok) painelMercado = await r.json(); } catch (e) {}
+  lerB3();
   pedindoMercado = false; renderMercado();
 }
 const fmtNum = (v, casas) => Number(v).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
@@ -1491,7 +1570,7 @@ function renderContador() {
 function render() {
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
-  renderRadares(); renderMercado(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
+  renderRadares(); renderMercado(); renderCotacoes(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
   /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
@@ -1719,7 +1798,7 @@ render();
   ligarFavoritosNaConta(db);
   ligarRadar();
   setInterval(() => { renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral(); }, 60000);
-  setInterval(() => { if (R().mercado && !document.hidden) lerMercado(); }, 120000);
+  setInterval(() => { if (R().mercado && !document.hidden) { lerMercado(); lerB3(); } }, 120000);
 })();
 </script>
 

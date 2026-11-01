@@ -146,26 +146,34 @@ export async function pedirAtualizacao(env) {
   const antes = await lerPainel(env);
   const idade = Date.now() - Date.parse(antes.atualizado || 0);
   if (idade < 5 * 60_000) return { ...antes, aguarde: Math.ceil((5 * 60_000 - idade) / 1000) };
+  try { await atualizarB3(env); } catch (e) {}
   return atualizarMercado(env, { moedas: true, bolsa: true, indicadores: !(antes.itens || []).some((i) => i.id === "selic") || idade > 6 * 3600_000 });
 }
 
-// Sonda temporária: descobre o que a brapi responde sem token, a partir do Worker. Roda uma vez e grava em _sistema/sonda-brapi.
-export async function sondarBrapi(env) {
-  const ja = await env.DB.prepare("SELECT 1 FROM docs WHERE collection = '_sistema' AND id = 'sonda-brapi'").first();
-  if (ja) return;
-  const urls = {
-    lista_fii: "https://brapi.dev/api/quote/list?type=fund&limit=3",
-    lista_acao: "https://brapi.dev/api/quote/list?type=stock&limit=3&sortBy=volume&sortOrder=desc",
-    v2_tickers: "https://brapi.dev/api/v2/tickers?limit=3",
-    quote_petr4: "https://brapi.dev/api/quote/PETR4",
-    quote_hglg11: "https://brapi.dev/api/quote/HGLG11",
-  };
-  const out = { quando: new Date().toISOString(), comToken: !!env.BRAPI_TOKEN };
-  for (const [k, u] of Object.entries(urls)) {
-    try {
-      const r = await fetch(u, { headers: { "user-agent": "LookoutBot/1.0", accept: "application/json" }, signal: AbortSignal.timeout(8000) });
-      out[k] = { status: r.status, corpo: (await r.text()).slice(0, 600) };
-    } catch (e) { out[k] = { erro: String(e.message || e) }; }
-  }
-  await env.DB.prepare("INSERT INTO docs (collection, id, data) VALUES ('_sistema', 'sonda-brapi', ?1) ON CONFLICT(collection, id) DO NOTHING").bind(JSON.stringify(out)).run();
+
+// Tabelas de ações e FIIs: a rota /api/quote/list da brapi responde sem token e traz a B3 inteira, uma chamada por tipo.
+// Guardamos as mais negociadas em meta/b3. Não usamos os logos que a rota devolve (marcas das empresas).
+async function listaB3(tipo, limite) {
+  const d = await pegar(`https://brapi.dev/api/quote/list?type=${tipo}&sortBy=volume&sortOrder=desc&limit=${limite}`);
+  return (d.stocks || []).map((x) => ({ t: x.stock, nome: x.name || x.stock, preco: num(x.close), var: num(x.change), vol: num(x.volume), cap: num(x.market_cap), setor: x.sector || "", sub: x.subType || "" }))
+    .filter((x) => x.t && x.preco !== null);
+}
+export async function atualizarB3(env) {
+  const [acoes, fundos] = await Promise.all([listaB3("stock", 120), listaB3("fund", 250)]);
+  const fiis = fundos.filter((f) => f.sub !== "etf" && /11$/.test(f.t));
+  const etfs = fundos.filter((f) => f.sub === "etf");
+  const doc = { atualizado: new Date().toISOString(), acoes, fiis, etfs };
+  await env.DB.prepare(
+    "INSERT INTO docs (collection, id, data, coletado) VALUES ('meta', 'b3', ?1, ?2) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, coletado = excluded.coletado, atualizado = strftime('%Y-%m-%dT%H:%M:%fZ','now')"
+  ).bind(JSON.stringify(doc), doc.atualizado).run();
+  return { acoes: acoes.length, fiis: fiis.length, etfs: etfs.length };
+}
+export async function cronB3(env, quando) {
+  const d = new Date(quando), m = d.getUTCMinutes(), h = d.getUTCHours();
+  const noPregao = pregaoAberto(d) && m % 30 === 5;
+  const fechamento = h === 21 && m === 35 && d.getUTCDay() >= 1 && d.getUTCDay() <= 5;
+  let vazio = false;
+  if (!noPregao && !fechamento && m % 30 === 5) vazio = !(await env.DB.prepare("SELECT 1 FROM docs WHERE collection = 'meta' AND id = 'b3'").first());
+  if (noPregao || fechamento || vazio) return atualizarB3(env);
+  return null;
 }
