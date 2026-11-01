@@ -18,7 +18,32 @@ async function pegar(url, headers = {}) {
 const num = (v) => { const n = Number(String(v).replace(",", ".")); return Number.isFinite(n) ? n : null; };
 const isoDeBr = (d) => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d || ""); return m ? `${m[3]}-${m[2]}-${m[1]}` : ""; };
 
+// A AwesomeAPI às vezes devolve 429 para os IPs compartilhados do Workers. Nesse caso o dólar e o euro vêm
+// da PTAX do Banco Central (fechamento do dia, sem variação intradiária) e o bitcoin e o ether do CoinGecko.
 async function moedas() {
+  try { return await moedasAwesome(); } catch (e) {
+    const out = [];
+    try { out.push(...(await ptax())); } catch (e2) {}
+    try { out.push(...(await criptoCoingecko())); } catch (e3) {}
+    if (!out.length) throw e;
+    return out;
+  }
+}
+async function ptax() {
+  const um = async (cod, id, nome) => {
+    const d = await pegar(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.${cod}/dados/ultimos/2?formato=json`);
+    const [a, b] = [d[d.length - 2], d[d.length - 1]];
+    const v = num(b && b.valor), ant = num(a && a.valor);
+    return v === null ? null : { id, nome, valor: v, variacao: ant ? ((v - ant) / ant) * 100 : null, unidade: "R$", casas: 4, fonte: "Banco Central (PTAX)", data: isoDeBr(b.data) };
+  };
+  return (await Promise.all([um(1, "usd", "Dólar"), um(21619, "eur", "Euro")])).filter(Boolean);
+}
+async function criptoCoingecko() {
+  const d = await pegar("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=brl&include_24hr_change=true");
+  const um = (k, id, nome) => (d[k] ? { id, nome, valor: num(d[k].brl), variacao: num(d[k].brl_24h_change), unidade: "R$", casas: 0, fonte: "CoinGecko" } : null);
+  return [um("bitcoin", "btc", "Bitcoin"), um("ethereum", "eth", "Ether")].filter(Boolean);
+}
+async function moedasAwesome() {
   const d = await pegar("https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,BTC-BRL,ETH-BRL");
   const um = (k, id, nome, unidade, casas) => {
     const x = d[k]; if (!x) return null;
@@ -95,6 +120,10 @@ export async function cronMercado(env, quando) {
   const m = d.getUTCMinutes(), h = d.getUTCHours();
   const meiaHora = m % 30 === 3;
   const partes = { moedas: meiaHora, bolsa: meiaHora && pregaoAberto(d), indicadores: m === 15 && (h === 12 || h === 22) };
+  if (meiaHora && !partes.indicadores) {
+    const antes = await lerPainel(env);
+    if (!(antes.itens || []).some((i) => i.id === "selic")) partes.indicadores = true; // primeira vez ou falhou antes
+  }
   if (partes.moedas || partes.bolsa || partes.indicadores) return atualizarMercado(env, partes);
   return null;
 }
