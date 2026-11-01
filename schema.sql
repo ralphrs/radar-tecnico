@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
 );
 
 -- Coleta por RSS: o cron do Worker lê os feeds de src/feeds.js e guarda aqui o que é novo.
--- A tarefa de curadoria lê os candidatos "novo", escolhe, resume e marca como "lido".
+-- A tarefa de curadoria reserva um lote de candidatos "novo", escolhe e resume, e marca cada um como
+-- "publicado" (virou item) ou "descartado" (com motivo). Só o que está em items-* aparece no site.
 CREATE TABLE IF NOT EXISTS candidatos (
   id TEXT PRIMARY KEY,            -- "i" + 16 primeiros hex do SHA-256 da URL (o mesmo id dos itens)
   radar TEXT NOT NULL,            -- tech | politica | esportes
@@ -27,9 +28,11 @@ CREATE TABLE IF NOT EXISTS candidatos (
   trecho TEXT NOT NULL DEFAULT '',
   feed TEXT NOT NULL,
   visto TEXT NOT NULL,            -- quando o Worker achou
-  status TEXT NOT NULL DEFAULT 'novo',
-  lote TEXT
+  status TEXT NOT NULL DEFAULT 'novo', -- novo | publicado | descartado (lido = rodadas antigas)
+  lote TEXT,                      -- rodada que reservou o candidato
+  motivo TEXT                     -- motivo do descarte: repetido | promocional | fora-do-tema | antigo | raso
 );
+CREATE INDEX IF NOT EXISTS idx_candidatos_lote ON candidatos (lote);
 CREATE INDEX IF NOT EXISTS idx_candidatos_radar ON candidatos (radar, status, visto);
 
 CREATE TABLE IF NOT EXISTS feeds_estado (

@@ -135,6 +135,20 @@ async function favoritos(request, env, quem, idFav) {
 
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Rendimento das fontes nos últimos 10 dias (o tempo que os candidatos ficam no banco)
+async function adminFontes(env) {
+  const { results } = await env.DB.prepare(
+    `SELECT c.radar, c.fonte, c.feed, count(*) AS lidos,
+       sum(c.status = 'publicado') AS publicados, sum(c.status = 'descartado') AS descartados, sum(c.status = 'novo') AS fila,
+       sum(c.motivo = 'repetido') AS repetido, sum(c.motivo = 'promocional') AS promocional, sum(c.motivo = 'fora-do-tema') AS fora, sum(c.motivo = 'antigo') AS antigo, sum(c.motivo = 'raso') AS raso,
+       f.erro, f.erros_seguidos
+     FROM candidatos c LEFT JOIN feeds_estado f ON f.url = c.feed
+     GROUP BY c.feed ORDER BY c.radar, publicados DESC`
+  ).all();
+  const { results: falhas } = await env.DB.prepare("SELECT radar, fonte, url AS feed, erro, erros_seguidos FROM feeds_estado WHERE erros_seguidos > 0 ORDER BY radar, fonte").all();
+  return json({ fontes: results, falhas });
+}
+
 async function adminUsuarios(request, env, email) {
   if (request.method === "GET" && !email) {
     const { results } = await env.DB.prepare("SELECT email, nome, criado, ultimo_acesso FROM usuarios ORDER BY criado DESC").all();
@@ -195,6 +209,7 @@ export default {
       if (!quem.admin) return p.startsWith("/api/") ? json({ erro: "admin" }, 403) : pagina("Sem permissão", "<h1>Área do administrador</h1><p>Só quem cuida do Lookout acessa esta página.</p><p><a href=\"/\">Voltar ao radar</a></p>", 403);
       if (p === "/api/admin/usuarios") return adminUsuarios(request, env, "");
       if (p.startsWith("/api/admin/usuarios/")) return adminUsuarios(request, env, decodeURIComponent(p.slice(20)));
+      if (p === "/api/admin/fontes") return adminFontes(env);
       if (p.startsWith("/api/admin/")) return json({ erro: "rota" }, 404);
       return servirAsset(request, env, "/admin");
     }

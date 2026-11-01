@@ -38,6 +38,13 @@ li:first-child{border-top:0}
 .acoes{display:flex;flex-wrap:wrap;gap:6px}
 .vazio{color:var(--mut)}
 .dica{color:var(--mut);font-size:14px;margin:8px 0 0}
+.fontes{overflow-x:auto;margin-top:12px}
+.fontes table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:640px}
+.fontes th,.fontes td{padding:7px 8px;border-bottom:1px solid var(--bor, #e3e5ee);text-align:right;white-space:nowrap}
+.fontes th:first-child,.fontes td:first-child,.fontes th:nth-child(2),.fontes td:nth-child(2){text-align:left}
+.fontes th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+.fontes .zero{color:#c2410c;font-weight:600}
+.fontes .falha{color:#b91c1c}
 </style>
 </head>
 <body>
@@ -64,6 +71,12 @@ li:first-child{border-top:0}
   <section class="card">
     <h2 id="titulo-lista">Na lista</h2>
     <ul id="lista"><li class="vazio">Carregando…</li></ul>
+  </section>
+
+  <section class="card">
+    <h2>Rendimento das fontes</h2>
+    <p class="dica">Dos links que o robô trouxe nos últimos 10 dias, quantos a curadoria publicou e quantos descartou, por quê. Fonte que nunca emplaca nada é candidata a sair da lista.</p>
+    <div id="fontes" class="fontes"><p class="vazio">Carregando…</p></div>
   </section>
 </div>
 
@@ -121,6 +134,26 @@ async function carregar() {
     ul.appendChild(li);
   }
 }
+
+async function carregarFontes() {
+  const box = $("fontes");
+  try {
+    const { fontes, falhas } = await api("/api/admin/fontes");
+    const NOME = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
+    const pct = (a, b) => (b ? Math.round((100 * a) / b) + "%" : "–");
+    let h = "<table><thead><tr><th>Aba</th><th>Fonte</th><th>Lidos</th><th>Publicados</th><th>Taxa</th><th>Repetido</th><th>Promo</th><th>Fora do tema</th><th>Antigo</th><th>Raso</th><th>Na fila</th></tr></thead><tbody>";
+    for (const f of fontes) {
+      const avaliados = (f.publicados || 0) + (f.descartados || 0);
+      const zero = avaliados >= 10 && !f.publicados;
+      h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td><td title="${esc(f.feed)}">${esc(f.fonte)}${f.erros_seguidos ? ' <span class="falha">· falhando</span>' : ""}</td><td>${f.lidos}</td><td>${f.publicados || 0}</td><td class="${zero ? "zero" : ""}">${pct(f.publicados || 0, avaliados)}</td><td>${f.repetido || 0}</td><td>${f.promocional || 0}</td><td>${f.fora || 0}</td><td>${f.antigo || 0}</td><td>${f.raso || 0}</td><td>${f.fila || 0}</td></tr>`;
+    }
+    h += "</tbody></table>";
+    if (falhas.length) h += `<p class="dica"><strong>Feeds com erro:</strong> ${falhas.map((f) => esc(f.fonte) + " (" + esc(NOME[f.radar] || f.radar) + ", " + esc(f.erro) + ")").join(" · ")}</p>`;
+    h += '<p class="dica">"Taxa" conta só o que já foi avaliado pela curadoria nova; links de rodadas antigas aparecem como lidos sem destino.</p>';
+    box.innerHTML = h;
+  } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
+}
+carregarFontes();
 
 $("form").addEventListener("submit", async (e) => {
   e.preventDefault();
