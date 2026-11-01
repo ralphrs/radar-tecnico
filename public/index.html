@@ -308,6 +308,7 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .ativo-links { padding-bottom: 18px; font-size: 14px; }
 .ativo-dlg .nota { font-size: 12.5px; color: var(--muted-foreground); margin-top: 16px; }
 @media (max-width: 639px) { .ativo-dlg > * { margin-left: 16px; margin-right: 16px; } }
+.uma-secao #radares-barra, .uma-secao #radares-nav { display: none; }
 .cot-pe { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
 /* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
 .lista.cards { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 10px; }
@@ -642,7 +643,7 @@ footer b { color: var(--foreground); font-weight: 500; }
     const pe = document.querySelector("footer");
     if (!pe) return;
     const p = document.createElement("p");
-    p.innerHTML = '<a href="/admin">Gerenciar convidados</a>';
+    p.innerHTML = '<a href="/admin">Administração</a>';
     pe.appendChild(p);
   }).catch(() => {});
 })();
@@ -823,6 +824,9 @@ const RADARES = {
     vazio: "A coleta roda várias vezes por dia e traz Inter, Gauchão, Brasileirão, Libertadores, Copa do Brasil e mercado. Os itens aparecem aqui depois da primeira rodada." },
 };
 const ORDEM_RADARES = ["tech", "negocios", "investimentos", "politica", "esportes"];
+/* Seções liberadas para quem está vendo (grupos do admin). null = todas. O servidor também bloqueia. */
+let secoesLiberadas = null;
+const radaresVisiveis = () => ORDEM_RADARES.filter((r) => !secoesLiberadas || secoesLiberadas.includes(r));
 const LIMITE_POR_TEMA = 5;
 const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
 const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
@@ -1200,7 +1204,7 @@ function renderUrgente() {
 function renderRadares() {
   [["radares-barra", "aba-"], ["radares-nav", "navaba-"]].forEach(([id, pre]) => {
     const s = $(id); s.textContent = "";
-    ORDEM_RADARES.forEach((r) => {
+    radaresVisiveis().forEach((r) => {
       const b = el("button", { type: "button", id: pre + r, "aria-pressed": String(radar === r) }, RADARES[r].aba);
       b.addEventListener("click", () => trocarRadar(r));
       s.append(b);
@@ -1904,7 +1908,7 @@ function escreverHash() {
   catch (e) { try { location.hash = alvo; } catch (e2) {} }
 }
 function trocarRadar(id, porHash) {
-  if (!RADARES[id] || id === radar) return;
+  if (!RADARES[id] || id === radar || !radaresVisiveis().includes(id)) return;
   fecharPainel();
   radar = id;
   try { localStorage.setItem("radar-atual", id); } catch (e) {}
@@ -1924,6 +1928,19 @@ render();
   const db = await window.claude?.use?.("db");
   if (!db) { carregado = true; renderFeed(); $("status").textContent = "Não foi possível carregar o feed nesta visualização."; return; }
   dbRef = db;
+  try {
+    const me = await (await fetch("/api/me", { credentials: "same-origin", cache: "no-store" })).json();
+    if (Array.isArray(me.secoes)) secoesLiberadas = me.secoes;
+  } catch (e) {}
+  const vis = radaresVisiveis();
+  if (!vis.length) {
+    carregado = true; renderRadares();
+    $("feed").textContent = ""; $("feed").append(el("p", { class: "nota" }, "Nenhuma seção foi liberada para você ainda. Fale com quem te convidou."));
+    $("status").textContent = ""; return;
+  }
+  if (!vis.includes(radar)) { radar = vis[0]; try { localStorage.setItem("radar-atual", radar); } catch (e) {} escreverHash(); aplicarRadar(); render(); }
+  else renderRadares();
+  if (vis.length === 1) document.documentElement.classList.add("uma-secao");
   ligarFavoritosNaConta(db);
   ligarRadar();
   setInterval(() => { renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral(); }, 60000);

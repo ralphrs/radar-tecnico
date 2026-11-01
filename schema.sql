@@ -46,3 +46,7 @@ CREATE TABLE IF NOT EXISTS feeds_estado (
   itens_ultima INTEGER NOT NULL DEFAULT 0,
   novos_total INTEGER NOT NULL DEFAULT 0
 );
+
+-- Seções por grupo (src/grupos.js). Sem grupos, todo convidado vê tudo.
+CREATE TABLE IF NOT EXISTS grupos (id TEXT PRIMARY KEY, nome TEXT NOT NULL, secoes TEXT NOT NULL DEFAULT '[]', padrao INTEGER NOT NULL DEFAULT 0, criado TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));
+CREATE TABLE IF NOT EXISTS usuario_grupo (email TEXT NOT NULL, grupo TEXT NOT NULL, PRIMARY KEY (email, grupo));

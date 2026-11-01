@@ -58,6 +58,22 @@ li:first-child{border-top:0}
 .custo-tab td:first-child,.custo-tab th:first-child{text-align:left}
 .custo-tab th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
 details{margin-top:10px}summary{cursor:pointer;color:var(--pri);font-size:14px}
+.grade{overflow-x:auto}
+.grade table{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+.grade th,.grade td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+.grade th:first-child,.grade td:first-child{text-align:left}
+.grade th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:600}
+.grade input[type=checkbox]{width:18px;height:18px;min-height:0;accent-color:var(--pri);cursor:pointer}
+.grade input.nome-grupo{min-height:36px;padding:6px 8px;width:150px}
+.grade .acoes-g{display:flex;gap:6px;justify-content:flex-end}
+.grade button{min-height:34px;padding:4px 10px}
+.gsel{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.gsel label{display:inline-flex;align-items:center;gap:5px;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;cursor:pointer}
+.gsel input{width:15px;height:15px;min-height:0;accent-color:var(--pri)}
+.gsel label:has(input:checked){border-color:var(--pri);color:var(--pri);background:var(--chip)}
+.vê{font-size:12px;color:var(--mut)}
+.quem .vê{display:block;margin-top:2px}
+#convite-grupos:empty{display:none}
 </style>
 </head>
 <body>
@@ -82,8 +98,16 @@ details{margin-top:10px}summary{cursor:pointer;color:var(--pri);font-size:14px}
       <input id="nome" type="text" placeholder="Nome (opcional)" autocomplete="off" aria-label="Nome">
       <button class="pri" type="submit">Adicionar</button>
     </form>
+    <div class="gsel" id="convite-grupos" aria-label="Grupos do novo convidado"></div>
     <p class="msg" id="msg" role="status"></p>
     <p class="dica">Quem estiver na lista entra com o Google ou com um código enviado para o e-mail. Quem não estiver vê a tela de "só para convidados".</p>
+  </section>
+
+  <section class="card">
+    <h2>Grupos e seções</h2>
+    <p class="dica" style="margin-top:0">Cada grupo libera algumas seções. O convidado vê a soma das seções dos seus grupos; quem não tem grupo cai nos grupos marcados como padrão. Sem nenhum grupo criado, todo mundo vê tudo. Você sempre vê tudo.</p>
+    <div class="grade" id="grupos"><p class="vazio">Carregando…</p></div>
+    <p class="msg" id="msg-grupos" role="status"></p>
   </section>
 
   <section class="card">
@@ -123,6 +147,77 @@ async function api(caminho, opt) {
 
 function aviso(texto, tipo) { const m = $("msg"); m.textContent = texto; m.className = "msg " + (tipo || ""); }
 
+
+/* Grupos: grade de seções por grupo e seletor de grupos por convidado */
+const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
+let G = { secoes: [], grupos: [], membros: [] };
+function avisoG(t, tipo) { const m = $("msg-grupos"); m.textContent = t; m.className = "msg " + (tipo || ""); }
+const gruposDe = (email) => G.membros.filter((m) => m.email === email).map((m) => m.grupo);
+function vêDe(email) {
+  if (!G.grupos.length) return "vê tudo (nenhum grupo criado)";
+  let gs = G.grupos.filter((g) => gruposDe(email).includes(g.id));
+  let pre = "";
+  if (!gs.length) { gs = G.grupos.filter((g) => g.padrao); pre = gs.length ? "padrão: " : ""; }
+  if (!gs.length) return "sem grupo e sem padrão: vê tudo";
+  const u = new Set(gs.flatMap((g) => g.secoes));
+  const l = G.secoes.filter((x) => u.has(x)).map((x) => NOME_SECAO[x]);
+  return pre + (l.length ? "vê " + l.join(", ") : "não vê nenhuma seção");
+}
+async function salvarGrupo(g, metodo) {
+  try { await api("/api/admin/grupos" + (metodo === "PUT" ? "/" + encodeURIComponent(g.id) : ""), { method: metodo, headers: { "content-type": "application/json" }, body: JSON.stringify(g) }); avisoG("Salvo. Vale para os convidados em até 1 minuto.", "ok"); await carregarGrupos(); carregar(); }
+  catch (e) { avisoG(e.message, "err"); }
+}
+function renderGrupos() {
+  const box = $("grupos");
+  const cab = "<tr><th>Grupo</th>" + G.secoes.map((x) => `<th>${NOME_SECAO[x] || x}</th>`).join("") + "<th>Padrão</th><th>Pessoas</th><th></th></tr>";
+  let corpo = "";
+  for (const g of G.grupos) {
+    const n = G.membros.filter((m) => m.grupo === g.id).length;
+    corpo += `<tr data-id="${esc(g.id)}"><td><input class="nome-grupo" value="${esc(g.nome)}" aria-label="Nome do grupo"></td>`
+      + G.secoes.map((x) => `<td><input type="checkbox" data-s="${x}" ${g.secoes.includes(x) ? "checked" : ""} aria-label="${esc(g.nome)} vê ${NOME_SECAO[x]}"></td>`).join("")
+      + `<td><input type="checkbox" data-padrao ${g.padrao ? "checked" : ""} aria-label="Grupo padrão"></td><td>${n}</td>`
+      + `<td><div class="acoes-g"><button type="button" class="perigo" data-apagar>Apagar</button></div></td></tr>`;
+  }
+  corpo += `<tr data-novo><td><input class="nome-grupo" placeholder="Novo grupo" aria-label="Nome do novo grupo"></td>`
+    + G.secoes.map((x) => `<td><input type="checkbox" data-s="${x}" aria-label="Novo grupo vê ${NOME_SECAO[x]}"></td>`).join("")
+    + `<td><input type="checkbox" data-padrao aria-label="Grupo padrão"></td><td></td><td><div class="acoes-g"><button type="button" class="pri" data-criar>Criar</button></div></td></tr>`;
+  box.innerHTML = `<table><thead>${cab}</thead><tbody>${corpo}</tbody></table>`;
+  const ler = (tr) => ({ nome: tr.querySelector(".nome-grupo").value.trim(), secoes: [...tr.querySelectorAll("[data-s]")].filter((c) => c.checked).map((c) => c.dataset.s), padrao: tr.querySelector("[data-padrao]").checked });
+  box.querySelectorAll("tr[data-id]").forEach((tr) => {
+    const id = tr.dataset.id;
+    // Muda na hora: cada caixinha ou nome salva o grupo inteiro.
+    tr.querySelectorAll("input[type=checkbox]").forEach((c) => c.addEventListener("change", () => salvarGrupo({ id, ...ler(tr) }, "PUT")));
+    tr.querySelector(".nome-grupo").addEventListener("change", () => salvarGrupo({ id, ...ler(tr) }, "PUT"));
+    const bt = tr.querySelector("[data-apagar]");
+    bt.addEventListener("click", async () => {
+      if (bt.dataset.conf !== "1") { bt.dataset.conf = "1"; bt.textContent = "Confirmar"; setTimeout(() => { bt.dataset.conf = ""; bt.textContent = "Apagar"; }, 4000); return; }
+      try { await api("/api/admin/grupos/" + encodeURIComponent(id), { method: "DELETE" }); avisoG("Grupo apagado.", "ok"); await carregarGrupos(); carregar(); } catch (e) { avisoG(e.message, "err"); }
+    });
+  });
+  const novo = box.querySelector("tr[data-novo]");
+  novo.querySelector("[data-criar]").addEventListener("click", () => { const g = ler(novo); if (!g.nome) { avisoG("Dê um nome ao grupo.", "err"); return; } salvarGrupo(g, "POST"); });
+  // Grupos no convite
+  const cg = $("convite-grupos"); cg.innerHTML = "";
+  if (G.grupos.length) {
+    cg.insertAdjacentHTML("beforeend", '<span class="vê" style="align-self:center">Grupos:</span>');
+    for (const g of G.grupos) cg.insertAdjacentHTML("beforeend", `<label><input type="checkbox" value="${esc(g.id)}" ${g.padrao ? "checked" : ""}>${esc(g.nome)}</label>`);
+  }
+}
+async function carregarGrupos() {
+  try { G = await api("/api/admin/grupos"); renderGrupos(); }
+  catch (e) { $("grupos").innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
+}
+function seletorGrupos(u) {
+  if (!G.grupos.length) return "";
+  const meus = gruposDe(u.email);
+  return '<div class="gsel">' + G.grupos.map((g) => `<label><input type="checkbox" value="${esc(g.id)}" ${meus.includes(g.id) ? "checked" : ""}>${esc(g.nome)}</label>`).join("") + "</div>";
+}
+async function salvarMembro(email, grupos) {
+  try { const r = await api("/api/admin/membros/" + encodeURIComponent(email), { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ grupos }) });
+    G.membros = G.membros.filter((m) => m.email !== email).concat(r.grupos.map((g) => ({ email, grupo: g }))); renderGrupos(); aviso("Grupos de " + email + " atualizados.", "ok"); return true; }
+  catch (e) { aviso(e.message, "err"); return false; }
+}
+
 async function carregar() {
   const { usuarios, admin } = await api("/api/admin/usuarios");
   const ul = $("lista");
@@ -133,7 +228,7 @@ async function carregar() {
     const li = document.createElement("li");
     const txt = textoConvite(u);
     const assunto = "Convite para o Lookout";
-    li.innerHTML = `<div class="quem"><strong>${esc(u.nome || u.email)}${u.email === admin ? '<span class="chip">admin</span>' : ""}</strong><small>${u.nome ? esc(u.email) + " · " : ""}${quando(u.ultimo_acesso)}</small></div>
+    li.innerHTML = `<div class="quem"><strong>${esc(u.nome || u.email)}${u.email === admin ? '<span class="chip">admin</span>' : ""}</strong><small>${u.nome ? esc(u.email) + " · " : ""}${quando(u.ultimo_acesso)}</small><small class="vê" data-ve>${esc(vêDe(u.email))}</small>${seletorGrupos(u)}</div>
       <div class="acoes">
         <a class="btn" href="https://wa.me/?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">WhatsApp</a>
         <a class="btn" href="mailto:${encodeURIComponent(u.email)}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(txt)}">E-mail</a>
@@ -149,6 +244,10 @@ async function carregar() {
       try { await api("/api/admin/usuarios/" + encodeURIComponent(u.email), { method: "DELETE" }); aviso(u.email + " saiu da lista.", "ok"); carregar(); }
       catch (err) { aviso(err.message, "err"); }
     };
+    li.querySelectorAll(".gsel input").forEach((c) => c.addEventListener("change", async () => {
+      const gs = [...li.querySelectorAll(".gsel input")].filter((x) => x.checked).map((x) => x.value);
+      if (await salvarMembro(u.email, gs)) li.querySelector("[data-ve]").textContent = vêDe(u.email);
+    }));
     ul.appendChild(li);
   }
 }
@@ -246,14 +345,15 @@ $("form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = $("email").value.trim(), nome = $("nome").value.trim();
   try {
-    await api("/api/admin/usuarios", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, nome }) });
+    await api("/api/admin/usuarios", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, nome, grupos: [...document.querySelectorAll("#convite-grupos input:checked")].map((x) => x.value) }) });
+    await carregarGrupos();
     aviso(email + " entrou na lista. Agora é só mandar o convite.", "ok");
     $("email").value = ""; $("nome").value = "";
     carregar();
   } catch (err) { aviso(err.message, "err"); }
 });
 
-carregar().catch((err) => { $("lista").innerHTML = '<li class="vazio">' + esc(err.message) + "</li>"; });
+carregarGrupos().then(() => carregar()).catch((err) => { $("lista").innerHTML = '<li class="vazio">' + esc(err.message) + "</li>"; });
 </script>
 </body>
 </html>

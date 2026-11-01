@@ -3,6 +3,7 @@ import { coletar, limpar } from "./coleta.js";
 import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
 import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
 import { adminCustos } from "./custos.js";
+import { secoesDe, secaoDe, libera, adminGrupos, adminMembro } from "./grupos.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
 const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos"]);
@@ -57,7 +58,7 @@ async function quemEntra(request, env, conferirLista = true) {
   if (!conferirLista) return { email, admin, nome: "" };
   const u = await buscarConvidado(env, email);
   if (!admin && !u) return { erro: "convite", email };
-  return { email, admin, nome: u?.nome || "" };
+  return { email, admin, nome: u?.nome || "", secoes: await secoesDe(env, email, admin) };
 }
 
 // Respostas das listas guardadas na memória por 30 s. São iguais para todo mundo e só mudam quando as coletas rodam.
@@ -76,9 +77,10 @@ function linhaParaDoc(r) {
   return { id: r.id, data: JSON.parse(r.data) };
 }
 
-async function consultar(url, env) {
+async function consultar(url, env, quem) {
   const c = url.searchParams.get("c");
   if (!LISTAS.has(c)) return json({ erro: "collection" }, 400);
+  if (!libera(quem.secoes, secaoDe(c))) return json({ erro: "secao" }, 403);
   const ordem = url.searchParams.get("order") || "coletado";
   if (!CAMPOS_ORDEM.has(ordem)) return json({ erro: "order" }, 400);
   const dir = url.searchParams.get("dir") === "asc" ? "ASC" : "DESC";
@@ -101,10 +103,12 @@ async function consultar(url, env) {
   });
 }
 
-async function lerDoc(url, env) {
+async function lerDoc(url, env, quem) {
   const c = url.searchParams.get("c");
   const id = url.searchParams.get("id") || "";
   if (!DOCS.has(c) || !id) return json({ erro: "doc" }, 400);
+  // Convidado só lê documentos de meta conhecidos e das seções liberadas; o admin lê qualquer um.
+  if (!quem.admin && !libera(quem.secoes, secaoDe(c, id))) return json({ erro: "secao" }, 403);
   return comCache("doc|" + c + "|" + id, async () => {
     const r = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = ?").bind(c, id).first();
     return r ? { existe: true, ...linhaParaDoc(r) } : { existe: false, id };
@@ -163,11 +167,16 @@ async function adminUsuarios(request, env, email) {
     const nome = String(b.nome || "").trim().slice(0, 80);
     if (!EMAIL_OK.test(novo) || novo.length > 200) return json({ erro: "E-mail inválido." }, 400);
     await env.DB.prepare("INSERT INTO usuarios (email, nome) VALUES (?, ?) ON CONFLICT(email) DO UPDATE SET nome = excluded.nome").bind(novo, nome).run();
+    if (Array.isArray(b.grupos) && b.grupos.length) {
+      const req = new Request("https://x/", { method: "PUT", body: JSON.stringify({ grupos: b.grupos }) });
+      await adminMembro(req, env, novo);
+    }
     return json({ ok: true });
   }
   if (request.method === "DELETE" && email) {
     await env.DB.prepare("DELETE FROM usuarios WHERE email = ?").bind(email.toLowerCase()).run();
     await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind("favs/" + email.toLowerCase()).run();
+    try { await env.DB.prepare("DELETE FROM usuario_grupo WHERE email = ?").bind(email.toLowerCase()).run(); } catch (e) {}
     return json({ ok: true });
   }
   return json({ erro: "metodo" }, 405);
@@ -200,10 +209,13 @@ export default {
       return pagina("Só por convite", `<h1>Este espaço é só para convidados</h1><p>Você entrou como <strong>${esc(quem.email)}</strong>, que ainda não está na lista.</p><p>Se recebeu um convite em outro e-mail, <a href="/cdn-cgi/access/logout">saia</a> e entre com ele.</p>`, 403);
     }
 
-    if (p === "/api/me") return json({ email: quem.email, nome: quem.nome, admin: quem.admin });
-    if (p === "/api/q" && request.method === "GET") return consultar(url, env);
-    if (p === "/api/doc" && request.method === "GET") return lerDoc(url, env);
-    if (p === "/api/mercado/atualizar" && request.method === "POST") return json(await pedirAtualizacao(env));
+    if (p === "/api/me") return json({ email: quem.email, nome: quem.nome, admin: quem.admin, secoes: quem.secoes ?? null });
+    if (p === "/api/q" && request.method === "GET") return consultar(url, env, quem);
+    if (p === "/api/doc" && request.method === "GET") return lerDoc(url, env, quem);
+    if (p === "/api/mercado/atualizar" && request.method === "POST") {
+      if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
+      return json(await pedirAtualizacao(env));
+    }
     if (p === "/api/favs" || p.startsWith("/api/favs/"))
       return favoritos(request, env, quem, p.length > 10 ? decodeURIComponent(p.slice(10)) : "");
 
@@ -212,6 +224,9 @@ export default {
       if (p === "/api/admin/usuarios") return adminUsuarios(request, env, "");
       if (p.startsWith("/api/admin/usuarios/")) return adminUsuarios(request, env, decodeURIComponent(p.slice(20)));
       if (p === "/api/admin/fontes") return adminFontes(env);
+      if (p === "/api/admin/grupos") return adminGrupos(request, env, "");
+      if (p.startsWith("/api/admin/grupos/")) return adminGrupos(request, env, decodeURIComponent(p.slice(18)));
+      if (p.startsWith("/api/admin/membros/")) return adminMembro(request, env, decodeURIComponent(p.slice(19)));
       if (p === "/api/admin/custos") return json(await adminCustos(env));
       if (p === "/api/admin/cvm" && request.method === "POST") {
         try { return json({ ok: true, anterior: await etapaAnoAnterior(env), corrente: await etapaAnoCorrente(env) }); }
