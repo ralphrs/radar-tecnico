@@ -111,6 +111,9 @@ h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: 
 .radares button { flex: 1 1 0; justify-content: center; height: 32px; font-size: 13.5px; }
 .nav-temas .radares { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
 .barra-radares { display: flex; align-items: center; height: var(--toque); }
+.barra-radares .radares { overflow-x: auto; scrollbar-width: none; }
+.barra-radares .radares::-webkit-scrollbar { display: none; }
+.barra-radares .radares button { flex: 1 0 auto; padding-inline: 12px; }
 
 /* Faixa de urgentes (política): no topo do feed e no trilho direito */
 .urgente { border: 1px solid color-mix(in srgb, var(--err) 40%, transparent); background: color-mix(in srgb, var(--err) 6%, var(--card)); border-radius: var(--radius-lg); padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; }
@@ -979,6 +982,9 @@ function renderRadares() {
       s.append(b);
     });
   });
+  /* no celular a barra de abas rola: deixa a aba aberta à vista */
+  const ativa = $("aba-" + radar), rolo = $("radares-barra");
+  if (ativa && rolo.scrollWidth > rolo.clientWidth) rolo.scrollLeft = Math.max(0, ativa.offsetLeft - (rolo.clientWidth - ativa.offsetWidth) / 2);
 }
 
 function renderDestaques() {
@@ -1285,6 +1291,14 @@ function cardTransf(i) {
       el("span", {}, "atualizado " + fmtRel(t.atualizado || i.coletado))),
     el("a", { class: "ver", href: i.url, target: "_blank", rel: "noopener" }, i.titulo || "Ver a notícia"));
 }
+/* Negociações viram cards em grade, antes das notícias comuns do mesmo grupo */
+function listasDe(itensGrupo) {
+  const cards = itensGrupo.filter(ehTransf), resto = itensGrupo.filter((i) => !ehTransf(i));
+  const out = [];
+  if (cards.length) { const ul = el("ul", { class: "lista cards" }); cards.forEach((i) => ul.append(cardTransf(i))); out.push(ul); }
+  if (resto.length) { const ul = el("ul", { class: "lista" }); resto.forEach((i) => ul.append(itemEl(i))); out.push(ul); }
+  return out;
+}
 const ehTransf = (i) => !!(i && i.transferencia && (i.transferencia.jogador || i.transferencia.destino));
 function itemEl(i) {
   if (ehTransf(i)) return cardTransf(i);
@@ -1354,15 +1368,12 @@ function renderFeed() {
       for (const g of grupos) {
         const doSub = doTema.filter((i) => g.id === "__outros" ? !subs.some((x) => x.id === subDe(i)) : subDe(i) === g.id);
         if (!doSub.length) continue;
-        const ul = el("ul", { class: doSub.every(ehTransf) ? "lista cards" : "lista" });
-        doSub.forEach((i) => ul.append(itemEl(i)));
-        sec.append(el("div", { class: "subgrupo" }, el("h3", { class: "subsecao" }, g.nome, el("span", {}, String(doSub.length))), ul));
+        sec.append(el("div", { class: "subgrupo" }, el("h3", { class: "subsecao" }, g.nome, el("span", {}, String(doSub.length))), ...listasDe(doSub)));
       }
     } else {
-      const mostra = aberto ? doTema : doTema.slice(0, LIMITE_POR_TEMA);
-      const ul = el("ul", { class: mostra.length && mostra.every(ehTransf) ? "lista cards" : "lista" });
-      mostra.forEach((i) => ul.append(itemEl(i)));
-      sec.append(ul);
+      const ord = doTema.some(ehTransf) ? [...doTema.filter(ehTransf), ...doTema.filter((i) => !ehTransf(i))] : doTema;
+      const mostra = aberto ? ord : ord.slice(0, LIMITE_POR_TEMA);
+      sec.append(...listasDe(mostra));
     }
     if (!aberto && doTema.length > LIMITE_POR_TEMA) {
       const b = el("button", { class: "dd-btn dd-btn--link mais alvo", type: "button", id: "mais-" + t.id }, `Ver mais ${doTema.length - LIMITE_POR_TEMA}`);
