@@ -44,8 +44,11 @@ function linkAtom(bloco) {
   return attr(alt || links[0] || "", "href");
 }
 
+// Atom quando há <entry> e nenhum <item>. A sonda usa a mesma regra para dizer o tipo do feed.
+export const ehAtom = (xml) => /<entry[\s>]/i.test(xml) && !/<item[\s>]/i.test(xml);
+
 export function lerFeed(xml) {
-  const atom = /<entry[\s>]/i.test(xml) && !/<item[\s>]/i.test(xml);
+  const atom = ehAtom(xml);
   const blocos = xml.match(atom ? /<entry[\s>][\s\S]*?<\/entry>/gi : /<item[\s>][\s\S]*?<\/item>/gi) || [];
   return blocos.map((b) => {
     let link = atom ? linkAtom(b) : texto(tag(b, "link"));
@@ -109,10 +112,15 @@ async function registrar(env, f, ok, erro, itens, novos) {
   ).bind(f.url, f.radar, f.fonte, t, ok ? t : "", erro, ok ? 0 : 1, itens, novos, ok ? 1 : 0).run();
 }
 
+// Busca um feed com o user-agent do robô e 10 s de limite. Usado pela coleta e pela sonda (src/sonda.js).
+export function pegar(url) {
+  return fetch(url, { headers: { "user-agent": UA, accept: "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.9, */*;q=0.5" }, signal: AbortSignal.timeout(10_000), redirect: "follow" });
+}
+
 async function lerUm(env, f) {
   let r;
   try {
-    r = await fetch(f.url, { headers: { "user-agent": UA, accept: "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.9, */*;q=0.5" }, signal: AbortSignal.timeout(10_000), redirect: "follow" });
+    r = await pegar(f.url);
   } catch (e) {
     return registrar(env, f, false, String(e && e.message || e).slice(0, 200), 0, 0);
   }

@@ -74,6 +74,11 @@ details{margin-top:10px}summary{cursor:pointer;color:var(--pri);font-size:14px}
 .vê{font-size:12px;color:var(--mut)}
 .quem .vê{display:block;margin-top:2px}
 #convite-grupos:empty{display:none}
+textarea{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-height:110px;resize:vertical}
+.sonda-acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.sonda .url{max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.sonda .ok{color:var(--ok);font-weight:600}
+.sonda td.erro{color:var(--err);white-space:normal;min-width:160px;text-align:left}
 </style>
 </head>
 <body>
@@ -119,6 +124,15 @@ details{margin-top:10px}summary{cursor:pointer;color:var(--pri);font-size:14px}
     <h2>Rendimento das fontes</h2>
     <p class="dica">Dos links que o robô trouxe nos últimos 10 dias, quantos a curadoria publicou e quantos descartou, por quê. Fonte que nunca emplaca nada é candidata a sair da lista.</p>
     <div id="fontes" class="fontes"><p class="vazio">Carregando…</p></div>
+  </section>
+
+  <section class="card">
+    <h2>Sondar feeds</h2>
+    <p class="dica" style="margin-top:0">Uma URL por linha, até 30 por vez. O próprio Worker testa até 4 por minuto, com o mesmo leitor da coleta, e o resultado aparece abaixo.</p>
+    <textarea id="sonda-urls" placeholder="https://exemplo.com/feed" aria-label="URLs para sondar, uma por linha" spellcheck="false"></textarea>
+    <div class="sonda-acoes"><button class="pri" type="button" id="sonda-ir">Sondar</button><button type="button" id="sonda-atualizar">Atualizar</button></div>
+    <p class="msg" id="msg-sonda" role="status"></p>
+    <div id="sonda" class="fontes sonda"></div>
   </section>
 </div>
 
@@ -341,6 +355,41 @@ async function carregarCustos() {
   } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
 }
 carregarCustos();
+
+function avisoS(t, tipo) { const m = $("msg-sonda"); m.textContent = t; m.className = "msg " + (tipo || ""); }
+function dataCurta(iso) {
+  if (!iso) return "–";
+  const d = new Date(iso);
+  return isNaN(d) ? esc(iso) : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+async function carregarSonda() {
+  const box = $("sonda");
+  try {
+    const { pendentes, resultados } = await api("/api/admin/sonda");
+    const linhas = Object.entries(resultados || {}).sort((a, b) => String(b[1].quando || "").localeCompare(String(a[1].quando || "")));
+    let h = "";
+    if (pendentes.length) h += `<p class="dica">Na fila: ${pendentes.length} URL${pendentes.length > 1 ? "s" : ""}. Leva cerca de ${Math.ceil(pendentes.length / 4)} min.</p>`;
+    if (!linhas.length) { box.innerHTML = h + (pendentes.length ? "" : '<p class="vazio">Nenhuma URL sondada ainda.</p>'); return; }
+    h += "<table><thead><tr><th>URL</th><th>Status</th><th>Tipo</th><th>Itens</th><th>Mais recente</th><th>Erro</th></tr></thead><tbody>";
+    for (const [url, r] of linhas) {
+      const bom = (r.tipo === "rss" || r.tipo === "atom") && r.itens > 0;
+      h += `<tr><td class="url" title="${esc(url)}">${esc(url)}</td><td>${esc(r.status || "–")}</td><td class="${bom ? "ok" : ""}">${esc(r.tipo || "")}</td><td>${esc(r.itens ?? 0)}</td><td title="${esc(r.maisRecente || "")}">${dataCurta(r.maisRecente)}</td><td class="erro">${esc(r.erro || "")}</td></tr>`;
+    }
+    box.innerHTML = h + "</tbody></table>";
+  } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
+}
+$("sonda-ir").addEventListener("click", async () => {
+  const urls = $("sonda-urls").value.split("\n").map((x) => x.trim()).filter(Boolean);
+  if (!urls.length) { avisoS("Cole ao menos uma URL.", "err"); return; }
+  try {
+    const r = await api("/api/admin/sonda", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ urls }) });
+    avisoS(`${r.acrescentadas} na fila (${r.pendentes} no total). Clique em Atualizar daqui a pouco.`, "ok");
+    $("sonda-urls").value = "";
+    carregarSonda();
+  } catch (err) { avisoS(err.message, "err"); }
+});
+$("sonda-atualizar").addEventListener("click", () => { avisoS(""); carregarSonda(); });
+carregarSonda();
 
 $("form").addEventListener("submit", async (e) => {
   e.preventDefault();

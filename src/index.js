@@ -4,6 +4,7 @@ import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
 import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
 import { adminCustos } from "./custos.js";
 import { secoesDe, secaoDe, libera, adminGrupos, adminMembro } from "./grupos.js";
+import { cronSonda, adminSonda } from "./sonda.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
 const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos"]);
@@ -334,6 +335,7 @@ export default {
       if (p.startsWith("/api/admin/grupos/")) return adminGrupos(request, env, resto(18));
       if (p.startsWith("/api/admin/membros/")) return adminMembro(request, env, resto(19));
       if (p === "/api/admin/custos") return json(await adminCustos(env));
+      if (p === "/api/admin/sonda") return adminSonda(request, env);
       if (p === "/api/admin/cvm" && request.method === "POST") {
         try { return json({ ok: true, anterior: await etapaAnoAnterior(env), corrente: await etapaAnoCorrente(env) }); }
         catch (e) { return json({ ok: false, erro: String(e.message || e) }, 500); }
@@ -353,6 +355,7 @@ export default {
     try { await cronMercado(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("mercado", e); }
     try { await cronB3(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("b3", e); }
     try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
+    try { await cronSonda(env); } catch (e) { console.error("sonda", e); }
     if (minuto === 7) {
       // Índice que a coleta precisa (barato: só confere o catálogo). Fica aqui para valer mesmo onde o schema.sql não foi reaplicado.
       try { await env.DB.prepare("CREATE INDEX IF NOT EXISTS docs_url ON docs (json_extract(data, '$.url'))").run(); } catch (e) { console.error("indice", e); }
