@@ -1,6 +1,6 @@
 import { emailDoAccess, accessConfigurado } from "./auth.js";
 import { coletar, limpar } from "./coleta.js";
-import { cronMercado, pedirAtualizacao } from "./mercado.js";
+import { cronMercado, pedirAtualizacao, sondarBrapi } from "./mercado.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
 const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos"]);
@@ -208,6 +208,7 @@ export default {
     const minuto = new Date(evento.scheduledTime || Date.now()).getUTCMinutes();
     try { await coletar(env); } catch (e) { console.error("coleta", e); }
     try { await cronMercado(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("mercado", e); }
+    try { await sondarBrapi(env); } catch (e) { console.error("sonda", e); }
     if (minuto === 7) { try { console.log("limpeza", JSON.stringify(await limpar(env))); } catch (e) { console.error("limpeza", e); } }
     await importarHistorico(env);
   },

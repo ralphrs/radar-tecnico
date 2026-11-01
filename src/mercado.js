@@ -148,3 +148,24 @@ export async function pedirAtualizacao(env) {
   if (idade < 5 * 60_000) return { ...antes, aguarde: Math.ceil((5 * 60_000 - idade) / 1000) };
   return atualizarMercado(env, { moedas: true, bolsa: true, indicadores: !(antes.itens || []).some((i) => i.id === "selic") || idade > 6 * 3600_000 });
 }
+
+// Sonda temporária: descobre o que a brapi responde sem token, a partir do Worker. Roda uma vez e grava em _sistema/sonda-brapi.
+export async function sondarBrapi(env) {
+  const ja = await env.DB.prepare("SELECT 1 FROM docs WHERE collection = '_sistema' AND id = 'sonda-brapi'").first();
+  if (ja) return;
+  const urls = {
+    lista_fii: "https://brapi.dev/api/quote/list?type=fund&limit=3",
+    lista_acao: "https://brapi.dev/api/quote/list?type=stock&limit=3&sortBy=volume&sortOrder=desc",
+    v2_tickers: "https://brapi.dev/api/v2/tickers?limit=3",
+    quote_petr4: "https://brapi.dev/api/quote/PETR4",
+    quote_hglg11: "https://brapi.dev/api/quote/HGLG11",
+  };
+  const out = { quando: new Date().toISOString(), comToken: !!env.BRAPI_TOKEN };
+  for (const [k, u] of Object.entries(urls)) {
+    try {
+      const r = await fetch(u, { headers: { "user-agent": "LookoutBot/1.0", accept: "application/json" }, signal: AbortSignal.timeout(8000) });
+      out[k] = { status: r.status, corpo: (await r.text()).slice(0, 600) };
+    } catch (e) { out[k] = { erro: String(e.message || e) }; }
+  }
+  await env.DB.prepare("INSERT INTO docs (collection, id, data) VALUES ('_sistema', 'sonda-brapi', ?1) ON CONFLICT(collection, id) DO NOTHING").bind(JSON.stringify(out)).run();
+}
