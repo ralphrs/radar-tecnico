@@ -128,6 +128,12 @@ export const FEEDS = [
   ["investimentos", "CoinDesk", "US", "https://www.coindesk.com/arc/outboundfeeds/rss/"],
   ["investimentos", "Cointelegraph", "US", "https://cointelegraph.com/rss"],
   ["investimentos", "CNBC", "US", "https://www.cnbc.com/id/15839069/device/rss/rss.html"],
+  // Sondados em 01/11/2026 pelo próprio Worker (admin › Sondar feeds): respondem RSS com itens recentes.
+  ["investimentos", "Valor", "BR", "https://valor.globo.com/rss/valor/"],
+  ["investimentos", "Exame Invest", "BR", "https://exame.com/invest/feed/"],
+  ["investimentos", "CVM", "BR", "https://www.gov.br/cvm/pt-br/assuntos/noticias/RSS"],
+  ["investimentos", "Funds Explorer", "BR", "https://www.fundsexplorer.com.br/feed/"],
+  ["investimentos", "Agência Brasil", "BR", "https://agenciabrasil.ebc.com.br/rss/economia/feed.xml"],
 
   // Política: fontes oficiais
   ["politica", "Agência Brasil", "BR", "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml"],
