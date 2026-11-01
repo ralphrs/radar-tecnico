@@ -308,6 +308,31 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .ativo-links { padding-bottom: 18px; font-size: 14px; }
 .ativo-dlg .nota { font-size: 12.5px; color: var(--muted-foreground); margin-top: 16px; }
 @media (max-width: 639px) { .ativo-dlg > * { margin-left: 16px; margin-right: 16px; } }
+.rankings { display: flex; flex-direction: column; gap: var(--space-3); }
+.rk-quando { font: 400 12px var(--font-mono); color: var(--muted-foreground); }
+.rk-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: var(--space-3); }
+.rk-card { border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); padding: 12px 14px; min-width: 0; }
+.rk-card h3 { margin: 0 0 6px; font: 600 13.5px/1.3 var(--font-sans); display: flex; flex-direction: column; gap: 1px; }
+.rk-card h3 small { font: 400 11.5px var(--font-sans); color: var(--muted-foreground); }
+.rk-card ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rk-card li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 13px; font-variant-numeric: tabular-nums; }
+.rk-card li:first-child { border-top: 0; }
+.rk-card .cot-papel { justify-self: start; }
+.rk-preco { color: var(--muted-foreground); }
+.rk-val { font-weight: 600; min-width: 64px; text-align: right; }
+.rk-val.sobe { color: var(--ok); } .rk-val.desce { color: var(--err); }
+.rk-vazio { color: var(--muted-foreground); display: block !important; }
+@media (min-width: 1200px) {
+  .modo-mercado .wrap { max-width: 1480px; grid-template-columns: 232px minmax(0, 1fr) 380px; }
+  .modo-mercado .lateral { position: static; max-height: none !important; overflow: visible; }
+  .modo-mercado #destaques { display: block !important; }
+  .modo-mercado #destaques .trilho { grid-auto-columns: 100%; }
+  .modo-mercado #lat-feed { display: flex; flex-direction: column; gap: var(--space-6); }
+  .modo-mercado #lat-feed .feed-topo { margin-bottom: 0; }
+  .modo-mercado .feed-topo .feed-ordem { flex-wrap: wrap; }
+}
+#lat-blocos { display: flex; flex-direction: column; gap: var(--space-6); }
+#lat-topo:empty, #lat-feed:empty { display: none; }
 .uma-secao #radares-barra, .uma-secao #radares-nav { display: none; }
 .cot-pe { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
 /* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
@@ -524,6 +549,7 @@ footer b { color: var(--foreground); font-weight: 500; }
   </div>
 
   <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
+  <section class="rankings" id="rankings" aria-label="Destaques do pregão" hidden></section>
   <section class="cotacoes" id="cotacoes" aria-label="Cotações da B3" hidden></section>
 
   <div class="feed-topo" role="toolbar" aria-label="Ordem e exibição do feed">
@@ -553,7 +579,7 @@ footer b { color: var(--foreground); font-weight: 500; }
   </footer>
   </div>
 
-  <aside class="lateral" id="lateral" aria-label="Resumo do dia"></aside>
+  <aside class="lateral" id="lateral" aria-label="Resumo do dia"><div id="lat-topo"></div><div id="lat-feed"></div><div id="lat-blocos"></div></aside>
 </div>
 
 <script>
@@ -989,7 +1015,7 @@ const urgentes = () => itens.filter((i) => i.urgente === true && i.coletado && D
 async function lerB3() {
   if (!R().mercado) return;
   try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "b3" }), { credentials: "same-origin" }); const j = await r.json(); b3 = j.existe ? j.data : null; } catch (e) {}
-  renderCotacoes();
+  renderRankings(); renderCotacoes();
 }
 /* Dados dos FIIs do informe mensal da CVM (meta/fii). Carrega uma vez, quando a aba FIIs é aberta. */
 let fiiCvm = null, lendoFii = false;
@@ -997,7 +1023,7 @@ async function lerFii() {
   if (fiiCvm || lendoFii) return;
   lendoFii = true;
   try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "fii" }), { credentials: "same-origin" }); const j = await r.json(); fiiCvm = j.existe ? j.data : { fundos: {} }; } catch (e) {}
-  lendoFii = false; renderCotacoes();
+  lendoFii = false; renderRankings(); renderCotacoes();
 }
 // Junta a cotação da brapi com o informe da CVM. Rendimento por cota estimado = DY do mês (sobre o patrimônio) x VP.
 function comCvm(x) {
@@ -1078,8 +1104,75 @@ function renderCotacoes() {
   box.append(pe);
   if (foco && $(foco) && document.activeElement !== $(foco)) { $(foco).focus({ preventScroll: true }); if (foco === "cot-busca") { const v = $(foco).value; $(foco).setSelectionRange(v.length, v.length); } }
 }
+/* Listas do pregão no painel central de Investimentos: altas, baixas, mais negociadas e recortes de FIIs */
+const LIQ_MIN_FII = 1e6; // R$ 1 mi por dia: abaixo disso DY e P/VP de fundo pequeno distorcem a lista
+function renderRankings() {
+  const box = $("rankings");
+  if (!R().mercado) { box.hidden = true; return; }
+  if (!fiiCvm) lerFii();
+  box.hidden = false; box.textContent = "";
+  if (!b3) return;
+  const acoes = (b3.acoes || []).map(comCvm), fiis = (b3.fiis || []).map(comCvm);
+  const pct = (v) => (v == null ? "–" : (v > 0 ? "+" : "") + fmtNum(v, 2) + "%");
+  const card = (titulo, sub, lista, aba, valor, cls) => {
+    const ol = el("ol", {});
+    lista.slice(0, 5).forEach((x) => {
+      const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog" }, x.t);
+      b.addEventListener("click", () => abrirAtivo(x, aba));
+      ol.append(el("li", {}, b, el("span", { class: "rk-preco" }, fmtRs(x.preco)), el("span", { class: "rk-val " + (cls ? cls(x) : "") }, valor(x))));
+    });
+    if (!lista.length) ol.append(el("li", { class: "rk-vazio" }, "Sem dados ainda"));
+    return el("article", { class: "rk-card" }, el("h3", {}, titulo, sub ? el("small", {}, sub) : null), ol);
+  };
+  const corVar = (x) => (x.var > 0 ? "sobe" : x.var < 0 ? "desce" : "");
+  const porVar = (l, d) => l.filter((x) => x.var != null && (d > 0 ? x.var > 0 : x.var < 0)).sort((a, b) => (b.var - a.var) * d);
+  const liquidos = fiis.filter((x) => (x.liq || 0) >= LIQ_MIN_FII);
+  const dia = b3.atualizado ? new Date(b3.atualizado).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) : "";
+  box.append(el("div", { class: "cot-topo" }, el("h2", {}, "Pregão"), el("span", { class: "rk-quando" }, "variação do último pregão · " + dia)));
+  box.append(el("div", { class: "rk-grade" },
+    card("Ações em alta", "", porVar(acoes, 1), "acoes", (x) => pct(x.var), corVar),
+    card("Ações em baixa", "", porVar(acoes, -1), "acoes", (x) => pct(x.var), corVar),
+    card("Ações mais negociadas", "R$ no dia", acoes.slice().sort((a, b) => (b.liq || 0) - (a.liq || 0)), "acoes", (x) => "R$ " + fmtVol(x.liq || 0)),
+    card("FIIs em alta", "", porVar(fiis, 1), "fiis", (x) => pct(x.var), corVar),
+    card("FIIs em baixa", "", porVar(fiis, -1), "fiis", (x) => pct(x.var), corVar),
+    card("FIIs com maior DY", "12 meses, liquidez acima de R$ 1 mi", liquidos.filter((x) => x.dy != null && !x.dyAnual).sort((a, b) => b.dy - a.dy), "fiis", (x) => fmtNum(x.dy, 2) + "%"),
+    card("FIIs mais descontados", "menor P/VP, liquidez acima de R$ 1 mi", liquidos.filter((x) => x.pvp != null && x.pvp > 0.2).sort((a, b) => a.pvp - b.pvp), "fiis", (x) => "P/VP " + fmtNum(x.pvp, 2)),
+    card("FIIs mais negociados", "R$ no dia", fiis.slice().sort((a, b) => (b.liq || 0) - (a.liq || 0)), "fiis", (x) => "R$ " + fmtVol(x.liq || 0)),
+    card("ETFs mais negociados", "R$ no dia", (b3.etfs || []).map(comCvm).sort((a, b) => (b.liq || 0) - (a.liq || 0)), "etfs", (x) => "R$ " + fmtVol(x.liq || 0))));
+}
+/* Investimentos em tela larga: o centro vira painel de mercado e a lateral direita leva o carrossel de
+   destaques e as notícias. Os elementos são movidos (não copiados), então filtros e favoritos seguem iguais. */
+const MQ_LARGA = window.matchMedia("(min-width: 1200px)");
+const ancoras = {};
+function arrumarLayout() {
+  const on = !!(R().mercado && MQ_LARGA.matches);
+  const html = document.documentElement;
+  if (on === html.classList.contains("modo-mercado")) return;
+  const mover = [["destaques", "lat-topo"], ["feed-topo", "lat-feed"], ["feed", "lat-feed"]];
+  for (const [id] of mover) {
+    const n = id === "feed-topo" ? document.querySelector(".feed-topo") : $(id);
+    if (!ancoras[id]) { ancoras[id] = document.createComment(id); n.before(ancoras[id]); }
+  }
+  html.classList.toggle("modo-mercado", on);
+  for (const [id, destino] of mover) {
+    const n = id === "feed-topo" ? document.querySelector(".feed-topo") : $(id);
+    if (on) $(destino).append(n); else ancoras[id].after(n);
+  }
+  renderDestaques();
+}
+if (MQ_LARGA.addEventListener) MQ_LARGA.addEventListener("change", () => render()); else MQ_LARGA.addListener(() => render());
+/* Carrossel automático dos destaques na lateral: troca a cada 7 s, para com o mouse ou o foco em cima,
+   com a aba escondida e para quem pediu menos movimento. */
+let destCtl = null;
+const MENOS_MOV = window.matchMedia("(prefers-reduced-motion: reduce)");
+setInterval(() => {
+  if (!destCtl || !document.documentElement.classList.contains("modo-mercado") || document.hidden || MENOS_MOV.matches) return;
+  const box = $("destaques");
+  if (!box || box.hidden || box.matches(":hover") || box.contains(document.activeElement)) return;
+  destCtl.ir(slide + 1 >= destCtl.n ? 0 : slide + 1);
+}, 7000);
 /* Detalhe de um papel, num diálogo: indicadores, histórico mensal (FIIs) e notícias do feed que citam o papel */
-function abrirAtivo(x) {
+function abrirAtivo(x, aba = cotAba) {
   let d = $("ativo-dlg");
   if (!d) {
     d = el("dialog", { id: "ativo-dlg", class: "ativo-dlg", "aria-labelledby": "ativo-titulo" });
@@ -1091,7 +1184,7 @@ function abrirAtivo(x) {
   const fechar = el("button", { type: "button", class: "dd-btn dd-btn--ghost dd-btn--icon ativo-fechar", "aria-label": "Fechar" }, "✕");
   fechar.addEventListener("click", () => d.close());
   const chips = el("div", { class: "ativo-chips" });
-  const tipo = cotAba === "fiis" ? "Fundo imobiliário" : cotAba === "etfs" ? "ETF" : "Ação";
+  const tipo = aba === "fiis" ? "Fundo imobiliário" : aba === "etfs" ? "ETF" : "Ação";
   [tipo, f && f.s, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), !f && x.setor].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
   d.append(el("div", { class: "ativo-cab" },
     el("div", {}, el("h2", { id: "ativo-titulo" }, x.t), el("p", {}, (f && f.n) || x.nome), chips), fechar));
@@ -1136,8 +1229,8 @@ function abrirAtivo(x) {
       el("a", { href: "https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo=" + String(f.c || "").replace(/\D/g, ""), target: "_blank", rel: "noopener" }, "Documentos no FNET (B3)"));
     d.append(el("p", { class: "nota" }, `Administrador: ${f.a || "–"} · CNPJ ${f.c || "–"}. Cotistas, patrimônio, VP e DY vêm do informe mensal entregue à CVM (último: ${fmtMes(f.ref)}); o rendimento por cota é estimado a partir do DY do mês sobre o patrimônio. Confira o valor exato no aviso aos cotistas.`));
   } else {
-    links.append(el("a", { href: "https://statusinvest.com.br/" + (cotAba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"), " · ",
-      el("a", { href: "https://investidor10.com.br/" + (cotAba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"));
+    links.append(el("a", { href: "https://statusinvest.com.br/" + (aba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"), " · ",
+      el("a", { href: "https://investidor10.com.br/" + (aba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"));
   }
   d.append(links);
   d.showModal();
@@ -1218,7 +1311,7 @@ function renderRadares() {
 function renderDestaques() {
   const box = $("destaques"); box.textContent = "";
   const lista = destaque && Array.isArray(destaque.itens) ? destaque.itens.filter((d) => d && d.url) : [];
-  if (!lista.length) { box.hidden = true; return; }
+  if (!lista.length) { box.hidden = true; destCtl = null; return; }
   box.hidden = false;
   slide = Math.min(slide, lista.length - 1);
   const pos = el("span", { class: "pos", "aria-live": "polite" });
@@ -1256,6 +1349,7 @@ function renderDestaques() {
       el("h2", {}, "Destaques do dia", el("small", {}, fmtDia(destaque.data))),
       el("div", { class: "dest-nav" }, ant, pos, prox)),
     trilho, pontos);
+  destCtl = { ir, n: lista.length };
   requestAnimationFrame(() => { if (slide) ir(slide); marcar(); });
 }
 
@@ -1394,7 +1488,8 @@ function renderNavTipos() {
 /* Trilho direito (1200 px ou mais): destaques, novos da rodada, favoritos e status da coleta */
 const NOVOS_MAX = 8, FAVS_MAX = 5;
 function renderLateral() {
-  const box = $("lateral"); box.textContent = "";
+  const box = $("lat-blocos"); box.textContent = "";
+  const mm = document.documentElement.classList.contains("modo-mercado");
   const temaCurto = (tema) => { const t = TEMA[GRUPO_DE[tema]]; return t ? el("span", { style: `color:${t.cor}` }, t.curto) : null; };
   const link = (url, titulo) => el("a", { href: url, target: "_blank", rel: "noopener" }, titulo || url);
 
@@ -1406,7 +1501,7 @@ function renderLateral() {
   }
 
   const dest = destaque && Array.isArray(destaque.itens) ? destaque.itens.filter((d) => d && d.url) : [];
-  if (dest.length) {
+  if (dest.length && !mm) {
     const ol = el("ol", {});
     dest.forEach((d, idx) => ol.append(el("li", {},
       el("div", { class: "n" }, el("b", {}, String(idx + 1).padStart(2, "0")), temaCurto(d.tema), fonteEl(d)),
@@ -1422,7 +1517,7 @@ function renderLateral() {
     novos.slice(0, NOVOS_MAX).forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" }, temaCurto(i.tema)))));
     bNovos.append(ul);
   } else bNovos.append(el("p", { class: "nota" }, "Nada novo na última coleta."));
-  box.append(bNovos);
+  if (!mm) box.append(bNovos);
 
   const lista = Object.entries(favs).map(([id, f]) => ({ ...f, _id: id }))
     .sort((a, b) => String(b.favoritadoEm || "").localeCompare(String(a.favoritadoEm || "")));
@@ -1703,7 +1798,7 @@ function renderContador() {
 function render() {
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
-  renderRadares(); renderMercado(); renderCotacoes(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
+  arrumarLayout(); renderRadares(); renderMercado(); renderRankings(); renderCotacoes(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
   /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
