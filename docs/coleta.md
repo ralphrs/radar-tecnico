@@ -29,7 +29,7 @@ Feed com `erros_seguidos` alto: corrija a URL em `src/feeds.js` ou tire da lista
 ## Candidatos
 
 - Tabela `candidatos`: id (mesmo esquema dos itens: "i" + 16 hex do SHA-256 da url), radar, url limpa (sem utm), título, fonte, país, data, trecho de até 280 caracteres.
-- A tarefa lê os candidatos com `status = 'novo'`, escolhe e, no fim, marca todos os que avaliou como `lido`.
+- A tarefa reserva um lote (`lote` = horário da rodada) dos candidatos com `status = 'novo'`, escolhe e, no fim, marca cada um como `publicado` ou `descartado` com `motivo` (repetido, promocional, fora-do-tema, antigo, raso). O site só mostra o que virou item.
 - Candidatos com mais de 10 dias são apagados.
 
 ## Limpeza por idade
