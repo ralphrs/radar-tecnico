@@ -73,12 +73,16 @@ function csv(txt, pedir) {
 const n = (v) => { if (v === "" || v == null) return null; const x = Number(String(v).replace(",", ".")); return Number.isFinite(x) ? x : null; };
 const tem = (...partes) => (c) => partes.every((p) => c.toLowerCase().includes(p));
 
+// Guarda o cabeçalho do CSV geral do último ano lido, para o admin conferir os nomes das colunas (ex.: mandato).
+let cabecalhoGeral = "";
 async function lerAno(ano) {
   const buf = await baixarZip(ano);
   const ents = entradasZip(buf);
   const eGeral = ents.find((e) => /geral/i.test(e.nome)), eComp = ents.find((e) => /complemento/i.test(e.nome));
   if (!eGeral || !eComp) throw new Error("zip de " + ano + " sem geral ou complemento: " + ents.map((e) => e.nome).join(", "));
-  const geral = csv(texto(await lerEntrada(buf, eGeral)), {
+  const txtGeral = texto(await lerEntrada(buf, eGeral));
+  cabecalhoGeral = txtGeral.split(/\r?\n/, 1)[0].replace(/^\uFEFF/, "").slice(0, 600);
+  const geral = csv(txtGeral, {
     cnpj: tem("cnpj"), ref: tem("data_referencia"), nome: (c) => /^nome_fundo/i.test(c), isin: tem("isin"),
     seg: tem("segmento"), mandato: tem("mandato"), gestao: tem("tipo_gestao"), adm: (c) => /^nome_administrador/i.test(c),
   });
@@ -177,7 +181,7 @@ export async function cronCvm(env, quando) {
   await marca({ etapa, inicio: new Date(ini).toISOString(), fim: null });
   try {
     const fundos = etapa === "anterior" ? await etapaAnoAnterior(env) : await etapaAnoCorrente(env);
-    await marca({ etapa, inicio: new Date(ini).toISOString(), fim: new Date().toISOString(), ms: Date.now() - ini, fundos });
+    await marca({ etapa, inicio: new Date(ini).toISOString(), fim: new Date().toISOString(), ms: Date.now() - ini, fundos, cabecalhoGeral });
     return { [etapa]: fundos };
   } catch (e) { await erro(env, etapa, e); throw e; }
 }

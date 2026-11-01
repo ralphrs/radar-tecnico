@@ -1362,7 +1362,7 @@ try {
 } catch (e) {}
 const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
 /* Segmento como vem da CVM ("Titulos e Val. Mob.", "LOGISTICA") vira um nome legível */
-const SEGMENTOS = { "TITULOS E VAL. MOB.": "Papel (CRI)", "TITULOS E VALORES MOBILIARIOS": "Papel (CRI)", "LAJES CORPORATIVAS": "Lajes corporativas", "HIBRIDO": "Híbrido", "LOGISTICA": "Logística", "SHOPPINGS": "Shoppings", "HOSPITAL": "Hospitais", "HOTEL": "Hotéis", "RESIDENCIAL": "Residencial", "EDUCACIONAL": "Educacional", "AGRONEGOCIO": "Agronegócio", "OUTROS": "Outros" };
+const SEGMENTOS = { "TITULOS E VAL. MOB.": "Papel (CRI)", "TITULOS E VALORES MOBILIARIOS": "Papel (CRI)", "LAJES CORPORATIVAS": "Lajes corporativas", "HIBRIDO": "Híbrido", "LOGISTICA": "Logística", "SHOPPINGS": "Shoppings", "HOSPITAL": "Hospitais", "HOTEL": "Hotéis", "RESIDENCIAL": "Residencial", "EDUCACIONAL": "Educacional", "AGRONEGOCIO": "Agronegócio", "MULTICATEGORIA": "Multicategoria", "ESCRITORIOS": "Escritórios", "VAREJO": "Varejo", "OUTROS": "Outros" };
 const segMemo = new Map();
 function segNome(s) {
   const bruto = String(s || "");
