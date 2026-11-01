@@ -280,7 +280,8 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .cot-tab td:nth-child(2) { max-width: 260px; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); }
 .cot-tab .sobe { color: var(--ok); } .cot-tab .desce { color: var(--err); }
 @media (max-width: 639px) { .cot-tab .so-largo { display: none; } }
-.cot-papel { all: unset; cursor: pointer; font: 600 13px var(--font-mono); color: var(--primary, inherit); border-bottom: 1px dashed currentColor; }
+.cot-papel { all: unset; cursor: pointer; font: 600 13px var(--font-mono); color: var(--primary, inherit); text-underline-offset: 3px; }
+.cot-papel:hover, .cot-papel:focus-visible { text-decoration: underline; }
 .cot-papel:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
 .cot-tab td:first-child, .cot-tab th:first-child { position: sticky; left: 0; background: var(--card); z-index: 1; }
 .ativo-dlg { width: min(760px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--background, var(--card)); color: var(--foreground, inherit); overflow: auto; }
@@ -290,7 +291,7 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .ativo-cab > div { min-width: 0; flex: 1; }
 .ativo-fechar { flex-shrink: 0; }
 .ativo-cab h2 { margin: 0; font: 700 26px/1.1 var(--font-mono); letter-spacing: -0.01em; }
-.ativo-cab p { margin: 4px 0 8px; color: var(--muted-foreground); }
+.ativo-cab p { margin: 4px 0 8px; color: var(--muted-foreground); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ativo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .ativo-chips .chip { font-size: 12px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted-foreground); }
 .ativo-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
@@ -303,6 +304,8 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .ativo-graf svg { width: 100%; height: auto; max-height: 160px; display: block; }
 .ativo-graf text { font: 11px var(--font-sans); fill: var(--muted-foreground); }
 .ativo-barra { fill: var(--primary, #7c3aed); opacity: .85; }
+.ativo-barra.vazia { fill-opacity: .25; }
+.ativo-graf text.v { font: 10px var(--font-mono); }
 .ativo-news { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .ativo-news small { color: var(--muted-foreground); }
 .ativo-links { padding-bottom: 18px; font-size: 14px; }
@@ -310,23 +313,37 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 @media (max-width: 639px) { .ativo-dlg > * { margin-left: 16px; margin-right: 16px; } }
 .rankings { display: flex; flex-direction: column; gap: var(--space-3); }
 .rk-quando { font: 400 12px var(--font-mono); color: var(--muted-foreground); }
-.rk-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: var(--space-3); }
-.rk-card { border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); padding: 12px 14px; min-width: 0; }
+/* Abaixo de 1200 px as listas viram trilho horizontal; no modo mercado voltam a ser grade */
+.rk-grade { display: grid; grid-auto-flow: column; grid-auto-columns: min(80%, 280px); align-items: start; gap: var(--space-3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; padding-bottom: var(--space-1); }
+.rk-grade::-webkit-scrollbar { display: none; }
+.rk-card { scroll-snap-align: start; border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); padding: 12px 14px; min-width: 0; }
 .rk-card h3 { margin: 0 0 6px; font: 600 13.5px/1.3 var(--font-sans); display: flex; flex-direction: column; gap: 1px; }
-.rk-card h3 small { font: 400 11.5px var(--font-sans); color: var(--muted-foreground); }
+.rk-card h3 small { font: 400 11.5px var(--font-sans); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rk-card ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.rk-card li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 13px; font-variant-numeric: tabular-nums; }
+.rk-card li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 13px; font-variant-numeric: tabular-nums; }
 .rk-card li:first-child { border-top: 0; }
-.rk-card .cot-papel { justify-self: start; }
-.rk-preco { color: var(--muted-foreground); }
-.rk-val { font-weight: 600; min-width: 64px; text-align: right; }
+.rk-card .cot-papel { justify-self: start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rk-preco { color: var(--muted-foreground); white-space: nowrap; }
+.rk-val { font-weight: 600; text-align: right; white-space: nowrap; }
+.rk-topo h2 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.rankings .nota, .cotacoes .nota { margin: 0; font-size: 12px; color: var(--muted-foreground); }
+.cotacoes .cot-topo h3 { margin: 0; font: 600 15px/1.25 var(--font-display); letter-spacing: -0.01em; }
+.nav-dica { margin: 0; padding-inline: 10px; font-size: 12px; line-height: 1.4; color: var(--muted-foreground); }
+html:not(.modo-mercado) .nav-dica { display: none; }
 .rk-val.sobe { color: var(--ok); } .rk-val.desce { color: var(--err); }
-.rk-vazio { color: var(--muted-foreground); display: block !important; }
+.rk-vazio { color: var(--muted-foreground); display: block !important; font-size: 12.5px; }
 @media (min-width: 1200px) {
   .modo-mercado .wrap { max-width: 1480px; grid-template-columns: 232px minmax(0, 1fr) 380px; }
   .modo-mercado .lateral { position: static; max-height: none !important; overflow: visible; }
   .modo-mercado #destaques { display: block !important; }
   .modo-mercado #destaques .trilho { grid-auto-columns: 100%; }
+  .modo-mercado #destaques .dest-top { flex-wrap: nowrap; align-items: flex-start; }
+  .modo-mercado #destaques .dest-top h2 { flex: 1; min-width: 0; font-size: 17px; }
+  .modo-mercado #destaques .dest-nav { flex: none; gap: 4px; }
+  .modo-mercado #destaques .dest-nav .dd-btn--icon { width: 28px; height: 28px; }
+  .modo-mercado #destaques .dest-nav .pos { min-width: 36px; }
+  .modo-mercado .rk-grade { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); overflow: visible; padding-bottom: 0; }
+  .modo-mercado .rk-grade[data-n="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .modo-mercado #lat-feed { display: flex; flex-direction: column; gap: var(--space-6); }
   .modo-mercado #lat-feed .feed-topo { margin-bottom: 0; }
   .modo-mercado .feed-topo .feed-ordem { flex-wrap: wrap; }
@@ -486,6 +503,7 @@ footer b { color: var(--foreground); font-weight: 500; }
   <nav class="nav-temas" id="nav-temas" aria-label="Temas e filtros">
     <div class="seg radares" id="radares-nav" role="group" aria-label="Escolher radar"></div>
     <input class="dd-input nav-busca" id="busca-nav" type="search" placeholder="Buscar no feed" aria-label="Buscar no feed" autocomplete="off" enterkeyhint="search">
+    <p class="nav-dica">Filtram as notícias da direita.</p>
     <div class="nav-grupo">
       <h2 class="rotulo">Tipo</h2>
       <div class="nav-lista" id="nav-tipos" role="group" aria-label="Filtrar por tipo"></div>
@@ -880,6 +898,7 @@ const ORDENS = [
 let ordenacao = "data";
 let painelMercado = null, pedindoMercado = false;
 let b3 = null, cotAba = "acoes", cotOrdem = { campo: "liq", dir: -1 }, cotBusca = "", cotTodos = false;
+try { const a = localStorage.getItem("radar-cot-aba"); if (["acoes", "fiis", "etfs"].includes(a)) cotAba = a; } catch (e) {}
 /* Abrangência (Notícias e Esportes): tudo, só nacional ou só internacional. O item pode trazer "escopo"; senão o radar deduz pelo tema. */
 const ESCOPOS = [{ id: "todos", nome: "Tudo" }, { id: "nacional", nome: "Nacional" }, { id: "internacional", nome: "Internacional" }];
 let escopo = "todos";
@@ -1038,10 +1057,29 @@ function comCvm(x) {
   const dy = ult12.length && x.preco ? ((ult12.length >= 12 ? soma : (soma / ult12.length) * 12) / x.preco) * 100 : null;
   return { ...x, liq, f, rend: ult, dy, dyAnual: ult12.length > 0 && ult12.length < 12, pvp: f.vp ? x.preco / f.vp : null, cot: f.cot ?? null, rends };
 }
+/* comCvm para uma classe inteira, guardado até b3 ou fiiCvm mudarem. Quem usa não pode alterar a lista (só filter/slice). */
+const cvmCache = {};
+function listaCvm(aba) {
+  if (!b3) return [];
+  const chave = b3.atualizado + "|" + (fiiCvm && fiiCvm.ref) + "|" + aba;
+  const c = cvmCache[aba];
+  if (c && c.chave === chave && c.b3 === b3 && c.cvm === fiiCvm) return c.lista;
+  const lista = (b3[aba] || []).map(comCvm);
+  cvmCache[aba] = { chave, b3, cvm: fiiCvm, lista };
+  return lista;
+}
 const fmtVol = (v) => (v >= 1e9 ? fmtNum(v / 1e9, 1) + " bi" : v >= 1e6 ? fmtNum(v / 1e6, 1) + " mi" : v >= 1e3 ? fmtNum(v / 1e3, 0) + " mil" : fmtNum(v || 0, 0));
 const fmtRs = (v, c = 2) => (v == null ? "–" : "R$ " + fmtNum(v, c));
 const fmtMes = (ym) => { const [a, m] = String(ym).split("-"); return ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][Number(m) - 1] + "/" + String(a).slice(2); };
 const COT_ABAS = [{ id: "acoes", nome: "Ações" }, { id: "fiis", nome: "FIIs" }, { id: "etfs", nome: "ETFs" }];
+/* Um controle só para o pregão: troca a classe das listas e da tabela juntas */
+function trocarCotAba(id) {
+  cotAba = id; cotTodos = false;
+  if (!COT_COLUNAS[id].some((c) => c[0] === cotOrdem.campo)) cotOrdem = { campo: "liq", dir: -1 };
+  try { localStorage.setItem("radar-cot-aba", id); } catch (e) {}
+  renderRankings(); renderCotacoes();
+  const b = $("cot-" + id); if (b) b.focus({ preventScroll: true });
+}
 const COT_COLUNAS = {
   acoes: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["cap", "Valor de mercado", "so-largo"]],
   etfs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""]],
@@ -1067,19 +1105,12 @@ function renderCotacoes() {
   if (cotAba === "fiis" && !fiiCvm) lerFii();
   const foco = document.activeElement && document.activeElement.id;
   box.textContent = "";
-  const seg = el("div", { class: "seg", role: "group", "aria-label": "Tipo de ativo" });
-  COT_ABAS.forEach((a) => {
-    const n = b3 && b3[a.id] ? b3[a.id].length : 0;
-    const b = el("button", { type: "button", id: "cot-" + a.id, "aria-pressed": String(cotAba === a.id) }, a.nome, el("span", { class: "k" }, String(n)));
-    b.addEventListener("click", () => { cotAba = a.id; cotTodos = false; if (!COT_COLUNAS[a.id].some((c) => c[0] === cotOrdem.campo)) cotOrdem = { campo: "liq", dir: -1 }; renderCotacoes(); });
-    seg.append(b);
-  });
   const busca = el("input", { class: "dd-input", id: "cot-busca", type: "search", placeholder: "Filtrar papel", "aria-label": "Filtrar papel ou nome", autocomplete: "off", value: cotBusca });
   busca.addEventListener("input", () => { cotBusca = busca.value; renderCotacoes(); });
-  box.append(el("div", { class: "cot-topo" }, el("h2", {}, "Cotações da B3"), el("div", { class: "cot-ferr" }, seg, busca)));
+  box.append(el("div", { class: "cot-topo" }, el("h3", {}, "Cotações"), el("div", { class: "cot-ferr" }, busca)));
   if (!b3) { box.append(el("p", { class: "nota" }, "As tabelas aparecem depois da primeira consulta.")); return; }
   const q = cotBusca.trim().toUpperCase();
-  let linhas = (b3[cotAba] || []).filter((x) => !q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q)).map(comCvm);
+  let linhas = listaCvm(cotAba).filter((x) => !q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q));
   const colunas = COT_COLUNAS[cotAba];
   const { campo, dir } = cotOrdem;
   linhas.sort((a, b) => (campo === "t" || campo === "nome" ? String(a[campo]).localeCompare(String(b[campo])) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
@@ -1111,34 +1142,51 @@ function renderRankings() {
   if (!R().mercado) { box.hidden = true; return; }
   if (!fiiCvm) lerFii();
   box.hidden = false; box.textContent = "";
-  if (!b3) return;
-  const acoes = (b3.acoes || []).map(comCvm), fiis = (b3.fiis || []).map(comCvm);
+  const seg = el("div", { class: "seg", role: "group", "aria-label": "Classe de ativo" });
+  COT_ABAS.forEach((a) => {
+    const n = b3 && b3[a.id] ? b3[a.id].length : 0;
+    const b = el("button", { type: "button", id: "cot-" + a.id, "aria-pressed": String(cotAba === a.id) }, a.nome, n ? el("span", { class: "k" }, String(n)) : null);
+    b.addEventListener("click", () => { if (cotAba !== a.id) trocarCotAba(a.id); });
+    seg.append(b);
+  });
+  const dia = b3 && b3.atualizado ? new Date(b3.atualizado).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) : "";
+  box.append(el("div", { class: "cot-topo rk-topo" }, el("h2", {}, "Pregão", dia ? el("span", { class: "rk-quando", title: "Variação do último pregão" }, dia) : null), seg));
+  if (!b3) { box.append(el("p", { class: "nota" }, "As listas do pregão aparecem depois da primeira consulta.")); return; }
   const pct = (v) => (v == null ? "–" : (v > 0 ? "+" : "") + fmtNum(v, 2) + "%");
-  const card = (titulo, sub, lista, aba, valor, cls) => {
+  const semCvm = !fiiCvm ? "Carregando dados da CVM…" : !fiiCvm.fundos || !Object.keys(fiiCvm.fundos).length ? "Dados da CVM ainda não carregados" : "";
+  // c: { t: título, sub, dica (vai no title), lista, valor, cls, vazio }
+  const card = (c) => {
     const ol = el("ol", {});
-    lista.slice(0, 5).forEach((x) => {
-      const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog" }, x.t);
-      b.addEventListener("click", () => abrirAtivo(x, aba));
-      ol.append(el("li", {}, b, el("span", { class: "rk-preco" }, fmtRs(x.preco)), el("span", { class: "rk-val " + (cls ? cls(x) : "") }, valor(x))));
+    c.lista.slice(0, 5).forEach((x) => {
+      const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: x.nome || x.t }, x.t);
+      b.addEventListener("click", () => abrirAtivo(x, cotAba));
+      ol.append(el("li", {}, b, el("span", { class: "rk-preco" }, fmtRs(x.preco)), el("span", { class: "rk-val " + (c.cls ? c.cls(x) : "") }, c.valor(x))));
     });
-    if (!lista.length) ol.append(el("li", { class: "rk-vazio" }, "Sem dados ainda"));
-    return el("article", { class: "rk-card" }, el("h3", {}, titulo, sub ? el("small", {}, sub) : null), ol);
+    if (!c.lista.length) ol.append(el("li", { class: "rk-vazio" }, c.vazio || "Sem dados ainda"));
+    return el("article", { class: "rk-card" }, el("h3", {}, c.t, c.sub ? el("small", { title: c.dica || c.sub }, c.sub) : null), ol);
   };
   const corVar = (x) => (x.var > 0 ? "sobe" : x.var < 0 ? "desce" : "");
   const porVar = (l, d) => l.filter((x) => x.var != null && (d > 0 ? x.var > 0 : x.var < 0)).sort((a, b) => (b.var - a.var) * d);
-  const liquidos = fiis.filter((x) => (x.liq || 0) >= LIQ_MIN_FII);
-  const dia = b3.atualizado ? new Date(b3.atualizado).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) : "";
-  box.append(el("div", { class: "cot-topo" }, el("h2", {}, "Pregão"), el("span", { class: "rk-quando" }, "variação do último pregão · " + dia)));
-  box.append(el("div", { class: "rk-grade" },
-    card("Ações em alta", "", porVar(acoes, 1), "acoes", (x) => pct(x.var), corVar),
-    card("Ações em baixa", "", porVar(acoes, -1), "acoes", (x) => pct(x.var), corVar),
-    card("Ações mais negociadas", "R$ no dia", acoes.slice().sort((a, b) => (b.liq || 0) - (a.liq || 0)), "acoes", (x) => "R$ " + fmtVol(x.liq || 0)),
-    card("FIIs em alta", "", porVar(fiis, 1), "fiis", (x) => pct(x.var), corVar),
-    card("FIIs em baixa", "", porVar(fiis, -1), "fiis", (x) => pct(x.var), corVar),
-    card("FIIs com maior DY", "12 meses, liquidez acima de R$ 1 mi", liquidos.filter((x) => x.dy != null && !x.dyAnual).sort((a, b) => b.dy - a.dy), "fiis", (x) => fmtNum(x.dy, 2) + "%"),
-    card("FIIs mais descontados", "menor P/VP, liquidez acima de R$ 1 mi", liquidos.filter((x) => x.pvp != null && x.pvp > 0.2).sort((a, b) => a.pvp - b.pvp), "fiis", (x) => "P/VP " + fmtNum(x.pvp, 2)),
-    card("FIIs mais negociados", "R$ no dia", fiis.slice().sort((a, b) => (b.liq || 0) - (a.liq || 0)), "fiis", (x) => "R$ " + fmtVol(x.liq || 0)),
-    card("ETFs mais negociados", "R$ no dia", (b3.etfs || []).map(comCvm).sort((a, b) => (b.liq || 0) - (a.liq || 0)), "etfs", (x) => "R$ " + fmtVol(x.liq || 0))));
+  const porLiq = (l) => l.slice().sort((a, b) => (b.liq || 0) - (a.liq || 0));
+  const lista = listaCvm(cotAba);
+  const fem = cotAba === "acoes"; // "ações" pede o feminino
+  const cards = [
+    { t: "Maiores altas", sub: "variação no dia", lista: porVar(lista, 1), valor: (x) => pct(x.var), cls: corVar },
+    { t: "Maiores baixas", sub: "variação no dia", lista: porVar(lista, -1), valor: (x) => pct(x.var), cls: corVar },
+    { t: fem ? "Mais negociadas" : "Mais negociados", sub: "R$ no dia", lista: porLiq(lista), valor: (x) => "R$ " + fmtVol(x.liq || 0) },
+  ];
+  if (cotAba === "acoes") cards.push({ t: "Maior valor de mercado", sub: "preço × ações emitidas", lista: lista.filter((x) => x.cap).sort((a, b) => b.cap - a.cap), valor: (x) => "R$ " + fmtVol(x.cap) });
+  if (cotAba === "fiis") {
+    const liquidos = lista.filter((x) => (x.liq || 0) >= LIQ_MIN_FII);
+    cards.splice(2, 0,
+      { t: "Maior DY", sub: "12 meses · líquidos", dica: "Rendimentos dos últimos 12 informes da CVM sobre a cotação, só fundos com mais de R$ 1 mi negociados por dia", lista: semCvm ? [] : liquidos.filter((x) => x.dy != null && !x.dyAnual).sort((a, b) => b.dy - a.dy), valor: (x) => fmtNum(x.dy, 2) + "%", vazio: semCvm },
+      { t: "Mais descontados", sub: "menor P/VP · líquidos", dica: "Menor preço sobre valor patrimonial, só fundos com mais de R$ 1 mi negociados por dia", lista: semCvm ? [] : liquidos.filter((x) => x.pvp != null && x.pvp > 0.2).sort((a, b) => a.pvp - b.pvp), valor: (x) => "P/VP " + fmtNum(x.pvp, 2), vazio: semCvm });
+    cards.push({ t: "Mais cotistas", sub: "informe da CVM", lista: semCvm ? [] : lista.filter((x) => x.cot != null).sort((a, b) => b.cot - a.cot), valor: (x) => fmtVol(x.cot), vazio: semCvm });
+  }
+  box.append(el("div", { class: "rk-grade", "data-n": String(cards.length) }, ...cards.map(card)));
+  let nota = "Variação em relação ao fechamento do pregão anterior.";
+  if (cotAba === "fiis") nota += " Líquidos são os fundos com mais de R$ 1 mi negociados por dia; abaixo disso DY e P/VP distorcem." + (fiiCvm && fiiCvm.ref ? " Informe da CVM de " + fmtMes(fiiCvm.ref) + "." : "");
+  box.append(el("p", { class: "nota" }, nota));
 }
 /* Investimentos em tela larga: o centro vira painel de mercado e a lateral direita leva o carrossel de
    destaques e as notícias. Os elementos são movidos (não copiados), então filtros e favoritos seguem iguais. */
@@ -1171,6 +1219,26 @@ setInterval(() => {
   if (!box || box.hidden || box.matches(":hover") || box.contains(document.activeElement)) return;
   destCtl.ir(slide + 1 >= destCtl.n ? 0 : slide + 1);
 }, 7000);
+/* Nome do fundo como vem da CVM ("KINEA RENDIMENTOS IMOBILIARIOS FII RESPONSABILIDADE LIMITADA") vira "Kinea Rendimentos Imobiliários" */
+const ACENTOS = { IMOBILIARIO: "Imobiliário", IMOBILIARIOS: "Imobiliários", IMOBILIARIA: "Imobiliária", IMOBILIARIAS: "Imobiliárias", LOGISTICA: "Logística", LOGISTICO: "Logístico", CREDITO: "Crédito", RECEBIVEIS: "Recebíveis", IMOVEIS: "Imóveis", ESCRITORIOS: "Escritórios", TITULOS: "Títulos", HIBRIDO: "Híbrido", AGRONEGOCIO: "Agronegócio", SAUDE: "Saúde", GESTAO: "Gestão", SELECAO: "Seleção", ESTRATEGIA: "Estratégia", ESTRATEGICO: "Estratégico", INDICE: "Índice", HOTEIS: "Hotéis", PATRIMONIO: "Patrimônio", RENDIMENTO: "Rendimento", SAO: "São", TRES: "Três", ALIANCA: "Aliança", PAULISTA: "Paulista", PROPRIOS: "Próprios", URBANOS: "Urbanos", LOGISTICOS: "Logísticos", COMERCIO: "Comércio" };
+const PALAVRAS_CURTAS = new Set(["RIO", "SUL", "MAR", "SOL", "LUZ", "TOP", "MAX", "NEO", "SÃO", "SAO", "ARX", "VIA", "ALL", "ONE", "NEW", "BEM", "LAR", "PAZ"]);
+const MINUSCULAS = new Set(["DE", "DA", "DO", "DAS", "DOS", "E", "EM", "NA", "NO"]);
+function nomeBonito(n) {
+  let s = String(n || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  s = s.replace(/FUNDO DE INVESTIMENTO (IMOBILIARIO|NAS CADEIAS PRODUTIVAS AGROINDUSTRIAIS)/g, " ")
+    .replace(/\bF(UN)?DO\.? (DE )?INV(ESTIMENTO)?\.? (IMOB(ILIARIO)?)?\.?/g, " ")
+    .replace(/\bRESPONSABILIDADE LIMITADA\b/g, " ")
+    .replace(/\b(FII|FIAGRO|F\.I\.I\.|RL|LTDA)\b\.?/g, " ")
+    .replace(/\s+-\s*|\s*-\s+/g, " ").replace(/\s+/g, " ").trim()
+    .replace(/(\s+(DE|DA|DO|E|-))+$/, "").trim();
+  if (!s) return String(n || "");
+  return s.split(" ").map((w, i) => {
+    if (ACENTOS[w]) return ACENTOS[w];
+    if (i > 0 && MINUSCULAS.has(w)) return w.toLowerCase();
+    if (/^[A-Z0-9&]{1,3}$/.test(w) && !PALAVRAS_CURTAS.has(w) || !/[AEIOUY]/.test(w)) return w;
+    return w.charAt(0) + w.slice(1).toLowerCase();
+  }).join(" ");
+}
 /* Detalhe de um papel, num diálogo: indicadores, histórico mensal (FIIs) e notícias do feed que citam o papel */
 function abrirAtivo(x, aba = cotAba) {
   let d = $("ativo-dlg");
@@ -1187,7 +1255,7 @@ function abrirAtivo(x, aba = cotAba) {
   const tipo = aba === "fiis" ? "Fundo imobiliário" : aba === "etfs" ? "ETF" : "Ação";
   [tipo, f && f.s, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), !f && x.setor].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
   d.append(el("div", { class: "ativo-cab" },
-    el("div", {}, el("h2", { id: "ativo-titulo" }, x.t), el("p", {}, (f && f.n) || x.nome), chips), fechar));
+    el("div", {}, el("h2", { id: "ativo-titulo" }, x.t), el("p", { title: (f && f.n) || x.nome || "" }, f && f.n ? nomeBonito(f.n) : x.nome), chips), fechar));
   const k = (rot, val, sub, cls) => el("div", { class: "ativo-kpi" }, el("small", {}, rot), el("b", { class: cls || "" }, val), sub ? el("span", {}, sub) : null);
   const grade = el("div", { class: "ativo-grade" },
     k("Cotação", fmtRs(x.preco), x.var == null ? "" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "% no dia", x.var > 0 ? "sobe" : x.var < 0 ? "desce" : ""),
@@ -1205,10 +1273,12 @@ function abrirAtivo(x, aba = cotAba) {
   if (f && f.h && f.h.length) {
     const rends = x.rends || [];
     const max = Math.max(...rends.filter((v) => v != null), 0.0001);
-    const L = 28, G = 8, A = 90, W = f.h.length * (L + G);
-    const svg = `<svg viewBox="0 0 ${W} ${A + 30}" role="img" aria-label="Rendimento por cota nos últimos meses" preserveAspectRatio="xMidYMax meet">` + f.h.map((h, i) => {
-      const v = rends[i]; const alt = v == null ? 0 : Math.max(2, (v / max) * A);
-      return `<g><title>${fmtMes(h[0])}: ${v == null ? "sem dado" : "R$ " + fmtNum(v, 2)}</title><rect x="${i * (L + G)}" y="${A - alt + 4}" width="${L}" height="${alt}" rx="3" class="ativo-barra"/><text x="${i * (L + G) + L / 2}" y="${A + 22}" text-anchor="middle">${fmtMes(h[0]).slice(0, 3)}</text></g>`;
+    const L = 28, G = 8, A = 90, T = 16, W = f.h.length * (L + G);
+    const svg = `<svg viewBox="0 0 ${W} ${A + T + 26}" role="img" aria-label="Rendimento por cota nos últimos meses" preserveAspectRatio="xMidYMax meet">` + f.h.map((h, i) => {
+      const v = rends[i]; const alt = v == null ? A * 0.25 : Math.max(2, (v / max) * A);
+      const y = T + A - alt, cx = i * (L + G) + L / 2;
+      return `<g><title>${fmtMes(h[0])}: ${v == null ? "sem dado" : "R$ " + fmtNum(v, 2)}</title><rect x="${i * (L + G)}" y="${y}" width="${L}" height="${alt}" rx="3" class="ativo-barra${v == null ? " vazia" : ""}"/>` +
+        `<text class="v" x="${cx}" y="${y - 4}" text-anchor="middle">${v == null ? "–" : fmtNum(v, 2)}</text><text x="${cx}" y="${T + A + 18}" text-anchor="middle">${fmtMes(h[0]).slice(0, 3)}</text></g>`;
     }).join("") + "</svg>";
     d.append(el("section", { class: "ativo-sec" }, el("h3", {}, "Rendimento por cota"), el("div", { class: "ativo-graf", html: svg })));
     const tb = el("tbody");
@@ -1279,7 +1349,7 @@ function renderMercado() {
   if (p && p.aguarde) { b.disabled = true; b.textContent = "Atualizado há pouco"; b.title = "Dá para pedir de novo em " + Math.ceil(p.aguarde / 60) + " min"; }
   b.addEventListener("click", atualizarMercado);
   box.append(el("div", { class: "mercado-pe" },
-    el("span", {}, itensM.length ? (p.atualizado ? "Atualizado " + fmtRel(p.atualizado) + ". " : "") + (p.temBolsa ? "" : "Ibovespa, IFIX e listas entram com o token da brapi. ") + "Cotações com atraso; não é recomendação." : "As cotações aparecem aqui depois da primeira consulta."),
+    el("span", {}, itensM.length ? (p.atualizado ? "Atualizado " + fmtRel(p.atualizado) + ". " : "") + "Cotações com atraso de até 30 min, fonte brapi e Banco Central. Nada aqui é recomendação." + (p.temBolsa ? "" : " Ibovespa e IFIX ainda não entram.") : "As cotações aparecem aqui depois da primeira consulta."),
     b));
 }
 function renderUrgente() {
