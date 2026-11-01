@@ -238,20 +238,22 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .subgrupo:first-of-type .subsecao { margin-top: 0; }
 .subsecao span { font: 400 11px var(--font-mono); letter-spacing: 0; text-transform: none; }
 .lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-/* Painel de mercado (Investimentos) */
-.mercado { display: flex; flex-direction: column; gap: 10px; }
-.mercado-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.mercado-topo h2 { margin: 0; font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; }
-.mercado-topo small { font: 400 11.5px var(--font-mono); color: var(--muted-foreground); }
-.mercado-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-@media (min-width: 640px) { .mercado-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.tile { border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.tile .n { font: 500 12px/1.2 var(--font-sans); color: var(--muted-foreground); }
-.tile .v { font: 600 17px/1.2 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--foreground); overflow-wrap: anywhere; }
-.tile .v small { font-size: 12px; font-weight: 500; color: var(--muted-foreground); margin-left: 3px; }
-.tile .d { font: 500 12px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
-.tile .d.sobe { color: var(--ok); } .tile .d.desce { color: var(--err); } .tile .d.igual { color: var(--muted-foreground); }
-.mercado .nota { margin: 0; font-size: 12px; color: var(--muted-foreground); }
+/* Painel de mercado (Investimentos): faixa que passa na horizontal */
+.mercado { display: flex; flex-direction: column; gap: 6px; }
+.fita { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.fita-trilho { display: flex; width: max-content; animation: fita var(--fita-t, 40s) linear infinite; }
+.fita:hover .fita-trilho, .fita:focus-within .fita-trilho { animation-play-state: paused; }
+.fita-grupo { display: flex; flex: none; }
+.fita-item { display: inline-flex; align-items: baseline; gap: 6px; padding: 9px 18px; white-space: nowrap; border-right: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.fita-item .n { font: 600 12px/1 var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .04em; }
+.fita-item .v { font: 600 14px/1 var(--font-sans); color: var(--foreground); }
+.fita-item .v small { font-size: 11.5px; font-weight: 500; color: var(--muted-foreground); margin-left: 2px; }
+.fita-item .d { font: 500 12px/1 var(--font-mono); }
+.fita-item .d.sobe { color: var(--ok); } .fita-item .d.desce { color: var(--err); } .fita-item .d.igual { color: var(--muted-foreground); }
+@keyframes fita { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .fita { overflow-x: auto; } .fita-trilho { animation: none; } .fita-grupo + .fita-grupo { display: none; } }
+.mercado-pe { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; font-size: 12px; color: var(--muted-foreground); }
+.mercado-pe .dd-btn { height: auto; padding: 0; font-size: 12.5px; }
 /* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
 .lista.cards { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 10px; }
 @media (min-width: 640px) { .lista.cards { grid-template-columns: 1fr 1fr; } }
@@ -940,26 +942,34 @@ function renderMercado() {
   if (!R().mercado) { box.hidden = true; return; }
   box.hidden = false; box.textContent = "";
   const p = painelMercado;
+  const itensM = (p && p.itens) || [];
+  if (itensM.length) {
+    const grupo = () => {
+      const g = el("div", { class: "fita-grupo" });
+      for (const i of itensM) {
+        const v = i.unidade === "R$" ? "R$ " + fmtNum(i.valor, i.casas) : fmtNum(i.valor, i.casas);
+        let d = null;
+        if (typeof i.variacao === "number") {
+          const cls = i.variacao > 0 ? "sobe" : i.variacao < 0 ? "desce" : "igual";
+          d = el("span", { class: "d " + cls }, (i.variacao > 0 ? "▲ " : i.variacao < 0 ? "▼ " : "") + fmtNum(Math.abs(i.variacao), 2) + "%");
+        }
+        g.append(el("span", { class: "fita-item", title: i.nome + " · " + i.fonte + (i.data ? " · ref. " + i.data.split("-").reverse().join("/") : "") },
+          el("span", { class: "n" }, i.nome), el("span", { class: "v" }, v, i.unidade && i.unidade !== "R$" ? el("small", {}, i.unidade) : null), d));
+      }
+      return g;
+    };
+    const fita = el("div", { class: "fita", role: "marquee", "aria-label": "Cotações e indicadores", tabindex: "0" },
+      el("div", { class: "fita-trilho", style: `--fita-t:${Math.max(24, itensM.length * 6)}s` }, grupo(), grupo()));
+    fita.lastChild.lastChild.setAttribute("aria-hidden", "true");
+    box.append(fita);
+  }
   const b = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "mercado-atualizar" }, pedindoMercado ? "Atualizando…" : "Atualizar agora");
   if (pedindoMercado) b.disabled = true;
   if (p && p.aguarde) { b.disabled = true; b.textContent = "Atualizado há pouco"; b.title = "Dá para pedir de novo em " + Math.ceil(p.aguarde / 60) + " min"; }
   b.addEventListener("click", atualizarMercado);
-  box.append(el("div", { class: "mercado-topo" }, el("h2", {}, "Mercado agora"),
-    el("span", { style: "display:inline-flex;align-items:baseline;gap:10px" }, p && p.atualizado ? el("small", {}, "atualizado " + fmtRel(p.atualizado)) : null, b)));
-  if (!p || !(p.itens || []).length) { box.append(el("p", { class: "nota" }, "As cotações aparecem aqui depois da primeira consulta.")); return; }
-  const g = el("div", { class: "mercado-grade" });
-  for (const i of p.itens) {
-    const v = i.unidade === "R$" ? "R$ " + fmtNum(i.valor, i.casas) : fmtNum(i.valor, i.casas);
-    const un = i.unidade && i.unidade !== "R$" ? el("small", {}, i.unidade) : null;
-    let d = null;
-    if (typeof i.variacao === "number") {
-      const cls = i.variacao > 0 ? "sobe" : i.variacao < 0 ? "desce" : "igual";
-      d = el("span", { class: "d " + cls }, (i.variacao > 0 ? "▲ " : i.variacao < 0 ? "▼ " : "") + fmtNum(Math.abs(i.variacao), 2) + "% no dia");
-    } else if (i.data) d = el("span", { class: "d igual" }, "ref. " + i.data.split("-").reverse().join("/"));
-    g.append(el("div", { class: "tile", title: "Fonte: " + i.fonte }, el("span", { class: "n" }, i.nome), el("span", { class: "v" }, v, un), d));
-  }
-  box.append(g);
-  box.append(el("p", { class: "nota" }, (p.temBolsa ? "" : "O Ibovespa e as listas de ativos entram quando o token da brapi estiver configurado. ") + "Cotações com atraso. Nada aqui é recomendação de investimento."));
+  box.append(el("div", { class: "mercado-pe" },
+    el("span", {}, itensM.length ? (p.atualizado ? "Atualizado " + fmtRel(p.atualizado) + ". " : "") + (p.temBolsa ? "" : "Ibovespa, IFIX e listas entram com o token da brapi. ") + "Cotações com atraso; não é recomendação." : "As cotações aparecem aqui depois da primeira consulta."),
+    b));
 }
 function renderUrgente() {
   const box = $("urgente"); box.textContent = "";
