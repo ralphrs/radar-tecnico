@@ -24,7 +24,9 @@ async function moedas() {
   try { return await moedasAwesome(); } catch (e) {
     const out = [];
     try { out.push(...(await ptax())); } catch (e2) {}
-    try { out.push(...(await criptoCoingecko())); } catch (e3) {}
+    try { out.push(...(await criptoCoingecko())); } catch (e3) {
+      try { out.push(...(await criptoMercadoBitcoin())); } catch (e4) {}
+    }
     if (!out.length) throw e;
     return out;
   }
@@ -42,6 +44,17 @@ async function criptoCoingecko() {
   const d = await pegar("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=brl&include_24hr_change=true");
   const um = (k, id, nome) => (d[k] ? { id, nome, valor: num(d[k].brl), variacao: num(d[k].brl_24h_change), unidade: "R$", casas: 0, fonte: "CoinGecko" } : null);
   return [um("bitcoin", "btc", "Bitcoin"), um("ethereum", "eth", "Ether")].filter(Boolean);
+}
+// Último recurso para cripto: API pública do Mercado Bitcoin (corretora brasileira), variação desde a abertura de 24 h.
+async function criptoMercadoBitcoin() {
+  const d = await pegar("https://api.mercadobitcoin.net/api/v4/tickers?symbols=BTC-BRL,ETH-BRL");
+  const por = Object.fromEntries((Array.isArray(d) ? d : []).map((x) => [x.pair, x]));
+  const um = (k, id, nome) => {
+    const x = por[k]; if (!x) return null;
+    const v = num(x.last), o = num(x.open);
+    return v === null ? null : { id, nome, valor: v, variacao: o ? ((v - o) / o) * 100 : null, unidade: "R$", casas: 0, fonte: "Mercado Bitcoin" };
+  };
+  return [um("BTC-BRL", "btc", "Bitcoin"), um("ETH-BRL", "eth", "Ether")].filter(Boolean);
 }
 async function moedasAwesome() {
   const d = await pegar("https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,BTC-BRL,ETH-BRL");
