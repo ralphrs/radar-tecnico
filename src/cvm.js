@@ -97,7 +97,8 @@ async function lerAno(ano) {
   const hist = {};
   for (const c of comp) {
     const t = papelDe[c.cnpj];
-    if (!t) continue;
+    // Data fora do formato AAAA-MM-DD não entra: o mês vira chave e texto na página.
+    if (!t || !/^\d{4}-\d{2}/.test(c.ref)) continue;
     (hist[t] = hist[t] || {})[c.ref.slice(0, 7)] = [c.ref.slice(0, 7), n(c.dy), n(c.vp), n(c.cot), n(c.rent), n(c.pl), n(c.cotas)];
   }
   const cadastro = {};

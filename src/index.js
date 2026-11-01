@@ -154,7 +154,8 @@ async function favoritos(request, env, quem, idFav) {
 }
 
 // Listas de acompanhamento (Investimentos): nome e papéis, uma collection por pessoa.
-const PAPEL_OK = /^[A-Z]{4}\d{1,2}$/;
+// Quatro caracteres e o número; o segundo pode ser dígito (B3SA3, BDRs como M1TA34).
+const PAPEL_OK = /^[A-Z][A-Z0-9]{3}\d{1,2}$/;
 const LISTA_ID_OK = /^[a-z0-9-]{1,60}$/;
 const LISTAS_MAX = 30;
 const slug = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "lista";
@@ -198,7 +199,13 @@ export async function listas(request, env, quem, idLista) {
     if (v.erro) return json({ erro: v.erro }, v.status || 400);
     const n = await env.DB.prepare("SELECT count(*) AS n FROM docs WHERE collection = ?").bind(col).first();
     if ((n?.n || 0) >= LISTAS_MAX) return json({ erro: `Dá para ter até ${LISTAS_MAX} listas.` }, 400);
-    const id = slug(v.nome) + "-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+    // Id com sufixo aleatório; confere antes para não sobrescrever outra lista com o mesmo nome.
+    let id = "";
+    for (let k = 0; k < 8 && !id; k++) {
+      const tenta = slug(v.nome) + "-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+      if (!(await env.DB.prepare("SELECT 1 FROM docs WHERE collection = ? AND id = ?").bind(col, tenta).first())) id = tenta;
+    }
+    if (!id) return json({ erro: "Não deu para criar a lista agora. Tente de novo." }, 409);
     const agora = agoraIso();
     const doc = { nome: v.nome, papeis: v.papeis, criado: agora, atualizado: agora };
     await gravar(id, doc);
@@ -266,6 +273,11 @@ async function adminUsuarios(request, env, email) {
   return json({ erro: "metodo" }, 405);
 }
 
+// Caminho com "%" malformado não derruba o Worker: vira null e a rota responde 400.
+const decodificar = (s) => { try { return decodeURIComponent(s); } catch { return null; } };
+// Gravações com corpo JSON (listas e admin) só aceitam application/json: formulário de outro site não consegue mandar.
+const corpoJson = (request) => (request.method !== "POST" && request.method !== "PUT") || (request.headers.get("content-type") || "").toLowerCase().includes("application/json");
+
 function servirAsset(request, env, caminho) {
   const u = new URL(request.url);
   u.pathname = caminho;
@@ -302,17 +314,25 @@ export default {
     }
     if (p === "/api/favs" || p.startsWith("/api/favs/"))
       return favoritos(request, env, quem, p.length > 10 ? decodeURIComponent(p.slice(10)) : "");
-    if (p === "/api/listas" || p.startsWith("/api/listas/"))
-      return listas(request, env, quem, p.length > 12 ? decodeURIComponent(p.slice(12)) : "");
+    if (p === "/api/listas" || p.startsWith("/api/listas/")) {
+      const idLista = p.length > 12 ? decodificar(p.slice(12)) : "";
+      if (idLista === null) return json({ erro: "id" }, 400);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      return listas(request, env, quem, idLista);
+    }
 
     if (p === "/admin" || p === "/admin.html" || p.startsWith("/api/admin/")) {
       if (!quem.admin) return p.startsWith("/api/") ? json({ erro: "admin" }, 403) : pagina("Sem permissão", "<h1>Área do administrador</h1><p>Só quem cuida do Lookout acessa esta página.</p><p><a href=\"/\">Voltar ao radar</a></p>", 403);
+      if (p.startsWith("/api/admin/") && p !== "/api/admin/cvm" && !corpoJson(request)) return json({ erro: "json" }, 415);
+      const resto = (n) => decodificar(p.slice(n));
+      if ((p.startsWith("/api/admin/usuarios/") && resto(20) === null) || (p.startsWith("/api/admin/grupos/") && resto(18) === null) || (p.startsWith("/api/admin/membros/") && resto(19) === null))
+        return json({ erro: "id" }, 400);
       if (p === "/api/admin/usuarios") return adminUsuarios(request, env, "");
-      if (p.startsWith("/api/admin/usuarios/")) return adminUsuarios(request, env, decodeURIComponent(p.slice(20)));
+      if (p.startsWith("/api/admin/usuarios/")) return adminUsuarios(request, env, resto(20));
       if (p === "/api/admin/fontes") return adminFontes(env);
       if (p === "/api/admin/grupos") return adminGrupos(request, env, "");
-      if (p.startsWith("/api/admin/grupos/")) return adminGrupos(request, env, decodeURIComponent(p.slice(18)));
-      if (p.startsWith("/api/admin/membros/")) return adminMembro(request, env, decodeURIComponent(p.slice(19)));
+      if (p.startsWith("/api/admin/grupos/")) return adminGrupos(request, env, resto(18));
+      if (p.startsWith("/api/admin/membros/")) return adminMembro(request, env, resto(19));
       if (p === "/api/admin/custos") return json(await adminCustos(env));
       if (p === "/api/admin/cvm" && request.method === "POST") {
         try { return json({ ok: true, anterior: await etapaAnoAnterior(env), corrente: await etapaAnoCorrente(env) }); }

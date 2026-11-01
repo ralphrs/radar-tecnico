@@ -73,6 +73,8 @@ export async function garantirEsquema(env) {
 // /api/admin/grupos e /api/admin/grupos/<id>
 export async function adminGrupos(request, env, id) {
   await garantirEsquema(env);
+  // Ids nascem de slug(nome); qualquer outra coisa no caminho é recusada (não cria grupo com id arbitrário).
+  if (id && !/^[a-z0-9-]{1,40}$/.test(id)) return json({ erro: "id" }, 400);
   if (request.method === "GET" && !id) {
     const [{ results: grupos }, { results: membros }] = await Promise.all([
       env.DB.prepare("SELECT id, nome, secoes, padrao FROM grupos ORDER BY criado").all(),
@@ -106,6 +108,7 @@ export async function adminGrupos(request, env, id) {
 export async function adminMembro(request, env, email) {
   await garantirEsquema(env);
   if (request.method !== "PUT" || !email) return json({ erro: "metodo" }, 405);
+  if (email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ erro: "E-mail inválido." }, 400);
   let b;
   try { b = await request.json(); } catch { return json({ erro: "json" }, 400); }
   const e = email.toLowerCase();

@@ -240,7 +240,7 @@ async function carregar() {
       catch { aviso("Não consegui copiar. Use o botão de WhatsApp ou e-mail.", "err"); }
     };
     li.querySelector("[data-remover]").onclick = async () => {
-      if (!confirm(`Remover ${u.email} da lista? Os favoritos dessa pessoa também são apagados.`)) return;
+      if (!confirm(`Remover ${u.email} da lista? Os favoritos e as listas dessa pessoa também são apagados.`)) return;
       try { await api("/api/admin/usuarios/" + encodeURIComponent(u.email), { method: "DELETE" }); aviso(u.email + " saiu da lista.", "ok"); carregar(); }
       catch (err) { aviso(err.message, "err"); }
     };

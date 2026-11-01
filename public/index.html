@@ -1108,7 +1108,8 @@ let fiiCvm = null, lendoFii = null;
 function lerFii() {
   if (fiiCvm) return Promise.resolve();
   if (!lendoFii) lendoFii = (async () => {
-    try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "fii" }), { credentials: "same-origin" }); const j = await r.json(); fiiCvm = j.existe ? j.data : { fundos: {} }; } catch (e) {}
+    /* Se a leitura falhar, fica sem dados da CVM até recarregar: os renders chamam lerFii enquanto fiiCvm for null, e sem isso pediriam de novo sem parar */
+    try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "fii" }), { credentials: "same-origin" }); const j = await r.json(); fiiCvm = j.existe ? j.data : { fundos: {} }; } catch (e) { fiiCvm = { fundos: {} }; }
     lendoFii = null; renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas();
   })();
   return lendoFii;
@@ -1307,8 +1308,8 @@ setInterval(() => {
 }, 7000);
 
 /* Ponte entre as visões: papéis citados numa notícia (campo "ativos" ou, sem ele, códigos no título) */
-const RE_PAPEL = /\b[A-Z]{4}(?:3|4|5|6|11|31|32|33|34|35|39)\b/g;
-const PAPEL_OK = /^[A-Z]{4}\d{1,2}$/;
+const RE_PAPEL = /\b(?:[A-Z]{4}|[A-Z]\d[A-Z]{2})(?:3|4|5|6|11|31|32|33|34|35|39)\b/g;
+const PAPEL_OK = /^[A-Z][A-Z0-9]{3}\d{1,2}$/;
 const papeisMemo = new Map();
 function papeisDe(i) {
   const k = i._id || i.url || i.titulo;
@@ -1638,18 +1639,23 @@ function nomeBonito(n) {
   let s = String(n || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
   s = s.replace(/FUNDO DE INVESTIMENTO (IMOBILIARIO|NAS CADEIAS PRODUTIVAS AGROINDUSTRIAIS)/g, " ")
     .replace(/\bF(UN)?DO\.? (DE )?INV(ESTIMENTO)?\.? (IMOB(ILIARIO)?)?\.?/g, " ")
-    .replace(/\bRESPONSABILIDADE LIMITADA\b/g, " ")
+    .replace(/\bRESP(ONSABILIDADE|\.)? LIMITADA\b/g, " ")
     .replace(/\b(FII|FIAGRO|F\.I\.I\.|RL|LTDA)\b\.?/g, " ")
     .replace(/\s+-\s*|\s*-\s+/g, " ").replace(/\s+/g, " ").trim()
     .replace(/(\s+(DE|DA|DO|E|-))+$/, "").trim();
-  if (!s) return String(n || "");
+  if (!s) return String(n || "").trim();
   return s.split(" ").map((w, i) => {
     if (ACENTOS[w]) return ACENTOS[w];
     if (i > 0 && MINUSCULAS.has(w)) return w.toLowerCase();
-    if (/^[A-Z0-9&]{1,3}$/.test(w) && !PALAVRAS_CURTAS.has(w) || !/[AEIOUY]/.test(w)) return w;
-    return w.charAt(0) + w.slice(1).toLowerCase();
+    if (/^([A-Z]\.)+[A-Z]?$/.test(w)) return w; // S.A.
+    /* pontuação em volta ("(KNRI)", "D'OURO") não entra na regra da sigla e não impede a maiúscula na primeira letra */
+    const nucleo = w.replace(/[^A-Z0-9&]/g, "");
+    if (/^[A-Z0-9&]{1,3}$/.test(nucleo) && !PALAVRAS_CURTAS.has(nucleo) || !/[AEIOUY]/.test(nucleo)) return w;
+    return w.toLowerCase().replace(/[a-z]/, (c) => c.toUpperCase());
   }).join(" ");
 }
+/* O gráfico do diálogo é montado como texto: o que vem do banco passa por aqui antes do innerHTML */
+const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 /* Detalhe de um papel, num diálogo: indicadores, histórico mensal (FIIs) e notícias do feed que citam o papel */
 function abrirAtivo(x, aba = cotAba) {
   let d = $("ativo-dlg");
@@ -1688,8 +1694,8 @@ function abrirAtivo(x, aba = cotAba) {
     const svg = `<svg viewBox="0 0 ${W} ${A + T + 26}" role="img" aria-label="Rendimento por cota nos últimos meses" preserveAspectRatio="xMidYMax meet">` + f.h.map((h, i) => {
       const v = rends[i]; const alt = v == null ? A * 0.25 : Math.max(2, (v / max) * A);
       const y = T + A - alt, cx = i * (L + G) + L / 2;
-      return `<g><title>${fmtMes(h[0])}: ${v == null ? "sem dado" : "R$ " + fmtNum(v, 2)}</title><rect x="${i * (L + G)}" y="${y}" width="${L}" height="${alt}" rx="3" class="ativo-barra${v == null ? " vazia" : ""}"/>` +
-        `<text class="v" x="${cx}" y="${y - 4}" text-anchor="middle">${v == null ? "–" : fmtNum(v, 2)}</text><text x="${cx}" y="${T + A + 18}" text-anchor="middle">${fmtMes(h[0]).slice(0, 3)}</text></g>`;
+      return `<g><title>${escHtml(fmtMes(h[0]))}: ${v == null ? "sem dado" : "R$ " + fmtNum(v, 2)}</title><rect x="${i * (L + G)}" y="${y}" width="${L}" height="${alt}" rx="3" class="ativo-barra${v == null ? " vazia" : ""}"/>` +
+        `<text class="v" x="${cx}" y="${y - 4}" text-anchor="middle">${v == null ? "–" : fmtNum(v, 2)}</text><text x="${cx}" y="${T + A + 18}" text-anchor="middle">${escHtml(fmtMes(h[0]).slice(0, 3))}</text></g>`;
     }).join("") + "</svg>";
     d.append(el("section", { class: "ativo-sec" }, el("h3", {}, "Rendimento por cota"), el("div", { class: "ativo-graf", html: svg })));
     const tb = el("tbody");
@@ -2517,6 +2523,8 @@ function trocarRadar(id, porHash) {
 window.addEventListener("hashchange", () => {
   const h = radarDoHash() || "tech";
   if (h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); return; }
+  /* seção não liberada: o endereço volta para o radar aberto em vez de ficar apontando para outro */
+  if (!radaresVisiveis().includes(h)) { escreverHash(); return; }
   trocarRadar(h, true);
 });
 escreverHash();
@@ -2537,7 +2545,12 @@ renderListas();
     $("feed").textContent = ""; $("feed").append(el("p", { class: "nota" }, "Nenhuma seção foi liberada para você ainda. Fale com quem te convidou."));
     $("status").textContent = ""; return;
   }
-  if (!vis.includes(radar)) { radar = vis[0]; try { localStorage.setItem("radar-atual", radar); } catch (e) {} escreverHash(); aplicarRadar(); render(); }
+  if (!vis.includes(radar)) {
+    radar = vis[0]; visao = "bolsa";
+    try { localStorage.setItem("radar-atual", radar); } catch (e) {}
+    /* o primeiro render pode ter sido de Investimentos: refaz destaques e listas para não sobrar nada dele */
+    escreverHash(); aplicarRadar(); renderDestaques(); render(); renderListas();
+  }
   else renderRadares();
   if (vis.length === 1) document.documentElement.classList.add("uma-secao");
   ligarFavoritosNaConta(db);
