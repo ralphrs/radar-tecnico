@@ -302,19 +302,20 @@ async function carregarCustos() {
         + Math.max(0, proj(lidas) - P.pago.d1LidasMes) / 1e6 * P.pago.porMilhaoLidas
         + Math.max(0, proj(grav) - P.pago.d1GravadasMes) / 1e6 * P.pago.porMilhaoGravadas
         + Math.max(0, tam - P.pago.d1Bytes) / 1e9 * P.pago.porGBMes;
-      const cabeGratis = pico(req) <= P.gratis.workersReqDia && pico(lidas) <= P.gratis.d1LidasDia && pico(grav) <= P.gratis.d1GravadasDia && tam <= P.gratis.d1Bytes;
+      // Conta no Workers Paid desde 01/11/2026: US$ 5 fixos por mês mais o que passar do incluído (projetado para o mês).
       h += '<div class="custo-topo">'
-        + kpi("Custo estimado do mês", cabeGratis ? "US$ 0" : usd(P.pago.mensal + extra), cabeGratis ? "cabe no plano gratuito" : "plano pago: US$ 5 + excedente")
-        + kpi("Requisições, pico diário", fmtGrande(pico(req)), "de " + fmtGrande(P.gratis.workersReqDia) + " por dia no grátis", pico(req) / P.gratis.workersReqDia)
-        + kpi("D1, linhas lidas no pico", fmtGrande(pico(lidas)), "de " + fmtGrande(P.gratis.d1LidasDia) + " por dia", pico(lidas) / P.gratis.d1LidasDia)
-        + kpi("D1, linhas gravadas no pico", fmtGrande(pico(grav)), "de " + fmtGrande(P.gratis.d1GravadasDia) + " por dia", pico(grav) / P.gratis.d1GravadasDia)
-        + kpi("Tamanho do banco", fmtBytes(tam), "de " + fmtBytes(P.gratis.d1Bytes), tam / P.gratis.d1Bytes)
+        + kpi("Custo estimado do mês", usd(P.pago.mensal + extra), extra > 0.005 ? "US$ 5 do plano + " + usd(extra) + " de excedente" : "só os US$ 5 do Workers Paid")
+        + kpi("Requisições no mês", fmtGrande(proj(req)), "projeção · " + fmtGrande(P.pago.workersReqMes) + " incluídas", proj(req) / P.pago.workersReqMes)
+        + kpi("D1, linhas lidas no mês", fmtGrande(proj(lidas)), "projeção · " + fmtGrande(P.pago.d1LidasMes) + " incluídas", proj(lidas) / P.pago.d1LidasMes)
+        + kpi("D1, linhas gravadas no mês", fmtGrande(proj(grav)), "projeção · " + fmtGrande(P.pago.d1GravadasMes) + " incluídas", proj(grav) / P.pago.d1GravadasMes)
+        + kpi("Tamanho do banco", fmtBytes(tam), "de " + fmtBytes(P.pago.d1Bytes) + " incluídos", tam / P.pago.d1Bytes)
+        + kpi("Pico diário de leituras", fmtGrande(pico(lidas)), "no grátis o limite era " + fmtGrande(P.gratis.d1LidasDia) + " por dia", pico(lidas) / P.gratis.d1LidasDia)
         + "</div>";
       const diasL = Object.keys({ ...req, ...lidas }).sort().reverse().slice(0, 10);
       h += '<details><summary>Dia a dia (últimos 10)</summary><table class="custo-tab"><thead><tr><th>Dia</th><th>Requisições</th><th>Linhas lidas</th><th>Linhas gravadas</th></tr></thead><tbody>'
         + diasL.map((d) => `<tr><td>${d.slice(8, 10)}/${d.slice(5, 7)}</td><td>${fmtGrande(req[d] || 0)}</td><td>${fmtGrande(lidas[d] || 0)}</td><td>${fmtGrande(grav[d] || 0)}</td></tr>`).join("")
         + "</tbody></table></details>";
-      h += `<p class="dica">Mês até agora (${cf.inicio.slice(8, 10)}/${cf.inicio.slice(5, 7)} a ${cf.fim.slice(8, 10)}/${cf.fim.slice(5, 7)}): ${fmtGrande(soma(req))} requisições, ${fmtGrande(soma(lidas))} linhas lidas e ${fmtGrande(soma(grav))} gravadas no D1. O grátis tem limite por dia; o pago, por mês.</p>`;
+      h += `<p class="dica">Mês até agora (${cf.inicio.slice(8, 10)}/${cf.inicio.slice(5, 7)} a ${cf.fim.slice(8, 10)}/${cf.fim.slice(5, 7)}): ${fmtGrande(soma(req))} requisições, ${fmtGrande(soma(lidas))} linhas lidas e ${fmtGrande(soma(grav))} gravadas no D1. No Workers Paid o limite é mensal: 10 mi de requisições, 25 bi de leituras e 50 mi de gravações.</p>`;
       if (cf.erros.length) h += `<p class="msg err">Parte dos dados não veio: ${esc(cf.erros.join(" · "))}</p>`;
     } else if (c.erroCloudflare) {
       h += `<p class="msg err">A API da Cloudflare recusou: ${esc(c.erroCloudflare)}</p>`;
@@ -335,7 +336,7 @@ async function carregarCustos() {
       + '</tbody></table><table class="custo-tab" style="margin-top:10px"><thead><tr><th>Coleção</th><th>Registros</th><th>Tamanho</th></tr></thead><tbody>'
       + L.colecoes.slice(0, 15).map((x) => `<tr><td>${esc(x.collection)}</td><td>${fmt(x.n)}</td><td>${fmtBytes(x.bytes || 0)}</td></tr>`).join("")
       + `<tr><td>candidatos</td><td>${fmt(L.candidatos.n)}</td><td>${fmtBytes(L.candidatos.bytes || 0)}</td></tr></tbody></table></details>`;
-    h += '<p class="dica">Domínio: o site usa o endereço gratuito workers.dev. Os limites e preços usados na conta são os publicados pela Cloudflare para Workers e D1.</p>';
+    h += '<p class="dica">Plano: Workers Paid (US$ 5/mês) desde 01/11/2026, porque o grátis estourou o limite diário de leituras do D1. Domínio: o endereço gratuito workers.dev. Preços e limites são os publicados pela Cloudflare para Workers e D1.</p>';
     box.innerHTML = h;
   } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
 }
