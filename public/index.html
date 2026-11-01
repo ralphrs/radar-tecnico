@@ -228,7 +228,7 @@ h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: 
 /* Feed */
 .secoes { display: flex; flex-direction: column; gap: var(--space-8); }
 @media (max-width: 699px) { .secoes { gap: var(--space-6); } }
-section.tema { display: flex; flex-direction: column; --topo-tema: calc(var(--barra-h) + var(--cab-h, 0px)); }
+section.tema { display: flex; flex-direction: column; --topo-tema: calc(var(--barra-h) + var(--cab-h, 0px) + var(--merc-h, 0px)); }
 section.tema > h2 { position: sticky; top: var(--topo-tema); z-index: 1; background: var(--background); font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; margin: 0; padding: 12px 0 8px; display: flex; align-items: baseline; gap: 10px; }
 section.tema > h2::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--c); flex: none; transform: translateY(-1px); }
 section.tema > h2 .nome { min-width: 0; text-wrap: balance; }
@@ -313,7 +313,7 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 @media (max-width: 639px) { .ativo-dlg > * { margin-left: 16px; margin-right: 16px; } }
 .rankings { display: flex; flex-direction: column; gap: var(--space-3); }
 .rk-quando { font: 400 12px var(--font-mono); color: var(--muted-foreground); }
-/* Abaixo de 1200 px as listas viram trilho horizontal; no modo mercado voltam a ser grade */
+/* No celular as listas viram trilho horizontal; na visão Bolsa, a partir de 900 px, voltam a ser grade */
 .rk-grade { display: grid; grid-auto-flow: column; grid-auto-columns: min(80%, 280px); align-items: start; gap: var(--space-3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; padding-bottom: var(--space-1); }
 .rk-grade::-webkit-scrollbar { display: none; }
 .rk-card { scroll-snap-align: start; border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); padding: 12px 14px; min-width: 0; }
@@ -328,28 +328,83 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .rk-topo h2 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .rankings .nota, .cotacoes .nota { margin: 0; font-size: 12px; color: var(--muted-foreground); }
 .cotacoes .cot-topo h3 { margin: 0; font: 600 15px/1.25 var(--font-display); letter-spacing: -0.01em; }
-.nav-dica { margin: 0; padding-inline: 10px; font-size: 12px; line-height: 1.4; color: var(--muted-foreground); }
-html:not(.modo-mercado) .nav-dica { display: none; }
 .rk-val.sobe { color: var(--ok); } .rk-val.desce { color: var(--err); }
 .rk-vazio { color: var(--muted-foreground); display: block !important; font-size: 12.5px; }
-@media (min-width: 1200px) {
-  .modo-mercado .wrap { max-width: 1480px; grid-template-columns: 232px minmax(0, 1fr) 380px; }
-  .modo-mercado .lateral { position: static; max-height: none !important; overflow: visible; }
-  .modo-mercado #destaques { display: block !important; }
-  .modo-mercado #destaques .trilho { grid-auto-columns: 100%; }
-  .modo-mercado #destaques .dest-top { flex-wrap: nowrap; align-items: flex-start; }
-  .modo-mercado #destaques .dest-top h2 { flex: 1; min-width: 0; font-size: 17px; }
-  .modo-mercado #destaques .dest-nav { flex: none; gap: 4px; }
-  .modo-mercado #destaques .dest-nav .dd-btn--icon { width: 28px; height: 28px; }
-  .modo-mercado #destaques .dest-nav .pos { min-width: 36px; }
-  .modo-mercado .rk-grade { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); overflow: visible; padding-bottom: 0; }
-  .modo-mercado .rk-grade[data-n="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .modo-mercado #lat-feed { display: flex; flex-direction: column; gap: var(--space-6); }
-  .modo-mercado #lat-feed .feed-topo { margin-bottom: 0; }
-  .modo-mercado .feed-topo .feed-ordem { flex-wrap: wrap; }
+/* Investimentos: duas visões, Bolsa (pregão, tabela e listas) e Notícias (feed como nas outras abas) */
+.visoes { align-self: flex-start; }
+@media (max-width: 899px) { .visoes { align-self: stretch; } .visoes button { flex: 1 1 0; justify-content: center; } }
+/* Letreiro fixo logo abaixo do cabeçalho, nas duas visões; o rodapé dele rola com a página */
+.mercado { position: sticky; top: var(--cab-h, 0px); z-index: 3; background: var(--background); padding-block: 6px; margin-block: -6px; }
+.mercado-pe { margin-top: calc(-1 * var(--space-4)); }
+@media (max-width: 899px) {
+  .mercado { top: calc(var(--cab-h, 0px) + var(--barra-h, 0px)); margin-inline: -16px; padding-inline: 16px; }
+  .mercado-pe { margin-top: calc(-1 * var(--space-2)); }
+  .inv-bolsa .mercado { top: var(--cab-h, 0px); }
+  .inv-bolsa .barra { position: static; }
+  .inv-bolsa .barra-linha { display: none; }
 }
+.inv-bolsa .rankings { scroll-margin-top: calc(var(--cab-h, 0px) + var(--merc-h, 0px)); }
+@media (min-width: 900px) {
+  .inv-bolsa .rk-grade { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); overflow: visible; padding-bottom: 0; }
+  .inv-bolsa .rk-grade[data-n="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* Pontinho de "tem notícia" ao lado do papel */
+.rk-papel, .cot-papel-box { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.rk-papel { justify-self: start; max-width: 100%; }
+.tem-noticia { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+/* Papéis citados numa notícia */
+.papeis { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip.chip-papel { height: 26px; padding: 0 9px; font: 500 12px/1 var(--font-mono); color: var(--primary); border-color: color-mix(in srgb, var(--primary) 35%, transparent); }
+.chip.chip-papel:hover { background: color-mix(in srgb, var(--primary) 8%, var(--card)); }
+/* Filtros da Bolsa na coluna esquerda */
+.nav-bolsa { display: flex; flex-direction: column; gap: 10px; }
+.nav-bolsa .chips { padding-inline: 6px; gap: 6px; }
+.nav-bolsa .chip { height: 30px; padding: 0 10px; font-size: 12.5px; }
+.nav-bolsa .nav-item .ic { font: 500 11px/14px var(--font-mono); color: var(--muted-foreground); }
+/* Carrossel de destaques no trilho direito (visão Bolsa) */
+#lat-dest .trilho { grid-auto-columns: 100%; }
+#lat-dest .dest-top { flex-wrap: nowrap; align-items: flex-start; }
+#lat-dest .dest-top h2 { flex: 1; min-width: 0; font-size: 17px; }
+#lat-dest .dest-nav { flex: none; gap: 4px; }
+#lat-dest .dest-nav .dd-btn--icon { width: 28px; height: 28px; }
+#lat-dest .dest-nav .pos { min-width: 36px; }
+#lat-hoje .papeis { margin-top: 2px; }
+#lat-hoje .chip.chip-papel { height: 22px; padding: 0 7px; font-size: 11px; }
+/* Minhas listas */
+.lst { display: flex; flex-direction: column; gap: 6px; padding-block: 12px; border-top: 1px solid var(--border); }
+.lst:first-of-type { border-top: 0; }
+.lst-cab { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.lst-nome { all: unset; flex: 1; min-width: 0; cursor: text; font: 600 14px/1.3 var(--font-sans); color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 4px; }
+.lst-nome:hover { color: var(--primary); }
+.lst-nome:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.lst-cab .dd-input { height: 30px; flex: 1; min-width: 0; font-weight: 600; }
+.lst-cab .k { flex: none; font: 400 11px var(--font-mono); color: var(--muted-foreground); }
+.lst-x { all: unset; flex: none; position: relative; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; color: var(--muted-foreground); cursor: pointer; font-size: 14px; line-height: 1; }
+.lst-x::before { content: ""; position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); }
+.lst-x:hover { color: var(--err); background: var(--accent); }
+.lst-x:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.lst-tab { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.lst-tab th { font: 600 10.5px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); text-align: right; padding: 4px 4px 6px; }
+.lst-tab th:first-child, .lst-tab td:first-child { text-align: left; padding-left: 0; }
+.lst-tab td { text-align: right; padding: 5px 4px; border-top: 1px solid var(--border); white-space: nowrap; }
+.lst-tab td:last-child, .lst-tab th:last-child { padding-right: 0; width: 22px; }
+.lst-tab .cot-papel { font-size: 12.5px; }
+.lst-tab .sobe { color: var(--ok); } .lst-tab .desce { color: var(--err); }
+.lst-tab .sem { color: var(--muted-foreground); cursor: help; }
+.lst-add { position: relative; }
+.lst-add .dd-input { height: 30px; font: 400 12.5px var(--font-mono); }
+.lst-sug { position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 4px); list-style: none; margin: 0; padding: 4px; display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
+.bloco .lst-sug li { padding: 0; border: 0; }
+.lst-sug button { all: unset; box-sizing: border-box; width: 100%; display: flex; gap: 8px; align-items: baseline; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 12.5px; min-width: 0; }
+.lst-sug button b { font: 600 12.5px var(--font-mono); color: var(--primary); flex: none; }
+.lst-sug button span { color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lst-sug button:hover, .lst-sug button[aria-selected="true"] { background: var(--accent); }
+.lst-erro { margin: 0; font-size: 12px; color: var(--err); }
+@media (max-width: 899px) { .lst-add .dd-input, .lst-cab .dd-input { height: 40px; font-size: 16px; } }
+.bloco > h3 .dd-btn--link { font: 500 12.5px var(--font-sans); letter-spacing: 0; text-transform: none; height: auto; }
+#listas-centro .bloco > h3 { font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; text-transform: none; color: var(--foreground); }
 #lat-blocos { display: flex; flex-direction: column; gap: var(--space-6); }
-#lat-topo:empty, #lat-feed:empty { display: none; }
+#lat-listas:empty, #lat-dest:empty, #lat-hoje:empty, #listas-centro:empty { display: none; }
 .uma-secao #radares-barra, .uma-secao #radares-nav { display: none; }
 .cot-pe { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
 /* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
@@ -475,7 +530,7 @@ footer b { color: var(--foreground); font-weight: 500; }
   /* Todos os filtros ficam na lateral: sem barra fixa no centro, e o título de cada tema gruda no topo */
   .barra { display: none; }
   .feed-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px var(--space-4); padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: calc(-1 * var(--space-3)); }
-  section.tema { --topo-tema: var(--cab-h, 0px); }
+  section.tema { --topo-tema: calc(var(--cab-h, 0px) + var(--merc-h, 0px)); }
 }
 @media (min-width: 1200px) {
   .wrap { grid-template-columns: 232px minmax(0, 700px) 280px; grid-template-areas: "topo topo topo" "nav centro lateral"; column-gap: var(--space-6); }
@@ -503,16 +558,16 @@ footer b { color: var(--foreground); font-weight: 500; }
   <nav class="nav-temas" id="nav-temas" aria-label="Temas e filtros">
     <div class="seg radares" id="radares-nav" role="group" aria-label="Escolher radar"></div>
     <input class="dd-input nav-busca" id="busca-nav" type="search" placeholder="Buscar no feed" aria-label="Buscar no feed" autocomplete="off" enterkeyhint="search">
-    <p class="nav-dica">Filtram as notícias da direita.</p>
-    <div class="nav-grupo">
+    <div class="nav-grupo" id="nav-grupo-tipos">
       <h2 class="rotulo">Tipo</h2>
       <div class="nav-lista" id="nav-tipos" role="group" aria-label="Filtrar por tipo"></div>
     </div>
-    <div class="nav-grupo">
+    <div class="nav-grupo" id="nav-grupo-temas">
       <h2 class="rotulo">Temas <small class="dica">vários</small></h2>
       <div class="nav-lista" id="nav-lista"></div>
     </div>
     <button class="dd-btn dd-btn--link nav-limpar" type="button" id="nav-limpar" hidden>Limpar filtros</button>
+    <div class="nav-bolsa" id="bolsa-filtros" hidden></div>
   </nav>
 
   <div class="centro">
@@ -566,9 +621,15 @@ footer b { color: var(--foreground); font-weight: 500; }
     </div>
   </div>
 
+  <div class="seg visoes" id="visoes" role="group" aria-label="Visão de Investimentos" hidden>
+    <button type="button" id="visao-bolsa" aria-pressed="true">Bolsa</button>
+    <button type="button" id="visao-noticias" aria-pressed="false">Notícias</button>
+  </div>
   <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
+  <div class="mercado-pe" id="mercado-pe" hidden></div>
   <section class="rankings" id="rankings" aria-label="Destaques do pregão" hidden></section>
   <section class="cotacoes" id="cotacoes" aria-label="Cotações da B3" hidden></section>
+  <div id="listas-centro"></div>
 
   <div class="feed-topo" role="toolbar" aria-label="Ordem e exibição do feed">
     <div class="feed-ordem">
@@ -597,7 +658,7 @@ footer b { color: var(--foreground); font-weight: 500; }
   </footer>
   </div>
 
-  <aside class="lateral" id="lateral" aria-label="Resumo do dia"><div id="lat-topo"></div><div id="lat-feed"></div><div id="lat-blocos"></div></aside>
+  <aside class="lateral" id="lateral" aria-label="Resumo do dia"><div id="lat-listas"></div><section class="dest" id="lat-dest" aria-roledescription="carrossel" aria-label="Destaques do dia"></section><div id="lat-hoje"></div><div id="lat-blocos"></div></aside>
 </div>
 
 <script>
@@ -911,14 +972,20 @@ try {
   soRel = localStorage.getItem("radar-relevantes") === "1";
   favs = JSON.parse(localStorage.getItem("radar-favoritos") || "{}") || {};
 } catch (e) {}
-/* Radar aberto: o hash da URL (#politica, #esportes) vence o que ficou salvo neste navegador */
-const radarDoHash = () => { const h = (location.hash || "").replace(/^#/, ""); return RADARES[h] ? h : (h ? null : ""); };
+/* Radar aberto: o hash da URL (#politica, #esportes) vence o que ficou salvo neste navegador.
+   Investimentos tem duas visões: #investimentos (ou #investimentos/bolsa) abre a Bolsa; #investimentos/noticias, o feed. */
+const partesDoHash = () => (location.hash || "").replace(/^#/, "").split("/");
+const radarDoHash = () => { const h = partesDoHash()[0]; return RADARES[h] ? h : (h ? null : ""); };
+const visaoDoHash = () => (partesDoHash()[1] === "noticias" ? "noticias" : "bolsa");
+let visao = "bolsa";
 {
   const h = radarDoHash();
   let salvo = null; try { salvo = localStorage.getItem("radar-atual"); } catch (e) {}
   radar = h || (h === "" && RADARES[salvo] ? salvo : "tech");
+  if (h === "investimentos") visao = visaoDoHash();
 }
 const R = () => RADARES[radar];
+const emBolsa = () => !!R().mercado && visao === "bolsa";
 /* Liga TEMAS, TIPOS, mapas e filtros salvos ao radar aberto */
 function aplicarRadar() {
   const r = R();
@@ -1034,15 +1101,17 @@ const urgentes = () => itens.filter((i) => i.urgente === true && i.coletado && D
 async function lerB3() {
   if (!R().mercado) return;
   try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "b3" }), { credentials: "same-origin" }); const j = await r.json(); b3 = j.existe ? j.data : null; } catch (e) {}
-  renderRankings(); renderCotacoes();
+  renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas();
 }
-/* Dados dos FIIs do informe mensal da CVM (meta/fii). Carrega uma vez, quando a aba FIIs é aberta. */
-let fiiCvm = null, lendoFii = false;
-async function lerFii() {
-  if (fiiCvm || lendoFii) return;
-  lendoFii = true;
-  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "fii" }), { credentials: "same-origin" }); const j = await r.json(); fiiCvm = j.existe ? j.data : { fundos: {} }; } catch (e) {}
-  lendoFii = false; renderRankings(); renderCotacoes();
+/* Dados dos FIIs do informe mensal da CVM (meta/fii). Carrega uma vez; quem precisa dos dados antes de seguir espera a promessa. */
+let fiiCvm = null, lendoFii = null;
+function lerFii() {
+  if (fiiCvm) return Promise.resolve();
+  if (!lendoFii) lendoFii = (async () => {
+    try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "fii" }), { credentials: "same-origin" }); const j = await r.json(); fiiCvm = j.existe ? j.data : { fundos: {} }; } catch (e) {}
+    lendoFii = null; renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas();
+  })();
+  return lendoFii;
 }
 // Junta a cotação da brapi com o informe da CVM. Rendimento por cota estimado = DY do mês (sobre o patrimônio) x VP.
 function comCvm(x) {
@@ -1055,7 +1124,7 @@ function comCvm(x) {
   const soma = ult12.reduce((a, b) => a + b, 0);
   // Com menos de 12 informes, anualiza pela média dos meses que existem (marcado com * na tabela).
   const dy = ult12.length && x.preco ? ((ult12.length >= 12 ? soma : (soma / ult12.length) * 12) / x.preco) * 100 : null;
-  return { ...x, liq, f, rend: ult, dy, dyAnual: ult12.length > 0 && ult12.length < 12, pvp: f.vp ? x.preco / f.vp : null, cot: f.cot ?? null, rends };
+  return { ...x, liq, f, rend: ult, dy, dyAnual: ult12.length > 0 && ult12.length < 12, pvp: f.vp && x.preco ? x.preco / f.vp : null, cot: f.cot ?? null, rends };
 }
 /* comCvm para uma classe inteira, guardado até b3 ou fiiCvm mudarem. Quem usa não pode alterar a lista (só filter/slice). */
 const cvmCache = {};
@@ -1074,11 +1143,14 @@ const fmtMes = (ym) => { const [a, m] = String(ym).split("-"); return ["jan", "f
 const COT_ABAS = [{ id: "acoes", nome: "Ações" }, { id: "fiis", nome: "FIIs" }, { id: "etfs", nome: "ETFs" }];
 /* Um controle só para o pregão: troca a classe das listas e da tabela juntas */
 function trocarCotAba(id) {
+  const foco = document.activeElement && document.activeElement.id;
   cotAba = id; cotTodos = false;
   if (!COT_COLUNAS[id].some((c) => c[0] === cotOrdem.campo)) cotOrdem = { campo: "liq", dir: -1 };
   try { localStorage.setItem("radar-cot-aba", id); } catch (e) {}
-  renderRankings(); renderCotacoes();
-  const b = $("cot-" + id); if (b) b.focus({ preventScroll: true });
+  renderRankings(); renderCotacoes(); renderNavBolsa();
+  /* o mesmo controle existe no Pregão e na coluna esquerda: o foco fica no botão equivalente de onde veio o clique */
+  const alvo = foco && foco.startsWith("navcls-") ? $("navcls-" + id) : $("cot-" + id);
+  if (alvo) alvo.focus({ preventScroll: true });
 }
 const COT_COLUNAS = {
   acoes: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["cap", "Valor de mercado", "so-largo"]],
@@ -1086,7 +1158,7 @@ const COT_COLUNAS = {
   fiis: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["dy", "DY 12m", ""], ["rend", "Últ. rend.", ""], ["pvp", "P/VP", ""], ["liq", "Liquidez", ""], ["cot", "Cotistas", "so-largo"]],
 };
 function celula(c, x) {
-  if (c === "t") { const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog" }, x.t); b.addEventListener("click", () => abrirAtivo(x)); return el("td", {}, b); }
+  if (c === "t") { const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog" }, x.t); b.addEventListener("click", () => abrirAtivo(x)); return el("td", {}, el("span", { class: "cot-papel-box" }, b, pontoNoticia(x.t))); }
   if (c === "nome") return el("td", { title: x.nome, class: "so-largo" }, x.nome);
   if (c === "preco") return el("td", {}, fmtRs(x.preco));
   if (c === "var") return el("td", { class: x.var > 0 ? "sobe" : x.var < 0 ? "desce" : "" }, x.var == null ? "–" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%");
@@ -1100,7 +1172,7 @@ function celula(c, x) {
 }
 function renderCotacoes() {
   const box = $("cotacoes");
-  if (!R().mercado) { box.hidden = true; return; }
+  if (!emBolsa()) { box.hidden = true; box.textContent = ""; return; }
   box.hidden = false;
   if (cotAba === "fiis" && !fiiCvm) lerFii();
   const foco = document.activeElement && document.activeElement.id;
@@ -1110,7 +1182,8 @@ function renderCotacoes() {
   box.append(el("div", { class: "cot-topo" }, el("h3", {}, "Cotações"), el("div", { class: "cot-ferr" }, busca)));
   if (!b3) { box.append(el("p", { class: "nota" }, "As tabelas aparecem depois da primeira consulta.")); return; }
   const q = cotBusca.trim().toUpperCase();
-  let linhas = listaCvm(cotAba).filter((x) => !q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q));
+  const daClasse = listaCvm(cotAba);
+  let linhas = daClasse.filter((x) => passaBolsa(x) && (!q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q)));
   const colunas = COT_COLUNAS[cotAba];
   const { campo, dir } = cotOrdem;
   linhas.sort((a, b) => (campo === "t" || campo === "nome" ? String(a[campo]).localeCompare(String(b[campo])) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
@@ -1124,7 +1197,8 @@ function renderCotacoes() {
   const tbody = el("tbody");
   for (const x of mostra) tbody.append(el("tr", {}, ...colunas.map(([c]) => celula(c, x))));
   box.append(el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab" }, el("thead", {}, thead), tbody)));
-  let nota = `${linhas.length} papéis, os mais negociados da B3 · atualizado ${fmtRel(b3.atualizado)} · cotações da brapi, com atraso`;
+  if (!linhas.length) box.lastChild.replaceWith(el("p", { class: "vazio" }, el("strong", {}, "Nenhum papel com esses filtros"), q ? "Tente outro nome ou papel na busca." : "Afrouxe os filtros da coluna da esquerda para ver mais papéis."));
+  let nota = (filtrosBolsaAtivos() ? `${linhas.length} de ${daClasse.length} papéis com os filtros da esquerda` : `${linhas.length} papéis, os mais negociados da B3`) + ` · atualizado ${fmtRel(b3.atualizado)} · cotações da brapi, com atraso`;
   if (cotAba === "fiis") nota += fiiCvm && fiiCvm.ref ? ` · DY, rendimento, P/VP e cotistas do informe da CVM de ${fmtMes(fiiCvm.ref)}` : " · dados da CVM ainda não carregados";
   const pe = el("div", { class: "cot-pe" }, el("span", {}, nota));
   if (!q && linhas.length > 15) {
@@ -1139,7 +1213,7 @@ function renderCotacoes() {
 const LIQ_MIN_FII = 1e6; // R$ 1 mi por dia: abaixo disso DY e P/VP de fundo pequeno distorcem a lista
 function renderRankings() {
   const box = $("rankings");
-  if (!R().mercado) { box.hidden = true; return; }
+  if (!emBolsa()) { box.hidden = true; box.textContent = ""; return; }
   if (!fiiCvm) lerFii();
   box.hidden = false; box.textContent = "";
   const seg = el("div", { class: "seg", role: "group", "aria-label": "Classe de ativo" });
@@ -1160,15 +1234,15 @@ function renderRankings() {
     c.lista.slice(0, 5).forEach((x) => {
       const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: x.nome || x.t }, x.t);
       b.addEventListener("click", () => abrirAtivo(x, cotAba));
-      ol.append(el("li", {}, b, el("span", { class: "rk-preco" }, fmtRs(x.preco)), el("span", { class: "rk-val " + (c.cls ? c.cls(x) : "") }, c.valor(x))));
+      ol.append(el("li", {}, el("span", { class: "rk-papel" }, b, pontoNoticia(x.t)), el("span", { class: "rk-preco" }, fmtRs(x.preco)), el("span", { class: "rk-val " + (c.cls ? c.cls(x) : "") }, c.valor(x))));
     });
-    if (!c.lista.length) ol.append(el("li", { class: "rk-vazio" }, c.vazio || "Sem dados ainda"));
+    if (!c.lista.length) ol.append(el("li", { class: "rk-vazio" }, c.vazio || (filtrosBolsaAtivos() ? "Nenhum papel com esses filtros" : "Sem dados ainda")));
     return el("article", { class: "rk-card" }, el("h3", {}, c.t, c.sub ? el("small", { title: c.dica || c.sub }, c.sub) : null), ol);
   };
   const corVar = (x) => (x.var > 0 ? "sobe" : x.var < 0 ? "desce" : "");
   const porVar = (l, d) => l.filter((x) => x.var != null && (d > 0 ? x.var > 0 : x.var < 0)).sort((a, b) => (b.var - a.var) * d);
   const porLiq = (l) => l.slice().sort((a, b) => (b.liq || 0) - (a.liq || 0));
-  const lista = listaCvm(cotAba);
+  const lista = listaCvm(cotAba).filter((x) => passaBolsa(x));
   const fem = cotAba === "acoes"; // "ações" pede o feminino
   const cards = [
     { t: "Maiores altas", sub: "variação no dia", lista: porVar(lista, 1), valor: (x) => pct(x.var), cls: corVar },
@@ -1188,37 +1262,374 @@ function renderRankings() {
   if (cotAba === "fiis") nota += " Líquidos são os fundos com mais de R$ 1 mi negociados por dia; abaixo disso DY e P/VP distorcem." + (fiiCvm && fiiCvm.ref ? " Informe da CVM de " + fmtMes(fiiCvm.ref) + "." : "");
   box.append(el("p", { class: "nota" }, nota));
 }
-/* Investimentos em tela larga: o centro vira painel de mercado e a lateral direita leva o carrossel de
-   destaques e as notícias. Os elementos são movidos (não copiados), então filtros e favoritos seguem iguais. */
+/* Visões de Investimentos. Bolsa: pregão, tabela, filtros de papel à esquerda e listas, destaques e notícias do dia à direita.
+   Notícias: o feed com o layout das outras abas. Trocar de visão só muda o que aparece; as assinaturas do feed continuam. */
 const MQ_LARGA = window.matchMedia("(min-width: 1200px)");
-const ancoras = {};
-function arrumarLayout() {
-  const on = !!(R().mercado && MQ_LARGA.matches);
-  const html = document.documentElement;
-  if (on === html.classList.contains("modo-mercado")) return;
-  const mover = [["destaques", "lat-topo"], ["feed-topo", "lat-feed"], ["feed", "lat-feed"]];
-  for (const [id] of mover) {
-    const n = id === "feed-topo" ? document.querySelector(".feed-topo") : $(id);
-    if (!ancoras[id]) { ancoras[id] = document.createComment(id); n.before(ancoras[id]); }
-  }
-  html.classList.toggle("modo-mercado", on);
-  for (const [id, destino] of mover) {
-    const n = id === "feed-topo" ? document.querySelector(".feed-topo") : $(id);
-    if (on) $(destino).append(n); else ancoras[id].after(n);
-  }
-  renderDestaques();
+const MQ_NAV = window.matchMedia("(min-width: 900px)");
+const aoMudarLarga = () => { renderDestaques(); render(); renderListas(); };
+if (MQ_LARGA.addEventListener) MQ_LARGA.addEventListener("change", aoMudarLarga); else MQ_LARGA.addListener(aoMudarLarga);
+const aoMudarNav = () => { renderRankings(); renderCotacoes(); };
+if (MQ_NAV.addEventListener) MQ_NAV.addEventListener("change", aoMudarNav); else MQ_NAV.addListener(aoMudarNav);
+function aplicarVisao() {
+  const inv = !!R().mercado, bolsa = emBolsa(), html = document.documentElement;
+  html.classList.toggle("inv-bolsa", bolsa);
+  html.classList.toggle("inv-noticias", inv && !bolsa);
+  $("visoes").hidden = !inv;
+  $("visao-bolsa").setAttribute("aria-pressed", String(bolsa));
+  $("visao-noticias").setAttribute("aria-pressed", String(inv && !bolsa));
+  document.querySelector(".feed-topo").hidden = bolsa;
+  $("feed").hidden = bolsa;
+  document.querySelector("footer").hidden = bolsa;
+  for (const id of ["busca-nav", "nav-grupo-tipos", "nav-grupo-temas"]) $(id).hidden = bolsa;
+  $("bolsa-filtros").hidden = !bolsa;
 }
-if (MQ_LARGA.addEventListener) MQ_LARGA.addEventListener("change", () => render()); else MQ_LARGA.addListener(() => render());
-/* Carrossel automático dos destaques na lateral: troca a cada 7 s, para com o mouse ou o foco em cima,
-   com a aba escondida e para quem pediu menos movimento. */
+function trocarVisao(v, porHash) {
+  if (!R().mercado || (v !== "bolsa" && v !== "noticias")) return;
+  if (v === visao) { if (!porHash) escreverHash(); return; }
+  visao = v;
+  if (!porHash) escreverHash();
+  fecharPainel();
+  renderDestaques(); render(); renderListas();
+  window.scrollTo({ top: 0 });
+}
+$("visao-bolsa").addEventListener("click", () => trocarVisao("bolsa"));
+$("visao-noticias").addEventListener("click", () => trocarVisao("noticias"));
+
+/* Carrossel automático dos destaques no trilho direito (visão Bolsa, 1200 px ou mais): troca a cada 7 s,
+   para com o mouse ou o foco em cima, com a aba escondida e para quem pediu menos movimento. */
 let destCtl = null;
 const MENOS_MOV = window.matchMedia("(prefers-reduced-motion: reduce)");
 setInterval(() => {
-  if (!destCtl || !document.documentElement.classList.contains("modo-mercado") || document.hidden || MENOS_MOV.matches) return;
-  const box = $("destaques");
+  if (!destCtl || !emBolsa() || !MQ_LARGA.matches || document.hidden || MENOS_MOV.matches) return;
+  const box = $("lat-dest");
   if (!box || box.hidden || box.matches(":hover") || box.contains(document.activeElement)) return;
   destCtl.ir(slide + 1 >= destCtl.n ? 0 : slide + 1);
 }, 7000);
+
+/* Ponte entre as visões: papéis citados numa notícia (campo "ativos" ou, sem ele, códigos no título) */
+const RE_PAPEL = /\b[A-Z]{4}(?:3|4|5|6|11|31|32|33|34|35|39)\b/g;
+const PAPEL_OK = /^[A-Z]{4}\d{1,2}$/;
+const papeisMemo = new Map();
+function papeisDe(i) {
+  const k = i._id || i.url || i.titulo;
+  if (k && papeisMemo.has(k)) return papeisMemo.get(k);
+  const brutos = Array.isArray(i.ativos) && i.ativos.length ? i.ativos.map((a) => String(a).trim().toUpperCase()).filter((a) => PAPEL_OK.test(a)) : String(i.titulo || "").match(RE_PAPEL) || [];
+  const l = [...new Set(brutos)];
+  if (k) papeisMemo.set(k, l);
+  return l;
+}
+/* Papéis com notícia que entrou no feed nas últimas 72 h (pontinho na Bolsa e filtro "Só com notícia") */
+const JANELA_NOTICIA = 72 * 3600 * 1000;
+let comNoticia = { itens: null, em: 0, set: new Set() };
+function papeisComNoticia() {
+  if (comNoticia.itens === itens && Date.now() - comNoticia.em < 60000) return comNoticia.set;
+  const corte = Date.now() - JANELA_NOTICIA, set = new Set();
+  itens.forEach((i) => { if (Date.parse(i.coletado || i.publicado || "") >= corte) papeisDe(i).forEach((p) => set.add(p)); });
+  comNoticia = { itens, em: Date.now(), set };
+  return set;
+}
+const pontoNoticia = (t) => (papeisComNoticia().has(t) ? el("span", { class: "tem-noticia", role: "img", title: "Tem notícia no feed", "aria-label": "Tem notícia no feed" }) : null);
+function chipPapel(t) {
+  const b = el("button", { class: "chip chip-papel", type: "button", "aria-haspopup": "dialog", title: "Ver " + t }, t);
+  b.addEventListener("click", () => abrirPapel(t));
+  return b;
+}
+/* Abre o diálogo de um papel pelo código. Fora da tabela da brapi, abre com o que houver (nome e informe da CVM). */
+async function abrirPapel(t) {
+  if (!fiiCvm) await lerFii();
+  const c = cotDe(t);
+  if (c) return abrirAtivo(c[0], c[1]);
+  const f = fiiCvm && fiiCvm.fundos && fiiCvm.fundos[t];
+  abrirAtivo(comCvm({ t, nome: f ? nomeBonito(f.n) : "", preco: null, var: null, vol: null }), f ? "fiis" : "acoes");
+}
+/* Cotação de um papel em qualquer classe: [linha com dados da CVM, classe] */
+let mapaCot = null;
+function cotDe(t) {
+  if (!mapaCot || mapaCot.b3 !== b3 || mapaCot.cvm !== fiiCvm) {
+    const m = new Map();
+    COT_ABAS.forEach((a) => listaCvm(a.id).forEach((x) => { if (!m.has(x.t)) m.set(x.t, [x, a.id]); }));
+    mapaCot = { b3, cvm: fiiCvm, m };
+  }
+  return mapaCot.m.get(t) || null;
+}
+
+/* Filtros da Bolsa (coluna esquerda): valem para as listas do Pregão e para a tabela */
+let bolsaF = { seg: [], liq: false, noticia: false };
+try {
+  const b = JSON.parse(localStorage.getItem("radar-bolsa-filtros") || "null");
+  if (b && typeof b === "object") bolsaF = { seg: Array.isArray(b.seg) ? b.seg.filter((x) => typeof x === "string").slice(0, 40) : [], liq: !!b.liq, noticia: !!b.noticia };
+} catch (e) {}
+const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+/* Segmento como vem da CVM ("Titulos e Val. Mob.", "LOGISTICA") vira um nome legível */
+const SEGMENTOS = { "TITULOS E VAL. MOB.": "Papel (CRI)", "TITULOS E VALORES MOBILIARIOS": "Papel (CRI)", "LAJES CORPORATIVAS": "Lajes corporativas", "HIBRIDO": "Híbrido", "LOGISTICA": "Logística", "SHOPPINGS": "Shoppings", "HOSPITAL": "Hospitais", "HOTEL": "Hotéis", "RESIDENCIAL": "Residencial", "EDUCACIONAL": "Educacional", "AGRONEGOCIO": "Agronegócio", "OUTROS": "Outros" };
+const segMemo = new Map();
+function segNome(s) {
+  const bruto = String(s || "");
+  if (segMemo.has(bruto)) return segMemo.get(bruto);
+  const k = semAcento(bruto).toUpperCase().replace(/\s+/g, " ").trim();
+  let nome;
+  if (!k) nome = "Sem segmento";
+  else if (SEGMENTOS[k]) nome = SEGMENTOS[k];
+  else if (/^TITULOS\b/.test(k)) nome = "Papel (CRI)";
+  else nome = k.split(" ").map((w, i) => ACENTOS[w] ? (i ? ACENTOS[w].toLowerCase() : ACENTOS[w]) : i ? w.toLowerCase() : w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
+  segMemo.set(bruto, nome);
+  return nome;
+}
+/* Sem a coluna esquerda (abaixo de 900 px) os filtros não aparecem, então não valem */
+const filtrosBolsaAtivos = () => MQ_NAV.matches && (bolsaF.liq || bolsaF.noticia || (cotAba === "fiis" && bolsaF.seg.length > 0 && !!fiiCvm));
+function passaBolsa(x, aba = cotAba, ignorarSeg = false) {
+  if (!MQ_NAV.matches) return true;
+  if (bolsaF.liq && (x.liq || 0) < LIQ_MIN_FII) return false;
+  if (bolsaF.noticia && !papeisComNoticia().has(x.t)) return false;
+  if (!ignorarSeg && aba === "fiis" && fiiCvm && bolsaF.seg.length && !bolsaF.seg.includes(segNome(x.f && x.f.s))) return false;
+  return true;
+}
+function mudouBolsa() {
+  const foco = document.activeElement && document.activeElement.id;
+  try { localStorage.setItem("radar-bolsa-filtros", JSON.stringify(bolsaF)); } catch (e) {}
+  cotTodos = false;
+  renderRankings(); renderCotacoes(); renderNavBolsa();
+  if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
+}
+const idSeg = (s) => "navseg-" + semAcento(s).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+function renderNavBolsa() {
+  const box = $("bolsa-filtros"); box.textContent = "";
+  if (!emBolsa()) return;
+  const grupo = (titulo, dica, ...kids) => el("div", { class: "nav-grupo" }, el("h2", { class: "rotulo" }, titulo, dica ? el("small", { class: "dica" }, dica) : null), ...kids);
+  const item = (id, nome, n, ativo, acao) => {
+    const b = el("button", { class: "nav-item", type: "button", id, "aria-pressed": String(ativo), "data-vazio": String(!n) }, el("span", { class: "nome" }, nome), el("span", { class: "k" }, String(n)));
+    b.addEventListener("click", acao);
+    return b;
+  };
+  const classe = el("div", { class: "nav-lista", role: "group", "aria-label": "Classe de ativo" });
+  COT_ABAS.forEach((a) => classe.append(item("navcls-" + a.id, a.nome, listaCvm(a.id).filter((x) => passaBolsa(x, a.id)).length, cotAba === a.id, () => { if (cotAba !== a.id) trocarCotAba(a.id); })));
+  box.append(grupo("Classe", "", classe));
+
+  if (cotAba === "fiis") {
+    const seg = el("div", { class: "nav-lista", role: "group", "aria-label": "Segmento" });
+    if (!fiiCvm) seg.append(el("p", { class: "nota" }, "Carregando os segmentos…"));
+    else {
+      const base = listaCvm("fiis").filter((x) => passaBolsa(x, "fiis", true));
+      const cont = {};
+      base.forEach((x) => { const s = segNome(x.f && x.f.s); cont[s] = (cont[s] || 0) + 1; });
+      bolsaF.seg.forEach((s) => { if (!(s in cont)) cont[s] = 0; });
+      const nomes = Object.keys(cont).sort((a, b) => (a === "Sem segmento") - (b === "Sem segmento") || cont[b] - cont[a] || a.localeCompare(b, "pt-BR"));
+      const escolher = (s) => () => {
+        if (s === null) bolsaF.seg = [];
+        else bolsaF.seg = bolsaF.seg.includes(s) ? bolsaF.seg.filter((x) => x !== s) : [...bolsaF.seg, s];
+        mudouBolsa();
+      };
+      seg.append(item("navseg-todos", "Todos os segmentos", base.length, !bolsaF.seg.length, escolher(null)));
+      nomes.forEach((s) => seg.append(item(idSeg(s), s, cont[s], bolsaF.seg.includes(s), escolher(s))));
+    }
+    box.append(grupo("Segmento", "vários", seg));
+  }
+
+  const chip = (id, texto, on, dica, acao) => { const b = el("button", { class: "chip", type: "button", id, "aria-pressed": String(on), title: dica }, texto); b.addEventListener("click", acao); return b; };
+  box.append(grupo("Mostrar", "", el("div", { class: "chips" },
+    chip("bolsa-liq", "Só líquidos", bolsaF.liq, "Só papéis com mais de R$ 1 mi negociados por dia", () => { bolsaF.liq = !bolsaF.liq; mudouBolsa(); }),
+    chip("bolsa-noticia", "Só com notícia", bolsaF.noticia, "Só papéis citados em notícias que entraram no feed nas últimas 72 h", () => { bolsaF.noticia = !bolsaF.noticia; mudouBolsa(); }))));
+  if (filtrosBolsaAtivos()) {
+    const limpar = el("button", { class: "dd-btn dd-btn--link nav-limpar", type: "button", id: "bolsa-limpar" }, "Limpar filtros");
+    limpar.addEventListener("click", () => { bolsaF = { seg: [], liq: false, noticia: false }; mudouBolsa(); const t = $("navcls-" + cotAba); if (t) t.focus({ preventScroll: true }); });
+    box.append(limpar);
+  }
+}
+
+/* Trilho direito da Bolsa: notícias que entraram no feed nas últimas 24 h, as mais relevantes primeiro */
+const temaCurtoEl = (tema) => { const t = TEMA[GRUPO_DE[tema]]; return t ? el("span", { style: `color:${t.cor}` }, t.curto) : null; };
+const HOJE_MAX = 6;
+function renderHoje() {
+  const box = $("lat-hoje"); box.textContent = "";
+  if (!emBolsa()) return;
+  const corte = Date.now() - 24 * 3600 * 1000;
+  const doDia = itens.filter((i) => Date.parse(i.coletado || "") >= corte)
+    .sort((a, b) => (Number(b.relevancia) || 0) - (Number(a.relevancia) || 0) || ordem(a, b));
+  const sec = el("section", { class: "bloco", id: "bloco-hoje" }, el("h3", {}, "Notícias de hoje", doDia.length > HOJE_MAX ? el("small", {}, `${HOJE_MAX} de ${doDia.length}`) : null));
+  if (doDia.length) {
+    const ul = el("ul", {});
+    doDia.slice(0, HOJE_MAX).forEach((i) => {
+      const ps = papeisDe(i);
+      ul.append(el("li", {},
+        el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo || i.url),
+        el("div", { class: "n" }, temaCurtoEl(i.tema), fonteEl(i)),
+        ps.length ? el("div", { class: "papeis", role: "group", "aria-label": "Papéis citados" }, ...ps.slice(0, 4).map(chipPapel)) : null));
+    });
+    sec.append(ul);
+  } else sec.append(el("p", { class: "nota" }, carregado ? "Nenhuma notícia entrou no feed nas últimas 24 horas." : "Carregando as notícias…"));
+  const ver = el("button", { class: "dd-btn dd-btn--link ver-todos", type: "button", id: "ver-noticias" }, "Ver todas as notícias");
+  ver.addEventListener("click", () => { trocarVisao("noticias"); const b = $("visao-noticias"); if (b) b.focus({ preventScroll: true }); });
+  sec.append(ver);
+  box.append(sec);
+}
+
+/* Minhas listas: nome e papéis, guardados na conta (/api/listas). No trilho direito em tela larga; abaixo disso, depois da tabela. */
+let listas = [], listasCarregadas = false, listasErro = "", editandoLista = null, desenhandoListas = false;
+const rascunhos = {};
+const LISTA_MAX_PAPEIS = 60;
+async function apiListas(metodo, id, corpo) {
+  const r = await fetch("/api/listas" + (id ? "/" + encodeURIComponent(id) : ""), {
+    method: metodo, credentials: "same-origin", cache: "no-store",
+    headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+    body: corpo ? JSON.stringify(corpo) : undefined,
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.erro && /\s/.test(j.erro) ? j.erro : "Não deu para salvar agora. Tente de novo.");
+  return j;
+}
+async function carregarListas() {
+  if (!R().mercado) return;
+  const g = geracao;
+  try { const j = await apiListas("GET"); if (g !== geracao) return; listas = (j.docs || []).map((d) => ({ id: d.id, ...d.data })); listasErro = ""; }
+  catch (e) { if (g !== geracao) return; listasErro = "Não deu para carregar suas listas agora."; }
+  listasCarregadas = true; renderListas();
+}
+async function salvarLista(l) {
+  renderListas();
+  try { await apiListas("PUT", l.id, { nome: l.nome, papeis: l.papeis }); if (listasErro) { listasErro = ""; renderListas(); } }
+  catch (e) { listasErro = e.message; renderListas(); }
+}
+async function novaLista() {
+  const nomes = new Set(listas.map((l) => l.nome));
+  let nome = "Minha lista", n = 2;
+  while (nomes.has(nome)) nome = "Lista " + n++;
+  try { const j = await apiListas("POST", "", { nome, papeis: [] }); listas.push({ id: j.id, ...j.data }); editandoLista = j.id; listasErro = ""; }
+  catch (e) { listasErro = e.message; }
+  renderListas();
+  const i = $("lst-nome-" + editandoLista); if (i) { i.focus(); i.select(); }
+}
+async function excluirLista(l) {
+  if (!confirm(`Excluir a lista “${l.nome}”? Os papéis dela saem junto.`)) return;
+  listas = listas.filter((x) => x !== l); renderListas();
+  try { await apiListas("DELETE", l.id); } catch (e) { listasErro = e.message; carregarListas(); }
+}
+function adicionarPapel(l, t) {
+  t = String(t || "").trim().toUpperCase();
+  if (!PAPEL_OK.test(t)) { listasErro = "Use o código do papel, como PETR4 ou HGLG11."; renderListas(); return; }
+  rascunhos[l.id] = "";
+  if (l.papeis.includes(t)) { listasErro = `${t} já está nesta lista.`; renderListas(); return; }
+  if (l.papeis.length >= LISTA_MAX_PAPEIS) { listasErro = `Uma lista guarda até ${LISTA_MAX_PAPEIS} papéis.`; renderListas(); return; }
+  listasErro = "";
+  l.papeis = [...l.papeis, t];
+  salvarLista(l);
+}
+/* Índice para o autocompletar: papéis da brapi e fundos do informe da CVM, com nome */
+let indicePapeis = null;
+function sugerirPapeis(q, ja) {
+  q = semAcento(q).trim().toUpperCase();
+  if (q.length < 2) return [];
+  if (!indicePapeis || indicePapeis.b3 !== b3 || indicePapeis.cvm !== fiiCvm) {
+    const m = new Map();
+    const fundos = (fiiCvm && fiiCvm.fundos) || {};
+    COT_ABAS.forEach((a) => ((b3 && b3[a.id]) || []).forEach((x) => { if (!m.has(x.t)) m.set(x.t, fundos[x.t] ? nomeBonito(fundos[x.t].n) : x.nome || ""); }));
+    Object.entries(fundos).forEach(([t, f]) => { if (!m.has(t)) m.set(t, nomeBonito(f.n)); });
+    indicePapeis = { b3, cvm: fiiCvm, lista: [...m].map(([t, nome]) => ({ t, nome, chave: semAcento(nome).toUpperCase() })) };
+  }
+  const fora = new Set(ja), out = [];
+  for (const x of indicePapeis.lista) if (out.length < 6 && !fora.has(x.t) && x.t.startsWith(q)) { out.push(x); fora.add(x.t); }
+  for (const x of indicePapeis.lista) if (out.length < 6 && !fora.has(x.t) && x.chave.includes(q)) { out.push(x); fora.add(x.t); }
+  return out;
+}
+const LIXEIRA = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
+function listaEl(l) {
+  const box = el("div", { class: "lst" });
+  const cab = el("div", { class: "lst-cab" });
+  if (editandoLista === l.id) {
+    const inp = el("input", { class: "dd-input", id: "lst-nome-" + l.id, value: l.nome, maxlength: "40", "aria-label": "Nome da lista", autocomplete: "off" });
+    let feito = false;
+    const fim = (salvar, focar) => {
+      if (feito) return; feito = true;
+      editandoLista = null;
+      const nome = inp.value.replace(/\s+/g, " ").trim();
+      if (salvar && nome && nome !== l.nome) { l.nome = nome.slice(0, 40); salvarLista(l); } else renderListas();
+      const b = $("lst-nomebtn-" + l.id); if (b && focar) b.focus({ preventScroll: true });
+    };
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); fim(true, true); } if (e.key === "Escape") { e.preventDefault(); fim(false, true); } });
+    inp.addEventListener("blur", () => { if (!desenhandoListas) fim(true, false); });
+    cab.append(inp);
+  } else {
+    const nome = el("button", { class: "lst-nome", type: "button", id: "lst-nomebtn-" + l.id, title: "Renomear a lista" }, l.nome);
+    nome.addEventListener("click", () => { editandoLista = l.id; renderListas(); const i = $("lst-nome-" + l.id); if (i) { i.focus(); i.select(); } });
+    cab.append(nome);
+  }
+  const apagar = el("button", { class: "lst-x", type: "button", "aria-label": `Excluir a lista ${l.nome}`, title: "Excluir a lista", html: LIXEIRA });
+  apagar.addEventListener("click", () => excluirLista(l));
+  cab.append(el("span", { class: "k" }, l.papeis.length === 1 ? "1 papel" : `${l.papeis.length} papéis`), apagar);
+  box.append(cab);
+
+  if (l.papeis.length) {
+    const tb = el("tbody");
+    l.papeis.forEach((t) => {
+      const c = cotDe(t), x = c && c[0];
+      const papel = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x && x.nome) || t }, t);
+      papel.addEventListener("click", () => abrirPapel(t));
+      const tirar = el("button", { class: "lst-x", type: "button", "aria-label": `Tirar ${t} da lista`, title: "Tirar da lista" }, "×");
+      tirar.addEventListener("click", () => { l.papeis = l.papeis.filter((p) => p !== t); salvarLista(l); });
+      const sem = () => el("span", { class: "sem", title: "Fora dos mais negociados; sem cotação aqui" }, "–");
+      tb.append(el("tr", {},
+        el("td", {}, el("span", { class: "cot-papel-box" }, papel, pontoNoticia(t))),
+        el("td", {}, x && x.preco != null ? fmtRs(x.preco) : sem()),
+        el("td", { class: x && x.var > 0 ? "sobe" : x && x.var < 0 ? "desce" : "" }, x && x.var != null ? (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%" : x ? "–" : sem()),
+        el("td", { title: x && x.dyAnual ? "Menos de 12 meses de informes: valor anualizado" : "" }, x && c[1] === "fiis" && x.dy != null ? fmtNum(x.dy, 2) + "%" + (x.dyAnual ? "*" : "") : "–"),
+        el("td", {}, tirar)));
+    });
+    box.append(el("table", { class: "lst-tab" },
+      el("thead", {}, el("tr", {}, el("th", { scope: "col" }, "Papel"), el("th", { scope: "col" }, "Preço"), el("th", { scope: "col" }, "Dia"), el("th", { scope: "col", title: "Só para FIIs" }, "DY 12m"), el("th", {}))),
+      tb));
+  }
+
+  /* + papel: sugere até 6 a partir de 2 letras; Enter escolhe a sugestão marcada ou o código digitado */
+  const idInp = "lst-add-" + l.id;
+  const inp = el("input", { class: "dd-input", id: idInp, placeholder: "+ papel", "aria-label": `Adicionar papel à lista ${l.nome}`, autocomplete: "off", autocapitalize: "characters", spellcheck: "false", maxlength: "40", value: rascunhos[l.id] || "", role: "combobox", "aria-expanded": "false", "aria-controls": idInp + "-sug", "aria-autocomplete": "list" });
+  const sug = el("ul", { class: "lst-sug", id: idInp + "-sug", role: "listbox", "aria-label": "Sugestões", hidden: "" });
+  let opcoes = [], marcada = -1;
+  const desenhar = () => {
+    sug.textContent = "";
+    opcoes.forEach((o, n) => {
+      const b = el("button", { type: "button", role: "option", tabindex: "-1", id: `${idInp}-op${n}`, "aria-selected": String(n === marcada) }, el("b", {}, o.t), el("span", {}, o.nome));
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => adicionarPapel(l, o.t));
+      sug.append(el("li", {}, b));
+    });
+    sug.hidden = !opcoes.length;
+    inp.setAttribute("aria-expanded", String(!!opcoes.length));
+    if (marcada >= 0) inp.setAttribute("aria-activedescendant", `${idInp}-op${marcada}`); else inp.removeAttribute("aria-activedescendant");
+  };
+  const atualizar = () => { rascunhos[l.id] = inp.value; opcoes = sugerirPapeis(inp.value, l.papeis); marcada = opcoes.length ? 0 : -1; desenhar(); };
+  inp.addEventListener("input", atualizar);
+  inp.addEventListener("focus", () => { if (inp.value) atualizar(); });
+  inp.addEventListener("blur", () => { if (desenhandoListas) return; opcoes = []; desenhar(); });
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" && opcoes.length) { e.preventDefault(); marcada = (marcada + 1) % opcoes.length; desenhar(); }
+    else if (e.key === "ArrowUp" && opcoes.length) { e.preventDefault(); marcada = (marcada - 1 + opcoes.length) % opcoes.length; desenhar(); }
+    else if (e.key === "Enter") { e.preventDefault(); const v = inp.value.trim(); if (!v) return; adicionarPapel(l, marcada >= 0 ? opcoes[marcada].t : v); }
+    else if (e.key === "Escape" && (opcoes.length || inp.value)) { e.preventDefault(); inp.value = ""; rascunhos[l.id] = ""; opcoes = []; desenhar(); }
+  });
+  box.append(el("div", { class: "lst-add" }, inp, sug));
+  return box;
+}
+function renderListas() {
+  const larga = MQ_LARGA.matches;
+  const alvo = larga ? $("lat-listas") : $("listas-centro"), outro = larga ? $("listas-centro") : $("lat-listas");
+  outro.textContent = "";
+  if (!emBolsa()) { alvo.textContent = ""; return; }
+  /* recria o bloco inteiro: guarda o foco (e o cursor) para devolver ao campo equivalente */
+  const ativo = document.activeElement;
+  const foco = ativo && alvo.contains(ativo) && ativo.id ? ativo.id : null;
+  const cursor = foco && ativo.tagName === "INPUT" ? ativo.selectionStart : null;
+  desenhandoListas = true;
+  alvo.textContent = "";
+  const nova = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "lista-nova" }, "Nova lista");
+  nova.addEventListener("click", novaLista);
+  const sec = el("section", { class: "bloco", id: "bloco-listas", "aria-label": "Minhas listas" }, el("h3", {}, "Minhas listas", nova));
+  if (!listasCarregadas) sec.append(el("p", { class: "nota" }, "Carregando suas listas…"));
+  else if (!listas.length) sec.append(el("p", { class: "nota", id: "listas-vazio" }, "Crie uma lista com os papéis da sua corretora para acompanhar cotação e DY aqui."));
+  listas.forEach((l) => sec.append(listaEl(l)));
+  if (listasErro) sec.append(el("p", { class: "lst-erro", role: "alert" }, listasErro));
+  alvo.append(sec);
+  desenhandoListas = false;
+  if (foco && $(foco)) { const n = $(foco); n.focus({ preventScroll: true }); if (cursor != null && n.setSelectionRange) { try { n.setSelectionRange(cursor, cursor); } catch (e) {} } }
+}
 /* Nome do fundo como vem da CVM ("KINEA RENDIMENTOS IMOBILIARIOS FII RESPONSABILIDADE LIMITADA") vira "Kinea Rendimentos Imobiliários" */
 const ACENTOS = { IMOBILIARIO: "Imobiliário", IMOBILIARIOS: "Imobiliários", IMOBILIARIA: "Imobiliária", IMOBILIARIAS: "Imobiliárias", LOGISTICA: "Logística", LOGISTICO: "Logístico", CREDITO: "Crédito", RECEBIVEIS: "Recebíveis", IMOVEIS: "Imóveis", ESCRITORIOS: "Escritórios", TITULOS: "Títulos", HIBRIDO: "Híbrido", AGRONEGOCIO: "Agronegócio", SAUDE: "Saúde", GESTAO: "Gestão", SELECAO: "Seleção", ESTRATEGIA: "Estratégia", ESTRATEGICO: "Estratégico", INDICE: "Índice", HOTEIS: "Hotéis", PATRIMONIO: "Patrimônio", RENDIMENTO: "Rendimento", SAO: "São", TRES: "Três", ALIANCA: "Aliança", PAULISTA: "Paulista", PROPRIOS: "Próprios", URBANOS: "Urbanos", LOGISTICOS: "Logísticos", COMERCIO: "Comércio" };
 const PALAVRAS_CURTAS = new Set(["RIO", "SUL", "MAR", "SOL", "LUZ", "TOP", "MAX", "NEO", "SÃO", "SAO", "ARX", "VIA", "ALL", "ONE", "NEW", "BEM", "LAR", "PAZ"]);
@@ -1258,7 +1669,7 @@ function abrirAtivo(x, aba = cotAba) {
     el("div", {}, el("h2", { id: "ativo-titulo" }, x.t), el("p", { title: (f && f.n) || x.nome || "" }, f && f.n ? nomeBonito(f.n) : x.nome), chips), fechar));
   const k = (rot, val, sub, cls) => el("div", { class: "ativo-kpi" }, el("small", {}, rot), el("b", { class: cls || "" }, val), sub ? el("span", {}, sub) : null);
   const grade = el("div", { class: "ativo-grade" },
-    k("Cotação", fmtRs(x.preco), x.var == null ? "" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "% no dia", x.var > 0 ? "sobe" : x.var < 0 ? "desce" : ""),
+    k("Cotação", fmtRs(x.preco), x.preco == null ? "fora dos mais negociados" : x.var == null ? "" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "% no dia", x.var > 0 ? "sobe" : x.var < 0 ? "desce" : ""),
     k("Liquidez diária", x.liq == null ? "–" : "R$ " + fmtVol(x.liq), x.vol ? fmtVol(x.vol) + " cotas negociadas" : ""));
   if (f) {
     grade.append(
@@ -1286,7 +1697,7 @@ function abrirAtivo(x, aba = cotAba) {
     d.append(el("section", { class: "ativo-sec" }, el("h3", {}, "Histórico mensal"),
       el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab ativo-hist" }, el("thead", {}, el("tr", {}, ...["Mês", "Rend./cota", "DY do mês", "VP/cota", "Cotistas"].map((t) => el("th", { scope: "col" }, t)))), tb))));
   }
-  const noticias = itens.filter((i) => (i.ativos || []).includes(x.t) || new RegExp("\\b" + x.t + "\\b").test(i.titulo || "")).slice(0, 6);
+  const noticias = itens.filter((i) => papeisDe(i).includes(x.t)).slice(0, 6);
   if (noticias.length) {
     const ul = el("ul", { class: "ativo-news" });
     noticias.forEach((i) => ul.append(el("li", {}, el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo), el("small", {}, " " + (i.fonte || "") + (i.publicado ? " · " + fmtData(i.publicado) : "")))));
@@ -1319,9 +1730,9 @@ async function atualizarMercado() {
 }
 const fmtNum = (v, casas) => Number(v).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
 function renderMercado() {
-  const box = $("mercado");
-  if (!R().mercado) { box.hidden = true; return; }
-  box.hidden = false; box.textContent = "";
+  const box = $("mercado"), pe = $("mercado-pe");
+  if (!R().mercado) { box.hidden = true; pe.hidden = true; return; }
+  box.hidden = false; box.textContent = ""; pe.hidden = false; pe.textContent = "";
   const p = painelMercado;
   const itensM = (p && p.itens) || [];
   if (itensM.length) {
@@ -1348,9 +1759,10 @@ function renderMercado() {
   if (pedindoMercado) b.disabled = true;
   if (p && p.aguarde) { b.disabled = true; b.textContent = "Atualizado há pouco"; b.title = "Dá para pedir de novo em " + Math.ceil(p.aguarde / 60) + " min"; }
   b.addEventListener("click", atualizarMercado);
-  box.append(el("div", { class: "mercado-pe" },
+  pe.append(
     el("span", {}, itensM.length ? (p.atualizado ? "Atualizado " + fmtRel(p.atualizado) + ". " : "") + "Cotações com atraso de até 30 min, fonte brapi e Banco Central. Nada aqui é recomendação." + (p.temBolsa ? "" : " Ibovespa e IFIX ainda não entram.") : "As cotações aparecem aqui depois da primeira consulta."),
-    b));
+    b);
+  if (!itensM.length) box.hidden = true;
 }
 function renderUrgente() {
   const box = $("urgente"); box.textContent = "";
@@ -1378,8 +1790,12 @@ function renderRadares() {
   if (ativa && rolo.scrollWidth > rolo.clientWidth) rolo.scrollLeft = Math.max(0, ativa.offsetLeft - (rolo.clientWidth - ativa.offsetWidth) / 2);
 }
 
+/* Carrossel de destaques: no topo do feed (celular e tela média) ou, na visão Bolsa, no trilho direito com troca automática */
 function renderDestaques() {
-  const box = $("destaques"); box.textContent = "";
+  const bolsa = emBolsa();
+  const box = bolsa ? $("lat-dest") : $("destaques"), outro = bolsa ? $("destaques") : $("lat-dest");
+  outro.textContent = ""; outro.hidden = true;
+  box.textContent = "";
   const lista = destaque && Array.isArray(destaque.itens) ? destaque.itens.filter((d) => d && d.url) : [];
   if (!lista.length) { box.hidden = true; destCtl = null; return; }
   box.hidden = false;
@@ -1440,8 +1856,8 @@ function mostrarTipoAtivo() {
 }
 /* Depois de trocar um filtro lá embaixo no feed, volta para o começo da lista */
 function irParaFeed() {
-  const f = $("feed"), barra = $("barra");
-  const y = f.getBoundingClientRect().top + window.scrollY - barra.offsetHeight - 8;
+  const f = $("feed"), barra = $("barra"), merc = $("mercado");
+  const y = f.getBoundingClientRect().top + window.scrollY - barra.offsetHeight - (merc.hidden ? 0 : merc.offsetHeight) - 8;
   if (window.scrollY > y) window.scrollTo({ top: y });
 }
 
@@ -1555,12 +1971,14 @@ function renderNavTipos() {
   }
 }
 
-/* Trilho direito (1200 px ou mais): destaques, novos da rodada, favoritos e status da coleta */
+/* Trilho direito (1200 px ou mais): destaques, novos da rodada, favoritos e status da coleta.
+   Na visão Bolsa: listas, carrossel de destaques, notícias de hoje e coleta (os três primeiros têm render próprio). */
 const NOVOS_MAX = 8, FAVS_MAX = 5;
 function renderLateral() {
   const box = $("lat-blocos"); box.textContent = "";
-  const mm = document.documentElement.classList.contains("modo-mercado");
-  const temaCurto = (tema) => { const t = TEMA[GRUPO_DE[tema]]; return t ? el("span", { style: `color:${t.cor}` }, t.curto) : null; };
+  const bolsa = emBolsa();
+  renderHoje();
+  const temaCurto = temaCurtoEl;
   const link = (url, titulo) => el("a", { href: url, target: "_blank", rel: "noopener" }, titulo || url);
 
   const urg = urgentes();
@@ -1570,8 +1988,17 @@ function renderLateral() {
     box.append(el("section", { class: "bloco", id: "lat-urgente" }, el("h3", {}, "Urgente", el("small", {}, "últimas 24 h")), ul));
   }
 
+  const col = el("p", { class: "coleta" });
+  if (meta && meta.ultimaRodada) {
+    const n = Number(meta.novosNaUltima ?? 0);
+    col.append("Última coleta ", el("b", {}, fmtData(meta.ultimaRodada)), " · ", el("b", {}, String(n)), n === 1 ? " novo" : " novos");
+  } else col.append("Aguardando a primeira coleta");
+  if (itens.length) col.append(" · ", el("b", {}, String(itens.length)), itens.length === 1 ? " item no feed" : " itens no feed");
+  const bColeta = el("section", { class: "bloco", id: "lat-coleta" }, el("h3", {}, "Coleta"), col);
+  if (bolsa) { box.append(bColeta); return; }
+
   const dest = destaque && Array.isArray(destaque.itens) ? destaque.itens.filter((d) => d && d.url) : [];
-  if (dest.length && !mm) {
+  if (dest.length) {
     const ol = el("ol", {});
     dest.forEach((d, idx) => ol.append(el("li", {},
       el("div", { class: "n" }, el("b", {}, String(idx + 1).padStart(2, "0")), temaCurto(d.tema), fonteEl(d)),
@@ -1587,7 +2014,7 @@ function renderLateral() {
     novos.slice(0, NOVOS_MAX).forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" }, temaCurto(i.tema)))));
     bNovos.append(ul);
   } else bNovos.append(el("p", { class: "nota" }, "Nada novo na última coleta."));
-  if (!mm) box.append(bNovos);
+  box.append(bNovos);
 
   const lista = Object.entries(favs).map(([id, f]) => ({ ...f, _id: id }))
     .sort((a, b) => String(b.favoritadoEm || "").localeCompare(String(a.favoritadoEm || "")));
@@ -1609,15 +2036,7 @@ function renderLateral() {
       bFav.append(ver);
     }
   } else bFav.append(el("p", { class: "nota" }, "Toque no coração ao lado de um título para guardar o item. Ele aparece aqui."));
-  box.append(bFav);
-
-  const col = el("p", { class: "coleta" });
-  if (meta && meta.ultimaRodada) {
-    const n = Number(meta.novosNaUltima ?? 0);
-    col.append("Última coleta ", el("b", {}, fmtData(meta.ultimaRodada)), " · ", el("b", {}, String(n)), n === 1 ? " novo" : " novos");
-  } else col.append("Aguardando a primeira coleta");
-  if (itens.length) col.append(" · ", el("b", {}, String(itens.length)), itens.length === 1 ? " item no feed" : " itens no feed");
-  box.append(el("section", { class: "bloco", id: "lat-coleta" }, el("h3", {}, "Coleta"), col));
+  box.append(bFav, bColeta);
 }
 
 const CORACAO = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></svg>';
@@ -1697,6 +2116,8 @@ function itemEl(i) {
   if (ehTransf(i)) return cardTransf(i);
   const novo = meta && i.rodada === meta.ultimaRodada;
   const k = i._id || i.url || i.titulo;
+  const ps = R().mercado ? papeisDe(i) : [];
+  const papeis = ps.length ? el("div", { class: "papeis", role: "group", "aria-label": "Papéis citados" }, ...ps.map(chipPapel)) : null;
   let resumo = null, lerMais = null;
   if (i.resumo) {
     const aberto = resumosAbertos || resumoAberto.has(k);
@@ -1726,7 +2147,7 @@ function itemEl(i) {
         i.clube ? el("span", { class: "dd-badge b-clube" }, String(i.clube)) : null),
       fonteEl(i),
       el("span", {}, i.publicado ? (fmtRel(i.publicado).startsWith("em ") ? "previsto " : "publicado ") + fmtRel(i.publicado) : "coletado " + fmtRel(i.coletado))),
-    resumo, lerMais);
+    papeis, resumo, lerMais);
 }
 /* Mede depois do render: só mostra "ler mais" quando o texto passa de duas linhas. Lê tudo antes de escrever. */
 function medirFeed() {
@@ -1861,14 +2282,14 @@ function renderContador() {
   b.setAttribute("aria-label", n ? `Filtros, ${n} ${n === 1 ? "ativo" : "ativos"}` : "Filtros");
   $("abrir-busca").dataset.ativo = String(!!busca.trim());
   $("limpar-filtros").disabled = !n;
-  $("nav-limpar").hidden = !n;
+  $("nav-limpar").hidden = !n || emBolsa();
   const total = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo) && passaTema(i)).length;
   $("ver-itens").textContent = total ? `Ver ${total} ${total === 1 ? "item" : "itens"}` : "Nenhum item";
 }
 function render() {
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
-  arrumarLayout(); renderRadares(); renderMercado(); renderRankings(); renderCotacoes(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
+  aplicarVisao(); renderRadares(); renderMercado(); renderRankings(); renderCotacoes(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderNavBolsa(); renderFeed(); renderContador(); renderLateral();
   /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
@@ -1992,6 +2413,9 @@ if (window.ResizeObserver) new ResizeObserver(fixarCab).observe(cab); else fixar
 const marcarRolagem = () => document.documentElement.classList.toggle("rolou", window.scrollY > 8);
 window.addEventListener("scroll", marcarRolagem, { passive: true }); marcarRolagem();
 if (window.ResizeObserver) new ResizeObserver(fixarBarra).observe($("barra")); else fixarBarra();
+/* Altura do letreiro fixo (Investimentos): os títulos de tema grudam logo abaixo dele. Escondido, mede 0. */
+const fixarMercado = () => document.documentElement.style.setProperty("--merc-h", $("mercado").offsetHeight + "px");
+if (window.ResizeObserver) new ResizeObserver(fixarMercado).observe($("mercado")); else fixarMercado();
 $("tipos-rolo").addEventListener("scroll", marcarRolo, { passive: true });
 let rafMedir;
 window.addEventListener("resize", () => { cancelAnimationFrame(rafMedir); rafMedir = requestAnimationFrame(() => { medirFeed(); marcarRolo(); }); });
@@ -2065,9 +2489,10 @@ function ligarRadar() {
     if (g !== geracao) return;
     const d = snap.docs[0]; destaque = d ? d.data() : null; renderDestaques(); renderLateral();
   }, () => {}));
+  if (r.mercado) carregarListas();
 }
 function escreverHash() {
-  const alvo = radar === "tech" ? "" : "#" + radar;
+  const alvo = radar === "tech" ? "" : "#" + radar + (R().mercado && visao === "noticias" ? "/noticias" : "");
   if ((location.hash || "") === alvo) return;
   try { history.replaceState(null, "", location.pathname + location.search + alvo); }
   catch (e) { try { location.hash = alvo; } catch (e2) {} }
@@ -2076,18 +2501,27 @@ function trocarRadar(id, porHash) {
   if (!RADARES[id] || id === radar || !radaresVisiveis().includes(id)) return;
   fecharPainel();
   radar = id;
+  /* Investimentos abre sempre na Bolsa, a não ser que o endereço peça as notícias */
+  visao = porHash && RADARES[id].mercado ? visaoDoHash() : "bolsa";
   try { localStorage.setItem("radar-atual", id); } catch (e) {}
   if (!porHash) escreverHash();
   aplicarRadar();
   resumoAberto.clear();
+  listas = []; listasCarregadas = false; listasErro = ""; editandoLista = null; papeisMemo.clear();
   renderDestaques();
   render();
+  renderListas();
   ligarRadar();
   window.scrollTo({ top: 0 });
 }
-window.addEventListener("hashchange", () => { const h = radarDoHash(); trocarRadar(h || "tech", true); });
+window.addEventListener("hashchange", () => {
+  const h = radarDoHash() || "tech";
+  if (h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); return; }
+  trocarRadar(h, true);
+});
 escreverHash();
 render();
+renderListas();
 
 (async () => {
   const db = await window.claude?.use?.("db");

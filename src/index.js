@@ -139,6 +139,75 @@ async function favoritos(request, env, quem, idFav) {
   return json({ erro: "metodo" }, 405);
 }
 
+// Listas de acompanhamento (Investimentos): nome e papéis, uma collection por pessoa.
+const PAPEL_OK = /^[A-Z]{4}\d{1,2}$/;
+const LISTA_ID_OK = /^[a-z0-9-]{1,60}$/;
+const LISTAS_MAX = 30;
+const slug = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "lista";
+
+// Confere o corpo de uma lista. Devolve { nome, papeis } ou { erro }.
+export function validarLista(b) {
+  if (!b || typeof b !== "object") return { erro: "corpo" };
+  const nome = String(b.nome ?? "").replace(/\s+/g, " ").trim();
+  if (!nome) return { erro: "Dê um nome à lista." };
+  if (nome.length > 40) return { erro: "O nome passa de 40 caracteres." };
+  const papeis = b.papeis ?? [];
+  if (!Array.isArray(papeis)) return { erro: "papeis" };
+  if (papeis.length > 60) return { erro: "Uma lista guarda até 60 papéis." };
+  const vistos = new Set();
+  for (const p of papeis) {
+    if (typeof p !== "string" || !PAPEL_OK.test(p)) return { erro: `Papel inválido: ${String(p).slice(0, 12)}` };
+    if (vistos.has(p)) return { erro: `${p} aparece duas vezes.` };
+    vistos.add(p);
+  }
+  return { nome, papeis: [...vistos] };
+}
+
+export async function listas(request, env, quem, idLista) {
+  if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
+  const col = "listas/" + quem.email;
+  if (request.method === "GET" && !idLista) {
+    const { results } = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? ORDER BY json_extract(data, '$.criado') LIMIT ?").bind(col, LISTAS_MAX).all();
+    return json({ docs: results.map(linhaParaDoc) });
+  }
+  const lerCorpo = async () => {
+    const corpo = await request.text();
+    if (corpo.length > 8000) return { erro: "grande", status: 413 };
+    try { return validarLista(JSON.parse(corpo)); } catch { return { erro: "json" }; }
+  };
+  const gravar = (id, doc) =>
+    env.DB.prepare(
+      "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, ?, ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
+    ).bind(col, id, JSON.stringify(doc), doc.atualizado).run();
+  if (request.method === "POST" && !idLista) {
+    const v = await lerCorpo();
+    if (v.erro) return json({ erro: v.erro }, v.status || 400);
+    const n = await env.DB.prepare("SELECT count(*) AS n FROM docs WHERE collection = ?").bind(col).first();
+    if ((n?.n || 0) >= LISTAS_MAX) return json({ erro: `Dá para ter até ${LISTAS_MAX} listas.` }, 400);
+    const id = slug(v.nome) + "-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+    const agora = agoraIso();
+    const doc = { nome: v.nome, papeis: v.papeis, criado: agora, atualizado: agora };
+    await gravar(id, doc);
+    return json({ ok: true, id, data: doc });
+  }
+  if (!idLista || !LISTA_ID_OK.test(idLista)) return json({ erro: "id" }, 400);
+  if (request.method === "PUT") {
+    const v = await lerCorpo();
+    if (v.erro) return json({ erro: v.erro }, v.status || 400);
+    const atual = await env.DB.prepare("SELECT data FROM docs WHERE collection = ? AND id = ?").bind(col, idLista).first();
+    if (!atual) return json({ erro: "Lista não encontrada." }, 404);
+    const agora = agoraIso();
+    const doc = { nome: v.nome, papeis: v.papeis, criado: JSON.parse(atual.data).criado || agora, atualizado: agora };
+    await gravar(idLista, doc);
+    return json({ ok: true, id: idLista, data: doc });
+  }
+  if (request.method === "DELETE") {
+    await env.DB.prepare("DELETE FROM docs WHERE collection = ? AND id = ?").bind(col, idLista).run();
+    return json({ ok: true });
+  }
+  return json({ erro: "metodo" }, 405);
+}
+
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Rendimento das fontes nos últimos 10 dias (o tempo que os candidatos ficam no banco)
@@ -176,6 +245,7 @@ async function adminUsuarios(request, env, email) {
   if (request.method === "DELETE" && email) {
     await env.DB.prepare("DELETE FROM usuarios WHERE email = ?").bind(email.toLowerCase()).run();
     await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind("favs/" + email.toLowerCase()).run();
+    await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind("listas/" + email.toLowerCase()).run();
     try { await env.DB.prepare("DELETE FROM usuario_grupo WHERE email = ?").bind(email.toLowerCase()).run(); } catch (e) {}
     return json({ ok: true });
   }
@@ -218,6 +288,8 @@ export default {
     }
     if (p === "/api/favs" || p.startsWith("/api/favs/"))
       return favoritos(request, env, quem, p.length > 10 ? decodeURIComponent(p.slice(10)) : "");
+    if (p === "/api/listas" || p.startsWith("/api/listas/"))
+      return listas(request, env, quem, p.length > 12 ? decodeURIComponent(p.slice(12)) : "");
 
     if (p === "/admin" || p === "/admin.html" || p.startsWith("/api/admin/")) {
       if (!quem.admin) return p.startsWith("/api/") ? json({ erro: "admin" }, 403) : pagina("Sem permissão", "<h1>Área do administrador</h1><p>Só quem cuida do Lookout acessa esta página.</p><p><a href=\"/\">Voltar ao radar</a></p>", 403);
