@@ -4,7 +4,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@600;700&family=DotGothic16&display=swap">
 <style>
 /* Design system DokDraw. Layout: abaixo de 900 px, coluna de leitura com cabeçalho enxuto, carrossel de destaques, barra fixa de uma linha (tipos, Filtros, busca) que abre um painel e seções por tema com título grudado. De 900 px: navegação de temas à esquerda e busca na barra. De 1200 px: trilho direito com destaques, novos, favoritos e status. */
 :root {
@@ -240,16 +240,22 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 /* Painel de mercado (Investimentos): faixa que passa na horizontal */
 .mercado { display: flex; flex-direction: column; gap: 6px; }
-.fita { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+/* Painel de LED de bolsa: fundo preto, letras âmbar com brilho e uma grade de pontos por cima. Igual nos dois temas. */
+.fita { position: relative; overflow: hidden; border-radius: 10px; background: #050505; border: 1px solid #1d1d1d; box-shadow: inset 0 0 0 1px #000, inset 0 2px 10px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.25); --led: #ffb21e; --led-sobe: #36ff6e; --led-desce: #ff3b3b; --led-apagado: #6b5a35; }
+.fita::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(circle, transparent 55%, rgba(0,0,0,.55) 56%); background-size: 3px 3px; }
+.fita::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; background: linear-gradient(90deg, #050505, transparent 32px, transparent calc(100% - 32px), #050505), linear-gradient(180deg, rgba(255,255,255,.05), transparent 40%); }
 .fita-trilho { display: flex; width: max-content; animation: fita var(--fita-t, 40s) linear infinite; }
 .fita:hover .fita-trilho, .fita:focus-within .fita-trilho { animation-play-state: paused; }
 .fita-grupo { display: flex; flex: none; }
-.fita-item { display: inline-flex; align-items: baseline; gap: 6px; padding: 9px 18px; white-space: nowrap; border-right: 1px solid var(--border); font-variant-numeric: tabular-nums; }
-.fita-item .n { font: 600 12px/1 var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .04em; }
-.fita-item .v { font: 600 14px/1 var(--font-sans); color: var(--foreground); }
-.fita-item .v small { font-size: 11.5px; font-weight: 500; color: var(--muted-foreground); margin-left: 2px; }
-.fita-item .d { font: 500 12px/1 var(--font-mono); }
-.fita-item .d.sobe { color: var(--ok); } .fita-item .d.desce { color: var(--err); } .fita-item .d.igual { color: var(--muted-foreground); }
+.fita-item { display: inline-flex; align-items: baseline; gap: 10px; padding: 15px 26px; white-space: nowrap; font-family: "DotGothic16", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: .06em; text-transform: uppercase; }
+.fita-item + .fita-item::before { content: "◆"; color: var(--led-apagado); margin-right: 16px; margin-left: -10px; font-size: 10px; align-self: center; }
+.fita-item .n { font-size: 15px; color: var(--led); text-shadow: 0 0 4px rgba(255,178,30,.7), 0 0 10px rgba(255,140,0,.35); }
+.fita-item .v { font-size: 19px; color: #ffe2a3; text-shadow: 0 0 4px rgba(255,200,90,.75), 0 0 12px rgba(255,150,20,.35); }
+.fita-item .v small { font-size: 12px; color: var(--led); margin-left: 4px; }
+.fita-item .d { font-size: 15px; }
+.fita-item .d.sobe { color: var(--led-sobe); text-shadow: 0 0 4px rgba(54,255,110,.75), 0 0 10px rgba(54,255,110,.35); }
+.fita-item .d.desce { color: var(--led-desce); text-shadow: 0 0 4px rgba(255,59,59,.75), 0 0 10px rgba(255,59,59,.35); }
+.fita-item .d.igual { color: var(--led-apagado); }
 @keyframes fita { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .fita { overflow-x: auto; } .fita-trilho { animation: none; } .fita-grupo + .fita-grupo { display: none; } }
 .mercado-pe { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; font-size: 12px; color: var(--muted-foreground); }
