@@ -1,6 +1,8 @@
 import { emailDoAccess, accessConfigurado } from "./auth.js";
 import { coletar, limpar } from "./coleta.js";
 import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
+import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
+import { adminCustos } from "./custos.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
 const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos"]);
@@ -210,6 +212,11 @@ export default {
       if (p === "/api/admin/usuarios") return adminUsuarios(request, env, "");
       if (p.startsWith("/api/admin/usuarios/")) return adminUsuarios(request, env, decodeURIComponent(p.slice(20)));
       if (p === "/api/admin/fontes") return adminFontes(env);
+      if (p === "/api/admin/custos") return json(await adminCustos(env));
+      if (p === "/api/admin/cvm" && request.method === "POST") {
+        try { return json({ ok: true, anterior: await etapaAnoAnterior(env), corrente: await etapaAnoCorrente(env) }); }
+        catch (e) { return json({ ok: false, erro: String(e.message || e) }, 500); }
+      }
       if (p.startsWith("/api/admin/")) return json({ erro: "rota" }, 404);
       return servirAsset(request, env, "/admin");
     }
@@ -224,6 +231,7 @@ export default {
     try { await coletar(env); } catch (e) { console.error("coleta", e); }
     try { await cronMercado(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("mercado", e); }
     try { await cronB3(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("b3", e); }
+    try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
     if (minuto === 7) { try { console.log("limpeza", JSON.stringify(await limpar(env))); } catch (e) { console.error("limpeza", e); } }
     await importarHistorico(env);
   },

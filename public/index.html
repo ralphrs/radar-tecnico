@@ -280,6 +280,34 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .cot-tab td:nth-child(2) { max-width: 260px; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); }
 .cot-tab .sobe { color: var(--ok); } .cot-tab .desce { color: var(--err); }
 @media (max-width: 639px) { .cot-tab .so-largo { display: none; } }
+.cot-papel { all: unset; cursor: pointer; font: 600 13px var(--font-mono); color: var(--primary, inherit); border-bottom: 1px dashed currentColor; }
+.cot-papel:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
+.cot-tab td:first-child, .cot-tab th:first-child { position: sticky; left: 0; background: var(--card); z-index: 1; }
+.ativo-dlg { width: min(760px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--background, var(--card)); color: var(--foreground, inherit); overflow: auto; }
+.ativo-dlg::backdrop { background: rgb(0 0 0 / .45); }
+.ativo-dlg > * { margin-left: 20px; margin-right: 20px; }
+.ativo-cab { display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: flex-start; gap: 12px; padding-top: 18px; }
+.ativo-cab > div { min-width: 0; flex: 1; }
+.ativo-fechar { flex-shrink: 0; }
+.ativo-cab h2 { margin: 0; font: 700 26px/1.1 var(--font-mono); letter-spacing: -0.01em; }
+.ativo-cab p { margin: 4px 0 8px; color: var(--muted-foreground); }
+.ativo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ativo-chips .chip { font-size: 12px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted-foreground); }
+.ativo-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
+.ativo-kpi { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--card); min-width: 0; }
+.ativo-kpi small { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.ativo-kpi b { display: block; font: 600 19px/1.3 var(--font-sans); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.ativo-kpi b.sobe { color: var(--ok); } .ativo-kpi b.desce { color: var(--err); }
+.ativo-kpi span { font-size: 12px; color: var(--muted-foreground); }
+.ativo-sec h3 { font: 600 14px/1.3 var(--font-sans); margin: 20px 0 8px; }
+.ativo-graf svg { width: 100%; height: auto; max-height: 160px; display: block; }
+.ativo-graf text { font: 11px var(--font-sans); fill: var(--muted-foreground); }
+.ativo-barra { fill: var(--primary, #7c3aed); opacity: .85; }
+.ativo-news { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ativo-news small { color: var(--muted-foreground); }
+.ativo-links { padding-bottom: 18px; font-size: 14px; }
+.ativo-dlg .nota { font-size: 12.5px; color: var(--muted-foreground); margin-top: 16px; }
+@media (max-width: 639px) { .ativo-dlg > * { margin-left: 16px; margin-right: 16px; } }
 .cot-pe { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
 /* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
 .lista.cards { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 10px; }
@@ -821,7 +849,7 @@ const ORDENS = [
 ];
 let ordenacao = "data";
 let painelMercado = null, pedindoMercado = false;
-let b3 = null, cotAba = "acoes", cotOrdem = { campo: "vol", dir: -1 }, cotBusca = "", cotTodos = false;
+let b3 = null, cotAba = "acoes", cotOrdem = { campo: "liq", dir: -1 }, cotBusca = "", cotTodos = false;
 /* Abrangência (Notícias e Esportes): tudo, só nacional ou só internacional. O item pode trazer "escopo"; senão o radar deduz pelo tema. */
 const ESCOPOS = [{ id: "todos", nome: "Tudo" }, { id: "nacional", nome: "Nacional" }, { id: "internacional", nome: "Internacional" }];
 let escopo = "todos";
@@ -959,31 +987,73 @@ async function lerB3() {
   try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "b3" }), { credentials: "same-origin" }); const j = await r.json(); b3 = j.existe ? j.data : null; } catch (e) {}
   renderCotacoes();
 }
+/* Dados dos FIIs do informe mensal da CVM (meta/fii). Carrega uma vez, quando a aba FIIs é aberta. */
+let fiiCvm = null, lendoFii = false;
+async function lerFii() {
+  if (fiiCvm || lendoFii) return;
+  lendoFii = true;
+  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "fii" }), { credentials: "same-origin" }); const j = await r.json(); fiiCvm = j.existe ? j.data : { fundos: {} }; } catch (e) {}
+  lendoFii = false; renderCotacoes();
+}
+// Junta a cotação da brapi com o informe da CVM. Rendimento por cota estimado = DY do mês (sobre o patrimônio) x VP.
+function comCvm(x) {
+  const f = fiiCvm && fiiCvm.fundos && fiiCvm.fundos[x.t];
+  const liq = x.vol != null && x.preco != null ? x.vol * x.preco : null;
+  if (!f) return { ...x, liq };
+  const rends = (f.h || []).map((h) => (h[1] != null && h[2] != null ? (h[1] / 100) * h[2] : null));
+  const ult = rends.length ? rends[rends.length - 1] : null;
+  const ult12 = rends.slice(-12).filter((v) => v != null);
+  const soma = ult12.reduce((a, b) => a + b, 0);
+  // Com menos de 12 informes, anualiza pela média dos meses que existem (marcado com * na tabela).
+  const dy = ult12.length && x.preco ? ((ult12.length >= 12 ? soma : (soma / ult12.length) * 12) / x.preco) * 100 : null;
+  return { ...x, liq, f, rend: ult, dy, dyAnual: ult12.length > 0 && ult12.length < 12, pvp: f.vp ? x.preco / f.vp : null, cot: f.cot ?? null, rends };
+}
 const fmtVol = (v) => (v >= 1e9 ? fmtNum(v / 1e9, 1) + " bi" : v >= 1e6 ? fmtNum(v / 1e6, 1) + " mi" : v >= 1e3 ? fmtNum(v / 1e3, 0) + " mil" : fmtNum(v || 0, 0));
+const fmtRs = (v, c = 2) => (v == null ? "–" : "R$ " + fmtNum(v, c));
+const fmtMes = (ym) => { const [a, m] = String(ym).split("-"); return ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][Number(m) - 1] + "/" + String(a).slice(2); };
 const COT_ABAS = [{ id: "acoes", nome: "Ações" }, { id: "fiis", nome: "FIIs" }, { id: "etfs", nome: "ETFs" }];
+const COT_COLUNAS = {
+  acoes: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["cap", "Valor de mercado", "so-largo"]],
+  etfs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""]],
+  fiis: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["dy", "DY 12m", ""], ["rend", "Últ. rend.", ""], ["pvp", "P/VP", ""], ["liq", "Liquidez", ""], ["cot", "Cotistas", "so-largo"]],
+};
+function celula(c, x) {
+  if (c === "t") { const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog" }, x.t); b.addEventListener("click", () => abrirAtivo(x)); return el("td", {}, b); }
+  if (c === "nome") return el("td", { title: x.nome, class: "so-largo" }, x.nome);
+  if (c === "preco") return el("td", {}, fmtRs(x.preco));
+  if (c === "var") return el("td", { class: x.var > 0 ? "sobe" : x.var < 0 ? "desce" : "" }, x.var == null ? "–" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%");
+  if (c === "liq") return el("td", {}, x.liq == null ? "–" : "R$ " + fmtVol(x.liq));
+  if (c === "cap") return el("td", { class: "so-largo" }, x.cap ? "R$ " + fmtVol(x.cap) : "–");
+  if (c === "dy") return el("td", { title: x.dyAnual ? "Menos de 12 meses de informes: valor anualizado" : "" }, x.dy == null ? "–" : fmtNum(x.dy, 2) + "%" + (x.dyAnual ? "*" : ""));
+  if (c === "rend") return el("td", {}, x.rend == null ? "–" : fmtRs(x.rend));
+  if (c === "pvp") return el("td", {}, x.pvp == null ? "–" : fmtNum(x.pvp, 2));
+  if (c === "cot") return el("td", { class: "so-largo" }, x.cot == null ? "–" : fmtNum(x.cot, 0));
+  return el("td", {}, "–");
+}
 function renderCotacoes() {
   const box = $("cotacoes");
   if (!R().mercado) { box.hidden = true; return; }
   box.hidden = false;
+  if (cotAba === "fiis" && !fiiCvm) lerFii();
   const foco = document.activeElement && document.activeElement.id;
   box.textContent = "";
   const seg = el("div", { class: "seg", role: "group", "aria-label": "Tipo de ativo" });
   COT_ABAS.forEach((a) => {
     const n = b3 && b3[a.id] ? b3[a.id].length : 0;
     const b = el("button", { type: "button", id: "cot-" + a.id, "aria-pressed": String(cotAba === a.id) }, a.nome, el("span", { class: "k" }, String(n)));
-    b.addEventListener("click", () => { cotAba = a.id; cotTodos = false; renderCotacoes(); });
+    b.addEventListener("click", () => { cotAba = a.id; cotTodos = false; if (!COT_COLUNAS[a.id].some((c) => c[0] === cotOrdem.campo)) cotOrdem = { campo: "liq", dir: -1 }; renderCotacoes(); });
     seg.append(b);
   });
-  const busca = el("input", { class: "dd-input", id: "cot-busca", type: "search", placeholder: "Filtrar ticker", "aria-label": "Filtrar ticker ou nome", autocomplete: "off", value: cotBusca });
+  const busca = el("input", { class: "dd-input", id: "cot-busca", type: "search", placeholder: "Filtrar papel", "aria-label": "Filtrar papel ou nome", autocomplete: "off", value: cotBusca });
   busca.addEventListener("input", () => { cotBusca = busca.value; renderCotacoes(); });
   box.append(el("div", { class: "cot-topo" }, el("h2", {}, "Cotações da B3"), el("div", { class: "cot-ferr" }, seg, busca)));
   if (!b3) { box.append(el("p", { class: "nota" }, "As tabelas aparecem depois da primeira consulta.")); return; }
   const q = cotBusca.trim().toUpperCase();
-  let linhas = (b3[cotAba] || []).filter((x) => !q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q));
+  let linhas = (b3[cotAba] || []).filter((x) => !q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q)).map(comCvm);
+  const colunas = COT_COLUNAS[cotAba];
   const { campo, dir } = cotOrdem;
-  linhas = linhas.slice().sort((a, b) => (campo === "t" || campo === "nome" ? String(a[campo]).localeCompare(String(b[campo])) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
+  linhas.sort((a, b) => (campo === "t" || campo === "nome" ? String(a[campo]).localeCompare(String(b[campo])) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
   const mostra = cotTodos || q ? linhas : linhas.slice(0, 15);
-  const colunas = [["t", "Ticker", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["vol", "Volume", "so-largo"]];
   const thead = el("tr", {}, ...colunas.map(([c, nome, cls]) => {
     const th = el("th", { scope: "col", class: cls, "aria-sort": campo === c ? (dir > 0 ? "ascending" : "descending") : "none" });
     const b = el("button", { type: "button" }, nome);
@@ -991,16 +1061,11 @@ function renderCotacoes() {
     th.append(b); return th;
   }));
   const tbody = el("tbody");
-  for (const x of mostra) {
-    const cls = x.var > 0 ? "sobe" : x.var < 0 ? "desce" : "";
-    tbody.append(el("tr", {},
-      el("td", {}, x.t), el("td", { title: x.nome, class: "so-largo" }, x.nome),
-      el("td", {}, "R$ " + fmtNum(x.preco, 2)),
-      el("td", { class: cls }, x.var === null ? "–" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%"),
-      el("td", { class: "so-largo" }, fmtVol(x.vol))));
-  }
+  for (const x of mostra) tbody.append(el("tr", {}, ...colunas.map(([c]) => celula(c, x))));
   box.append(el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab" }, el("thead", {}, thead), tbody)));
-  const pe = el("div", { class: "cot-pe" }, el("span", {}, `${linhas.length} ativos, os mais negociados da B3 · atualizado ${fmtRel(b3.atualizado)} · fonte brapi, com atraso`));
+  let nota = `${linhas.length} papéis, os mais negociados da B3 · atualizado ${fmtRel(b3.atualizado)} · cotações da brapi, com atraso`;
+  if (cotAba === "fiis") nota += fiiCvm && fiiCvm.ref ? ` · DY, rendimento, P/VP e cotistas do informe da CVM de ${fmtMes(fiiCvm.ref)}` : " · dados da CVM ainda não carregados";
+  const pe = el("div", { class: "cot-pe" }, el("span", {}, nota));
   if (!q && linhas.length > 15) {
     const mais = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "cot-mais" }, cotTodos ? "Mostrar só os 15 primeiros" : `Ver todos os ${linhas.length}`);
     mais.addEventListener("click", () => { cotTodos = !cotTodos; renderCotacoes(); });
@@ -1008,6 +1073,68 @@ function renderCotacoes() {
   }
   box.append(pe);
   if (foco && $(foco) && document.activeElement !== $(foco)) { $(foco).focus({ preventScroll: true }); if (foco === "cot-busca") { const v = $(foco).value; $(foco).setSelectionRange(v.length, v.length); } }
+}
+/* Detalhe de um papel, num diálogo: indicadores, histórico mensal (FIIs) e notícias do feed que citam o papel */
+function abrirAtivo(x) {
+  let d = $("ativo-dlg");
+  if (!d) {
+    d = el("dialog", { id: "ativo-dlg", class: "ativo-dlg", "aria-labelledby": "ativo-titulo" });
+    d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
+    document.body.append(d);
+  }
+  d.textContent = "";
+  const f = x.f;
+  const fechar = el("button", { type: "button", class: "dd-btn dd-btn--ghost dd-btn--icon ativo-fechar", "aria-label": "Fechar" }, "✕");
+  fechar.addEventListener("click", () => d.close());
+  const chips = el("div", { class: "ativo-chips" });
+  const tipo = cotAba === "fiis" ? "Fundo imobiliário" : cotAba === "etfs" ? "ETF" : "Ação";
+  [tipo, f && f.s, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), !f && x.setor].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
+  d.append(el("div", { class: "ativo-cab" },
+    el("div", {}, el("h2", { id: "ativo-titulo" }, x.t), el("p", {}, (f && f.n) || x.nome), chips), fechar));
+  const k = (rot, val, sub, cls) => el("div", { class: "ativo-kpi" }, el("small", {}, rot), el("b", { class: cls || "" }, val), sub ? el("span", {}, sub) : null);
+  const grade = el("div", { class: "ativo-grade" },
+    k("Cotação", fmtRs(x.preco), x.var == null ? "" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "% no dia", x.var > 0 ? "sobe" : x.var < 0 ? "desce" : ""),
+    k("Liquidez diária", x.liq == null ? "–" : "R$ " + fmtVol(x.liq), x.vol ? fmtVol(x.vol) + " cotas negociadas" : ""));
+  if (f) {
+    grade.append(
+      k("DY 12 meses", x.dy == null ? "–" : fmtNum(x.dy, 2) + "%", x.dyAnual ? "anualizado, menos de 12 informes" : "rendimentos dos últimos 12 informes ÷ cotação"),
+      k("Último rendimento", fmtRs(x.rend), "por cota, estimado (" + fmtMes(f.ref) + ")"),
+      k("P/VP", x.pvp == null ? "–" : fmtNum(x.pvp, 2), x.pvp == null ? "" : x.pvp < 1 ? "cota abaixo do patrimônio" : "cota acima do patrimônio"),
+      k("Valor patrimonial", fmtRs(f.vp), "por cota"),
+      k("Patrimônio líquido", f.pl ? "R$ " + fmtVol(f.pl) : "–", ""),
+      k("Cotistas", f.cot == null ? "–" : fmtNum(f.cot, 0), f.cotas ? fmtVol(f.cotas) + " cotas emitidas" : ""));
+  } else if (x.cap) grade.append(k("Valor de mercado", "R$ " + fmtVol(x.cap), ""));
+  d.append(grade);
+  if (f && f.h && f.h.length) {
+    const rends = x.rends || [];
+    const max = Math.max(...rends.filter((v) => v != null), 0.0001);
+    const L = 28, G = 8, A = 90, W = f.h.length * (L + G);
+    const svg = `<svg viewBox="0 0 ${W} ${A + 30}" role="img" aria-label="Rendimento por cota nos últimos meses" preserveAspectRatio="xMidYMax meet">` + f.h.map((h, i) => {
+      const v = rends[i]; const alt = v == null ? 0 : Math.max(2, (v / max) * A);
+      return `<g><title>${fmtMes(h[0])}: ${v == null ? "sem dado" : "R$ " + fmtNum(v, 2)}</title><rect x="${i * (L + G)}" y="${A - alt + 4}" width="${L}" height="${alt}" rx="3" class="ativo-barra"/><text x="${i * (L + G) + L / 2}" y="${A + 22}" text-anchor="middle">${fmtMes(h[0]).slice(0, 3)}</text></g>`;
+    }).join("") + "</svg>";
+    d.append(el("section", { class: "ativo-sec" }, el("h3", {}, "Rendimento por cota"), el("div", { class: "ativo-graf", html: svg })));
+    const tb = el("tbody");
+    f.h.slice().reverse().forEach((h, j) => { const i = f.h.length - 1 - j; tb.append(el("tr", {}, el("td", {}, fmtMes(h[0])), el("td", {}, rends[i] == null ? "–" : fmtRs(rends[i])), el("td", {}, h[1] == null ? "–" : fmtNum(h[1], 2) + "%"), el("td", {}, fmtRs(h[2])), el("td", {}, h[3] == null ? "–" : fmtNum(h[3], 0)))); });
+    d.append(el("section", { class: "ativo-sec" }, el("h3", {}, "Histórico mensal"),
+      el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab ativo-hist" }, el("thead", {}, el("tr", {}, ...["Mês", "Rend./cota", "DY do mês", "VP/cota", "Cotistas"].map((t) => el("th", { scope: "col" }, t)))), tb))));
+  }
+  const noticias = itens.filter((i) => (i.ativos || []).includes(x.t) || new RegExp("\\b" + x.t + "\\b").test(i.titulo || "")).slice(0, 6);
+  if (noticias.length) {
+    const ul = el("ul", { class: "ativo-news" });
+    noticias.forEach((i) => ul.append(el("li", {}, el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo), el("small", {}, " " + (i.fonte || "") + (i.publicado ? " · " + fmtData(i.publicado) : "")))));
+    d.append(el("section", { class: "ativo-sec" }, el("h3", {}, "No feed"), ul));
+  }
+  const links = el("p", { class: "ativo-links" });
+  if (f) {
+    links.append(el("a", { href: "https://www.fundsexplorer.com.br/funds/" + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Funds Explorer"), " · ",
+      el("a", { href: "https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo=" + String(f.c || "").replace(/\D/g, ""), target: "_blank", rel: "noopener" }, "Documentos no FNET (B3)"));
+    d.append(el("p", { class: "nota" }, `Administrador: ${f.a || "–"} · CNPJ ${f.c || "–"}. Cotistas, patrimônio, VP e DY vêm do informe mensal entregue à CVM (último: ${fmtMes(f.ref)}); o rendimento por cota é estimado a partir do DY do mês sobre o patrimônio. Confira o valor exato no aviso aos cotistas.`));
+  } else {
+    links.append(el("a", { href: "https://statusinvest.com.br/" + (cotAba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"));
+  }
+  d.append(links);
+  d.showModal();
 }
 async function lerMercado() {
   if (!R().mercado) return;

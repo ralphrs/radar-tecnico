@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Convidados · Lookout</title>
+<title>Admin · Lookout</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
@@ -45,6 +45,19 @@ li:first-child{border-top:0}
 .fontes th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
 .fontes .zero{color:#c2410c;font-weight:600}
 .fontes .falha{color:#b91c1c}
+.custo-topo{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:4px 0 14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.kpi small{display:block;color:var(--mut);font-size:12px}
+.kpi b{display:block;font-size:20px;font-variant-numeric:tabular-nums;margin-top:2px}
+.kpi span{font-size:12px;color:var(--mut)}
+.barra{height:6px;border-radius:99px;background:var(--line);margin-top:6px;overflow:hidden}
+.barra i{display:block;height:100%;background:var(--pri)}
+.barra i.alto{background:var(--err)}
+.custo-tab{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.custo-tab td,.custo-tab th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right}
+.custo-tab td:first-child,.custo-tab th:first-child{text-align:left}
+.custo-tab th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+details{margin-top:10px}summary{cursor:pointer;color:var(--pri);font-size:14px}
 </style>
 </head>
 <body>
@@ -52,10 +65,15 @@ li:first-child{border-top:0}
   <header>
     <div>
       <div class="marca"><svg class="lk-lockup" viewBox="0 0 198 64" role="img" aria-label="Lookout"><defs><linearGradient id="lk-farol-lockup" x1="6" y1="4" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset="0.4" stop-color="#7C3AED"/><stop offset="1" stop-color="#4F8FF7"/></linearGradient></defs><path transform="translate(0 1)" fill="url(#lk-farol-lockup)" d="M6 32 A26 26 0 0 1 58 32 L40.5 22 A8.5 8.5 0 0 0 23.5 22 Z M26 29 L28 30 L22 58 A28 28 0 0 1 10 50 Z M38 29 L54 50 A28 28 0 0 1 42 58 L36 30 Z"/><circle class="lk-olho" cx="32" cy="23" r="4"/><path transform="matrix(.92 0 0 1 5.76 .75)" class="lk-nome" fill-rule="evenodd" d="M72 19 H77 V38 H87 V43 H72 Z M98 25 A9 9 0 1 1 98 43 A9 9 0 1 1 98 25 Z M98 29.5 A4.5 4.5 0 1 0 98 38.5 A4.5 4.5 0 1 0 98 29.5 Z M118 25 A9 9 0 1 1 118 43 A9 9 0 1 1 118 25 Z M118 29.5 A4.5 4.5 0 1 0 118 38.5 A4.5 4.5 0 1 0 118 29.5 Z M130 19 H135 V32 L141.5 25.5 H148 L139.5 33.5 L148.5 43 H142 L135 35.5 V43 H130 Z M158 25 A9 9 0 1 1 158 43 A9 9 0 1 1 158 25 Z M158 29.5 A4.5 4.5 0 1 0 158 38.5 A4.5 4.5 0 1 0 158 29.5 Z M170 25.5 H175 V35.5 Q175 39 178 39 Q182 39 182 34.5 V25.5 H187 V43 H182 V41 Q180 43.5 176.5 43.5 Q170 43.5 170 36 Z M193 20 H198 V25.5 H202 V30 H198 V36.5 Q198 39 200 39 H202 V43 Q200.5 43.5 198.5 43.5 Q193 43.5 193 37.5 V30 H190 V25.5 H193 Z"/></svg></div>
-      <h1>Convidados</h1>
+      <h1>Administração</h1>
     </div>
     <nav class="links"><a href="/">Voltar ao radar</a><a href="/cdn-cgi/access/logout">Sair</a></nav>
   </header>
+
+  <section class="card" id="custos-card">
+    <h2>Custos e consumo</h2>
+    <div id="custos"><p class="vazio">Carregando…</p></div>
+  </section>
 
   <section class="card">
     <h2>Convidar alguém</h2>
@@ -154,6 +172,75 @@ async function carregarFontes() {
   } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
 }
 carregarFontes();
+
+const fmt = (v, c = 0) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: c, minimumFractionDigits: c });
+const f1 = (v) => Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+const fmtGrande = (v) => (v >= 1e9 ? f1(v / 1e9) + " bi" : v >= 1e6 ? f1(v / 1e6) + " mi" : v >= 1e3 ? f1(v / 1e3) + " mil" : fmt(v));
+const fmtBytes = (b) => (b >= 1e9 ? fmt(b / 1e9, 2) + " GB" : b >= 1e6 ? fmt(b / 1e6, 1) + " MB" : fmt(b / 1e3, 0) + " KB");
+const usd = (v) => "US$ " + fmt(v, 2);
+function kpi(rotulo, valor, sub, frac) {
+  const barra = frac == null ? "" : `<div class="barra"><i class="${frac > 0.8 ? "alto" : ""}" style="width:${Math.min(100, Math.max(1, frac * 100)).toFixed(1)}%"></i></div>`;
+  return `<div class="kpi"><small>${esc(rotulo)}</small><b>${valor}</b><span>${sub}</span>${barra}</div>`;
+}
+async function carregarCustos() {
+  const box = $("custos");
+  try {
+    const c = await api("/api/admin/custos");
+    const P = c.planos;
+    let h = "";
+    const cf = c.cloudflare;
+    if (cf) {
+      const dias = new Date(cf.fim).getUTCDate();
+      const diasMes = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0)).getUTCDate();
+      const porDia = (lista, campo) => { const m = {}; for (const x of lista || []) m[x.dia] = (m[x.dia] || 0) + (x[campo] || 0); return m; };
+      const soma = (m) => Object.values(m).reduce((a, b) => a + b, 0);
+      const pico = (m) => Math.max(0, ...Object.values(m));
+      const req = porDia(cf.workers, "req"), lidas = porDia(cf.d1, "lidas"), grav = porDia(cf.d1, "gravadas");
+      const proj = (m) => (soma(m) / Math.max(1, dias)) * diasMes;
+      const tam = cf.d1Tamanho || 0;
+      // Plano pago: US$ 5 fixos + o que passar do incluído, projetado para o mês inteiro.
+      const extra = Math.max(0, proj(req) - P.pago.workersReqMes) / 1e6 * P.pago.porMilhaoReq
+        + Math.max(0, proj(lidas) - P.pago.d1LidasMes) / 1e6 * P.pago.porMilhaoLidas
+        + Math.max(0, proj(grav) - P.pago.d1GravadasMes) / 1e6 * P.pago.porMilhaoGravadas
+        + Math.max(0, tam - P.pago.d1Bytes) / 1e9 * P.pago.porGBMes;
+      const cabeGratis = pico(req) <= P.gratis.workersReqDia && pico(lidas) <= P.gratis.d1LidasDia && pico(grav) <= P.gratis.d1GravadasDia && tam <= P.gratis.d1Bytes;
+      h += '<div class="custo-topo">'
+        + kpi("Custo estimado do mês", cabeGratis ? "US$ 0" : usd(P.pago.mensal + extra), cabeGratis ? "cabe no plano gratuito" : "plano pago: US$ 5 + excedente")
+        + kpi("Requisições, pico diário", fmtGrande(pico(req)), "de " + fmtGrande(P.gratis.workersReqDia) + " por dia no grátis", pico(req) / P.gratis.workersReqDia)
+        + kpi("D1, linhas lidas no pico", fmtGrande(pico(lidas)), "de " + fmtGrande(P.gratis.d1LidasDia) + " por dia", pico(lidas) / P.gratis.d1LidasDia)
+        + kpi("D1, linhas gravadas no pico", fmtGrande(pico(grav)), "de " + fmtGrande(P.gratis.d1GravadasDia) + " por dia", pico(grav) / P.gratis.d1GravadasDia)
+        + kpi("Tamanho do banco", fmtBytes(tam), "de " + fmtBytes(P.gratis.d1Bytes), tam / P.gratis.d1Bytes)
+        + "</div>";
+      const diasL = Object.keys({ ...req, ...lidas }).sort().reverse().slice(0, 10);
+      h += '<details><summary>Dia a dia (últimos 10)</summary><table class="custo-tab"><thead><tr><th>Dia</th><th>Requisições</th><th>Linhas lidas</th><th>Linhas gravadas</th></tr></thead><tbody>'
+        + diasL.map((d) => `<tr><td>${d.slice(8, 10)}/${d.slice(5, 7)}</td><td>${fmtGrande(req[d] || 0)}</td><td>${fmtGrande(lidas[d] || 0)}</td><td>${fmtGrande(grav[d] || 0)}</td></tr>`).join("")
+        + "</tbody></table></details>";
+      h += `<p class="dica">Mês até agora (${cf.inicio.slice(8, 10)}/${cf.inicio.slice(5, 7)} a ${cf.fim.slice(8, 10)}/${cf.fim.slice(5, 7)}): ${fmtGrande(soma(req))} requisições, ${fmtGrande(soma(lidas))} linhas lidas e ${fmtGrande(soma(grav))} gravadas no D1. O grátis tem limite por dia; o pago, por mês.</p>`;
+      if (cf.erros.length) h += `<p class="msg err">Parte dos dados não veio: ${esc(cf.erros.join(" · "))}</p>`;
+    } else if (c.erroCloudflare) {
+      h += `<p class="msg err">A API da Cloudflare recusou: ${esc(c.erroCloudflare)}</p>`;
+    } else {
+      h += '<p class="dica">Para ver requisições, leituras e gravações reais, crie um token na Cloudflare (My Profile › API Tokens › Create Token › Custom) com as permissões <b>Account Analytics: Read</b> e <b>D1: Read</b>, e salve no Worker <b>news</b> como secret <b>CF_API_TOKEN</b> (Settings › Variables and Secrets). Enquanto isso, fica só o que dá para medir daqui.</p>';
+    }
+    const L = c.local;
+    const totDocs = L.colecoes.reduce((s, x) => s + (x.bytes || 0), 0) + (L.candidatos.bytes || 0);
+    const rodadas = L.rodadasMes.reduce((s, x) => s + x.rodadas, 0);
+    const NOMEC = { items: "Tech", "sombra-items": "Tech (teste)", "items-negocios": "Negócios", "items-investimentos": "Investimentos", "items-politica": "Notícias", "items-esportes": "Esportes" };
+    h += '<div class="custo-topo">'
+      + kpi("Dados guardados", fmtBytes(totDocs), fmt(L.colecoes.reduce((s, x) => s + x.n, 0) + L.candidatos.n) + " registros, sem índices")
+      + kpi("Rodadas de curadoria no mês", fmt(rodadas), "rodam na sua assinatura do Claude, sem cobrança à parte")
+      + kpi("Cotações e CVM", "US$ 0", "brapi sem token, BCB e CVM são gratuitos")
+      + "</div>";
+    h += '<details><summary>Rodadas por aba e espaço por coleção</summary><table class="custo-tab"><thead><tr><th>Aba</th><th>Rodadas no mês</th><th>Itens</th></tr></thead><tbody>'
+      + L.rodadasMes.map((x) => `<tr><td>${esc(NOMEC[x.collection] || x.collection)}</td><td>${x.rodadas}</td><td>${x.itens}</td></tr>`).join("")
+      + '</tbody></table><table class="custo-tab" style="margin-top:10px"><thead><tr><th>Coleção</th><th>Registros</th><th>Tamanho</th></tr></thead><tbody>'
+      + L.colecoes.slice(0, 15).map((x) => `<tr><td>${esc(x.collection)}</td><td>${fmt(x.n)}</td><td>${fmtBytes(x.bytes || 0)}</td></tr>`).join("")
+      + `<tr><td>candidatos</td><td>${fmt(L.candidatos.n)}</td><td>${fmtBytes(L.candidatos.bytes || 0)}</td></tr></tbody></table></details>`;
+    h += '<p class="dica">Domínio: o site usa o endereço gratuito workers.dev. Os limites e preços usados na conta são os publicados pela Cloudflare para Workers e D1.</p>';
+    box.innerHTML = h;
+  } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
+}
+carregarCustos();
 
 $("form").addEventListener("submit", async (e) => {
   e.preventDefault();
