@@ -1,6 +1,7 @@
 import { emailDoAccess, accessConfigurado } from "./auth.js";
 import { coletar, limpar } from "./coleta.js";
 import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
+import { cronEua } from "./eua.js";
 import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
 import { adminCustos } from "./custos.js";
 import { secoesDe, secaoDe, libera, adminGrupos, adminMembro } from "./grupos.js";
@@ -155,8 +156,9 @@ async function favoritos(request, env, quem, idFav) {
 }
 
 // Listas de acompanhamento (Investimentos): nome e papéis, uma collection por pessoa.
-// Quatro caracteres e o número; o segundo pode ser dígito (B3SA3, BDRs como M1TA34).
-const PAPEL_OK = /^[A-Z][A-Z0-9]{3}\d{1,2}$/;
+// B3: quatro caracteres e o número; o segundo pode ser dígito (B3SA3, BDRs como M1TA34).
+// EUA: de 1 a 5 letras, com a classe depois do ponto quando houver (AAPL, F, BRK.B).
+const PAPEL_OK = /^(?:[A-Z][A-Z0-9]{3}\d{1,2}|[A-Z]{1,5}(?:\.[A-Z])?)$/;
 const LISTA_ID_OK = /^[a-z0-9-]{1,60}$/;
 const LISTAS_MAX = 30;
 const slug = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "lista";
@@ -354,6 +356,7 @@ export default {
     try { await coletar(env); } catch (e) { console.error("coleta", e); }
     try { await cronMercado(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("mercado", e); }
     try { await cronB3(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("b3", e); }
+    try { await cronEua(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("eua", e); }
     try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
     try { await cronSonda(env); } catch (e) { console.error("sonda", e); }
     if (minuto === 7) {

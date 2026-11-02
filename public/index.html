@@ -304,7 +304,7 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .cot-tab td:first-child { font: 600 13px var(--font-mono); }
 .cot-tab td:nth-child(2) { max-width: 260px; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); }
 .cot-tab .sobe { color: var(--ok); } .cot-tab .desce { color: var(--err); }
-@media (max-width: 639px) { .cot-tab .so-largo { display: none; } }
+@media (max-width: 639px) { .cot-tab .so-largo, .cot-tab .th-moeda { display: none; } }
 .cot-papel { all: unset; cursor: pointer; font: 600 13px var(--font-mono); color: var(--primary, inherit); text-underline-offset: 3px; }
 .cot-papel:hover, .cot-papel:focus-visible { text-decoration: underline; }
 .cot-papel:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
@@ -355,7 +355,7 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .cotacoes .cot-topo h3 { margin: 0; font: 600 15px/1.25 var(--font-display); letter-spacing: -0.01em; }
 .rk-val.sobe { color: var(--ok); } .rk-val.desce { color: var(--err); }
 .rk-vazio { color: var(--muted-foreground); display: block !important; font-size: 12.5px; }
-/* Investimentos: duas visões, Bolsa (pregão, tabela e listas) e Notícias (feed como nas outras abas) */
+/* Investimentos: três visões, Bolsa e EUA (pregão, tabela e listas, com o mesmo esqueleto) e Notícias (feed como nas outras abas) */
 .visoes { align-self: flex-start; }
 @media (max-width: 899px) { .visoes { align-self: stretch; } .visoes button { flex: 1 1 0; justify-content: center; } }
 /* Letreiro fixo logo abaixo do cabeçalho, nas duas visões; o rodapé dele rola com a página */
@@ -373,6 +373,16 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
   .inv-bolsa .rk-grade { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); overflow: visible; padding-bottom: 0; }
   .inv-bolsa .rk-grade[data-n="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* Bandeira logo depois do código do papel (EUA e BDR) */
+.papel-cod { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.bandeira.papel-band { margin: 0; font-size: .82em; opacity: .9; vertical-align: 0; }
+.bandeira.txt.papel-band { font-size: 8.5px; line-height: 12px; padding: 0 2px; }
+.cot-tab .col-pais, .cot-tab .cot-pais { text-align: center; }
+.cot-pais .bandeira { margin: 0; font-size: 15px; cursor: help; }
+.fita-item .n .bandeira { margin-right: 8px; opacity: 1; filter: none; text-shadow: none; }
+/* Estado do pregão de Nova York na visão EUA */
+.rk-estado { font-weight: 600; }
+.rk-estado.aberto { color: var(--ok); }
 /* Pontinho de "tem notícia" ao lado do papel */
 .rk-papel, .cot-papel-box { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .rk-papel { justify-self: start; max-width: 100%; }
@@ -646,6 +656,7 @@ footer b { color: var(--foreground); font-weight: 500; }
 
   <div class="seg visoes" id="visoes" role="group" aria-label="Visão de Investimentos" hidden>
     <button type="button" id="visao-bolsa" aria-pressed="true">Bolsa</button>
+    <button type="button" id="visao-eua" aria-pressed="false">EUA</button>
     <button type="button" id="visao-noticias" aria-pressed="false">Notícias</button>
   </div>
   <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
@@ -980,8 +991,13 @@ const ORDENS = [
 ];
 let ordenacao = "data";
 let painelMercado = null, pedindoMercado = false;
-let b3 = null, cotAba = "acoes", cotOrdem = { campo: "liq", dir: -1 }, cotBusca = "", cotTodos = false;
-try { const a = localStorage.getItem("radar-cot-aba"); if (["acoes", "fiis", "etfs"].includes(a)) cotAba = a; } catch (e) {}
+let b3 = null, eua = null, cotAba = "acoes", cotOrdem = { campo: "liq", dir: -1 }, cotBusca = "", cotTodos = false;
+/* Classe escolhida em cada visão: a Bolsa lembra a dela (Ações, FIIs, ETFs, BDRs) e a visão EUA, a sua (Ações, ETFs) */
+let cotAbaBr = "acoes", cotAbaEua = "usacoes";
+try {
+  const a = localStorage.getItem("radar-cot-aba"); if (["acoes", "fiis", "etfs", "bdrs"].includes(a)) cotAbaBr = cotAba = a;
+  const u = localStorage.getItem("radar-cot-aba-eua"); if (["usacoes", "usetfs"].includes(u)) cotAbaEua = u;
+} catch (e) {}
 /* Abrangência (Notícias e Esportes): tudo, só nacional ou só internacional. O item pode trazer "escopo"; senão o radar deduz pelo tema. */
 const ESCOPOS = [{ id: "todos", nome: "Tudo" }, { id: "nacional", nome: "Nacional" }, { id: "internacional", nome: "Internacional" }];
 let escopo = "todos";
@@ -995,10 +1011,12 @@ try {
   favs = JSON.parse(localStorage.getItem("radar-favoritos") || "{}") || {};
 } catch (e) {}
 /* Radar aberto: o hash da URL (#politica, #esportes) vence o que ficou salvo neste navegador.
-   Investimentos tem duas visões: #investimentos (ou #investimentos/bolsa) abre a Bolsa; #investimentos/noticias, o feed. */
+   Investimentos tem três visões: #investimentos (ou #investimentos/bolsa) abre a Bolsa; #investimentos/eua, o mercado americano;
+   #investimentos/noticias, o feed. */
 const partesDoHash = () => (location.hash || "").replace(/^#/, "").split("/");
 const radarDoHash = () => { const h = partesDoHash()[0]; return RADARES[h] ? h : (h ? null : ""); };
-const visaoDoHash = () => (partesDoHash()[1] === "noticias" ? "noticias" : "bolsa");
+const VISOES = ["bolsa", "eua", "noticias"];
+const visaoDoHash = () => { const v = partesDoHash()[1]; return VISOES.includes(v) ? v : "bolsa"; };
 let visao = "bolsa";
 {
   const h = radarDoHash();
@@ -1007,7 +1025,9 @@ let visao = "bolsa";
   if (h === "investimentos") visao = visaoDoHash();
 }
 const R = () => RADARES[radar];
-const emBolsa = () => !!R().mercado && visao === "bolsa";
+/* Bolsa e EUA têm o mesmo esqueleto (pregão, tabela, filtros, listas): emBolsa vale para as duas; emEua só para a americana */
+const emBolsa = () => !!R().mercado && (visao === "bolsa" || visao === "eua");
+const emEua = () => !!R().mercado && visao === "eua";
 /* Liga TEMAS, TIPOS, mapas e filtros salvos ao radar aberto */
 function aplicarRadar() {
   const r = R();
@@ -1027,7 +1047,7 @@ function aplicarRadar() {
   recentes = []; antigos = []; itens = []; meta = null; destaque = null; podeMais = false; carregando = false; carregado = false;
   expandidos = new Set();
   document.title = r.titulo + " · Lookout";
-  painelMercado = null; b3 = null; if (r.mercado) setTimeout(() => { lerMercado(); lerB3(); }, 0);
+  painelMercado = null; b3 = null; eua = null; if (r.mercado) setTimeout(() => { lerMercado(); lerB3(); lerEua(); }, 0);
   const h1 = document.querySelector("h1"); if (h1) h1.textContent = r.titulo;
   const rod = document.getElementById("rodape"); if (rod) rod.textContent = r.rodape;
 }
@@ -1068,7 +1088,7 @@ const fmtData = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toL
 const fmtDia = (ymd) => { const d = new Date(ymd + "T12:00:00"); return isNaN(d) ? (ymd || "") : d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }); };
 const hostDe = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } };
 /* País de origem da fonte: campo "pais" do item, senão a tabela abaixo, senão o domínio do link */
-const PAIS_FONTE = {"The New Stack":"US","TechCrunch":"US","Payments Dive":"US","BleepingComputer":"US","Cloudflare":"US","GitHub Changelog":"US","GitHub":"US","Anthropic":"US","Claude Code":"US","Claude Code Docs":"US","Udemy":"US","Uber Engineering":"US","Netflix":"US","Meta":"US","OpenAI":"US","Latent Space":"US","DoorDash":"US","Stripe":"US","Stripe Support":"US","Tom's Hardware":"US","Tom's Guide":"US","Software Engineering Radio":"US","Software Engineering Daily":"US","Pinterest":"US","Slack":"US","Airbnb":"US","AWS Architecture Blog":"US","AWS News Blog":"US","AWS":"US","AWS Events":"US","All Things Distributed":"US","Dropbox":"US","Will Larson":"US","Marc Brooker":"US","Murat Demirbas":"US","Charity Majors":"US","Google":"US","Google Cloud":"US","Google Research":"US","Google Open Source Blog":"US","Android Developers":"US","Chrome for Developers":"US","web.dev":"US","Datadog":"US","Datadog Security Labs":"US","Discord":"US","Crunchbase News":"US","Lyft":"US","Instacart":"US","Etsy":"US","Figma":"US","Notion":"US","Hackaday":"US","American Banker":"US","PYMNTS":"US","Axios":"US","Fortune":"US","Forbes":"US","VentureBeat":"US","MIT Technology Review":"US","Federal Reserve":"US","Trail of Bits":"US","Krebs on Security":"US","The Record":"US","Semafor":"US","Rest of World":"US","Engadget":"US","GeekWire":"US","Fox Business":"US","Banking Dive":"US","CIO Dive":"US","Y Combinator":"US","a16z Podcast":"US","Lenny's Podcast":"US","Dwarkesh Podcast":"US","No Priors":"US","Hugging Face":"US","Thoughtworks":"US","Confluent":"US","ClickHouse":"US","MotherDuck":"US","PlanetScale":"US","Vercel":"US","Jane Street":"US","J.P. Morgan":"US","Visa":"US","Mastercard":"US","American Express":"US","Coinbase":"US","CoinDesk":"US","PayPal":"US","Block":"US","Plaid":"US","Apple Newsroom":"US","Apple Machine Learning Research":"US","Microsoft DevBlogs":"US","Microsoft AI":"US","Microsoft Developer":"US","Microsoft Azure":"US","Microsoft All Things Azure":"US","NVIDIA Developer Blog":"US","Intel":"US","IBM":"US","Oracle":"US","Amazon":"US","Amazon Press Center":"US","CrowdStrike":"US","Unit 42":"US","GitLab":"US","HashiCorp":"US","Grafana Labs":"US","Red Hat":"US","Linux Foundation":"US","CNCF":"US","NIST":"US","USENIX":"US","Stanford Online":"US","Stanford HAI":"US","Epoch AI":"US","METR":"US","Ai2":"US","Perplexity":"US","Character.ai":"US","DigitalOcean":"US","Netlify":"US","Railway":"US","Temporal":"US","Cockroach Labs":"US","Snowflake":"US","Salesforce":"US","Zapier":"US","Yelp":"US","Squarespace":"US","The Athletic":"US","AP News":"US","Politico":"US","NPR":"US","ESPN":"US","Ars Technica":"US","The Verge":"US","Wired":"US","Fintech Business Weekly":"US","ByteByteGo":"US","Fireship":"US","Stack Overflow":"US","The Stack Overflow Podcast":"US","SiliconANGLE":"US","DevOps.com":"US","SecurityWeek":"US","Security Boulevard":"US","CSO Online":"US","Quartz":"US","9to5Google":"US","Android Authority":"US","Windows Central":"US","24/7 Wall St.":"US","The Next Web":"US","Smashing Magazine":"US","CSS-Tricks":"US","Kent Beck":"US","Dan Luu":"US","Julia Evans":"CA","Hillel Wayne":"US","Mitchell Hashimoto":"US","Jepsen":"US","Oxide":"US","Oxide and Friends":"US","Honeycomb":"US","Cursor":"US","Practical AI":"US","Syntax":"US","Developer Voices":"US","The Changelog":"US","CoRecursive":"US","Kubernetes Podcast":"US","Lambda Labs":"US","Interconnects":"US","One Useful Thing":"US","Ahead of AI (Sebastian Raschka)":"US","Schneier on Security":"US","Risky Business":"US","Project Zero":"US","Elastic Security Labs":"US","Wix Engineering":"US","Nubank":"BR","Finsiders Brasil":"BR","Let's Money":"BR","Hipsters Ponto Tech":"BR","Agência Brasil":"BR","Jornal do Comércio":"BR","CNN Brasil":"BR","NeoFeed":"BR","Itaú":"BR","Brazil Journal":"BR","Fabio Akita":"BR","QuintoAndar":"BR","Agência Câmara":"BR","Agência Senado":"BR","STF":"BR","TSE":"BR","Governo do RS":"BR","Prefeitura de Porto Alegre":"BR","AWS Brasil":"BR","Internacional":"BR","Metrópoles":"BR","Febraban":"BR","Exame":"BR","Mobile Time":"BR","Fronteiras da Engenharia de Software":"BR","iFood":"BR","VTEX":"BR","Tecnoblog":"BR","PicPay":"BR","O Assunto":"BR","Lambda3 Podcast":"BR","Gazeta Esportiva":"BR","Convergência Digital":"BR","Terra":"BR","SBT News":"BR","Poder360":"BR","InfoMoney":"BR","Creditas":"BR","ConJur":"BR","Elton Minetto":"BR","Um Dois Esportes":"BR","Trivela":"BR","TabNews":"BR","TOTVS":"BR","Placar":"BR","Os Agilistas":"BR","O Tempo":"BR","Luizalabs":"BR","Correio Braziliense":"BR","BitNotícias":"BR","Lance!":"BR","Leouve":"BR","Máquina do Esporte":"BR","Estadão":"BR","Estado de Minas":"BR","Gazeta do Povo":"BR","CartaCapital":"BR","Forbes Brasil":"BR","Código Fonte TV":"BR","Rádio Senado":"BR","TV Senado":"BR","TV Inter":"BR","Rádio Pampa":"BR","Porto Alegre 24 horas":"BR","Serpro":"BR","Banco Central":"BR","Ministério da Fazenda":"BR","Agência Gov":"BR","Startupi":"BR","Baguete":"BR","iMasters":"BR","PwC Brasil":"BR","Pluggy":"BR","CI&T":"BR","CERC":"BR","Diario de Pernambuco":"BR","O Povo":"BR","O Liberal":"BR","Jornal de Brasília":"BR","Jornal Minuano":"BR","Itatiaia":"BR","A Hora do Sul":"BR","A Crítica":"BR","O Alto Uruguai":"BR","Olhar Direto":"BR","Tribuna de Jundiaí":"BR","Fidc News":"BR","Contábeis":"BR","Seu Crédito Digital":"BR","BPMoney":"BR","BM&C News":"BR","Money Times":"BR","Mattos Filho":"BR","VBSO Advogados":"BR","Brasil Inovador":"BR","TI Inside":"BR","Rádio Fandango":"BR","GZH":"BR","Correio do Povo":"BR","Rádio Guaíba":"BR","Rádio Gaúcha":"BR","ge RS":"BR","ge":"BR","ESPN Brasil":"BR","UOL Esporte":"BR","UOL":"BR","CBF":"BR","FGF":"BR","Folha":"BR","O Globo":"BR","g1":"BR","Valor":"BR","Nexo":"BR","JOTA":"BR","Congresso em Foco":"BR","Agência Pública":"BR","piauí":"BR","Matinal":"BR","Planalto":"BR","Diário Oficial da União":"BR","Câmara dos Deputados":"BR","Senado Federal":"BR","CNJ":"BR","Assembleia Legislativa do RS":"BR","Café da Manhã":"BR","Durma com Essa":"BR","Foro de Teresina":"BR","Ao Ponto":"BR","Aprenda Go no YouTube":"BR","GambiConf":"BR","Tropical on Rails":"BR","Data Science Summit Brasil":"BR","GDG Goiânia":"BR","GDG Cloud São Paulo":"BR","TDC":"BR","FinTech Futures":"GB","LeadDev":"GB","The Register":"GB","Finextra":"GB","AltFi":"GB","Sifted":"GB","Fintech Insider":"GB","Monzo":"GB","Revolut":"GB","Wise":"GB","FCA":"GB","City AM":"GB","BBC Sport":"GB","BBC News Brasil":"GB","BBC":"GB","Reuters":"GB","Sky Sports":"GB","Financial Times":"GB","The Guardian":"GB","The Economist":"GB","TEAMtalk":"GB","Payment Expert":"GB","Fintech Brainfood":"GB","Finance Magnates":"GB","Architecture Weekly":"PL","Mathias Verraes":"GB","Gunnar Morling":"GB","LWN.net":"GB","A Bola":"PT","Record":"PT","O Jogo":"PT","Maisfutebol":"PT","Público":"PT","Expresso":"PT","Observador":"PT","Observador Tech":"PT","Lusa":"PT","RTP":"PT","ECO":"PT","Exame Informática":"PT","Shifter":"PT","ANSA":"IT","ANSA Brasil":"IT","Corriere della Sera":"IT","Il Post":"IT","La Repubblica":"IT","Il Sole 24 Ore":"IT","Wired Italia":"IT","StartupItalia":"IT","Gazzetta dello Sport":"IT","Corriere dello Sport":"IT","Tuttosport":"IT","Calciomercato.com":"IT","Gianluca Di Marzio":"IT","Cassa Centrale Banca":"IT","TASS":"RU","Interfax":"RU","Kommersant":"RU","Habr":"RU","Sport-Express":"RU","Championat":"RU","Xinhua":"CN","Global Times":"CN","CGTN":"CN","Caixin":"CN","Caixin Global":"CN","TechNode":"CN","DeepSeek":"CN","Kimi":"CN","MiniMax":"CN","StepFun":"CN","KrASIA":"CN","36Kr":"CN","South China Morning Post":"HK","SCMP":"HK","Hong Kong Monetary Authority":"HK","Gulf News":"AE","The National":"AE","Khaleej Times":"AE","WAM":"AE","Wamda":"AE","Arabian Business":"AE","Gulf Business":"AE","Sport360":"AE","GITEX":"AE","The Hacker News":"IN","Inc42":"IN","Business Standard":"IN","Business Today":"IN","Entrackr":"IN","MediaNama":"IN","Razorpay":"IN","PhonePe":"IN","Flipkart":"IN","RBI":"IN","CERT-In":"IN","The Tribune":"IN","Grab":"SG","Agoda":"SG","Fintech News Singapore":"SG","Monetary Authority of Singapore":"SG","TechNode Global":"SG","DealStreetAsia":"SG","The Paypers":"NL","Booking.com":"NL","Adyen":"NL","DuckDB":"NL","The Pragmatic Engineer":"NL","The Pragmatic Engineer Podcast":"NL","Tweede golf":"NL","Zalando":"DE","Transfermarkt":"DE","Aleph Alpha":"DE","Hetzner":"DE","Spotify":"SE","Klarna":"SE","GOTO Conferences":"DK","Mercari":"JP","LY Corporation":"JP","Gojek":"ID","Atlassian":"AU","Canva":"AU","Commonwealth Bank":"AU","Shopify Engineering":"CA","Cohere":"CA","BetaKit":"CA","CIBC":"CA","Mistral AI":"FR","Doctolib":"FR","L'Équipe":"FR","Marca":"ES","AS":"ES","Allegro":"PL","Trendyol":"TR","monday.com":"IL","Wix":"IL","Samsung":"KR","CERN":"CH","Mercado Livre":"AR","El Cronista":"AR","Infobae":"AR","La Nación":"AR","iProUP":"AR","La Tercera":"CL","El Observador":"UY","Forbes México":"MX","Banco de la República":"CO","CONMEBOL":"PY","Banco Central Europeu":"EU","EBA":"EU","The Manila Times":"PH","Fintech News Philippines":"PH","Context.ph":"PH","Egyptian Streets":"EG","Tech.eu":"GB","Tech Funding News":"GB","FinTech Global":"GB","Infosecurity Magazine":"GB","Creative Bloq":"GB","I Programmer":"GB","eTeknix":"GB","Ben Morris":"GB","Structurizr":"GB","draw.io":"GB","10x Banking":"GB","InfoQ":"CA","InfoQ Podcast":"CA","Daniel Lemire":"CA","Josh W. Comeau":"CA","IcePanel":"CA","CGMagazine":"CA","turbopuffer":"CA","Biometric Update":"CA","OpenBSD":"CA","Gadget":"CA","CNX Software":"TH","Help Net Security":"HR","Notebookcheck":"DE","The Decoder":"DE","Prisma":"DE","GitButler":"DE","iSAQB":"DE","Peec AI":"DE","FinTech Weekly":"DE","TrendForce":"TW","Trend Micro":"JP","Sean Goedecke":"AU","Geoffrey Huntley":"AU","Nicholas Nethercote":"AU","ChannelLife":"NZ","Event-Driven.io":"PL","Earendil":"AT","Armin Ronacher":"AT","WeAreDevelopers":"AT","DDD Europe":"BE","Devoxx":"BE","FOSDEM":"BE","Lansweeper":"BE","GitGuardian":"FR","IT-Connect":"FR","YesWeHack":"FR","Plakar":"FR","Kernel Recipes":"FR","Spring I/O":"ES","Tines":"IE","Experian":"IE","Adam Tornhill":"SE","Array (Elsevier)":"NL","Future Internet":"CH","Growin":"PT","SafeDep":"IN","Pillar Security":"IL","Zenity Labs":"IL","Adversa AI":"IL","Cycode":"IL","Cymulate":"IL","Knostic":"IL","Hirundo":"IL","LatamList":"CL","Contxto":"MX","CriptoNoticias":"VE","Bolavip":"AR","Martin Fowler":"US","Simon Willison":"US","Mark Richards":"US","AI Engineer":"US","AI Engineer (YouTube)":"US","Socket":"US","I'd Rather Be Writing":"US","Embrace The Red":"US","Wiz":"US","The Block":"US","Liquid AI":"US","dbt Labs":"US","Vals AI":"US","The Backend Engineering Show":"US","Supabase":"US","Snyk":"US","Let's Encrypt":"US","Inside.java":"US","Inngest":"US","Fintech Takes":"US","DEV Community":"US","Clerk":"US","CircleCI":"US","Chris Richardson":"US","Microservices.io":"US","A Bootiful Podcast":"US","Spring":"US","D2":"US","The Go Blog":"US","Go":"US","Flutter":"US","Angular":"US","React":"US","React Native":"US","Next.js":"US","TypeScript":"US","Swift.org":"US","WebKit":"US","Docusaurus":"US","Pylance":"US","MySQL":"US","Quarkus":"US","Debezium":"US","OpenTelemetry":"US","Kubernetes":"US","PyTorch":"US","Open Mainframe Project":"US","Semgrep":"US","Postman":"US","Deno":"US","Bun":"US","Warp":"US","Ollama":"US","Mintlify":"US","TechSpot":"US","Redmond Magazine":"US","Evil Martians":"US","Cindy Sridharan":"US","Nolan Lawson":"US","Richard Feldman":"US","Drew Breunig":"US","Ghostty":"US","Laravel":"US","Read the Docs":"US","Futurum Group":"US","Gen Digital":"US","Cyera":"US","Straiker":"US","StepSecurity":"US","Artificial Analysis":"US","Fireworks AI":"US","Prime Intellect":"US","Goodfire":"US","Sierra":"US","CopilotKit":"US","DBOS":"US","Astral":"US","Ubicloud":"US","pganalyze":"US","Mechanical Orchard":"US","ProjectDiscovery":"US","TRM Labs":"US","This Week in Fintech":"US","Equity":"US","ThursdAI":"US","QCon San Francisco":"US","Felix Rieseberg":"US","Farid Zakaria":"US","Petri":"US","GameRevolution":"US"};
+const PAIS_FONTE = {"The New Stack":"US","TechCrunch":"US","Payments Dive":"US","BleepingComputer":"US","Cloudflare":"US","GitHub Changelog":"US","GitHub":"US","Anthropic":"US","Claude Code":"US","Claude Code Docs":"US","Udemy":"US","Uber Engineering":"US","Netflix":"US","Meta":"US","OpenAI":"US","Latent Space":"US","DoorDash":"US","Stripe":"US","Stripe Support":"US","Tom's Hardware":"US","Tom's Guide":"US","Software Engineering Radio":"US","Software Engineering Daily":"US","Pinterest":"US","Slack":"US","Airbnb":"US","AWS Architecture Blog":"US","AWS News Blog":"US","AWS":"US","AWS Events":"US","All Things Distributed":"US","Dropbox":"US","Will Larson":"US","Marc Brooker":"US","Murat Demirbas":"US","Charity Majors":"US","Google":"US","Google Cloud":"US","Google Research":"US","Google Open Source Blog":"US","Android Developers":"US","Chrome for Developers":"US","web.dev":"US","Datadog":"US","Datadog Security Labs":"US","Discord":"US","Crunchbase News":"US","Lyft":"US","Instacart":"US","Etsy":"US","Figma":"US","Notion":"US","Hackaday":"US","American Banker":"US","PYMNTS":"US","Axios":"US","Fortune":"US","Forbes":"US","VentureBeat":"US","MIT Technology Review":"US","Federal Reserve":"US","Trail of Bits":"US","Krebs on Security":"US","The Record":"US","Semafor":"US","Rest of World":"US","Engadget":"US","GeekWire":"US","Fox Business":"US","Banking Dive":"US","CIO Dive":"US","Y Combinator":"US","a16z Podcast":"US","Lenny's Podcast":"US","Dwarkesh Podcast":"US","No Priors":"US","Hugging Face":"US","Thoughtworks":"US","Confluent":"US","ClickHouse":"US","MotherDuck":"US","PlanetScale":"US","Vercel":"US","Jane Street":"US","J.P. Morgan":"US","Visa":"US","Mastercard":"US","American Express":"US","Coinbase":"US","CoinDesk":"US","PayPal":"US","Block":"US","Plaid":"US","Apple Newsroom":"US","Apple Machine Learning Research":"US","Microsoft DevBlogs":"US","Microsoft AI":"US","Microsoft Developer":"US","Microsoft Azure":"US","Microsoft All Things Azure":"US","NVIDIA Developer Blog":"US","Intel":"US","IBM":"US","Oracle":"US","Amazon":"US","Amazon Press Center":"US","CrowdStrike":"US","Unit 42":"US","GitLab":"US","HashiCorp":"US","Grafana Labs":"US","Red Hat":"US","Linux Foundation":"US","CNCF":"US","NIST":"US","USENIX":"US","Stanford Online":"US","Stanford HAI":"US","Epoch AI":"US","METR":"US","Ai2":"US","Perplexity":"US","Character.ai":"US","DigitalOcean":"US","Netlify":"US","Railway":"US","Temporal":"US","Cockroach Labs":"US","Snowflake":"US","Salesforce":"US","Zapier":"US","Yelp":"US","Squarespace":"US","The Athletic":"US","AP News":"US","Politico":"US","NPR":"US","ESPN":"US","Ars Technica":"US","The Verge":"US","Wired":"US","Fintech Business Weekly":"US","ByteByteGo":"US","Fireship":"US","Stack Overflow":"US","The Stack Overflow Podcast":"US","SiliconANGLE":"US","DevOps.com":"US","SecurityWeek":"US","Security Boulevard":"US","CSO Online":"US","Quartz":"US","9to5Google":"US","Android Authority":"US","Windows Central":"US","24/7 Wall St.":"US","The Next Web":"US","Smashing Magazine":"US","CSS-Tricks":"US","Kent Beck":"US","Dan Luu":"US","Julia Evans":"CA","Hillel Wayne":"US","Mitchell Hashimoto":"US","Jepsen":"US","Oxide":"US","Oxide and Friends":"US","Honeycomb":"US","Cursor":"US","Practical AI":"US","Syntax":"US","Developer Voices":"US","The Changelog":"US","CoRecursive":"US","Kubernetes Podcast":"US","Lambda Labs":"US","Interconnects":"US","One Useful Thing":"US","Ahead of AI (Sebastian Raschka)":"US","Schneier on Security":"US","Risky Business":"US","Project Zero":"US","Elastic Security Labs":"US","Wix Engineering":"US","Nubank":"BR","Finsiders Brasil":"BR","Let's Money":"BR","Hipsters Ponto Tech":"BR","Agência Brasil":"BR","Jornal do Comércio":"BR","CNN Brasil":"BR","NeoFeed":"BR","Itaú":"BR","Brazil Journal":"BR","Fabio Akita":"BR","QuintoAndar":"BR","Agência Câmara":"BR","Agência Senado":"BR","STF":"BR","TSE":"BR","Governo do RS":"BR","Prefeitura de Porto Alegre":"BR","AWS Brasil":"BR","Internacional":"BR","Metrópoles":"BR","Febraban":"BR","Exame":"BR","Mobile Time":"BR","Fronteiras da Engenharia de Software":"BR","iFood":"BR","VTEX":"BR","Tecnoblog":"BR","PicPay":"BR","O Assunto":"BR","Lambda3 Podcast":"BR","Gazeta Esportiva":"BR","Convergência Digital":"BR","Terra":"BR","SBT News":"BR","Poder360":"BR","InfoMoney":"BR","Creditas":"BR","ConJur":"BR","Elton Minetto":"BR","Um Dois Esportes":"BR","Trivela":"BR","TabNews":"BR","TOTVS":"BR","Placar":"BR","Os Agilistas":"BR","O Tempo":"BR","Luizalabs":"BR","Correio Braziliense":"BR","BitNotícias":"BR","Lance!":"BR","Leouve":"BR","Máquina do Esporte":"BR","Estadão":"BR","Estado de Minas":"BR","Gazeta do Povo":"BR","CartaCapital":"BR","Forbes Brasil":"BR","Código Fonte TV":"BR","Rádio Senado":"BR","TV Senado":"BR","TV Inter":"BR","Rádio Pampa":"BR","Porto Alegre 24 horas":"BR","Serpro":"BR","Banco Central":"BR","Ministério da Fazenda":"BR","Agência Gov":"BR","Startupi":"BR","Baguete":"BR","iMasters":"BR","PwC Brasil":"BR","Pluggy":"BR","CI&T":"BR","CERC":"BR","Diario de Pernambuco":"BR","O Povo":"BR","O Liberal":"BR","Jornal de Brasília":"BR","Jornal Minuano":"BR","Itatiaia":"BR","A Hora do Sul":"BR","A Crítica":"BR","O Alto Uruguai":"BR","Olhar Direto":"BR","Tribuna de Jundiaí":"BR","Fidc News":"BR","Contábeis":"BR","Seu Crédito Digital":"BR","BPMoney":"BR","BM&C News":"BR","Money Times":"BR","Mattos Filho":"BR","VBSO Advogados":"BR","Brasil Inovador":"BR","TI Inside":"BR","Rádio Fandango":"BR","GZH":"BR","Correio do Povo":"BR","Rádio Guaíba":"BR","Rádio Gaúcha":"BR","ge RS":"BR","ge":"BR","ESPN Brasil":"BR","UOL Esporte":"BR","UOL":"BR","CBF":"BR","FGF":"BR","Folha":"BR","O Globo":"BR","g1":"BR","Valor":"BR","Nexo":"BR","JOTA":"BR","Congresso em Foco":"BR","Agência Pública":"BR","piauí":"BR","Matinal":"BR","Planalto":"BR","Diário Oficial da União":"BR","Câmara dos Deputados":"BR","Senado Federal":"BR","CNJ":"BR","Assembleia Legislativa do RS":"BR","Café da Manhã":"BR","Durma com Essa":"BR","Foro de Teresina":"BR","Ao Ponto":"BR","Aprenda Go no YouTube":"BR","GambiConf":"BR","Tropical on Rails":"BR","Data Science Summit Brasil":"BR","GDG Goiânia":"BR","GDG Cloud São Paulo":"BR","TDC":"BR","FinTech Futures":"GB","LeadDev":"GB","The Register":"GB","Finextra":"GB","AltFi":"GB","Sifted":"GB","Fintech Insider":"GB","Monzo":"GB","Revolut":"GB","Wise":"GB","FCA":"GB","City AM":"GB","BBC Sport":"GB","BBC News Brasil":"GB","BBC":"GB","Reuters":"GB","Sky Sports":"GB","Financial Times":"GB","MarketWatch":"US","Investing.com":"US","Seeking Alpha":"US","The Guardian":"GB","The Economist":"GB","TEAMtalk":"GB","Payment Expert":"GB","Fintech Brainfood":"GB","Finance Magnates":"GB","Architecture Weekly":"PL","Mathias Verraes":"GB","Gunnar Morling":"GB","LWN.net":"GB","A Bola":"PT","Record":"PT","O Jogo":"PT","Maisfutebol":"PT","Público":"PT","Expresso":"PT","Observador":"PT","Observador Tech":"PT","Lusa":"PT","RTP":"PT","ECO":"PT","Exame Informática":"PT","Shifter":"PT","ANSA":"IT","ANSA Brasil":"IT","Corriere della Sera":"IT","Il Post":"IT","La Repubblica":"IT","Il Sole 24 Ore":"IT","Wired Italia":"IT","StartupItalia":"IT","Gazzetta dello Sport":"IT","Corriere dello Sport":"IT","Tuttosport":"IT","Calciomercato.com":"IT","Gianluca Di Marzio":"IT","Cassa Centrale Banca":"IT","TASS":"RU","Interfax":"RU","Kommersant":"RU","Habr":"RU","Sport-Express":"RU","Championat":"RU","Xinhua":"CN","Global Times":"CN","CGTN":"CN","Caixin":"CN","Caixin Global":"CN","TechNode":"CN","DeepSeek":"CN","Kimi":"CN","MiniMax":"CN","StepFun":"CN","KrASIA":"CN","36Kr":"CN","South China Morning Post":"HK","SCMP":"HK","Hong Kong Monetary Authority":"HK","Gulf News":"AE","The National":"AE","Khaleej Times":"AE","WAM":"AE","Wamda":"AE","Arabian Business":"AE","Gulf Business":"AE","Sport360":"AE","GITEX":"AE","The Hacker News":"IN","Inc42":"IN","Business Standard":"IN","Business Today":"IN","Entrackr":"IN","MediaNama":"IN","Razorpay":"IN","PhonePe":"IN","Flipkart":"IN","RBI":"IN","CERT-In":"IN","The Tribune":"IN","Grab":"SG","Agoda":"SG","Fintech News Singapore":"SG","Monetary Authority of Singapore":"SG","TechNode Global":"SG","DealStreetAsia":"SG","The Paypers":"NL","Booking.com":"NL","Adyen":"NL","DuckDB":"NL","The Pragmatic Engineer":"NL","The Pragmatic Engineer Podcast":"NL","Tweede golf":"NL","Zalando":"DE","Transfermarkt":"DE","Aleph Alpha":"DE","Hetzner":"DE","Spotify":"SE","Klarna":"SE","GOTO Conferences":"DK","Mercari":"JP","LY Corporation":"JP","Gojek":"ID","Atlassian":"AU","Canva":"AU","Commonwealth Bank":"AU","Shopify Engineering":"CA","Cohere":"CA","BetaKit":"CA","CIBC":"CA","Mistral AI":"FR","Doctolib":"FR","L'Équipe":"FR","Marca":"ES","AS":"ES","Allegro":"PL","Trendyol":"TR","monday.com":"IL","Wix":"IL","Samsung":"KR","CERN":"CH","Mercado Livre":"AR","El Cronista":"AR","Infobae":"AR","La Nación":"AR","iProUP":"AR","La Tercera":"CL","El Observador":"UY","Forbes México":"MX","Banco de la República":"CO","CONMEBOL":"PY","Banco Central Europeu":"EU","EBA":"EU","The Manila Times":"PH","Fintech News Philippines":"PH","Context.ph":"PH","Egyptian Streets":"EG","Tech.eu":"GB","Tech Funding News":"GB","FinTech Global":"GB","Infosecurity Magazine":"GB","Creative Bloq":"GB","I Programmer":"GB","eTeknix":"GB","Ben Morris":"GB","Structurizr":"GB","draw.io":"GB","10x Banking":"GB","InfoQ":"CA","InfoQ Podcast":"CA","Daniel Lemire":"CA","Josh W. Comeau":"CA","IcePanel":"CA","CGMagazine":"CA","turbopuffer":"CA","Biometric Update":"CA","OpenBSD":"CA","Gadget":"CA","CNX Software":"TH","Help Net Security":"HR","Notebookcheck":"DE","The Decoder":"DE","Prisma":"DE","GitButler":"DE","iSAQB":"DE","Peec AI":"DE","FinTech Weekly":"DE","TrendForce":"TW","Trend Micro":"JP","Sean Goedecke":"AU","Geoffrey Huntley":"AU","Nicholas Nethercote":"AU","ChannelLife":"NZ","Event-Driven.io":"PL","Earendil":"AT","Armin Ronacher":"AT","WeAreDevelopers":"AT","DDD Europe":"BE","Devoxx":"BE","FOSDEM":"BE","Lansweeper":"BE","GitGuardian":"FR","IT-Connect":"FR","YesWeHack":"FR","Plakar":"FR","Kernel Recipes":"FR","Spring I/O":"ES","Tines":"IE","Experian":"IE","Adam Tornhill":"SE","Array (Elsevier)":"NL","Future Internet":"CH","Growin":"PT","SafeDep":"IN","Pillar Security":"IL","Zenity Labs":"IL","Adversa AI":"IL","Cycode":"IL","Cymulate":"IL","Knostic":"IL","Hirundo":"IL","LatamList":"CL","Contxto":"MX","CriptoNoticias":"VE","Bolavip":"AR","Martin Fowler":"US","Simon Willison":"US","Mark Richards":"US","AI Engineer":"US","AI Engineer (YouTube)":"US","Socket":"US","I'd Rather Be Writing":"US","Embrace The Red":"US","Wiz":"US","The Block":"US","Liquid AI":"US","dbt Labs":"US","Vals AI":"US","The Backend Engineering Show":"US","Supabase":"US","Snyk":"US","Let's Encrypt":"US","Inside.java":"US","Inngest":"US","Fintech Takes":"US","DEV Community":"US","Clerk":"US","CircleCI":"US","Chris Richardson":"US","Microservices.io":"US","A Bootiful Podcast":"US","Spring":"US","D2":"US","The Go Blog":"US","Go":"US","Flutter":"US","Angular":"US","React":"US","React Native":"US","Next.js":"US","TypeScript":"US","Swift.org":"US","WebKit":"US","Docusaurus":"US","Pylance":"US","MySQL":"US","Quarkus":"US","Debezium":"US","OpenTelemetry":"US","Kubernetes":"US","PyTorch":"US","Open Mainframe Project":"US","Semgrep":"US","Postman":"US","Deno":"US","Bun":"US","Warp":"US","Ollama":"US","Mintlify":"US","TechSpot":"US","Redmond Magazine":"US","Evil Martians":"US","Cindy Sridharan":"US","Nolan Lawson":"US","Richard Feldman":"US","Drew Breunig":"US","Ghostty":"US","Laravel":"US","Read the Docs":"US","Futurum Group":"US","Gen Digital":"US","Cyera":"US","Straiker":"US","StepSecurity":"US","Artificial Analysis":"US","Fireworks AI":"US","Prime Intellect":"US","Goodfire":"US","Sierra":"US","CopilotKit":"US","DBOS":"US","Astral":"US","Ubicloud":"US","pganalyze":"US","Mechanical Orchard":"US","ProjectDiscovery":"US","TRM Labs":"US","This Week in Fintech":"US","Equity":"US","ThursdAI":"US","QCon San Francisco":"US","Felix Rieseberg":"US","Farid Zakaria":"US","Petri":"US","GameRevolution":"US"};
 const PAIS_TLD = { br: "BR", pt: "PT", it: "IT", uk: "GB", ru: "RU", cn: "CN", ae: "AE", in: "IN", sg: "SG", ar: "AR", cl: "CL", mx: "MX", uy: "UY", pe: "PE", py: "PY", de: "DE", fr: "FR", es: "ES", nl: "NL", se: "SE", dk: "DK", no: "NO", fi: "FI", pl: "PL", at: "AT", ch: "CH", be: "BE", ie: "IE", jp: "JP", kr: "KR", hk: "HK", tw: "TW", au: "AU", nz: "NZ", ca: "CA", il: "IL", za: "ZA", ph: "PH", gov: "US", edu: "US" };
 const nomesPais = (() => { try { return new Intl.DisplayNames(["pt-BR"], { type: "region" }); } catch (e) { return null; } })();
 const semEmojiDeBandeira = /Windows/i.test(navigator.userAgent);
@@ -1125,6 +1145,12 @@ async function lerB3() {
   try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "b3" }), { credentials: "same-origin" }); const j = await r.json(); b3 = j.existe ? j.data : null; } catch (e) {}
   renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas();
 }
+/* Cotações dos EUA (meta/eua): ações do S&P 100, ETFs e índices, gravadas pelo cron a cada 30 min no pregão de Nova York */
+async function lerEua() {
+  if (!R().mercado) return;
+  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "eua" }), { credentials: "same-origin" }); const j = await r.json(); eua = j.existe ? j.data : null; } catch (e) {}
+  renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas(); if (emEua()) renderHoje();
+}
 /* Dados dos FIIs do informe mensal da CVM (meta/fii). Carrega uma vez; quem precisa dos dados antes de seguir espera a promessa. */
 let fiiCvm = null, lendoFii = null;
 function lerFii() {
@@ -1149,27 +1175,40 @@ function comCvm(x) {
   const dy = ult12.length && x.preco ? ((ult12.length >= 12 ? soma : (soma / ult12.length) * 12) / x.preco) * 100 : null;
   return { ...x, liq, f, rend: ult, dy, dyAnual: ult12.length > 0 && ult12.length < 12, pvp: f.vp && x.preco ? x.preco / f.vp : null, cot: f.cot ?? null, rends };
 }
-/* comCvm para uma classe inteira, guardado até b3 ou fiiCvm mudarem. Quem usa não pode alterar a lista (só filter/slice). */
+/* comCvm para uma classe inteira, guardado até b3, eua ou fiiCvm mudarem. Quem usa não pode alterar a lista (só filter/slice).
+   As classes dos EUA (usacoes, usetfs) vêm de meta/eua, com us: true, e não passam pela CVM. */
+const ABAS_EUA = new Set(["usacoes", "usetfs"]);
+const baseDe = (aba) => (ABAS_EUA.has(aba) ? eua : b3);
 const cvmCache = {};
 function listaCvm(aba) {
-  if (!b3) return [];
-  const chave = b3.atualizado + "|" + (fiiCvm && fiiCvm.ref) + "|" + aba;
+  const base = baseDe(aba);
+  if (!base) return [];
+  const us = ABAS_EUA.has(aba);
+  const chave = base.atualizado + "|" + (us ? "" : fiiCvm && fiiCvm.ref) + "|" + aba;
   const c = cvmCache[aba];
-  if (c && c.chave === chave && c.b3 === b3 && c.cvm === fiiCvm) return c.lista;
-  const lista = (b3[aba] || []).map(comCvm);
-  cvmCache[aba] = { chave, b3, cvm: fiiCvm, lista };
+  if (c && c.chave === chave && c.base === base && (us || c.cvm === fiiCvm)) return c.lista;
+  const linhas = base[us ? aba.slice(2) : aba] || [];
+  const lista = us ? linhas.map((x) => ({ ...x, us: true, liq: x.liq ?? (x.vol != null && x.preco != null ? x.vol * x.preco : null) })) : linhas.map(comCvm);
+  cvmCache[aba] = { chave, base, cvm: fiiCvm, lista };
   return lista;
 }
 const fmtVol = (v) => (v >= 1e9 ? fmtNum(v / 1e9, 1) + " bi" : v >= 1e6 ? fmtNum(v / 1e6, 1) + " mi" : v >= 1e3 ? fmtNum(v / 1e3, 0) + " mil" : fmtNum(v || 0, 0));
 const fmtRs = (v, c = 2) => (v == null ? "–" : "R$ " + fmtNum(v, c));
+/* Moeda do papel: dólar para os dos EUA, real para o resto (BDR inclusive, que é negociado na B3) */
+const simMoeda = (x) => (x && x.us ? "US$ " : "R$ ");
+const fmtPreco = (x, v = x && x.preco, c = 2) => (v == null ? "–" : simMoeda(x) + fmtNum(v, c));
 const fmtMes = (ym) => { const [a, m] = String(ym).split("-"); return ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][Number(m) - 1] + "/" + String(a).slice(2); };
-const COT_ABAS = [{ id: "acoes", nome: "Ações" }, { id: "fiis", nome: "FIIs" }, { id: "etfs", nome: "ETFs" }];
+const COT_ABAS = [{ id: "acoes", nome: "Ações" }, { id: "fiis", nome: "FIIs" }, { id: "etfs", nome: "ETFs" }, { id: "bdrs", nome: "BDRs" }];
+const COT_ABAS_EUA = [{ id: "usacoes", nome: "Ações" }, { id: "usetfs", nome: "ETFs" }];
+const TODAS_ABAS = [...COT_ABAS, ...COT_ABAS_EUA];
+const abasDaVisao = () => (emEua() ? COT_ABAS_EUA : COT_ABAS);
 /* Um controle só para o pregão: troca a classe das listas e da tabela juntas */
 function trocarCotAba(id) {
   const foco = document.activeElement && document.activeElement.id;
   cotAba = id; cotTodos = false;
+  if (ABAS_EUA.has(id)) cotAbaEua = id; else cotAbaBr = id;
   if (!COT_COLUNAS[id].some((c) => c[0] === cotOrdem.campo)) cotOrdem = { campo: "liq", dir: -1 };
-  try { localStorage.setItem("radar-cot-aba", id); } catch (e) {}
+  try { localStorage.setItem(ABAS_EUA.has(id) ? "radar-cot-aba-eua" : "radar-cot-aba", id); } catch (e) {}
   renderRankings(); renderCotacoes(); renderNavBolsa();
   /* o mesmo controle existe no Pregão e na coluna esquerda: o foco fica no botão equivalente de onde veio o clique */
   const alvo = foco && foco.startsWith("navcls-") ? $("navcls-" + id) : $("cot-" + id);
@@ -1179,13 +1218,19 @@ const COT_COLUNAS = {
   acoes: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["cap", "Valor de mercado", "so-largo"]],
   etfs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""]],
   fiis: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["dy", "DY 12m", ""], ["rend", "Últ. rend.", ""], ["pvp", "P/VP", ""], ["liq", "Liquidez", ""], ["cot", "Cotistas", "so-largo"]],
+  bdrs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["pais", "País", "col-pais so-largo"]],
+  usacoes: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço (US$)", ""], ["var", "Dia", ""], ["liq", "Liquidez (US$)", ""]],
+  usetfs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço (US$)", ""], ["var", "Dia", ""], ["liq", "Liquidez (US$)", ""]],
 };
+const COL_TEXTO = new Set(["t", "nome", "pais"]);
 function celula(c, x) {
-  if (c === "t") { const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog" }, x.t); b.addEventListener("click", () => abrirAtivo(x)); return el("td", {}, el("span", { class: "cot-papel-box" }, b, pontoNoticia(x.t))); }
+  if (c === "t") { const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog" }, papelEl(x.t, x)); b.addEventListener("click", () => abrirAtivo(x)); return el("td", {}, el("span", { class: "cot-papel-box" }, b, pontoNoticia(x.t))); }
   if (c === "nome") return el("td", { title: x.nome, class: "so-largo" }, x.nome);
-  if (c === "preco") return el("td", {}, fmtRs(x.preco));
+  /* nos EUA a moeda já está no cabeçalho da coluna */
+  if (c === "preco") return el("td", {}, x.us ? (x.preco == null ? "–" : fmtNum(x.preco, 2)) : fmtRs(x.preco));
   if (c === "var") return el("td", { class: x.var > 0 ? "sobe" : x.var < 0 ? "desce" : "" }, x.var == null ? "–" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%");
-  if (c === "liq") return el("td", {}, x.liq == null ? "–" : "R$ " + fmtVol(x.liq));
+  if (c === "liq") return el("td", {}, x.liq == null ? "–" : (x.us ? "" : "R$ ") + fmtVol(x.liq));
+  if (c === "pais") { const nome = (nomesPais && x.pais && nomesPais.of(x.pais)) || x.pais || ""; return el("td", { class: "cot-pais so-largo", title: nome ? "Empresa de " + nome : "" }, emojiPais(x.pais) || "–"); }
   if (c === "cap") return el("td", { class: "so-largo" }, x.cap ? "R$ " + fmtVol(x.cap) : "–");
   if (c === "dy") return el("td", { title: x.dyAnual ? "Menos de 12 meses de informes: valor anualizado" : "" }, x.dy == null ? "–" : fmtNum(x.dy, 2) + "%" + (x.dyAnual ? "*" : ""));
   if (c === "rend") return el("td", {}, x.rend == null ? "–" : fmtRs(x.rend));
@@ -1199,29 +1244,34 @@ function renderCotacoes() {
   box.hidden = false;
   if (cotAba === "fiis" && !fiiCvm) lerFii();
   const foco = document.activeElement && document.activeElement.id;
+  const base = baseDe(cotAba), us = ABAS_EUA.has(cotAba);
   box.textContent = "";
   const busca = el("input", { class: "dd-input", id: "cot-busca", type: "search", placeholder: "Filtrar papel", "aria-label": "Filtrar papel ou nome", autocomplete: "off", value: cotBusca });
   busca.addEventListener("input", () => { cotBusca = busca.value; renderCotacoes(); });
   box.append(el("div", { class: "cot-topo" }, el("h3", {}, "Cotações"), el("div", { class: "cot-ferr" }, busca)));
-  if (!b3) { box.append(el("p", { class: "nota" }, "As tabelas aparecem depois da primeira consulta.")); return; }
+  if (!base) { box.append(el("p", { class: "nota" }, us ? "As cotações dos EUA aparecem depois da primeira consulta." : "As tabelas aparecem depois da primeira consulta.")); return; }
   const q = cotBusca.trim().toUpperCase();
   const daClasse = listaCvm(cotAba);
   let linhas = daClasse.filter((x) => passaBolsa(x) && (!q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q)));
   const colunas = COT_COLUNAS[cotAba];
   const { campo, dir } = cotOrdem;
-  linhas.sort((a, b) => (campo === "t" || campo === "nome" ? String(a[campo]).localeCompare(String(b[campo])) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
+  linhas.sort((a, b) => (COL_TEXTO.has(campo) ? String(a[campo] ?? "").localeCompare(String(b[campo] ?? "")) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
   const mostra = cotTodos || q ? linhas : linhas.slice(0, 15);
   const thead = el("tr", {}, ...colunas.map(([c, nome, cls]) => {
     const th = el("th", { scope: "col", class: cls, "aria-sort": campo === c ? (dir > 0 ? "ascending" : "descending") : "none" });
-    const b = el("button", { type: "button" }, nome);
-    b.addEventListener("click", () => { cotOrdem = { campo: c, dir: campo === c ? -dir : (c === "t" || c === "nome" ? 1 : -1) }; renderCotacoes(); });
+    /* "(US$)" no cabeçalho só em tela larga; no celular a nota de rodapé já diz que é dólar */
+    const [rot, moedaTh] = nome.split(" (US$)");
+    const b = el("button", { type: "button" }, rot, moedaTh !== undefined ? el("span", { class: "th-moeda" }, "(US$)") : null);
+    b.addEventListener("click", () => { cotOrdem = { campo: c, dir: campo === c ? -dir : (COL_TEXTO.has(c) ? 1 : -1) }; renderCotacoes(); });
     th.append(b); return th;
   }));
   const tbody = el("tbody");
   for (const x of mostra) tbody.append(el("tr", {}, ...colunas.map(([c]) => celula(c, x))));
   box.append(el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab" }, el("thead", {}, thead), tbody)));
   if (!linhas.length) box.lastChild.replaceWith(el("p", { class: "vazio" }, el("strong", {}, "Nenhum papel com esses filtros"), q ? "Tente outro nome ou papel na busca." : "Afrouxe os filtros da coluna da esquerda para ver mais papéis."));
-  let nota = (filtrosBolsaAtivos() ? `${linhas.length} de ${daClasse.length} papéis com os filtros da esquerda` : `${linhas.length} papéis, os mais negociados da B3`) + ` · atualizado ${fmtRel(b3.atualizado)} · cotações da brapi, com atraso`;
+  const universo = cotAba === "usacoes" ? "ações do S&P 100" : cotAba === "usetfs" ? "ETFs americanos" : cotAba === "bdrs" ? "BDRs, os mais negociados da B3" : "papéis, os mais negociados da B3";
+  let nota = (filtrosBolsaAtivos() ? `${linhas.length} de ${daClasse.length} papéis com os filtros da esquerda` : `${linhas.length} ${universo}`) + ` · atualizado ${fmtRel(base.atualizado)} · ` + (us ? `cotações do ${base.fonte || "Yahoo Finance"}, com atraso, em dólar` : "cotações da brapi, com atraso");
+  if (cotAba === "bdrs") nota += " · bandeira é o país da empresa";
   if (cotAba === "fiis") nota += fiiCvm && fiiCvm.ref ? ` · DY, rendimento, P/VP e cotistas do informe da CVM de ${fmtMes(fiiCvm.ref)}` : " · dados da CVM ainda não carregados";
   const pe = el("div", { class: "cot-pe" }, el("span", {}, nota));
   if (!q && linhas.length > 15) {
@@ -1232,6 +1282,24 @@ function renderCotacoes() {
   box.append(pe);
   if (foco && $(foco) && document.activeElement !== $(foco)) { $(foco).focus({ preventScroll: true }); if (foco === "cot-busca") { const v = $(foco).value; $(foco).setSelectionRange(v.length, v.length); } }
 }
+/* Pregão de Nova York: 9h30 às 16h, segunda a sexta (feriados americanos não entram na conta) */
+const FMT_NY = (() => { try { return new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }); } catch (e) { return null; } })();
+function pregaoEuaAberto(d = new Date()) {
+  if (!FMT_NY) return false;
+  const p = Object.fromEntries(FMT_NY.formatToParts(d).map((x) => [x.type, x.value]));
+  const dia = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(p.weekday), min = Number(p.hour) * 60 + Number(p.minute);
+  return dia >= 1 && dia <= 5 && min >= 570 && min <= 960;
+}
+/* "Pregão aberto · dado das 15:08" no topo da visão EUA; a hora é a do último dado que chegou, no fuso de quem lê */
+function horarioEua() {
+  const aberto = pregaoEuaAberto();
+  const ult = eua ? [...(eua.acoes || []), ...(eua.etfs || [])].reduce((m, x) => (x.quando && x.quando > m ? x.quando : m), "") || eua.atualizado : "";
+  const hora = ult ? new Date(ult).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+  const dia = ult && new Date(ult).toDateString() !== new Date().toDateString() ? new Date(ult).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + " " : "";
+  return el("span", { class: "rk-quando rk-pregao", title: "Pregão regular em Nova York: 9h30 às 16h, de segunda a sexta" },
+    el("span", { class: "rk-estado " + (aberto ? "aberto" : "fechado") }, aberto ? "pregão aberto" : "pregão fechado"),
+    hora ? " · dado de " + dia + hora : "");
+}
 /* Listas do pregão no painel central de Investimentos: altas, baixas, mais negociadas e recortes de FIIs */
 const LIQ_MIN_FII = 1e6; // R$ 1 mi por dia: abaixo disso DY e P/VP de fundo pequeno distorcem a lista
 function renderRankings() {
@@ -1239,25 +1307,27 @@ function renderRankings() {
   if (!emBolsa()) { box.hidden = true; box.textContent = ""; return; }
   if (!fiiCvm) lerFii();
   box.hidden = false; box.textContent = "";
+  const us = emEua(), base = baseDe(cotAba);
   const seg = el("div", { class: "seg", role: "group", "aria-label": "Classe de ativo" });
-  COT_ABAS.forEach((a) => {
-    const n = b3 && b3[a.id] ? b3[a.id].length : 0;
+  abasDaVisao().forEach((a) => {
+    const n = listaCvm(a.id).length;
     const b = el("button", { type: "button", id: "cot-" + a.id, "aria-pressed": String(cotAba === a.id) }, a.nome, n ? el("span", { class: "k" }, String(n)) : null);
     b.addEventListener("click", () => { if (cotAba !== a.id) trocarCotAba(a.id); });
     seg.append(b);
   });
-  const dia = b3 && b3.atualizado ? new Date(b3.atualizado).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) : "";
-  box.append(el("div", { class: "cot-topo rk-topo" }, el("h2", {}, "Pregão", dia ? el("span", { class: "rk-quando", title: "Variação do último pregão" }, dia) : null), seg));
-  if (!b3) { box.append(el("p", { class: "nota" }, "As listas do pregão aparecem depois da primeira consulta.")); return; }
+  const dia = base && base.atualizado ? new Date(base.atualizado).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) : "";
+  const quando = us ? horarioEua() : dia ? el("span", { class: "rk-quando", title: "Variação do último pregão" }, dia) : null;
+  box.append(el("div", { class: "cot-topo rk-topo" }, el("h2", {}, us ? "Pregão EUA" : "Pregão", quando), seg));
+  if (!base) { box.append(el("p", { class: "nota" }, us ? "As cotações dos EUA aparecem depois da primeira consulta." : "As listas do pregão aparecem depois da primeira consulta.")); return; }
   const pct = (v) => (v == null ? "–" : (v > 0 ? "+" : "") + fmtNum(v, 2) + "%");
   const semCvm = !fiiCvm ? "Carregando dados da CVM…" : !fiiCvm.fundos || !Object.keys(fiiCvm.fundos).length ? "Dados da CVM ainda não carregados" : "";
   // c: { t: título, sub, dica (vai no title), lista, valor, cls, vazio }
   const card = (c) => {
     const ol = el("ol", {});
     c.lista.slice(0, 5).forEach((x) => {
-      const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: x.nome || x.t }, x.t);
-      b.addEventListener("click", () => abrirAtivo(x, cotAba));
-      ol.append(el("li", {}, el("span", { class: "rk-papel" }, b, pontoNoticia(x.t)), el("span", { class: "rk-preco" }, fmtRs(x.preco)), el("span", { class: "rk-val " + (c.cls ? c.cls(x) : "") }, c.valor(x))));
+      const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: x.nome || x.t }, papelEl(x.t, x));
+      b.addEventListener("click", () => abrirAtivo(x, c.aba || cotAba));
+      ol.append(el("li", {}, el("span", { class: "rk-papel" }, b, pontoNoticia(x.t)), el("span", { class: "rk-preco" }, fmtPreco(x)), el("span", { class: "rk-val " + (c.cls ? c.cls(x) : "") }, c.valor(x))));
     });
     if (!c.lista.length) ol.append(el("li", { class: "rk-vazio" }, c.vazio || (filtrosBolsaAtivos() ? "Nenhum papel com esses filtros" : "Sem dados ainda")));
     return el("article", { class: "rk-card" }, el("h3", {}, c.t, c.sub ? el("small", { title: c.dica || c.sub }, c.sub) : null), ol);
@@ -1266,13 +1336,16 @@ function renderRankings() {
   const porVar = (l, d) => l.filter((x) => x.var != null && (d > 0 ? x.var > 0 : x.var < 0)).sort((a, b) => (b.var - a.var) * d);
   const porLiq = (l) => l.slice().sort((a, b) => (b.liq || 0) - (a.liq || 0));
   const lista = listaCvm(cotAba).filter((x) => passaBolsa(x));
-  const fem = cotAba === "acoes"; // "ações" pede o feminino
+  const fem = cotAba === "acoes" || cotAba === "usacoes"; // "ações" pede o feminino
+  const moeda = us ? "US$ " : "R$ ";
   const cards = [
     { t: "Maiores altas", sub: "variação no dia", lista: porVar(lista, 1), valor: (x) => pct(x.var), cls: corVar },
     { t: "Maiores baixas", sub: "variação no dia", lista: porVar(lista, -1), valor: (x) => pct(x.var), cls: corVar },
-    { t: fem ? "Mais negociadas" : "Mais negociados", sub: "R$ no dia", lista: porLiq(lista), valor: (x) => "R$ " + fmtVol(x.liq || 0) },
+    { t: fem ? "Mais negociadas" : "Mais negociados", sub: (us ? "US$" : "R$") + " no dia", lista: porLiq(lista).filter((x) => x.liq != null), valor: (x) => moeda + fmtVol(x.liq || 0) },
   ];
-  if (cotAba === "acoes") cards.push({ t: "Maior valor de mercado", sub: "preço × ações emitidas", lista: lista.filter((x) => x.cap).sort((a, b) => b.cap - a.cap), valor: (x) => "R$ " + fmtVol(x.cap) });
+  /* valor de mercado só entra quando a fonte manda (a brapi manda para ações da B3; o Yahoo, pelo gráfico, não) */
+  if (fem && lista.some((x) => x.cap)) cards.push({ t: "Maior valor de mercado", sub: "preço × ações emitidas", lista: lista.filter((x) => x.cap).sort((a, b) => b.cap - a.cap), valor: (x) => moeda + fmtVol(x.cap) });
+  if (cotAba === "usacoes") cards.push({ t: "ETFs mais negociados", sub: "US$ no dia", aba: "usetfs", lista: porLiq(listaCvm("usetfs").filter((x) => passaBolsa(x, "usetfs"))).filter((x) => x.liq != null), valor: (x) => moeda + fmtVol(x.liq || 0) });
   if (cotAba === "fiis") {
     const liquidos = lista.filter((x) => (x.liq || 0) >= LIQ_MIN_FII);
     cards.splice(2, 0,
@@ -1281,7 +1354,8 @@ function renderRankings() {
     cards.push({ t: "Mais cotistas", sub: "informe da CVM", lista: semCvm ? [] : lista.filter((x) => x.cot != null).sort((a, b) => b.cot - a.cot), valor: (x) => fmtVol(x.cot), vazio: semCvm });
   }
   box.append(el("div", { class: "rk-grade", "data-n": String(cards.length) }, ...cards.map(card)));
-  let nota = "Variação em relação ao fechamento do pregão anterior.";
+  let nota = us ? "Variação em relação ao fechamento do pregão anterior em Nova York. Preços em dólar, com atraso." : "Variação em relação ao fechamento do pregão anterior.";
+  if (cotAba === "bdrs") nota += " BDRs são negociados na B3, em reais; a bandeira mostra o país da empresa.";
   if (cotAba === "fiis") nota += " Líquidos são os fundos com mais de R$ 1 mi negociados por dia; abaixo disso DY e P/VP distorcem." + (fiiCvm && fiiCvm.ref ? " Informe da CVM de " + fmtMes(fiiCvm.ref) + "." : "");
   box.append(el("p", { class: "nota" }, nota));
 }
@@ -1296,10 +1370,18 @@ if (MQ_NAV.addEventListener) MQ_NAV.addEventListener("change", aoMudarNav); else
 function aplicarVisao() {
   const inv = !!R().mercado, bolsa = emBolsa(), html = document.documentElement;
   html.classList.toggle("inv-bolsa", bolsa);
+  html.classList.toggle("inv-eua", emEua());
   html.classList.toggle("inv-noticias", inv && !bolsa);
   $("visoes").hidden = !inv;
-  $("visao-bolsa").setAttribute("aria-pressed", String(bolsa));
+  $("visao-bolsa").setAttribute("aria-pressed", String(inv && visao === "bolsa"));
+  $("visao-eua").setAttribute("aria-pressed", String(emEua()));
   $("visao-noticias").setAttribute("aria-pressed", String(inv && !bolsa));
+  $("cotacoes").setAttribute("aria-label", emEua() ? "Cotações dos EUA" : "Cotações da B3");
+  /* cada visão volta para a classe que tinha da última vez */
+  if (bolsa && emEua() !== ABAS_EUA.has(cotAba)) {
+    cotAba = emEua() ? cotAbaEua : cotAbaBr; cotTodos = false; cotBusca = "";
+    if (!COT_COLUNAS[cotAba].some((c) => c[0] === cotOrdem.campo)) cotOrdem = { campo: "liq", dir: -1 };
+  }
   document.querySelector(".feed-topo").hidden = bolsa;
   $("feed").hidden = bolsa;
   document.querySelector("footer").hidden = bolsa;
@@ -1307,7 +1389,7 @@ function aplicarVisao() {
   $("bolsa-filtros").hidden = !bolsa;
 }
 function trocarVisao(v, porHash) {
-  if (!R().mercado || (v !== "bolsa" && v !== "noticias")) return;
+  if (!R().mercado || !VISOES.includes(v)) return;
   if (v === visao) { if (!porHash) escreverHash(); return; }
   visao = v;
   if (!porHash) escreverHash();
@@ -1316,6 +1398,7 @@ function trocarVisao(v, porHash) {
   window.scrollTo({ top: 0 });
 }
 $("visao-bolsa").addEventListener("click", () => trocarVisao("bolsa"));
+$("visao-eua").addEventListener("click", () => trocarVisao("eua"));
 $("visao-noticias").addEventListener("click", () => trocarVisao("noticias"));
 
 /* Carrossel automático dos destaques no trilho direito (visão Bolsa, 1200 px ou mais): troca a cada 7 s,
@@ -1329,14 +1412,26 @@ setInterval(() => {
   destCtl.ir(slide + 1 >= destCtl.n ? 0 : slide + 1);
 }, 7000);
 
-/* Ponte entre as visões: papéis citados numa notícia (campo "ativos" ou, sem ele, códigos no título) */
+/* Ponte entre as visões: papéis citados numa notícia (campo "ativos" ou, sem ele, códigos no título).
+   Papel americano só entra pelo campo "ativos" ou no padrão "(NASDAQ: AAPL)" / "(NYSE: XOM)" do título: no texto solto,
+   uma sigla de 1 a 5 letras quase nunca é papel. */
 const RE_PAPEL = /\b(?:[A-Z]{4}|[A-Z]\d[A-Z]{2})(?:3|4|5|6|11|31|32|33|34|35|39)\b/g;
-const PAPEL_OK = /^[A-Z][A-Z0-9]{3}\d{1,2}$/;
+const RE_PAPEL_EUA_TITULO = /\((?:NASDAQ|NYSE|NYSE AMERICAN|NYSEARCA|NYSE ARCA|AMEX|CBOE)\s*:\s*([A-Z]{1,5}(?:\.[A-Z])?)\)/gi;
+const PAPEL_BR = /^[A-Z][A-Z0-9]{3}\d{1,2}$/;
+const PAPEL_EUA = /^[A-Z]{1,5}(?:\.[A-Z])?$/;
+const PAPEL_OK = /^(?:[A-Z][A-Z0-9]{3}\d{1,2}|[A-Z]{1,5}(?:\.[A-Z])?)$/;
+const ehPapelEua = (t) => PAPEL_EUA.test(String(t || ""));
+/* Siglas que a curadoria pode pôr em "ativos" e que não são papel americano */
+const NAO_PAPEL = new Set(["IBOV", "IFIX", "SMLL", "IDIV", "CDI", "SELIC", "IPCA", "IGPM", "PIB", "USD", "BRL", "EUR", "JPY", "CNY", "GBP", "DXY", "BTC", "ETH", "SOL", "XRP", "ADA", "BNB", "DOGE", "USDT", "USDC", "OURO", "SPX", "NDX", "VIX", "FED", "FOMC", "CVM", "IR", "IOF", "FII", "FIIS", "ETF", "ETFS", "BDR", "BDRS", "IPO", "JCP", "EUA", "US"]);
 const papeisMemo = new Map();
 function papeisDe(i) {
   const k = i._id || i.url || i.titulo;
   if (k && papeisMemo.has(k)) return papeisMemo.get(k);
-  const brutos = Array.isArray(i.ativos) && i.ativos.length ? i.ativos.map((a) => String(a).trim().toUpperCase()).filter((a) => PAPEL_OK.test(a)) : String(i.titulo || "").match(RE_PAPEL) || [];
+  const titulo = String(i.titulo || "");
+  const brutos = Array.isArray(i.ativos) && i.ativos.length
+    ? i.ativos.map((a) => String(a).trim().toUpperCase()).filter((a) => PAPEL_BR.test(a) || (PAPEL_EUA.test(a) && !NAO_PAPEL.has(a)))
+    : titulo.match(RE_PAPEL) || [];
+  for (const m of titulo.matchAll(RE_PAPEL_EUA_TITULO)) brutos.push(m[1].toUpperCase());
   const l = [...new Set(brutos)];
   if (k) papeisMemo.set(k, l);
   return l;
@@ -1352,8 +1447,26 @@ function papeisComNoticia() {
   return set;
 }
 const pontoNoticia = (t) => (papeisComNoticia().has(t) ? el("span", { class: "tem-noticia", role: "img", title: "Tem notícia no feed", "aria-label": "Tem notícia no feed" }) : null);
+/* Código do papel com a bandeira logo depois: 🇺🇸 para os dos EUA, o país da empresa para BDR, nada para o papel brasileiro */
+function paisDoPapel(t, x) {
+  if (x && x.us) return "US";
+  if (x && x.pais) return x.pais;
+  if (ehPapelEua(t)) return "US";
+  const c = cotDe(t);
+  return c ? (c[0].us ? "US" : c[0].pais || "") : "";
+}
+function papelEl(t, x) {
+  const cc = paisDoPapel(t, x);
+  if (!cc) return t;
+  const nome = (nomesPais && nomesPais.of(cc)) || cc;
+  const dica = cc === "US" && ehPapelEua(t) ? "Papel dos EUA" : "BDR de empresa de " + nome;
+  const band = semEmojiDeBandeira
+    ? el("span", { class: "bandeira txt papel-band", title: dica, "aria-label": dica }, cc)
+    : el("span", { class: "bandeira papel-band", role: "img", title: dica, "aria-label": dica }, String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)));
+  return el("span", { class: "papel-cod" }, t, band);
+}
 function chipPapel(t) {
-  const b = el("button", { class: "chip chip-papel", type: "button", "aria-haspopup": "dialog", title: "Ver " + t }, t);
+  const b = el("button", { class: "chip chip-papel", type: "button", "aria-haspopup": "dialog", title: "Ver " + t }, papelEl(t));
   b.addEventListener("click", () => abrirPapel(t));
   return b;
 }
@@ -1362,16 +1475,17 @@ async function abrirPapel(t) {
   if (!fiiCvm) await lerFii();
   const c = cotDe(t);
   if (c) return abrirAtivo(c[0], c[1]);
+  if (ehPapelEua(t)) return abrirAtivo({ t, nome: "", preco: null, var: null, vol: null, liq: null, us: true }, "usacoes");
   const f = fiiCvm && fiiCvm.fundos && fiiCvm.fundos[t];
   abrirAtivo(comCvm({ t, nome: f ? nomeBonito(f.n) : "", preco: null, var: null, vol: null }), f ? "fiis" : "acoes");
 }
 /* Cotação de um papel em qualquer classe: [linha com dados da CVM, classe] */
 let mapaCot = null;
 function cotDe(t) {
-  if (!mapaCot || mapaCot.b3 !== b3 || mapaCot.cvm !== fiiCvm) {
+  if (!mapaCot || mapaCot.b3 !== b3 || mapaCot.eua !== eua || mapaCot.cvm !== fiiCvm) {
     const m = new Map();
-    COT_ABAS.forEach((a) => listaCvm(a.id).forEach((x) => { if (!m.has(x.t)) m.set(x.t, [x, a.id]); }));
-    mapaCot = { b3, cvm: fiiCvm, m };
+    TODAS_ABAS.forEach((a) => listaCvm(a.id).forEach((x) => { if (!m.has(x.t)) m.set(x.t, [x, a.id]); }));
+    mapaCot = { b3, eua, cvm: fiiCvm, m };
   }
   return mapaCot.m.get(t) || null;
 }
@@ -1400,9 +1514,10 @@ function segNome(s) {
 }
 /* Sem a coluna esquerda (abaixo de 900 px) os filtros não aparecem, então não valem */
 const filtrosBolsaAtivos = () => MQ_NAV.matches && (bolsaF.liq || bolsaF.noticia || (cotAba === "fiis" && bolsaF.seg.length > 0 && !!fiiCvm));
+const LIQ_MIN_EUA = 1e7; // US$ 10 mi por dia
 function passaBolsa(x, aba = cotAba, ignorarSeg = false) {
   if (!MQ_NAV.matches) return true;
-  if (bolsaF.liq && (x.liq || 0) < LIQ_MIN_FII) return false;
+  if (bolsaF.liq && (x.liq || 0) < (x.us ? LIQ_MIN_EUA : LIQ_MIN_FII)) return false;
   if (bolsaF.noticia && !papeisComNoticia().has(x.t)) return false;
   if (!ignorarSeg && aba === "fiis" && fiiCvm && bolsaF.seg.length && !bolsaF.seg.includes(segNome(x.f && x.f.s))) return false;
   return true;
@@ -1425,7 +1540,7 @@ function renderNavBolsa() {
     return b;
   };
   const classe = el("div", { class: "nav-lista", role: "group", "aria-label": "Classe de ativo" });
-  COT_ABAS.forEach((a) => classe.append(item("navcls-" + a.id, a.nome, listaCvm(a.id).filter((x) => passaBolsa(x, a.id)).length, cotAba === a.id, () => { if (cotAba !== a.id) trocarCotAba(a.id); })));
+  abasDaVisao().forEach((a) => classe.append(item("navcls-" + a.id, a.nome, listaCvm(a.id).filter((x) => passaBolsa(x, a.id)).length, cotAba === a.id, () => { if (cotAba !== a.id) trocarCotAba(a.id); })));
   box.append(grupo("Classe", "", classe));
 
   if (cotAba === "fiis") {
@@ -1450,7 +1565,7 @@ function renderNavBolsa() {
 
   const chip = (id, texto, on, dica, acao) => { const b = el("button", { class: "chip", type: "button", id, "aria-pressed": String(on), title: dica }, texto); b.addEventListener("click", acao); return b; };
   box.append(grupo("Mostrar", "", el("div", { class: "chips" },
-    chip("bolsa-liq", "Só líquidos", bolsaF.liq, "Só papéis com mais de R$ 1 mi negociados por dia", () => { bolsaF.liq = !bolsaF.liq; mudouBolsa(); }),
+    chip("bolsa-liq", "Só líquidos", bolsaF.liq, emEua() ? "Só papéis com mais de US$ 10 mi negociados por dia" : "Só papéis com mais de R$ 1 mi negociados por dia", () => { bolsaF.liq = !bolsaF.liq; mudouBolsa(); }),
     chip("bolsa-noticia", "Só com notícia", bolsaF.noticia, "Só papéis citados em notícias que entraram no feed nas últimas 72 h", () => { bolsaF.noticia = !bolsaF.noticia; mudouBolsa(); }))));
   if (filtrosBolsaAtivos()) {
     const limpar = el("button", { class: "dd-btn dd-btn--link nav-limpar", type: "button", id: "bolsa-limpar" }, "Limpar filtros");
@@ -1465,8 +1580,9 @@ const HOJE_MAX = 6;
 function renderHoje() {
   const box = $("lat-hoje"); box.textContent = "";
   if (!emBolsa()) return;
-  const corte = Date.now() - 24 * 3600 * 1000;
-  const doDia = itens.filter((i) => Date.parse(i.coletado || "") >= corte)
+  const corte = Date.now() - 24 * 3600 * 1000, us = emEua();
+  /* na visão EUA, só o que é de mercado lá fora: tema "mundo" ou notícia que cita papel americano */
+  const doDia = itens.filter((i) => Date.parse(i.coletado || "") >= corte && (!us || i.tema === "mundo" || papeisDe(i).some(ehPapelEua)))
     .sort((a, b) => (Number(b.relevancia) || 0) - (Number(a.relevancia) || 0) || ordem(a, b));
   const sec = el("section", { class: "bloco", id: "bloco-hoje" }, el("h3", {}, "Notícias de hoje", doDia.length > HOJE_MAX ? el("small", {}, `${HOJE_MAX} de ${doDia.length}`) : null));
   if (doDia.length) {
@@ -1479,7 +1595,7 @@ function renderHoje() {
         ps.length ? el("div", { class: "papeis", role: "group", "aria-label": "Papéis citados" }, ...ps.slice(0, 4).map(chipPapel)) : null));
     });
     sec.append(ul);
-  } else sec.append(el("p", { class: "nota" }, carregado ? "Nenhuma notícia entrou no feed nas últimas 24 horas." : "Carregando as notícias…"));
+  } else sec.append(el("p", { class: "nota" }, !carregado ? "Carregando as notícias…" : us ? "Nenhuma notícia de mercado americano entrou no feed nas últimas 24 horas." : "Nenhuma notícia entrou no feed nas últimas 24 horas."));
   const ver = el("button", { class: "dd-btn dd-btn--link ver-todos", type: "button", id: "ver-noticias" }, "Ver todas as notícias");
   ver.addEventListener("click", () => { trocarVisao("noticias"); const b = $("visao-noticias"); if (b) b.focus({ preventScroll: true }); });
   sec.append(ver);
@@ -1528,7 +1644,7 @@ async function excluirLista(l) {
 }
 function adicionarPapel(l, t) {
   t = String(t || "").trim().toUpperCase();
-  if (!PAPEL_OK.test(t)) { listasErro = "Use o código do papel, como PETR4 ou HGLG11."; renderListas(); return; }
+  if (!PAPEL_OK.test(t)) { listasErro = "Use o código do papel, como PETR4, HGLG11 ou AAPL."; renderListas(); return; }
   rascunhos[l.id] = "";
   if (l.papeis.includes(t)) { listasErro = `${t} já está nesta lista.`; renderListas(); return; }
   if (l.papeis.length >= LISTA_MAX_PAPEIS) { listasErro = `Uma lista guarda até ${LISTA_MAX_PAPEIS} papéis.`; renderListas(); return; }
@@ -1541,12 +1657,13 @@ let indicePapeis = null;
 function sugerirPapeis(q, ja) {
   q = semAcento(q).trim().toUpperCase();
   if (q.length < 2) return [];
-  if (!indicePapeis || indicePapeis.b3 !== b3 || indicePapeis.cvm !== fiiCvm) {
+  if (!indicePapeis || indicePapeis.b3 !== b3 || indicePapeis.eua !== eua || indicePapeis.cvm !== fiiCvm) {
     const m = new Map();
     const fundos = (fiiCvm && fiiCvm.fundos) || {};
-    COT_ABAS.forEach((a) => ((b3 && b3[a.id]) || []).forEach((x) => { if (!m.has(x.t)) m.set(x.t, fundos[x.t] ? nomeBonito(fundos[x.t].n) : x.nome || ""); }));
-    Object.entries(fundos).forEach(([t, f]) => { if (!m.has(t)) m.set(t, nomeBonito(f.n)); });
-    indicePapeis = { b3, cvm: fiiCvm, lista: [...m].map(([t, nome]) => ({ t, nome, chave: semAcento(nome).toUpperCase() })) };
+    /* B3 (ações, FIIs, ETFs, BDRs), depois EUA, depois os fundos do informe da CVM fora da lista da brapi */
+    TODAS_ABAS.forEach((a) => listaCvm(a.id).forEach((x) => { if (!m.has(x.t)) m.set(x.t, [fundos[x.t] ? nomeBonito(fundos[x.t].n) : x.nome || "", x]); }));
+    Object.entries(fundos).forEach(([t, f]) => { if (!m.has(t)) m.set(t, [nomeBonito(f.n), null]); });
+    indicePapeis = { b3, eua, cvm: fiiCvm, lista: [...m].map(([t, [nome, x]]) => ({ t, nome, x, chave: semAcento(nome).toUpperCase() })) };
   }
   const fora = new Set(ja), out = [];
   for (const x of indicePapeis.lista) if (out.length < 6 && !fora.has(x.t) && x.t.startsWith(q)) { out.push(x); fora.add(x.t); }
@@ -1584,14 +1701,14 @@ function listaEl(l) {
     const tb = el("tbody");
     l.papeis.forEach((t) => {
       const c = cotDe(t), x = c && c[0];
-      const papel = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x && x.nome) || t }, t);
+      const papel = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x && x.nome) || t }, papelEl(t, x));
       papel.addEventListener("click", () => abrirPapel(t));
       const tirar = el("button", { class: "lst-x", type: "button", "aria-label": `Tirar ${t} da lista`, title: "Tirar da lista" }, "×");
       tirar.addEventListener("click", () => { l.papeis = l.papeis.filter((p) => p !== t); salvarLista(l); });
-      const sem = () => el("span", { class: "sem", title: "Fora dos mais negociados; sem cotação aqui" }, "–");
+      const sem = () => el("span", { class: "sem", title: ehPapelEua(t) ? "Fora das ações e ETFs americanos que acompanhamos; sem cotação aqui" : "Fora dos mais negociados; sem cotação aqui" }, "–");
       tb.append(el("tr", {},
         el("td", {}, el("span", { class: "cot-papel-box" }, papel, pontoNoticia(t))),
-        el("td", {}, x && x.preco != null ? fmtRs(x.preco) : sem()),
+        el("td", {}, x && x.preco != null ? fmtPreco(x) : sem()),
         el("td", { class: x && x.var > 0 ? "sobe" : x && x.var < 0 ? "desce" : "" }, x && x.var != null ? (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%" : x ? "–" : sem()),
         el("td", { title: x && x.dyAnual ? "Menos de 12 meses de informes: valor anualizado" : "" }, x && c[1] === "fiis" && x.dy != null ? fmtNum(x.dy, 2) + "%" + (x.dyAnual ? "*" : "") : "–"),
         el("td", {}, tirar)));
@@ -1609,7 +1726,7 @@ function listaEl(l) {
   const desenhar = () => {
     sug.textContent = "";
     opcoes.forEach((o, n) => {
-      const b = el("button", { type: "button", role: "option", tabindex: "-1", id: `${idInp}-op${n}`, "aria-selected": String(n === marcada) }, el("b", {}, o.t), el("span", {}, o.nome));
+      const b = el("button", { type: "button", role: "option", tabindex: "-1", id: `${idInp}-op${n}`, "aria-selected": String(n === marcada) }, el("b", {}, papelEl(o.t, o.x)), el("span", {}, o.nome));
       b.addEventListener("mousedown", (e) => e.preventDefault());
       b.addEventListener("click", () => adicionarPapel(l, o.t));
       sug.append(el("li", {}, b));
@@ -1646,7 +1763,7 @@ function renderListas() {
   nova.addEventListener("click", novaLista);
   const sec = el("section", { class: "bloco", id: "bloco-listas", "aria-label": "Minhas listas" }, el("h3", {}, "Minhas listas", nova));
   if (!listasCarregadas) sec.append(el("p", { class: "nota" }, "Carregando suas listas…"));
-  else if (!listas.length) sec.append(el("p", { class: "nota", id: "listas-vazio" }, "Crie uma lista com os papéis da sua corretora para acompanhar cotação e DY aqui."));
+  else if (!listas.length) sec.append(el("p", { class: "nota", id: "listas-vazio" }, "Crie uma lista com os papéis da sua corretora para acompanhar cotação e DY aqui. Vale papel da B3, BDR e ação americana."));
   listas.forEach((l) => sec.append(listaEl(l)));
   if (listasErro) sec.append(el("p", { class: "lst-erro", role: "alert" }, listasErro));
   alvo.append(sec);
@@ -1691,15 +1808,23 @@ function abrirAtivo(x, aba = cotAba) {
   const fechar = el("button", { type: "button", class: "dd-btn dd-btn--ghost dd-btn--icon ativo-fechar", "aria-label": "Fechar" }, "✕");
   fechar.addEventListener("click", () => d.close());
   const chips = el("div", { class: "ativo-chips" });
-  const tipo = aba === "fiis" ? "Fundo imobiliário" : aba === "etfs" ? "ETF" : "Ação";
-  [tipo, f && f.s, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), !f && x.setor].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
+  const us = !!x.us || ABAS_EUA.has(aba), bdr = aba === "bdrs";
+  const tipo = aba === "usetfs" ? "ETF nos EUA" : us ? "Ação nos EUA" : bdr ? "BDR" : aba === "fiis" ? "Fundo imobiliário" : aba === "etfs" ? "ETF" : "Ação";
+  [tipo, f && f.s, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), !f && !bdr && x.setor].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
+  if (bdr && x.pais) chips.append(el("span", { class: "chip" }, emojiPais(x.pais), "Empresa de " + ((nomesPais && nomesPais.of(x.pais)) || x.pais)));
   d.append(el("div", { class: "ativo-cab" },
-    el("div", {}, el("h2", { id: "ativo-titulo" }, x.t), el("p", { title: (f && f.n) || x.nome || "" }, f && f.n ? nomeBonito(f.n) : x.nome), chips), fechar));
+    el("div", {}, el("h2", { id: "ativo-titulo" }, papelEl(x.t, us ? { ...x, us: true } : x)), el("p", { title: (f && f.n) || x.nome || "" }, f && f.n ? nomeBonito(f.n) : x.nome), chips), fechar));
   const k = (rot, val, sub, cls) => el("div", { class: "ativo-kpi" }, el("small", {}, rot), el("b", { class: cls || "" }, val), sub ? el("span", {}, sub) : null);
   const grade = el("div", { class: "ativo-grade" },
-    k("Cotação", fmtRs(x.preco), x.preco == null ? "fora dos mais negociados" : x.var == null ? "" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "% no dia", x.var > 0 ? "sobe" : x.var < 0 ? "desce" : ""),
-    k("Liquidez diária", x.liq == null ? "–" : "R$ " + fmtVol(x.liq), x.vol ? fmtVol(x.vol) + " cotas negociadas" : ""));
-  if (f) {
+    k("Cotação", fmtPreco(x), x.preco == null ? (us ? "sem cotação aqui" : "fora dos mais negociados") : x.var == null ? "" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "% no dia", x.var > 0 ? "sobe" : x.var < 0 ? "desce" : ""),
+    k("Liquidez diária", x.liq == null ? "–" : simMoeda(x) + fmtVol(x.liq), x.vol ? fmtVol(x.vol) + (us && aba !== "usetfs" ? " ações negociadas" : bdr ? " BDRs negociados" : " cotas negociadas") : ""));
+  if (us && x.preco != null) {
+    grade.append(
+      k("Abertura", fmtPreco(x, x.abre), "hoje"),
+      k("Máxima do dia", fmtPreco(x, x.max), ""),
+      k("Mínima do dia", fmtPreco(x, x.min), ""),
+      k("Fechamento anterior", fmtPreco(x, x.ant), "base da variação"));
+  } else if (f) {
     grade.append(
       k("DY 12 meses", x.dy == null ? "–" : fmtNum(x.dy, 2) + "%", x.dyAnual ? "anualizado, menos de 12 informes" : "rendimentos dos últimos 12 informes ÷ cotação"),
       k("Último rendimento", fmtRs(x.rend), "por cota, estimado (" + fmtMes(f.ref) + ")"),
@@ -1737,6 +1862,14 @@ function abrirAtivo(x, aba = cotAba) {
       el("a", { href: "https://investidor10.com.br/fiis/" + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"), " · ",
       el("a", { href: "https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo=" + String(f.c || "").replace(/\D/g, ""), target: "_blank", rel: "noopener" }, "Documentos no FNET (B3)"));
     d.append(el("p", { class: "nota" }, `Administrador: ${f.a || "–"} · CNPJ ${f.c || "–"}. Cotistas, patrimônio, VP e DY vêm do informe mensal entregue à CVM (último: ${fmtMes(f.ref)}); o rendimento por cota é estimado a partir do DY do mês sobre o patrimônio. Confira o valor exato no aviso aos cotistas.`));
+  } else if (us) {
+    const yahoo = x.t.replace(".", "-");
+    links.append(el("a", { href: "https://finance.yahoo.com/quote/" + encodeURIComponent(yahoo), target: "_blank", rel: "noopener" }, "Yahoo Finance"));
+    if (aba !== "usetfs") links.append(" · ", el("a", { href: "https://investidor10.com.br/stocks/" + yahoo.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"));
+    d.append(el("p", { class: "nota" }, `Cotação em dólar, com atraso, fonte ${(eua && eua.fonte) || "Yahoo Finance"}` + (x.quando ? ` (dado de ${fmtData(x.quando)})` : "") + ". A variação compara com o fechamento do pregão anterior em Nova York."));
+  } else if (bdr) {
+    links.append(el("a", { href: "https://investidor10.com.br/bdrs/" + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"), " · ",
+      el("a", { href: "https://statusinvest.com.br/bdrs/" + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"));
   } else {
     links.append(el("a", { href: "https://statusinvest.com.br/" + (aba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"), " · ",
       el("a", { href: "https://investidor10.com.br/" + (aba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"));
@@ -1753,7 +1886,7 @@ async function atualizarMercado() {
   if (pedindoMercado) return;
   pedindoMercado = true; renderMercado();
   try { const r = await fetch("/api/mercado/atualizar", { method: "POST", credentials: "same-origin" }); if (r.ok) painelMercado = await r.json(); } catch (e) {}
-  lerB3();
+  lerB3(); lerEua();
   pedindoMercado = false; renderMercado();
 }
 const fmtNum = (v, casas) => Number(v).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
@@ -1773,8 +1906,9 @@ function renderMercado() {
           const cls = i.variacao > 0 ? "sobe" : i.variacao < 0 ? "desce" : "igual";
           d = el("span", { class: "d " + cls }, (i.variacao > 0 ? "▲ " : i.variacao < 0 ? "▼ " : "") + fmtNum(Math.abs(i.variacao), 2) + "%");
         }
-        g.append(el("span", { class: "fita-item", title: i.nome + " · " + i.fonte + (i.data ? " · ref. " + i.data.split("-").reverse().join("/") : "") },
-          el("span", { class: "n" }, i.nome), el("span", { class: "v" }, v, i.unidade && i.unidade !== "R$" ? el("small", {}, i.unidade) : null), d));
+        const ref = i.data ? (/^\d{4}-\d{2}-\d{2}$/.test(i.data) ? i.data.split("-").reverse().join("/") : fmtData(i.data)) : "";
+        g.append(el("span", { class: "fita-item", title: i.nome + " · " + i.fonte + (ref ? " · ref. " + ref : "") },
+          el("span", { class: "n" }, i.pais ? emojiPais(i.pais) : null, i.nome), el("span", { class: "v" }, v, i.unidade && i.unidade !== "R$" ? el("small", {}, i.unidade) : null), d));
       }
       return g;
     };
@@ -1788,7 +1922,7 @@ function renderMercado() {
   if (p && p.aguarde) { b.disabled = true; b.textContent = "Atualizado há pouco"; b.title = "Dá para pedir de novo em " + Math.ceil(p.aguarde / 60) + " min"; }
   b.addEventListener("click", atualizarMercado);
   pe.append(
-    el("span", {}, itensM.length ? (p.atualizado ? "Atualizado " + fmtRel(p.atualizado) + ". " : "") + "Cotações com atraso de até 30 min, fonte brapi e Banco Central. Nada aqui é recomendação." + (p.temBolsa ? "" : " Ibovespa e IFIX ainda não entram.") : "As cotações aparecem aqui depois da primeira consulta."),
+    el("span", {}, itensM.length ? (p.atualizado ? "Atualizado " + fmtRel(p.atualizado) + ". " : "") + (itensM.some((i) => i.pais === "US") ? "Cotações com atraso de até 30 min, fontes brapi, Banco Central e Yahoo Finance. Nada aqui é recomendação." : "Cotações com atraso de até 30 min, fonte brapi e Banco Central. Nada aqui é recomendação.") + (p.temBolsa ? "" : " Ibovespa e IFIX ainda não entram.") : "As cotações aparecem aqui depois da primeira consulta."),
     b);
   if (!itensM.length) box.hidden = true;
 }
@@ -2647,7 +2781,7 @@ function ligarRadar() {
   if (r.mercado) carregarListas();
 }
 function escreverHash() {
-  const alvo = radar === "tech" ? "" : "#" + radar + (R().mercado && visao === "noticias" ? "/noticias" : "");
+  const alvo = radar === "tech" ? "" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
   if ((location.hash || "") === alvo) return;
   try { history.replaceState(null, "", location.pathname + location.search + alvo); }
   catch (e) { try { location.hash = alvo; } catch (e2) {} }
@@ -2656,7 +2790,7 @@ function trocarRadar(id, porHash) {
   if (!RADARES[id] || id === radar || !radaresVisiveis().includes(id)) return;
   fecharPainel();
   radar = id;
-  /* Investimentos abre sempre na Bolsa, a não ser que o endereço peça as notícias */
+  /* Investimentos abre sempre na Bolsa, a não ser que o endereço peça os EUA ou as notícias */
   visao = porHash && RADARES[id].mercado ? visaoDoHash() : "bolsa";
   try { localStorage.setItem("radar-atual", id); } catch (e) {}
   if (!porHash) escreverHash();
@@ -2705,7 +2839,7 @@ renderListas();
   ligarFavoritosNaConta(db);
   ligarRadar();
   setInterval(() => { renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral(); }, 60000);
-  setInterval(() => { if (R().mercado && !document.hidden) { lerMercado(); lerB3(); } }, 120000);
+  setInterval(() => { if (R().mercado && !document.hidden) { lerMercado(); lerB3(); lerEua(); } }, 120000);
 })();
 </script>
 

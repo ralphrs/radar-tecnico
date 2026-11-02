@@ -134,6 +134,12 @@ export const FEEDS = [
   ["investimentos", "CVM", "BR", "https://www.gov.br/cvm/pt-br/assuntos/noticias/RSS"],
   ["investimentos", "Funds Explorer", "BR", "https://www.fundsexplorer.com.br/feed/"],
   ["investimentos", "Agência Brasil", "BR", "https://agenciabrasil.ebc.com.br/rss/economia/feed.xml"],
+  // Mercado americano, sondados em 02/11/2026 (todos com itens do dia). Ficaram de fora: Yahoo Finance (404),
+  // CNBC Markets (último item de 21/10; a CNBC já entra acima) e WSJ Markets (parado em 2025).
+  ["investimentos", "MarketWatch", "US", "https://feeds.content.dowjones.io/public/rss/mw_topstories"],
+  ["investimentos", "Investing.com", "US", "https://www.investing.com/rss/news_25.rss"],
+  ["investimentos", "Seeking Alpha", "US", "https://seekingalpha.com/market_currents.xml"],
+  ["investimentos", "Financial Times", "GB", "https://www.ft.com/markets?format=rss"],
 
   // Política: fontes oficiais
   ["politica", "Agência Brasil", "BR", "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml"],

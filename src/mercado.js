@@ -4,8 +4,12 @@
 // Fontes:
 // - AwesomeAPI (economia.awesomeapi.com.br): dólar, euro, bitcoin e ether em reais. Grátis, sem chave.
 // - Banco Central, SGS (api.bcb.gov.br): Selic meta (432), CDI anualizado (4389) e IPCA em 12 meses (13522).
-// - brapi.dev, só quando houver o secret BRAPI_TOKEN: Ibovespa. No plano grátis é 1 ticker por chamada
+// - brapi.dev, só quando houver o secret BRAPI_TOKEN: Ibovespa. No plano grátis é 1 papel por chamada
 //   e a cotação muda a cada 30 minutos.
+// - S&P 500, Nasdaq e Dow Jones entram pelo cron dos EUA (src/eua.js), que chama mesclarLetreiro.
+
+import { paisBdr } from "./bdr.js";
+import { atualizarEua } from "./eua.js";
 
 const TIMEOUT = 8000;
 
@@ -118,12 +122,30 @@ export async function atualizarMercado(env, partes) {
       }
     } catch (e) { erros[nome] = String(e.message || e); }
   }
-  const ORDEM = ["ibov", "usd", "eur", "selic", "cdi", "ipca", "btc", "eth"];
-  const itens = [...porId.values()].sort((a, b) => ORDEM.indexOf(a.id) - ORDEM.indexOf(b.id));
-  const painel = { atualizado: agora, itens, erros, temBolsa: !!env.BRAPI_TOKEN };
-  await env.DB.prepare(
+  const painel = { atualizado: agora, itens: ordenarLetreiro([...porId.values()]), erros, temBolsa: !!env.BRAPI_TOKEN };
+  await gravarPainel(env, painel, agora);
+  return painel;
+}
+
+// Ordem do letreiro: bolsa daqui, bolsas americanas, moedas, juros e cripto. O que não estiver na lista vai para o fim.
+const ORDEM = ["ibov", "ifix", "spx", "nasdaq", "dow", "usd", "eur", "selic", "cdi", "ipca", "btc", "eth"];
+const posicao = (id) => { const i = ORDEM.indexOf(id); return i < 0 ? ORDEM.length : i; };
+const ordenarLetreiro = (itens) => itens.sort((a, b) => posicao(a.id) - posicao(b.id));
+function gravarPainel(env, painel, quando) {
+  return env.DB.prepare(
     "INSERT INTO docs (collection, id, data, coletado) VALUES ('meta', 'mercado', ?1, ?2) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, coletado = excluded.coletado, atualizado = strftime('%Y-%m-%dT%H:%M:%fZ','now')"
-  ).bind(JSON.stringify(painel), agora).run();
+  ).bind(JSON.stringify(painel), quando).run();
+}
+
+// Põe ou troca itens no letreiro sem mexer no resto (usado pelos índices americanos). Não muda `atualizado`,
+// que é o relógio do botão "Atualizar agora".
+export async function mesclarLetreiro(env, novos) {
+  const antes = await lerPainel(env);
+  const porId = new Map((antes.itens || []).map((i) => [i.id, i]));
+  const agora = new Date().toISOString();
+  for (const i of novos) if (i.valor !== null && i.valor !== undefined) porId.set(i.id, { ...i, lido: agora });
+  const painel = { ...antes, itens: ordenarLetreiro([...porId.values()]) };
+  await gravarPainel(env, painel, agora);
   return painel;
 }
 
@@ -147,26 +169,45 @@ export async function pedirAtualizacao(env) {
   const idade = Date.now() - Date.parse(antes.atualizado || 0);
   if (idade < 5 * 60_000) return { ...antes, aguarde: Math.ceil((5 * 60_000 - idade) / 1000) };
   try { await atualizarB3(env); } catch (e) {}
+  // Os EUA levam uns 15 s (uma chamada por símbolo): seguem depois da resposta, e a página vê o resultado na próxima leitura.
+  const eua = atualizarEua(env).catch((e) => console.error("eua", e));
+  if (env.ctx && env.ctx.waitUntil) env.ctx.waitUntil(eua); else await eua;
   return atualizarMercado(env, { moedas: true, bolsa: true, indicadores: !(antes.itens || []).some((i) => i.id === "selic") || idade > 6 * 3600_000 });
 }
 
 
-// Tabelas de ações e FIIs: a rota /api/quote/list da brapi responde sem token e traz a B3 inteira, uma chamada por tipo.
+// Tabelas de ações, FIIs, ETFs e BDRs: a rota /api/quote/list da brapi responde sem token e traz a B3 inteira, uma chamada por tipo.
 // Guardamos as mais negociadas em meta/b3. Não usamos os logos que a rota devolve (marcas das empresas).
-async function listaB3(tipo, limite) {
+async function listaB3(tipo, limite, env) {
   const d = await pegar(`https://brapi.dev/api/quote/list?type=${tipo}&sortBy=volume&sortOrder=desc&limit=${limite}`);
+  if (env && tipo === "bdr") await sondarBdr(env, d);
   return (d.stocks || []).map((x) => ({ t: x.stock, nome: x.name || x.stock, preco: num(x.close), var: num(x.change), vol: num(x.volume), cap: num(x.market_cap), setor: x.sector || "", sub: x.subType || "" }))
     .filter((x) => x.t && x.preco !== null);
 }
+// Na primeira carga de BDRs guarda uma amostra crua da resposta em _sistema/sonda-brapi-bdr, para conferir campos e subType.
+async function sondarBdr(env, d) {
+  try {
+    if (await env.DB.prepare("SELECT 1 FROM docs WHERE collection = '_sistema' AND id = 'sonda-brapi-bdr'").first()) return;
+    const lista = (d && d.stocks) || [];
+    const amostra = { quando: new Date().toISOString(), total: lista.length, campos: lista[0] ? Object.keys(lista[0]) : [], subTypes: [...new Set(lista.map((x) => x.subType || ""))], primeiros: lista.slice(0, 5) };
+    await env.DB.prepare("INSERT INTO docs (collection, id, data) VALUES ('_sistema', 'sonda-brapi-bdr', ?1) ON CONFLICT(collection, id) DO NOTHING").bind(JSON.stringify(amostra)).run();
+  } catch (e) {}
+}
 export async function atualizarB3(env) {
-  const [acoes, fundos] = await Promise.all([listaB3("stock", 120), listaB3("fund", 250)]);
+  // BDRs numa chamada à parte: se falharem, ações, FIIs e ETFs saem mesmo assim e os BDRs anteriores ficam.
+  const [acoes, fundos, bdrsLidos] = await Promise.all([listaB3("stock", 120), listaB3("fund", 250), listaB3("bdr", 150, env).catch(() => null)]);
   const fiis = fundos.filter((f) => f.sub !== "etf" && /11$/.test(f.t));
   const etfs = fundos.filter((f) => f.sub === "etf");
-  const doc = { atualizado: new Date().toISOString(), acoes, fiis, etfs };
+  let bdrs = bdrsLidos ? bdrsLidos.map((x) => ({ ...x, pais: paisBdr(x.t) })) : null;
+  if (!bdrs) {
+    const r = await env.DB.prepare("SELECT data FROM docs WHERE collection = 'meta' AND id = 'b3'").first();
+    try { bdrs = (r && JSON.parse(r.data).bdrs) || []; } catch { bdrs = []; }
+  }
+  const doc = { atualizado: new Date().toISOString(), acoes, fiis, etfs, bdrs };
   await env.DB.prepare(
     "INSERT INTO docs (collection, id, data, coletado) VALUES ('meta', 'b3', ?1, ?2) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, coletado = excluded.coletado, atualizado = strftime('%Y-%m-%dT%H:%M:%fZ','now')"
   ).bind(JSON.stringify(doc), doc.atualizado).run();
-  return { acoes: acoes.length, fiis: fiis.length, etfs: etfs.length };
+  return { acoes: acoes.length, fiis: fiis.length, etfs: etfs.length, bdrs: bdrs.length };
 }
 export async function cronB3(env, quando) {
   const d = new Date(quando), m = d.getUTCMinutes(), h = d.getUTCHours();
