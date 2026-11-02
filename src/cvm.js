@@ -131,6 +131,25 @@ function emPercentual(hist) {
 const r4 = (x) => (x === null ? null : Math.round(x * 1e4) / 1e4);
 const escala = (h, f) => [h[0], h[1] === null ? null : r4(h[1] * f), h[2], h[3], h[4] === null ? null : r4(h[4] * f), h[5], h[6]];
 
+// Resumo por papel para a tabela, os rankings, os filtros e as listas da Bolsa (meta/fii-resumo, uns 30 a 40 KB contra
+// os ~390 KB do meta/fii com 13 meses de histórico). O histórico só desce quando a pessoa abre o diálogo de um FII.
+// r12 e m12 seguem a conta que a página fazia com o histórico: rendimento por cota de cada mês = DY do mês x VP;
+// r12 é a soma dos últimos 12 meses com dado (ou a média x 12 quando há menos de 12) e m12 quantos meses entraram.
+// O DY 12m precisa da cotação do dia, então a página faz r12 / preço.
+const r6 = (x) => (x == null ? null : Math.round(x * 1e6) / 1e6);
+export function resumoFii(fundos) {
+  const out = {};
+  for (const [t, f] of Object.entries(fundos || {})) {
+    const rends = (f.h || []).map((h) => (h[1] != null && h[2] != null ? (h[1] / 100) * h[2] : null));
+    const ult = rends.length ? rends[rends.length - 1] : null;
+    const ult12 = rends.slice(-12).filter((v) => v != null);
+    const soma = ult12.reduce((a, b) => a + b, 0);
+    const r12 = ult12.length ? (ult12.length >= 12 ? soma : (soma / ult12.length) * 12) : null;
+    out[t] = { n: f.n, s: f.s, ref: f.ref, vp: f.vp, cot: f.cot ?? null, rend: r6(ult), r12: r6(r12), m12: ult12.length };
+  }
+  return out;
+}
+
 export async function etapaAnoAnterior(env) {
   const ano = new Date().getUTCFullYear() - 1;
   const { hist } = await lerAno(ano);
@@ -157,7 +176,9 @@ export async function etapaAnoCorrente(env) {
     // h: [mês, DY do mês em %, VP da cota, cotistas, rentabilidade efetiva do mês, PL, cotas emitidas]
     fundos[t] = { ...cad, ref: u[0], vp: u[2], cot: u[3], pl: u[5], cotas: u[6], h: meses.map((m) => m.slice(0, 5)) };
   }
-  await gravar(env, "fii", { atualizado: new Date().toISOString(), ref: refMax, fonte: "CVM, informe mensal de FII", fundos });
+  const atualizado = new Date().toISOString(), fonte = "CVM, informe mensal de FII";
+  await gravar(env, "fii", { atualizado, ref: refMax, fonte, fundos });
+  await gravar(env, "fii-resumo", { atualizado, ref: refMax, fonte, fundos: resumoFii(fundos) });
   return Object.keys(fundos).length;
 }
 
@@ -166,13 +187,13 @@ function erro(env, etapa, e) {
     .bind(JSON.stringify({ quando: new Date().toISOString(), etapa, erro: String(e && e.message || e) })).run();
 }
 
-// Uma vez por dia (10:12 e 10:17 UTC, depois de a CVM publicar o lote da madrugada). Enquanto meta/fii
-// não existir, tenta de 15 em 15 minutos.
+// Uma vez por dia (10:12 e 10:17 UTC, depois de a CVM publicar o lote da madrugada). Enquanto meta/fii-resumo
+// não existir (é gravado junto com meta/fii), tenta de 15 em 15 minutos.
 export async function cronCvm(env, quando) {
   const d = new Date(quando), h = d.getUTCHours(), m = d.getUTCMinutes();
   const diario = h === 10;
   let faltando = false;
-  if (!diario && (m % 15 === 12 || m % 15 === 2)) faltando = !(await env.DB.prepare("SELECT 1 FROM docs WHERE collection = 'meta' AND id = 'fii'").first());
+  if (!diario && (m % 15 === 12 || m % 15 === 2)) faltando = !(await env.DB.prepare("SELECT 1 FROM docs WHERE collection = 'meta' AND id = 'fii-resumo'").first());
   const etapa = (diario && m === 12) || (faltando && m % 15 === 12) ? "anterior" : (diario && m === 17) || (faltando && m % 15 === 2) ? "corrente" : "";
   if (!etapa) return null;
   // Marca o início: se a execução for interrompida por limite de CPU, o admin vê "iniciou e não terminou".

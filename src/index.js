@@ -66,34 +66,63 @@ async function quemEntra(request, env, conferirLista = true) {
 // Respostas das listas guardadas em duas camadas: memória do isolate por 30 s e cache de borda da Cloudflare por 3 min.
 // São iguais para todo mundo e só mudam quando as coletas rodam. O cache de borda é o que segura as leituras do D1
 // quando há várias pessoas ou vários isolates: a permissão de seção é conferida antes, por usuário, e não entra aqui.
+// Cada camada guarda o JSON já como texto e um ETag dele: a resposta sai sem parse nem stringify, e o navegador
+// revalida com If-None-Match (cache-control: private, no-cache) e recebe 304 quando nada mudou.
 const respostas = new Map();
 const RESPOSTA_TTL = 30_000;
 const BORDA_TTL = 180;
-async function comCache(chave, gerar) {
+
+// ETag curto: tamanho e FNV-1a de 32 bits do texto, os dois em base 36.
+export function etagDe(txt) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < txt.length; i++) { h ^= txt.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return `"${txt.length.toString(36)}-${(h >>> 0).toString(36)}"`;
+}
+// A borda da Cloudflare pode trocar o ETag forte por fraco (W/"...") ao comprimir: compara sem o W/.
+const semFraco = (e) => e.trim().replace(/^W\//, "");
+function bateEtag(request, etag) {
+  const h = request && request.headers.get("if-none-match");
+  if (!h) return false;
+  if (h.trim() === "*") return true;
+  const alvo = semFraco(etag);
+  return h.split(",").some((e) => semFraco(e) === alvo);
+}
+function responderTexto(request, txt, etag) {
+  const headers = { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-cache", etag };
+  if (bateEtag(request, etag)) return new Response(null, { status: 304, headers: { "cache-control": headers["cache-control"], etag } });
+  return new Response(txt, { status: 200, headers });
+}
+async function comCache(chave, gerar, request) {
   const c = respostas.get(chave);
-  if (c && Date.now() - c.em < RESPOSTA_TTL) return json(c.dados);
+  if (c && Date.now() - c.em < RESPOSTA_TTL) return responderTexto(request, c.txt, c.etag);
   const borda = typeof caches !== "undefined" ? caches.default : null;
   const chaveBorda = new Request("https://cache.lookout.local/" + encodeURIComponent(chave));
   if (borda) {
     try {
       const r = await borda.match(chaveBorda);
-      if (r) { const dados = await r.json(); respostas.set(chave, { dados, em: Date.now() }); return json(dados); }
+      if (r) {
+        const txt = await r.text();
+        const etag = r.headers.get("x-lookout-etag") || etagDe(txt);
+        respostas.set(chave, { txt, etag, em: Date.now() });
+        return responderTexto(request, txt, etag);
+      }
     } catch (e) {}
   }
-  const dados = await gerar();
+  const txt = JSON.stringify(await gerar());
+  const etag = etagDe(txt);
   if (respostas.size > 200) respostas.clear();
-  respostas.set(chave, { dados, em: Date.now() });
+  respostas.set(chave, { txt, etag, em: Date.now() });
   if (borda) {
-    try { await borda.put(chaveBorda, new Response(JSON.stringify(dados), { headers: { "content-type": "application/json", "cache-control": "s-maxage=" + BORDA_TTL } })); } catch (e) {}
+    try { await borda.put(chaveBorda, new Response(txt, { headers: { "content-type": "application/json", "cache-control": "s-maxage=" + BORDA_TTL, "x-lookout-etag": etag } })); } catch (e) {}
   }
-  return json(dados);
+  return responderTexto(request, txt, etag);
 }
 
 function linhaParaDoc(r) {
   return { id: r.id, data: JSON.parse(r.data) };
 }
 
-async function consultar(url, env, quem) {
+async function consultar(url, env, quem, request) {
   const c = url.searchParams.get("c");
   if (!LISTAS.has(c)) return json({ erro: "collection" }, 400);
   if (!libera(quem.secoes, secaoDe(c))) return json({ erro: "secao" }, 403);
@@ -116,10 +145,10 @@ async function consultar(url, env, quem) {
   return comCache(sql + "|" + args.join("|"), async () => {
     const { results } = await env.DB.prepare(sql).bind(...args).all();
     return { docs: results.map(linhaParaDoc) };
-  });
+  }, request);
 }
 
-async function lerDoc(url, env, quem) {
+async function lerDoc(url, env, quem, request) {
   const c = url.searchParams.get("c");
   const id = url.searchParams.get("id") || "";
   if (!DOCS.has(c) || !id) return json({ erro: "doc" }, 400);
@@ -128,7 +157,7 @@ async function lerDoc(url, env, quem) {
   return comCache("doc|" + c + "|" + id, async () => {
     const r = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = ?").bind(c, id).first();
     return r ? { existe: true, ...linhaParaDoc(r) } : { existe: false, id };
-  });
+  }, request);
 }
 
 async function favoritos(request, env, quem, idFav) {
@@ -309,8 +338,8 @@ export default {
     }
 
     if (p === "/api/me") return json({ email: quem.email, nome: quem.nome, admin: quem.admin, secoes: quem.secoes ?? null });
-    if (p === "/api/q" && request.method === "GET") return consultar(url, env, quem);
-    if (p === "/api/doc" && request.method === "GET") return lerDoc(url, env, quem);
+    if (p === "/api/q" && request.method === "GET") return consultar(url, env, quem, request);
+    if (p === "/api/doc" && request.method === "GET") return lerDoc(url, env, quem, request);
     if (p === "/api/mercado/atualizar" && request.method === "POST") {
       if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
       return json(await pedirAtualizacao(env));

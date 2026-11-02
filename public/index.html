@@ -477,6 +477,9 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .meta .tags { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .resumo { margin: 0; max-width: 68ch; }
 .resumo.recolhido { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Itens fora da tela não passam por layout nem pintura; a altura estimada vale até o item aparecer uma vez.
+   A margem de recorte deixa o anel de foco e a área de toque das bordas visíveis apesar da contenção de pintura. */
+#feed li.item { content-visibility: auto; contain-intrinsic-size: auto 110px; overflow-clip-margin: 8px; }
 .ler-mais { align-self: flex-start; margin-top: -2px; padding: 0; border: 0; background: none; font: 500 13px/20px var(--font-sans); color: var(--primary); cursor: pointer; border-radius: var(--radius-sm); }
 .ler-mais:hover { text-decoration: underline; text-underline-offset: 3px; }
 .item-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
@@ -706,30 +709,49 @@ footer b { color: var(--foreground); font-weight: 500; }
 <script>
 /* Lookout: adaptador que imita o banco do artifact (window.claude.use) usando a API do Worker.
    Leituras viram GET em /api/q e /api/doc; "onSnapshot" vira consulta a cada 2 minutos e quando a aba volta ao foco.
+   Com a aba escondida o ciclo não roda; ao voltar, só roda se o último tiver mais de 2 minutos. A resposta só chega
+   a quem assinou quando o JSON mudou. Os GETs usam o cache normal do navegador: a API manda ETag e responde 304.
    Favoritos ficam em /api/favs, ligados ao e-mail de quem fez login. */
 (function () {
   const INTERVALO = 120000;
   const ouvintes = new Set();
   const pedir = async (url, opt) => {
-    const o = Object.assign({ credentials: "same-origin", cache: "no-store" }, opt || {});
+    const o = Object.assign({ credentials: "same-origin" }, opt || {});
     o.headers = Object.assign({ "X-Requested-With": "XMLHttpRequest" }, o.headers || {});
     const r = await fetch(url, o);
-    if (r.status === 401 || r.status === 403) { location.reload(); throw new Error("sessão"); }
+    /* 403 de seção não liberada não é sessão vencida: só recarrega no 401 e no 403 de convite */
+    if (r.status === 401) { location.reload(); throw new Error("sessão"); }
+    const txt = await r.text();
+    if (r.status === 403) { let j = {}; try { j = JSON.parse(txt); } catch (e) {} if (j.erro !== "secao") location.reload(); throw new Error(j.erro || "sessão"); }
     if (!r.ok) throw new Error("http " + r.status);
-    return r.json();
+    const j = JSON.parse(txt);
+    if (j && typeof j === "object") Object.defineProperty(j, "_txt", { value: txt });
+    return j;
   };
   const snapDoc = (d) => ({ id: d.id, exists: true, data: () => d.data });
-  const snapLista = (docs) => ({ docs: docs.map(snapDoc), size: docs.length, empty: !docs.length });
-  function assinar(carregar, prox, erro) {
-    let vivo = true;
-    const rodar = () => carregar().then((s) => { if (vivo) prox(s); }, (e) => { if (vivo && erro) erro(e); });
-    const ouvinte = { rodar };
+  const snapLista = (r) => ({ docs: r.docs.map(snapDoc), size: r.docs.length, empty: !r.docs.length, _txt: r._txt });
+  /* soAoVoltar: sem o ciclo de 2 min, só na abertura e quando a aba volta (favoritos mudados em outro aparelho) */
+  function assinar(carregar, prox, erro, soAoVoltar) {
+    let vivo = true, ultimo = 0, rodando = false, ultTxt = null;
+    const rodar = (forcar) => {
+      if (!vivo || rodando || (!forcar && document.hidden)) return;
+      rodando = true; ultimo = Date.now();
+      carregar().then((s) => {
+        rodando = false;
+        if (!vivo) return;
+        const k = s && s._txt;
+        if (k != null && k === ultTxt) return;
+        ultTxt = k == null ? null : k;
+        prox(s);
+      }, (e) => { rodando = false; if (vivo && erro) erro(e); });
+    };
+    const ouvinte = { voltou: () => { if (Date.now() - ultimo > INTERVALO) rodar(); } };
     ouvintes.add(ouvinte);
-    rodar();
-    const t = setInterval(rodar, INTERVALO);
+    rodar(true);
+    const t = soAoVoltar ? 0 : setInterval(() => rodar(), INTERVALO);
     return () => { vivo = false; clearInterval(t); ouvintes.delete(ouvinte); };
   }
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) ouvintes.forEach((o) => o.rodar()); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) ouvintes.forEach((o) => o.voltou()); });
 
   function consulta(c, filtros) {
     const f = Object.assign({ limit: 100 }, filtros || {});
@@ -740,8 +762,7 @@ footer b { color: var(--foreground); font-weight: 500; }
       async get() {
         const p = new URLSearchParams({ c });
         for (const k of ["order", "dir", "limit", "wf", "wo", "wv"]) if (f[k] != null) p.set(k, String(f[k]));
-        const r = await pedir("/api/q?" + p);
-        return snapLista(r.docs);
+        return snapLista(await pedir("/api/q?" + p));
       },
       onSnapshot(prox, erro) { return assinar(() => q.get(), prox, erro); },
     };
@@ -750,8 +771,8 @@ footer b { color: var(--foreground); font-weight: 500; }
 
   function favs() {
     const col = {
-      async get() { return snapLista((await pedir("/api/favs")).docs); },
-      onSnapshot(prox, erro) { return assinar(() => col.get(), prox, erro); },
+      async get() { return snapLista(await pedir("/api/favs")); },
+      onSnapshot(prox, erro) { return assinar(() => col.get(), prox, erro, true); },
       doc(id) {
         const u = "/api/favs/" + encodeURIComponent(id);
         return {
@@ -764,6 +785,8 @@ footer b { color: var(--foreground); font-weight: 500; }
   }
 
   const db = {
+    /* roda fn agora e depois no mesmo ritmo das assinaturas (pula com a aba escondida); devolve a função que desliga */
+    vigiar(fn) { return assinar(async () => { await fn(); return null; }, () => {}, () => {}); },
     collection(caminho) {
       if (caminho.startsWith("data/users/")) return favs();
       return consulta(caminho);
@@ -773,13 +796,14 @@ footer b { color: var(--foreground); font-weight: 500; }
       const c = caminho.slice(0, i), id = caminho.slice(i + 1);
       const ler = async () => {
         const r = await pedir("/api/doc?" + new URLSearchParams({ c, id }));
-        return r.existe ? { id, exists: true, data: () => r.data } : { id, exists: false, data: () => undefined };
+        return r.existe ? { id, exists: true, data: () => r.data, _txt: r._txt } : { id, exists: false, data: () => undefined, _txt: r._txt };
       };
       return { get: ler, onSnapshot: (prox, erro) => assinar(ler, prox, erro) };
     },
   };
   let eu = null;
-  const user = { id: async () => { eu = eu || await pedir("/api/me"); return eu.email ? "me" : null; } };
+  /* reaproveita a leitura de window.lookoutEu: uma chamada só a /api/me por abertura */
+  const user = { id: async () => { eu = eu || await window.lookoutEu.catch(() => null) || await pedir("/api/me"); return eu.email ? "me" : null; } };
   window.claude = { use: async (nome) => (nome === "db" ? db : nome === "user" ? user : null) };
   /* quem está logado: o menu da conta (avatar, nome, link de administração) lê esta promessa */
   window.lookoutEu = pedir("/api/me").then((me) => { eu = me; return me; });
@@ -979,9 +1003,12 @@ function passaTema(i) {
   return !ss.length || ss.includes(subDe(i));
 }
 function salvarTemas() { try { localStorage.setItem("radar-filtro" + R().sufixo, [...temasSel].join(",") || "todos"); } catch (e) {} }
-const JANELA = 1000;
+/* O servidor devolve no máximo 500 por consulta: a janela tem o mesmo tamanho, senão "mais antigos" nunca aparece.
+   A abertura pede os PRIMEIRA mais recentes para desenhar logo e busca o resto da janela em seguida. */
+const JANELA = 500, PRIMEIRA = 200;
 let dbRef = null, recentes = [], antigos = [], podeMais = false, carregando = false;
 let itens = [], meta = null, destaque = null, tipo = "todos", busca = "", expandidos = new Set(), slide = 0;
+let tBusca = 0; /* busca do feed esperando o usuário parar de digitar */
 let soRel = false, soFav = false, favs = {}, favCol = null;
 /* Ordem dos itens dentro de cada tema */
 const ORDENS = [
@@ -991,6 +1018,8 @@ const ORDENS = [
 ];
 let ordenacao = "data";
 let painelMercado = null, pedindoMercado = false;
+let mercadoPronto = null;
+let b3Lido = false, euaLido = false, mercadoLido = false; /* já leu o documento ao menos uma vez neste radar */
 let b3 = null, eua = null, cotAba = "acoes", cotOrdem = { campo: "liq", dir: -1 }, cotBusca = "", cotTodos = false;
 /* Classe escolhida em cada visão: a Bolsa lembra a dela (Ações, FIIs, ETFs, BDRs) e a visão EUA, a sua (Ações, ETFs) */
 let cotAbaBr = "acoes", cotAbaEua = "usacoes";
@@ -1047,7 +1076,9 @@ function aplicarRadar() {
   recentes = []; antigos = []; itens = []; meta = null; destaque = null; podeMais = false; carregando = false; carregado = false;
   expandidos = new Set();
   document.title = r.titulo + " · Lookout";
-  painelMercado = null; b3 = null; eua = null; if (r.mercado) setTimeout(() => { lerMercado(); lerB3(); lerEua(); }, 0);
+  painelMercado = null; b3 = null; eua = null; b3Lido = euaLido = mercadoLido = false;
+  /* já na hora: na Bolsa a tabela depende do b3, e o feed (que ali só alimenta o trilho) espera por ele em ligarRadar */
+  mercadoPronto = r.mercado ? Promise.all([lerMercado(), lerB3(), lerEua()]).catch(() => {}) : null;
   const h1 = document.querySelector("h1"); if (h1) h1.textContent = r.titulo;
   const rod = document.getElementById("rodape"); if (rod) rod.textContent = r.rodape;
 }
@@ -1140,33 +1171,65 @@ function renderStatus() {
 const URGENTE_MS = 24 * 3600 * 1000;
 const urgentes = () => itens.filter((i) => i.urgente === true && i.coletado && Date.now() - new Date(i.coletado) <= URGENTE_MS);
 /* Painel de mercado: lê meta/mercado e permite pedir uma atualização (no máximo uma a cada 5 minutos) */
+/* Lê um documento de meta para o mercado. Devolve undefined quando a leitura falhou (fica o que já estava). */
+async function lerMeta(id) {
+  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id }), { credentials: "same-origin" }); const j = await r.json(); return j.existe ? j.data : null; } catch (e) { return undefined; }
+}
+/* Mesmo documento de antes (mesmo "atualizado"): não troca o objeto nem redesenha. As listas e caches comparam o objeto. */
+const mesmoMeta = (velho, novo) => novo === undefined || (velho === novo) || (!!velho && !!novo && !!velho.atualizado && velho.atualizado === novo.atualizado);
 async function lerB3() {
   if (!R().mercado) return;
-  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "b3" }), { credentials: "same-origin" }); const j = await r.json(); b3 = j.existe ? j.data : null; } catch (e) {}
+  const novo = await lerMeta("b3");
+  if (!R().mercado || (b3Lido && mesmoMeta(b3, novo))) return;
+  b3Lido = true; if (novo !== undefined) b3 = novo;
   renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas();
 }
 /* Cotações dos EUA (meta/eua): ações do S&P 100, ETFs e índices, gravadas pelo cron a cada 30 min no pregão de Nova York */
 async function lerEua() {
   if (!R().mercado) return;
-  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "eua" }), { credentials: "same-origin" }); const j = await r.json(); eua = j.existe ? j.data : null; } catch (e) {}
+  const novo = await lerMeta("eua");
+  if (!R().mercado || (euaLido && mesmoMeta(eua, novo))) return;
+  euaLido = true; if (novo !== undefined) eua = novo;
   renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas(); if (emEua()) renderHoje();
 }
-/* Dados dos FIIs do informe mensal da CVM (meta/fii). Carrega uma vez; quem precisa dos dados antes de seguir espera a promessa. */
-let fiiCvm = null, lendoFii = null;
+/* Dados dos FIIs do informe mensal da CVM. Tabela, rankings, filtros e listas usam o resumo por papel (meta/fii-resumo,
+   sem histórico); o histórico (meta/fii) só desce quando um FII é aberto. Enquanto o resumo não existir no banco, cai no
+   meta/fii inteiro, como antes. Carrega uma vez; quem precisa dos dados antes de seguir espera a promessa. */
+let fiiCvm = null, lendoFii = null, fiiHist = null, lendoHist = null;
+const lerDocMeta = async (id) => { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id }), { credentials: "same-origin" }); return r.json(); };
 function lerFii() {
   if (fiiCvm) return Promise.resolve();
   if (!lendoFii) lendoFii = (async () => {
     /* Se a leitura falhar, fica sem dados da CVM até recarregar: os renders chamam lerFii enquanto fiiCvm for null, e sem isso pediriam de novo sem parar */
-    try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "fii" }), { credentials: "same-origin" }); const j = await r.json(); fiiCvm = j.existe ? j.data : { fundos: {} }; } catch (e) { fiiCvm = { fundos: {} }; }
+    try {
+      const j = await lerDocMeta("fii-resumo");
+      if (j.existe) fiiCvm = { ...j.data, resumo: true };
+      else { const k = await lerDocMeta("fii"); fiiCvm = k.existe ? k.data : { fundos: {} }; if (k.existe) fiiHist = fiiCvm; }
+    } catch (e) { fiiCvm = { fundos: {} }; }
     lendoFii = null; renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas();
   })();
   return lendoFii;
 }
+/* Histórico mensal dos FIIs (meta/fii), para o diálogo de um fundo */
+function lerFiiHist() {
+  if (fiiHist) return Promise.resolve();
+  if (!lendoHist) lendoHist = (async () => {
+    try { const j = await lerDocMeta("fii"); fiiHist = j.existe ? j.data : { fundos: {} }; } catch (e) { fiiHist = { fundos: {} }; }
+    lendoHist = null;
+  })();
+  return lendoHist;
+}
 // Junta a cotação da brapi com o informe da CVM. Rendimento por cota estimado = DY do mês (sobre o patrimônio) x VP.
 function comCvm(x) {
-  const f = fiiCvm && fiiCvm.fundos && fiiCvm.fundos[x.t];
+  const f = x._fh || (fiiCvm && fiiCvm.fundos && fiiCvm.fundos[x.t]);
+  if (x._fh) { x = { ...x }; delete x._fh; }
   const liq = x.vol != null && x.preco != null ? x.vol * x.preco : null;
   if (!f) return { ...x, liq };
+  /* resumo (sem histórico): r12 já é a soma dos 12 meses (ou a média x 12) e m12 quantos meses entraram */
+  if (!f.h) {
+    const dy = f.m12 && f.r12 != null && x.preco ? (f.r12 / x.preco) * 100 : null;
+    return { ...x, liq, f, rend: f.rend ?? null, dy, dyAnual: f.m12 > 0 && f.m12 < 12, pvp: f.vp && x.preco ? x.preco / f.vp : null, cot: f.cot ?? null, rends: null };
+  }
   const rends = (f.h || []).map((h) => (h[1] != null && h[2] != null ? (h[1] / 100) * h[2] : null));
   const ult = rends.length ? rends[rends.length - 1] : null;
   const ult12 = rends.slice(-12).filter((v) => v != null);
@@ -1247,9 +1310,27 @@ function renderCotacoes() {
   const base = baseDe(cotAba), us = ABAS_EUA.has(cotAba);
   box.textContent = "";
   const busca = el("input", { class: "dd-input", id: "cot-busca", type: "search", placeholder: "Filtrar papel", "aria-label": "Filtrar papel ou nome", autocomplete: "off", value: cotBusca });
-  busca.addEventListener("input", () => { cotBusca = busca.value; renderCotacoes(); });
+  /* filtro: espera 150 ms sem tecla e troca só as linhas e o rodapé; o campo fica, com foco e cursor */
+  let t = 0;
+  busca.addEventListener("input", () => { cotBusca = busca.value; clearTimeout(t); t = setTimeout(() => corpoCotacoes(box, true), 150); });
   box.append(el("div", { class: "cot-topo" }, el("h3", {}, "Cotações"), el("div", { class: "cot-ferr" }, busca)));
   if (!base) { box.append(el("p", { class: "nota" }, us ? "As cotações dos EUA aparecem depois da primeira consulta." : "As tabelas aparecem depois da primeira consulta.")); return; }
+  corpoCotacoes(box, false);
+  if (foco && $(foco) && document.activeElement !== $(foco)) { $(foco).focus({ preventScroll: true }); if (foco === "cot-busca") { const v = $(foco).value; $(foco).setSelectionRange(v.length, v.length); } }
+}
+/* Nota do rodapé da tabela (também refeita a cada minuto, pelo "atualizado há X min") */
+function notaCotacoes(linhas, daClasse) {
+  const base = baseDe(cotAba), us = ABAS_EUA.has(cotAba);
+  if (!base) return "";
+  const universo = cotAba === "usacoes" ? "ações do S&P 100" : cotAba === "usetfs" ? "ETFs americanos" : cotAba === "bdrs" ? "BDRs, os mais negociados da B3" : "papéis, os mais negociados da B3";
+  let nota = (filtrosBolsaAtivos() ? `${linhas} de ${daClasse} papéis com os filtros da esquerda` : `${linhas} ${universo}`) + ` · atualizado ${fmtRel(base.atualizado)} · ` + (us ? `cotações do ${base.fonte || "Yahoo Finance"}, com atraso, em dólar` : "cotações da brapi, com atraso");
+  if (cotAba === "bdrs") nota += " · bandeira é o país da empresa";
+  if (cotAba === "fiis") nota += fiiCvm && fiiCvm.ref ? ` · DY, rendimento, P/VP e cotistas do informe da CVM de ${fmtMes(fiiCvm.ref)}` : " · dados da CVM ainda não carregados";
+  return nota;
+}
+let notaCot = null;
+/* Tabela e rodapé abaixo do campo de filtro. soLinhas: veio do filtro, troca só o tbody quando a tabela já existe. */
+function corpoCotacoes(box, soLinhas) {
   const q = cotBusca.trim().toUpperCase();
   const daClasse = listaCvm(cotAba);
   let linhas = daClasse.filter((x) => passaBolsa(x) && (!q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q)));
@@ -1257,30 +1338,38 @@ function renderCotacoes() {
   const { campo, dir } = cotOrdem;
   linhas.sort((a, b) => (COL_TEXTO.has(campo) ? String(a[campo] ?? "").localeCompare(String(b[campo] ?? "")) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
   const mostra = cotTodos || q ? linhas : linhas.slice(0, 15);
-  const thead = el("tr", {}, ...colunas.map(([c, nome, cls]) => {
-    const th = el("th", { scope: "col", class: cls, "aria-sort": campo === c ? (dir > 0 ? "ascending" : "descending") : "none" });
-    /* "(US$)" no cabeçalho só em tela larga; no celular a nota de rodapé já diz que é dólar */
-    const [rot, moedaTh] = nome.split(" (US$)");
-    const b = el("button", { type: "button" }, rot, moedaTh !== undefined ? el("span", { class: "th-moeda" }, "(US$)") : null);
-    b.addEventListener("click", () => { cotOrdem = { campo: c, dir: campo === c ? -dir : (COL_TEXTO.has(c) ? 1 : -1) }; renderCotacoes(); });
-    th.append(b); return th;
-  }));
   const tbody = el("tbody");
   for (const x of mostra) tbody.append(el("tr", {}, ...colunas.map(([c]) => celula(c, x))));
-  box.append(el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab" }, el("thead", {}, thead), tbody)));
-  if (!linhas.length) box.lastChild.replaceWith(el("p", { class: "vazio" }, el("strong", {}, "Nenhum papel com esses filtros"), q ? "Tente outro nome ou papel na busca." : "Afrouxe os filtros da coluna da esquerda para ver mais papéis."));
-  const universo = cotAba === "usacoes" ? "ações do S&P 100" : cotAba === "usetfs" ? "ETFs americanos" : cotAba === "bdrs" ? "BDRs, os mais negociados da B3" : "papéis, os mais negociados da B3";
-  let nota = (filtrosBolsaAtivos() ? `${linhas.length} de ${daClasse.length} papéis com os filtros da esquerda` : `${linhas.length} ${universo}`) + ` · atualizado ${fmtRel(base.atualizado)} · ` + (us ? `cotações do ${base.fonte || "Yahoo Finance"}, com atraso, em dólar` : "cotações da brapi, com atraso");
-  if (cotAba === "bdrs") nota += " · bandeira é o país da empresa";
-  if (cotAba === "fiis") nota += fiiCvm && fiiCvm.ref ? ` · DY, rendimento, P/VP e cotistas do informe da CVM de ${fmtMes(fiiCvm.ref)}` : " · dados da CVM ainda não carregados";
-  const pe = el("div", { class: "cot-pe" }, el("span", {}, nota));
+  const topo = box.querySelector(".cot-topo");
+  const tabAtual = soLinhas && box.querySelector(".cot-caixa > table > tbody");
+  if (tabAtual && linhas.length) tabAtual.replaceWith(tbody);
+  else {
+    while (topo.nextSibling) topo.nextSibling.remove();
+    const thead = el("tr", {}, ...colunas.map(([c, nome, cls]) => {
+      const th = el("th", { scope: "col", class: cls, "aria-sort": campo === c ? (dir > 0 ? "ascending" : "descending") : "none" });
+      /* "(US$)" no cabeçalho só em tela larga; no celular a nota de rodapé já diz que é dólar */
+      const [rot, moedaTh] = nome.split(" (US$)");
+      const b = el("button", { type: "button" }, rot, moedaTh !== undefined ? el("span", { class: "th-moeda" }, "(US$)") : null);
+      b.addEventListener("click", () => { cotOrdem = { campo: c, dir: campo === c ? -dir : (COL_TEXTO.has(c) ? 1 : -1) }; renderCotacoes(); });
+      th.append(b); return th;
+    }));
+    box.append(linhas.length ? el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab" }, el("thead", {}, thead), tbody))
+      : el("p", { class: "vazio" }, el("strong", {}, "Nenhum papel com esses filtros"), q ? "Tente outro nome ou papel na busca." : "Afrouxe os filtros da coluna da esquerda para ver mais papéis."));
+  }
+  const velho = box.querySelector(".cot-pe");
+  notaCot = [linhas.length, daClasse.length];
+  const pe = el("div", { class: "cot-pe" }, el("span", {}, notaCotacoes(linhas.length, daClasse.length)));
   if (!q && linhas.length > 15) {
     const mais = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "cot-mais" }, cotTodos ? "Mostrar só os 15 primeiros" : `Ver todos os ${linhas.length}`);
     mais.addEventListener("click", () => { cotTodos = !cotTodos; renderCotacoes(); });
     pe.append(mais);
   }
-  box.append(pe);
-  if (foco && $(foco) && document.activeElement !== $(foco)) { $(foco).focus({ preventScroll: true }); if (foco === "cot-busca") { const v = $(foco).value; $(foco).setSelectionRange(v.length, v.length); } }
+  if (velho) velho.replaceWith(pe); else box.append(pe);
+}
+/* Pregão da B3, como no cron (src/mercado.js): segunda a sexta, 13h às 21h10 UTC; mais 30 min pelo fechamento gravado às 21h35 */
+function pregaoB3Aberto(d = new Date()) {
+  const dia = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes();
+  return dia >= 1 && dia <= 5 && m >= 13 * 60 && m <= 21 * 60 + 40;
 }
 /* Pregão de Nova York: 9h30 às 16h, segunda a sexta (feriados americanos não entram na conta) */
 const FMT_NY = (() => { try { return new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }); } catch (e) { return null; } })();
@@ -1804,6 +1893,17 @@ function abrirAtivo(x, aba = cotAba) {
     document.body.append(d);
   }
   d.textContent = "";
+  d.dataset.papel = x.t;
+  /* FII vindo do resumo: o diálogo abre já e ganha o histórico quando o meta/fii chegar */
+  let esperandoHist = false;
+  if (x.f && !x.f.h) {
+    const fh = fiiHist && fiiHist.fundos && fiiHist.fundos[x.t];
+    if (fh) x = comCvm({ ...x, f: undefined, _fh: fh });
+    else if (!fiiHist) {
+      esperandoHist = true;
+      lerFiiHist().then(() => { const dd = $("ativo-dlg"); if (dd && dd.open && dd.dataset.papel === x.t) abrirAtivo(x, aba); });
+    }
+  }
   const f = x.f;
   const fechar = el("button", { type: "button", class: "dd-btn dd-btn--ghost dd-btn--icon ativo-fechar", "aria-label": "Fechar" }, "✕");
   fechar.addEventListener("click", () => d.close());
@@ -1849,7 +1949,7 @@ function abrirAtivo(x, aba = cotAba) {
     f.h.slice().reverse().forEach((h, j) => { const i = f.h.length - 1 - j; tb.append(el("tr", {}, el("td", {}, fmtMes(h[0])), el("td", {}, rends[i] == null ? "–" : fmtRs(rends[i])), el("td", {}, h[1] == null ? "–" : fmtNum(h[1], 2) + "%"), el("td", {}, fmtRs(h[2])), el("td", {}, h[3] == null ? "–" : fmtNum(h[3], 0)))); });
     d.append(el("section", { class: "ativo-sec" }, el("h3", {}, "Histórico mensal"),
       el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab ativo-hist" }, el("thead", {}, el("tr", {}, ...["Mês", "Rend./cota", "DY do mês", "VP/cota", "Cotistas"].map((t) => el("th", { scope: "col" }, t)))), tb))));
-  }
+  } else if (esperandoHist) d.append(el("section", { class: "ativo-sec" }, el("h3", {}, "Rendimento por cota"), el("p", { class: "nota" }, "Carregando o histórico mensal…")));
   const noticias = itens.filter((i) => papeisDe(i).includes(x.t)).slice(0, 6);
   if (noticias.length) {
     const ul = el("ul", { class: "ativo-news" });
@@ -1875,11 +1975,14 @@ function abrirAtivo(x, aba = cotAba) {
       el("a", { href: "https://investidor10.com.br/" + (aba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"));
   }
   d.append(links);
-  d.showModal();
+  if (!d.open) d.showModal();
 }
 async function lerMercado() {
   if (!R().mercado) return;
-  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id: "mercado" }), { credentials: "same-origin" }); const j = await r.json(); painelMercado = j.existe ? j.data : null; } catch (e) {}
+  const novo = await lerMeta("mercado");
+  /* a resposta do "Atualizar agora" traz "aguarde": a leitura seguinte sempre substitui, para liberar o botão */
+  if (!R().mercado || (mercadoLido && !(painelMercado && painelMercado.aguarde) && mesmoMeta(painelMercado, novo))) return;
+  mercadoLido = true; if (novo !== undefined) painelMercado = novo;
   renderMercado();
 }
 async function atualizarMercado() {
@@ -1893,10 +1996,14 @@ const fmtNum = (v, casas) => Number(v).toLocaleString("pt-BR", { minimumFraction
 function renderMercado() {
   const box = $("mercado"), pe = $("mercado-pe");
   if (!R().mercado) { box.hidden = true; pe.hidden = true; return; }
-  box.hidden = false; box.textContent = ""; pe.hidden = false; pe.textContent = "";
+  box.hidden = false; pe.hidden = false; pe.textContent = "";
   const p = painelMercado;
   const itensM = (p && p.itens) || [];
-  if (itensM.length) {
+  /* a fita só é recriada quando os valores mudam: recriar reinicia a animação do letreiro do começo */
+  const chaveFita = JSON.stringify(itensM);
+  if (box.dataset.fita === chaveFita && box.firstChild) { /* mantém a fita que está rodando */ }
+  else if (itensM.length) {
+    box.textContent = ""; box.dataset.fita = chaveFita;
     const grupo = () => {
       const g = el("div", { class: "fita-grupo" });
       for (const i of itensM) {
@@ -1916,7 +2023,7 @@ function renderMercado() {
       el("div", { class: "fita-trilho", style: `--fita-t:${Math.max(24, itensM.length * 6)}s` }, grupo(), grupo()));
     fita.lastChild.lastChild.setAttribute("aria-hidden", "true");
     box.append(fita);
-  }
+  } else { box.textContent = ""; delete box.dataset.fita; }
   const b = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "mercado-atualizar" }, pedindoMercado ? "Atualizando…" : "Atualizar agora");
   if (pedindoMercado) b.disabled = true;
   if (p && p.aguarde) { b.disabled = true; b.textContent = "Atualizado há pouco"; b.title = "Dá para pedir de novo em " + Math.ceil(p.aguarde / 60) + " min"; }
@@ -2286,7 +2393,8 @@ function itemEl(i) {
     resumo = el("p", { class: aberto ? "resumo" : "resumo recolhido" }, i.resumo);
     if (!resumosAbertos) {
       lerMais = el("button", { class: "ler-mais", type: "button", "aria-expanded": String(aberto) }, aberto ? "recolher" : "ler mais");
-      if (!aberto) lerMais.hidden = true;
+      /* recolhido: nasce pelo palpite do tamanho do texto; o observer confere quando o item chega perto da tela */
+      if (!aberto) lerMais.hidden = !resumoCorta(i.resumo);
       lerMais.addEventListener("click", () => {
         const abrir = !resumoAberto.has(k);
         if (abrir) resumoAberto.add(k); else resumoAberto.delete(k);
@@ -2311,14 +2419,46 @@ function itemEl(i) {
       el("span", {}, i.publicado ? (fmtRel(i.publicado).startsWith("em ") ? "previsto " : "publicado ") + fmtRel(i.publicado) : "coletado " + fmtRel(i.coletado))),
     papeis, resumo, lerMais);
 }
-/* Mede depois do render: só mostra "ler mais" quando o texto passa de duas linhas. Lê tudo antes de escrever. */
+/* "ler mais" só aparece quando o resumo passa de duas linhas. A medida não força o layout da página: cada item é
+   medido quando chega perto da tela (IntersectionObserver), e só ele. Sem o observer, o botão aparece em resumo longo. */
+/* Palpite inicial (sem medir): caracteres por linha estimados pela largura do feed do quadro anterior. O observer
+   corrige depois, item a item, então o palpite só serve para o botão já nascer no lugar certo na maioria dos casos. */
+const RESUMO_LONGO = 160;
+let larguraFeed = 0;
+const PX_POR_CARACTERE = 7.2, RESUMO_MAX_PX = 68 * 8.1;
+const resumoCorta = (txt) => {
+  if (!larguraFeed) return String(txt).length > RESUMO_LONGO;
+  const porLinha = Math.min(larguraFeed, RESUMO_MAX_PX) / PX_POR_CARACTERE;
+  return String(txt).length > porLinha * 2;
+};
+const olhoResumo = "IntersectionObserver" in window ? new IntersectionObserver((ents) => {
+  const vis = ents.filter((e) => e.isIntersecting).map((e) => e.target);
+  if (!vis.length) return;
+  const ps = vis.map((li) => li.querySelector(".resumo.recolhido"));
+  const corta = ps.map((p) => !!p && p.scrollHeight > p.clientHeight + 1);
+  vis.forEach((li, n) => {
+    olhoResumo.unobserve(li);
+    const b = ps[n] && ps[n].nextElementSibling;
+    if (b && b.classList.contains("ler-mais")) b.hidden = !corta[n];
+  });
+}, { rootMargin: "300px 0px" }) : null;
+/* Títulos de tema grudados: a altura do h2 vira --h2-h para o subtítulo grudar logo abaixo. Medido no quadro seguinte. */
+let rafH2 = 0;
+function medirTitulos() {
+  cancelAnimationFrame(rafH2);
+  rafH2 = requestAnimationFrame(() => {
+    const secs = [...document.querySelectorAll("#feed section.tema")].filter((s) => s.querySelector(".subgrupo"));
+    const alturas = secs.map((s) => s.firstElementChild.offsetHeight);
+    larguraFeed = $("feed").clientWidth || larguraFeed;
+    secs.forEach((s, n) => { const v = alturas[n] + "px"; if (s.style.getPropertyValue("--h2-h") !== v) s.style.setProperty("--h2-h", v); });
+  });
+}
 function medirFeed() {
-  const ps = [...document.querySelectorAll("#feed .resumo.recolhido")];
-  const corta = ps.map((p) => p.scrollHeight > p.clientHeight + 1);
-  const secs = [...document.querySelectorAll("#feed section.tema")].filter((s) => s.querySelector(".subgrupo"));
-  const alturas = secs.map((s) => s.firstElementChild.offsetHeight);
-  ps.forEach((p, n) => { const b = p.nextElementSibling; if (b && b.classList.contains("ler-mais")) b.hidden = !corta[n]; });
-  secs.forEach((s, n) => s.style.setProperty("--h2-h", alturas[n] + "px"));
+  if (olhoResumo) {
+    olhoResumo.disconnect();
+    document.querySelectorAll("#feed .resumo.recolhido").forEach((p) => { const li = p.closest("li"); if (li) olhoResumo.observe(li); });
+  }
+  medirTitulos();
 }
 
 function renderFeed() {
@@ -2387,8 +2527,9 @@ async function carregarAntigos() {
     const novos = snap.docs.map((d) => d.exists && { ...d.data(), _id: idItem(col, d.id) }).filter(Boolean);
     const antes = itens.length;
     antigos = antigos.concat(novos);
+    podeMais = novos.length >= JANELA;
     juntar();
-    podeMais = novos.length >= JANELA && itens.length > antes;
+    podeMais = podeMais && itens.length > antes;
   } catch (e) {
     if (g !== geracao) return;
     podeMais = true;
@@ -2448,10 +2589,23 @@ function renderContador() {
   const total = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo) && passaTema(i)).length;
   $("ver-itens").textContent = total ? `Ver ${total} ${total === 1 ? "item" : "itens"}` : "Nenhum item";
 }
+/* Letreiro, Pregão, tabela e filtros da Bolsa saem do render() geral: só redesenham quando o que eles mostram
+   mudou (dados de mercado, CVM, feed, que acende o pontinho de notícia, aba, visão ou classe). Quem muda um filtro
+   da Bolsa chama as funções direto. */
+let pregaoVisto = null;
+function renderPregao() {
+  const k = { radar, visao, cotAba, p: painelMercado, pe: pedindoMercado, b3, eua, cvm: fiiCvm, it: itens, nav: MQ_NAV.matches };
+  const v = pregaoVisto;
+  if (v && Object.keys(k).every((c) => k[c] === v[c])) return;
+  pregaoVisto = k;
+  if (!v || v.radar !== k.radar || v.p !== k.p || v.pe !== k.pe) renderMercado();
+  renderRankings(); renderCotacoes(); renderNavBolsa();
+}
 function render() {
+  clearTimeout(tBusca); tBusca = 0;
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
-  aplicarVisao(); renderRadares(); renderMercado(); renderRankings(); renderCotacoes(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderNavBolsa(); renderFeed(); renderContador(); renderLateral();
+  aplicarVisao(); renderRadares(); renderPregao(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
   /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
@@ -2494,7 +2648,8 @@ async function ligarFavoritosNaConta(db) {
         }
         try { localStorage.removeItem("radar-favoritos"); } catch (e) {}
       }
-      if (favCol) { favs = daConta; render(); }
+      /* o polling devolve a lista inteira; só redesenha quando ela difere do que já está na tela */
+      if (favCol && JSON.stringify(daConta) !== JSON.stringify(favs)) { favs = daConta; render(); }
     }, () => { favCol = null; });
   } catch (e) {}
 }
@@ -2564,7 +2719,7 @@ $("painel").addEventListener("keydown", (e) => {
   if (e.shiftKey && (document.activeElement === pri || document.activeElement === $("painel"))) { e.preventDefault(); ult.focus(); }
   else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); pri.focus(); }
 });
-$("busca").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); fecharPainel(); } });
+$("busca").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); if (tBusca) renderBusca(); fecharPainel(); } });
 
 /* Altura real da barra para os títulos de tema grudarem logo abaixo dela */
 const fixarBarra = () => document.documentElement.style.setProperty("--barra-h", $("barra").offsetHeight + "px");
@@ -2747,37 +2902,106 @@ montarMenuConta($("conta"), $("conta-menu"));
   if (id) pintar(id);
 })();
 
-$("busca").addEventListener("input", (e) => { busca = e.target.value; render(); });
+/* Busca: espera 150 ms sem tecla e redesenha só o que depende dela (feed, contagens de tipo, tema, subtema e
+   abrangência, contador de filtros). Os campos não são recriados, então o foco e o cursor ficam onde estão. */
+function renderBusca() {
+  clearTimeout(tBusca); tBusca = 0;
+  const foco = document.activeElement && document.activeElement.id;
+  for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
+  renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderEscopo(); renderFeed(); renderContador();
+  if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
+}
+const buscarDepois = (depois) => { clearTimeout(tBusca); tBusca = setTimeout(() => { renderBusca(); if (depois) depois(); }, 150); };
+$("busca").addEventListener("input", (e) => { busca = e.target.value; buscarDepois(); });
 /* Busca da lateral (900 px ou mais): mesmo estado da busca do painel */
-$("busca-nav").addEventListener("input", (e) => { busca = e.target.value; render(); irParaFeed(); });
-$("busca-nav").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); irParaFeed(); } if (e.key === "Escape" && busca) { e.preventDefault(); busca = ""; render(); } });
+$("busca-nav").addEventListener("input", (e) => { busca = e.target.value; buscarDepois(irParaFeed); });
+$("busca-nav").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); if (tBusca) renderBusca(); irParaFeed(); } if (e.key === "Escape" && busca) { e.preventDefault(); busca = ""; renderBusca(); } });
 /* Mesmos cortes do CSS. A partir de 900 px o botão Filtros some: se o painel estiver aberto, fecha. */
 const MQ_COLUNAS = window.matchMedia("(min-width: 900px)");
 const aoMudarColunas = (e) => { if (e.matches) fecharPainel(); };
 if (MQ_COLUNAS.addEventListener) MQ_COLUNAS.addEventListener("change", aoMudarColunas); else MQ_COLUNAS.addListener(aoMudarColunas);
 /* Assinaturas do radar aberto. Ao trocar de radar, as anteriores são desligadas e respostas atrasadas são ignoradas pela geração. */
 let desligar = [], geracao = 0;
+/* Feed: primeira página curta para o primeiro desenho, o resto da janela logo depois. Polling: a cada 2 min lê só o
+   status da seção; quando ultimaRodada muda, pede só os itens novos (coletado >= o mais novo que já está aqui, o igual
+   cobre uma rodada gravada em partes) e junta pelo id. Destaques e favoritos só redesenham quando o JSON muda. */
+const menorColetado = (l) => l.reduce((m, i) => (i.coletado && (!m || i.coletado < m) ? i.coletado : m), "");
+const maiorColetado = (l) => l.reduce((m, i) => (i.coletado && i.coletado > m ? i.coletado : m), "");
+function mesclarPorId(base, novos) {
+  const pos = new Map(base.map((i, n) => [i._id, n]));
+  const out = base.slice();
+  for (const i of novos) { if (pos.has(i._id)) out[pos.get(i._id)] = i; else { pos.set(i._id, out.length); out.push(i); } }
+  return out;
+}
 function ligarRadar() {
   desligar.forEach((f) => { try { if (typeof f === "function") f(); } catch (e) {} });
   desligar = [];
   const g = ++geracao, db = dbRef, r = R();
   if (!db) return;
-  const col = r.items;
-  desligar.push(db.collection(col).orderBy("coletado", "desc").limit(JANELA).onSnapshot((snap) => {
-    if (g !== geracao) return;
-    recentes = snap.docs.map((d) => d.exists && { ...d.data(), _id: idItem(col, d.id) }).filter(Boolean);
-    carregado = true;
-    if (!antigos.length) podeMais = recentes.length >= JANELA;
+  const col = r.items, vivo = () => g === geracao;
+  const comoItem = (d) => d.exists && { ...d.data(), _id: idItem(col, d.id) };
+  let feedOk = false, lendoFeed = false, rodadaVista, txtStatus = null, txtDest = null;
+  const falhou = () => { if (!vivo()) return; carregado = true; renderFeed(); $("status").textContent = "O feed parou de atualizar. Recarregue a página."; };
+  async function carregarFeed() {
+    if (lendoFeed) return;
+    lendoFeed = true;
+    try {
+      const s1 = await db.collection(col).orderBy("coletado", "desc").limit(PRIMEIRA).get();
+      if (!vivo()) return;
+      recentes = s1.docs.map(comoItem).filter(Boolean);
+      carregado = true; feedOk = true; podeMais = false;
+      juntar();
+      if (recentes.length < PRIMEIRA) return;
+      /* o resto até JANELA: <= o mais velho da primeira página, somando os empatados nele para não perder nenhum */
+      const velho = menorColetado(recentes), empates = recentes.filter((i) => i.coletado === velho).length, lim = JANELA - PRIMEIRA + empates;
+      const s2 = await db.collection(col).where("coletado", "<=", velho).orderBy("coletado", "desc").limit(lim).get();
+      if (!vivo()) return;
+      const resto = s2.docs.map(comoItem).filter(Boolean);
+      recentes = mesclarPorId(recentes, resto);
+      if (!antigos.length) podeMais = resto.length >= lim;
+      juntar();
+    } catch (e) { if (!feedOk) falhou(); }
+    finally { lendoFeed = false; }
+  }
+  async function buscarNovos() {
+    const topo = maiorColetado([...recentes, ...antigos]);
+    if (!topo) return carregarFeed();
+    const snap = await db.collection(col).where("coletado", ">=", topo).orderBy("coletado", "desc").limit(JANELA).get();
+    if (!vivo()) return;
+    const novos = snap.docs.map(comoItem).filter(Boolean);
+    /* janela cheia de novidade: pode ter buraco entre o que chegou e o que já estava; recomeça do zero */
+    if (novos.length >= JANELA) { antigos = []; return carregarFeed(); }
+    recentes = mesclarPorId(recentes, novos);
     juntar();
-  }, () => { if (g !== geracao) return; carregado = true; renderFeed(); $("status").textContent = "O feed parou de atualizar. Recarregue a página."; }));
-  desligar.push(db.doc(r.status).onSnapshot((s) => {
-    if (g !== geracao) return;
-    meta = s.exists ? s.data() : null; renderStatus(); renderFeed(); renderLateral();
-  }, () => {}));
-  desligar.push(db.collection(r.destaques).orderBy("data", "desc").limit(1).onSnapshot((snap) => {
-    if (g !== geracao) return;
+  }
+  async function lerDestaques() {
+    const snap = await db.collection(r.destaques).orderBy("data", "desc").limit(1).get();
+    if (!vivo() || snap._txt === txtDest) return;
+    txtDest = snap._txt;
     const d = snap.docs[0]; destaque = d ? d.data() : null; renderDestaques(); renderLateral();
-  }, () => {}));
+  }
+  async function ciclo() {
+    if (!feedOk && rodadaVista !== undefined) carregarFeed();
+    let s;
+    try { s = await db.doc(r.status).get(); } catch (e) { return; }
+    if (!vivo() || s._txt === txtStatus) return;
+    txtStatus = s._txt;
+    meta = s.exists ? s.data() : null;
+    const rod = (meta && meta.ultimaRodada) || "";
+    const primeira = rodadaVista === undefined;
+    const mudou = !primeira && rod !== rodadaVista;
+    rodadaVista = rod;
+    renderStatus(); renderLateral();
+    if (mudou && feedOk) {
+      lerDestaques().catch(() => {});
+      try { await buscarNovos(); } catch (e) {}
+    } else renderFeed();
+  }
+  /* na Bolsa o feed só alimenta o trilho direito: espera as cotações (até 2 s) para não disputar banda com elas */
+  if (emBolsa() && mercadoPronto) Promise.race([mercadoPronto, new Promise((ok) => setTimeout(ok, 2000))]).then(() => { if (vivo()) carregarFeed(); });
+  else carregarFeed();
+  lerDestaques().catch(() => {});
+  desligar.push(db.vigiar(ciclo));
   if (r.mercado) carregarListas();
 }
 function escreverHash() {
@@ -2818,12 +3042,16 @@ renderListas();
   const db = await window.claude?.use?.("db");
   if (!db) { carregado = true; renderFeed(); $("status").textContent = "Não foi possível carregar o feed nesta visualização."; return; }
   dbRef = db;
-  try {
-    const me = await (await fetch("/api/me", { credentials: "same-origin", cache: "no-store" })).json();
-    if (Array.isArray(me.secoes)) secoesLiberadas = me.secoes;
-  } catch (e) {}
+  /* o feed do radar salvo começa a descer já, em paralelo com /api/me (window.lookoutEu, a mesma chamada do menu da
+     conta); as seções são conferidas quando a resposta chega, e o servidor recusa com 403 a seção não liberada */
+  const pMe = window.lookoutEu.catch(() => ({}));
+  ligarRadar();
+  ligarFavoritosNaConta(db);
+  const me = (await pMe) || {};
+  if (Array.isArray(me.secoes)) secoesLiberadas = me.secoes;
   const vis = radaresVisiveis();
   if (!vis.length) {
+    desligar.forEach((f) => { try { if (typeof f === "function") f(); } catch (e) {} }); desligar = []; geracao++;
     carregado = true; renderRadares();
     $("feed").textContent = ""; $("feed").append(el("p", { class: "nota" }, "Nenhuma seção foi liberada para você ainda. Fale com quem te convidou."));
     $("status").textContent = ""; return;
@@ -2833,13 +3061,25 @@ renderListas();
     try { localStorage.setItem("radar-atual", radar); } catch (e) {}
     /* o primeiro render pode ter sido de Investimentos: refaz destaques e listas para não sobrar nada dele */
     escreverHash(); aplicarRadar(); renderDestaques(); render(); renderListas();
+    ligarRadar();
   }
   else renderRadares();
   if (vis.length === 1) document.documentElement.classList.add("uma-secao");
-  ligarFavoritosNaConta(db);
-  ligarRadar();
-  setInterval(() => { renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral(); }, 60000);
-  setInterval(() => { if (R().mercado && !document.hidden) { lerMercado(); lerB3(); lerEua(); } }, 120000);
+  setInterval(() => {
+    renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral();
+    /* só os textos de "há X min" do mercado: a fita e a tabela ficam como estão */
+    if (R().mercado && !document.hidden) {
+      renderMercado();
+      const nota = emBolsa() && notaCot && $("cotacoes").querySelector(".cot-pe > span");
+      if (nota) nota.textContent = notaCotacoes(notaCot[0], notaCot[1]);
+    }
+  }, 60000);
+  /* Mercado: a cada 2 min com a B3 ou Nova York em pregão (e um pouco depois, pelo fechamento); fora disso, a cada 15 min */
+  const ciclarMercado = () => {
+    const abertos = pregaoB3Aberto() || pregaoEuaAberto() || pregaoEuaAberto(new Date(Date.now() - 20 * 60000));
+    setTimeout(() => { if (R().mercado && !document.hidden) { lerMercado(); lerB3(); lerEua(); } ciclarMercado(); }, abertos ? 120000 : 900000);
+  };
+  ciclarMercado();
 })();
 </script>
 

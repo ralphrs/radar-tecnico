@@ -8,7 +8,7 @@
 //   e a cotação muda a cada 30 minutos.
 // - S&P 500, Nasdaq e Dow Jones entram pelo cron dos EUA (src/eua.js), que chama mesclarLetreiro.
 
-import { paisBdr } from "./bdr.js";
+import { paisBdr, nomeBdr } from "./bdr.js";
 import { atualizarEua } from "./eua.js";
 
 const TIMEOUT = 8000;
@@ -198,7 +198,7 @@ export async function atualizarB3(env) {
   const [acoes, fundos, bdrsLidos] = await Promise.all([listaB3("stock", 120), listaB3("fund", 250), listaB3("bdr", 150, env).catch(() => null)]);
   const fiis = fundos.filter((f) => f.sub !== "etf" && /11$/.test(f.t));
   const etfs = fundos.filter((f) => f.sub === "etf");
-  let bdrs = bdrsLidos ? bdrsLidos.map((x) => ({ ...x, pais: paisBdr(x.t) })) : null;
+  let bdrs = bdrsLidos ? bdrsLidos.map((x) => ({ ...x, nome: nomeBdr(x.t) || (x.nome !== x.t ? x.nome : x.t), pais: paisBdr(x.t) })) : null;
   if (!bdrs) {
     const r = await env.DB.prepare("SELECT data FROM docs WHERE collection = 'meta' AND id = 'b3'").first();
     try { bdrs = (r && JSON.parse(r.data).bdrs) || []; } catch { bdrs = []; }

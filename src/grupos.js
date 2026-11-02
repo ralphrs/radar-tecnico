@@ -19,7 +19,7 @@ const SECAO_DA_COLECAO = {
 };
 const SECAO_DO_META = {
   status: "tech", "status-negocios": "negocios", "status-investimentos": "investimentos", "status-politica": "politica", "status-esportes": "esportes",
-  mercado: "investimentos", b3: "investimentos", fii: "investimentos", eua: "investimentos",
+  mercado: "investimentos", b3: "investimentos", fii: "investimentos", "fii-resumo": "investimentos", eua: "investimentos",
 };
 export const secaoDe = (c, id) => (c === "meta" ? SECAO_DO_META[id] : SECAO_DA_COLECAO[c]);
 
