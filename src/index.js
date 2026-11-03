@@ -16,6 +16,7 @@ import { rotaListas, sincronizarListasCarteira } from "./listas.js";
 import { rotaLeitura, cronLeitura, lerFundamentos } from "./leitura.js";
 // Radar de dividendos: o mesmo arquivo que a página carrega (critérios, avisos e validação dos filtros salvos)
 import "../public/radar-filtro.js";
+import { validarTabelas, mesclarTabelas, respostaTabelas, validarLayout, respostaLayout } from "./prefs.js";
 const RF = globalThis.RadarFiltro;
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
@@ -274,6 +275,44 @@ async function prefsPainel(request, env, quem) {
   return json({ erro: "metodo" }, 405);
 }
 
+// Estado das tabelas (doc "tabelas") e colunas recolhidas (doc "layout"), em prefs/<email>. Regras em src/prefs.js.
+// Leitura pelo espelho como o painel; o PUT de tabelas junta com o que está no D1 (lido do D1, não do espelho).
+async function prefsTela(request, env, quem, docId) {
+  const col = "prefs/" + quem.email;
+  const ler = async (doEspelho) => {
+    let linha = null;
+    if (doEspelho) linha = (await lerLinhas(env, "SELECT id, data FROM docs WHERE collection = ? AND id = ?", [col, docId], "prefs"))[0] || null;
+    else linha = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = ?").bind(col, docId).first();
+    try { return linha ? JSON.parse(linha.data) : null; } catch { return null; }
+  };
+  const resposta = (salvo) => (docId === "tabelas" ? respostaTabelas(salvo) : respostaLayout(salvo));
+  if (request.method === "GET") return json(resposta(await ler(true)));
+  if (request.method === "PUT") {
+    const corpo = await request.text();
+    if (corpo.length > (docId === "tabelas" ? 40000 : 200)) return json({ erro: "grande" }, 413);
+    let b;
+    try { b = JSON.parse(corpo); } catch { return json({ erro: "json" }, 400); }
+    const agora = agoraIso();
+    let doc;
+    if (docId === "tabelas") {
+      const v = validarTabelas(b);
+      if (v.erro) return json({ erro: v.erro }, 400);
+      doc = { tabelas: mesclarTabelas(await ler(false), v.tabelas, agora), atualizado: agora };
+    } else {
+      const v = validarLayout(b);
+      if (v.erro) return json({ erro: v.erro }, 400);
+      doc = { ...v.layout, atualizado: agora };
+    }
+    const data = JSON.stringify(doc);
+    await env.DB.prepare(
+      "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, ?, ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
+    ).bind(col, docId, data, agora).run();
+    gravarNoEspelho(env, [{ collection: col, id: docId, data, coletado: "", atualizado: agora }]);
+    return json({ ok: true, ...resposta(doc) });
+  }
+  return json({ erro: "metodo" }, 405);
+}
+
 // Radar de dividendos (visão Radar de Investimentos): filtros salvos de cada pessoa em prefs/<email>, id "radar",
 // { filtros: [...], padrao, atualizado }. Mesmo caminho do painel; validação e padrão de fábrica em public/radar-filtro.js.
 async function prefsRadar(request, env, quem) {
@@ -471,6 +510,10 @@ export default {
     if (p === "/api/prefs/painel") {
       if (!corpoJson(request)) return json({ erro: "json" }, 415);
       return prefsPainel(request, env, quem);
+    }
+    if (p === "/api/prefs/tabelas" || p === "/api/prefs/layout") {
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      return prefsTela(request, env, quem, p === "/api/prefs/tabelas" ? "tabelas" : "layout");
     }
     if (p === "/api/painel/hoje" && request.method === "GET") return painelHoje(env, quem, request);
     if (p === "/api/prefs/radar") {

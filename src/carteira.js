@@ -235,6 +235,8 @@ export function classeDe(t, ref = {}) {
   const b = baseDe(t), s = sufixo(b);
   if (SUB.has(s)) return "subscricao";
   if (ref.etfs && ref.etfs.has(b)) return "etf";
+  if (ref.fiinfra && ref.fiinfra.has(b)) return "fiinfra";
+  if (ref.fiagro && ref.fiagro.has(b)) return "fiagro";
   if (ref.fiis && ref.fiis.has(b)) return "fii";
   if (ref.acoes && ref.acoes.has(b)) return "acao";
   if (BDR.has(s) || (ref.bdrs && ref.bdrs.has(b))) return "bdr";
@@ -306,11 +308,16 @@ export function validarMeta(b) {
 function referencias({ b3, fiiResumo }) {
   const set = (l) => new Set((l || []).map((x) => x.t));
   const cot = new Map();
-  for (const k of ["acoes", "fiis", "etfs", "bdrs"]) for (const x of (b3 && b3[k]) || []) if (!cot.has(x.t)) cot.set(x.t, x);
+  for (const k of ["acoes", "fiis", "fiinfra", "fiagro", "etfs", "bdrs"]) for (const x of (b3 && b3[k]) || []) if (!cot.has(x.t)) cot.set(x.t, x);
   const fundos = (fiiResumo && fiiResumo.fundos) || {};
+  // meta/b3 de antes da separação (sem fiinfra/fiagro): decide pelo subType que veio junto na lista de FIIs
+  const antigo = b3 && !b3.fiinfra && Array.isArray(b3.fiis);
+  const doSub = (subs) => new Set(antigo ? b3.fiis.filter((x) => subs.includes(String(x.sub || "").toLowerCase())).map((x) => x.t) : []);
   return {
     cot, fundos,
     acoes: set(b3 && b3.acoes), etfs: set(b3 && b3.etfs), bdrs: set(b3 && b3.bdrs),
+    fiinfra: antigo ? doSub(["fi-infra", "fiinfra", "fip"]) : set(b3 && b3.fiinfra),
+    fiagro: antigo ? doSub(["fi-agro", "fiagro"]) : set(b3 && b3.fiagro),
     fiis: new Set([...set(b3 && b3.fiis), ...Object.keys(fundos)]),
   };
 }
@@ -593,7 +600,9 @@ export function calcular(extrato, ctx = {}) {
       if (m === mesAtual) vendasAcoesMes += v.valor;
       const x = porMesAcoes.get(m) || { vendas: 0, res: 0 };
       x.vendas += v.valor; x.res += v.res; porMesAcoes.set(m, x);
-    } else if (cls === "fii") {
+    } else if (cls === "fii" || cls === "fiagro") {
+      // Fiagro segue a regra do FII (20% sobre o lucro). FI-Infra fica de fora: cota de fundo incentivado de
+      // infraestrutura tem alíquota zero para pessoa física.
       if (m === mesAtual) lucroFiiMes += v.res;
     }
   }
@@ -602,7 +611,7 @@ export function calcular(extrato, ctx = {}) {
     else if (x.vendas > 20000) prejuizoAcoes = Math.max(0, prejuizoAcoes - x.res);
   }
   const fiiPorMes = new Map();
-  for (const v of vendasTodas) if (classe(v.b) === "fii") fiiPorMes.set(ym(v.d), (fiiPorMes.get(ym(v.d)) || 0) + v.res);
+  for (const v of vendasTodas) if (classe(v.b) === "fii" || classe(v.b) === "fiagro") fiiPorMes.set(ym(v.d), (fiiPorMes.get(ym(v.d)) || 0) + v.res);
   for (const [, r] of [...fiiPorMes].sort((a, b) => (a[0] < b[0] ? -1 : 1))) prejuizoFii = r < 0 ? prejuizoFii - r : Math.max(0, prejuizoFii - r);
   const jcpAno = provs.filter((p) => p[2] === "jcp" && p[0].startsWith(anoAtual)).reduce((s, p) => s + p[5], 0);
 

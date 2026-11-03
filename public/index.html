@@ -422,6 +422,9 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .rk-preco { color: var(--muted-foreground); white-space: nowrap; }
 .rk-val { font-weight: 600; text-align: right; white-space: nowrap; }
 .rk-topo h2 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+/* seis classes na B3: no celular o seletor rola de lado em vez de empurrar a página */
+.rk-topo .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.rk-topo .seg::-webkit-scrollbar { display: none; }
 .rankings .nota, .cotacoes .nota { margin: 0; font-size: 12px; color: var(--muted-foreground); }
 .cotacoes .cot-topo h3 { margin: 0; font: 600 15px/1.25 var(--font-display); letter-spacing: -0.01em; }
 .rk-val.sobe { color: var(--ok); } .rk-val.desce { color: var(--err); }
@@ -551,6 +554,93 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 #lat-blocos { display: flex; flex-direction: column; gap: var(--space-6); }
 #lat-listas:empty, #lat-dest:empty, #lat-hoje:empty, #listas-centro:empty { display: none; }
 .cot-pe { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
+/* Tabela única (public/tabela.js): barra com contagem, chips de filtro e "Ordenar"; cabeçalho com seta, prioridade e funil; rodapé com páginas */
+.tb { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tb-barra { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; min-height: var(--control-h-sm); }
+.tb-conta { font: 500 12px/16px var(--font-mono); color: var(--muted-foreground); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tb-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; }
+.tb-chip { height: 28px; padding: 0 10px; font-size: 12.5px; border-color: color-mix(in srgb, var(--primary) 45%, transparent); background: color-mix(in srgb, var(--primary) 8%, var(--card)); color: var(--primary); max-width: 100%; }
+.tb-chip span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-limpar { font-size: 12.5px; }
+.tb-btn-ordenar { height: var(--control-h-sm); padding: 0 10px; gap: 6px; font-size: 13px; margin-left: auto; }
+.tb-btn-ordenar.on { border-color: color-mix(in srgb, var(--primary) 60%, transparent); color: var(--primary); }
+.tb-tab th { vertical-align: middle; }
+.tb-tab.tb-tab th[aria-sort] button::after { content: none; }
+.tb-tab th .tb-ord { all: unset; cursor: pointer; display: inline-flex; gap: 3px; align-items: center; border-radius: 3px; }
+.tb-tab th .tb-ord:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.tb-tab th.tb-ordenado { color: var(--foreground); }
+.tb-seta { font-size: 9px; color: var(--primary); }
+.tb-prio { min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: var(--primary); color: var(--primary-foreground); font: 600 9.5px/14px var(--font-mono); text-align: center; letter-spacing: 0; }
+.tb-funil { all: unset; position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 3px; vertical-align: -4px; border-radius: 4px; color: color-mix(in srgb, var(--muted-foreground) 70%, transparent); cursor: pointer; }
+.tb-funil::before { content: ""; position: absolute; left: -3px; top: 50%; width: 26px; height: 32px; transform: translateY(-50%); }
+.tb-funil:hover, .tb-funil[aria-expanded="true"] { color: var(--foreground); background: var(--accent); }
+.tb-funil.on { color: var(--primary); }
+.tb-funil.on svg { fill: currentColor; }
+.tb-funil:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.tb-pe { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--muted-foreground); }
+.tb-pe-esq { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; min-width: 0; }
+.tb-pe-esq .nota { margin: 0; }
+.tb-faixa-txt { font: 500 12px var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--foreground); }
+.tb-pe-dir { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.tb-pag { display: flex; align-items: center; gap: 2px; }
+.tb-pg { min-width: 30px; height: 30px; padding: 0 6px; border: 1px solid transparent; border-radius: var(--radius-md); background: none; color: var(--foreground); font: 500 13px/1 var(--font-sans); font-variant-numeric: tabular-nums; cursor: pointer; }
+.tb-pg:hover:not(:disabled) { background: var(--accent); border-color: var(--border); }
+.tb-pg[aria-current="page"] { background: var(--primary); color: var(--primary-foreground); }
+.tb-pg:disabled { opacity: .35; cursor: default; }
+.tb-pg:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.tb-elipse { min-width: 18px; text-align: center; color: var(--muted-foreground); }
+.tb-porpag { width: auto; height: 30px; padding: 0 8px; font-size: 12.5px; }
+.tb-vazio .vazio, .tb-vazio > p { margin: 0; }
+.tb-nota { margin: 0; font-size: 12.5px; color: var(--muted-foreground); }
+.tb-veu { position: fixed; inset: 0; z-index: 46; background: var(--overlay); }
+.tb-pop { position: fixed; z-index: 47; width: min(320px, calc(100vw - 16px)); max-height: min(70vh, 480px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 12px; background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+.tb-pop:focus { outline: none; }
+.tb-pop.folha { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 80dvh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+.tb-pop-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tb-pop-topo b { font: 600 14px/1.3 var(--font-sans); }
+.tb-pop-x { width: 30px; height: 30px; padding: 0; }
+.tb-pop .dd-input { height: var(--control-h-sm); }
+.tb-faixa { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tb-faixa label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted-foreground); }
+.tb-sug { display: flex; flex-direction: column; max-height: 260px; overflow-y: auto; margin-inline: -4px; }
+.tb-op { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-radius: 6px; font-size: 13px; cursor: pointer; min-width: 0; }
+.tb-op:hover { background: var(--accent); }
+.tb-op input { flex: none; width: 15px; height: 15px; margin: 0; accent-color: var(--primary); }
+.tb-op span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-op small { flex: none; font: 400 11px var(--font-mono); color: var(--muted-foreground); }
+.tb-pop-pe { display: flex; justify-content: flex-end; }
+.tb-pop-pe .dd-btn--link { font-size: 13px; }
+.tb-ordem { display: flex; flex-direction: column; gap: 10px; }
+.tb-crit { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.tb-crit li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; grid-template-areas: "n nome setas" "n seg seg"; align-items: center; gap: 6px 8px; padding: 8px 0; border-top: 1px solid var(--border); }
+.tb-crit li:first-child { border-top: 0; }
+.tb-crit-n { grid-area: n; align-self: start; margin-top: 4px; width: 18px; height: 18px; border-radius: 50%; background: color-mix(in srgb, var(--primary) 14%, var(--card)); color: var(--primary); font: 600 11px/18px var(--font-mono); text-align: center; }
+.tb-crit-nome { grid-area: nome; font: 500 13.5px/1.3 var(--font-sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-crit .seg { grid-area: seg; justify-self: start; }
+.tb-crit .seg button { height: 24px; font-size: 12px; padding: 0 9px; }
+.tb-crit-setas { grid-area: setas; display: inline-flex; gap: 2px; }
+.tb-crit-setas .dd-btn--icon { width: 28px; height: 28px; font-size: 13px; }
+@media (max-width: 699px) {
+  .tb-pg { min-width: var(--toque); height: var(--toque); font-size: 14px; }
+  .tb-porpag { height: var(--toque); font-size: 16px; }
+  .tb-pe-dir { margin-left: 0; width: 100%; justify-content: space-between; }
+  .tb-pag { flex-wrap: wrap; }
+  .tb-btn-ordenar { height: 40px; }
+  .tb-crit-setas .dd-btn--icon { width: 40px; height: 40px; }
+  .tb-crit .seg button { height: 32px; }
+  .tb-pop .dd-input { height: 44px; font-size: 16px; }
+  .tb-op { padding: 10px 4px; font-size: 15px; }
+}
+/* Minhas listas: cabeçalho ordenável e o aviso de ordem personalizada */
+.lst-tab th .tb-ord { all: unset; cursor: pointer; display: inline-flex; gap: 2px; align-items: center; border-radius: 3px; }
+.lst-tab th .tb-ord:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.lst-tab th.tb-ordenado { color: var(--foreground); }
+.lst-tab th { white-space: nowrap; }
+.lst-tab .tb-prio { min-width: 12px; height: 12px; font-size: 8.5px; line-height: 12px; }
+.lst-ordem { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: 0; font-size: 11.5px; color: var(--muted-foreground); }
+.lst-ordem .dd-btn--link { font: 500 11.5px var(--font-sans); height: auto; padding: 0; }
+.lst-tab tr.cai-antes td { box-shadow: inset 0 2px 0 var(--primary); }
+.cot-carregar { font: 500 12px var(--font-sans); height: auto; padding: 0; margin-left: 6px; }
 /* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
 .lista.cards { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 10px; }
 @media (min-width: 640px) { .lista.cards { grid-template-columns: 1fr 1fr; } }
@@ -685,6 +775,31 @@ footer b { color: var(--foreground); font-weight: 500; }
 }
 @media (min-width: 1440px) {
   .wrap { grid-template-columns: 240px minmax(0, 720px) 288px; column-gap: var(--space-8); }
+}
+/* Colunas recolhíveis: o botão fica no topo de cada coluna; recolhida, a coluna vira uma faixa de 36 px e o centro
+   cresce. Estado por lado em localStorage (radar-col-esq, radar-col-dir) e na conta (/api/prefs/layout). */
+.col-alca { display: none; }
+@media (min-width: 900px) {
+  .col-alca { flex: none; display: inline-grid; place-items: center; align-self: flex-end; width: 28px; height: 28px; margin: -2px 0 -6px; padding: 0; border: 1px solid transparent; border-radius: var(--radius-md); background: none; color: var(--muted-foreground); cursor: pointer; }
+  .col-alca svg { width: 16px; height: 16px; }
+  .col-alca:hover { background: var(--card); border-color: var(--border); color: var(--foreground); }
+  .col-alca:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+  .lateral .col-alca { align-self: flex-start; margin-bottom: -18px; }
+  html.col-esq-fechada .nav-temas > :not(.col-alca), html.col-dir-fechada .lateral > :not(.col-alca) { display: none !important; }
+  html.col-esq-fechada .nav-temas, html.col-dir-fechada .lateral { overflow: visible; padding-inline: 0; }
+  html.col-esq-fechada .col-alca, html.col-dir-fechada .lateral .col-alca { align-self: center; width: 32px; height: 32px; margin: 0; border-color: var(--border); background: var(--card); }
+  html.col-esq-fechada:not(.no-inicio) .wrap { grid-template-columns: 36px minmax(0, 1fr); }
+}
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) { .wrap { transition: grid-template-columns 180ms ease; } }
+@media (min-width: 1200px) {
+  html.col-esq-fechada:not(.no-inicio) .wrap { grid-template-columns: 36px minmax(0, 1fr) 280px; }
+  html.col-dir-fechada:not(.no-inicio) .wrap { grid-template-columns: 232px minmax(0, 1fr) 36px; }
+  html.col-esq-fechada.col-dir-fechada:not(.no-inicio) .wrap { grid-template-columns: 36px minmax(0, 1fr) 36px; }
+}
+@media (min-width: 1440px) {
+  html.col-esq-fechada:not(.no-inicio) .wrap { grid-template-columns: 36px minmax(0, 1fr) 288px; }
+  html.col-dir-fechada:not(.no-inicio) .wrap { grid-template-columns: 240px minmax(0, 1fr) 36px; }
+  html.col-esq-fechada.col-dir-fechada:not(.no-inicio) .wrap { grid-template-columns: 36px minmax(0, 1fr) 36px; }
 }
 
 /* Início: painel de widgets. Sem colunas laterais; a barra de abas fica no topo do centro em qualquer largura
@@ -864,7 +979,7 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .ct-faixa span { display: block; height: 100%; min-width: 3px; }
 .ct-legenda { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted-foreground); }
 .ct-legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-.ct-c-fii { background: var(--primary); } .ct-c-acao { background: var(--brand-end); } .ct-c-etf { background: var(--ok); } .ct-c-bdr { background: var(--chart-1); }
+.ct-c-fii { background: var(--primary); } .ct-c-fiinfra { background: var(--info); } .ct-c-fiagro { background: color-mix(in srgb, var(--ok) 60%, var(--primary)); } .ct-c-acao { background: var(--brand-end); } .ct-c-etf { background: var(--ok); } .ct-c-bdr { background: var(--chart-1); }
 .ct-c-subscricao { background: var(--warn); } .ct-c-outro { background: var(--muted-foreground); }
 .ct-c-emprestado { background: repeating-linear-gradient(45deg, var(--muted-foreground) 0 3px, color-mix(in srgb, var(--muted-foreground) 45%, transparent) 3px 6px); }
 .ct-c-rend { background: var(--primary); } .ct-c-div { background: var(--brand-end); } .ct-c-jcp { background: var(--warn); } .ct-c-outros { background: var(--muted-foreground); }
@@ -999,6 +1114,8 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 @media (min-width: 1200px) {
   html.inv-radar .wrap { grid-template-columns: 260px minmax(0, 1fr); grid-template-areas: "topo topo" "nav centro"; max-width: 1360px; }
   html.inv-radar .lateral { display: none; }
+  html.inv-radar.col-dir-fechada:not(.no-inicio) .wrap { grid-template-columns: 260px minmax(0, 1fr); }
+  html.inv-radar.col-esq-fechada:not(.no-inicio) .wrap { grid-template-columns: 36px minmax(0, 1fr); }
 }
 .rd { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .nav-radar { display: flex; flex-direction: column; gap: 14px; }
@@ -1103,6 +1220,7 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
   </header>
 
   <nav class="nav-temas" id="nav-temas" aria-label="Temas e filtros">
+    <button class="col-alca" type="button" id="col-esq" aria-controls="nav-temas" aria-expanded="true" aria-label="Recolher coluna" title="Recolher coluna"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
     <div class="seg radares" id="radares-nav" role="group" aria-label="Escolher radar"></div>
     <input class="dd-input nav-busca" id="busca-nav" type="search" placeholder="Buscar no feed" aria-label="Buscar no feed" autocomplete="off" enterkeyhint="search">
     <div class="nav-grupo" id="nav-grupo-tipos">
@@ -1221,7 +1339,7 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
   </footer>
   </div>
 
-  <aside class="lateral" id="lateral" aria-label="Resumo do dia"><div id="lat-listas"></div><section class="dest" id="lat-dest" aria-roledescription="carrossel" aria-label="Destaques do dia"></section><div id="lat-hoje"></div><div id="lat-blocos"></div></aside>
+  <aside class="lateral" id="lateral" aria-label="Resumo do dia"><button class="col-alca" type="button" id="col-dir" aria-controls="lateral" aria-expanded="true" aria-label="Recolher coluna" title="Recolher coluna"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button><div id="lat-listas"></div><section class="dest" id="lat-dest" aria-roledescription="carrossel" aria-label="Destaques do dia"></section><div id="lat-hoje"></div><div id="lat-blocos"></div></aside>
 </div>
 
 <div class="conta-menu" id="conta-menu" role="menu" aria-labelledby="conta">
@@ -1262,6 +1380,7 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 </div>
 
 <script src="/radar-filtro.js"></script>
+<script src="/tabela.js"></script>
 <script>
 /* Lookout: adaptador que imita o banco do artifact (window.claude.use) usando a API do Worker.
    Leituras viram GET em /api/q e /api/doc; "onSnapshot" vira consulta a cada 2 minutos e quando a aba volta ao foco.
@@ -1576,11 +1695,11 @@ let ordenacao = "data";
 let painelMercado = null, pedindoMercado = false;
 let mercadoPronto = null;
 let b3Lido = false, euaLido = false, mercadoLido = false; /* já leu o documento ao menos uma vez neste radar */
-let b3 = null, eua = null, cotAba = "acoes", cotOrdem = { campo: "liq", dir: -1 }, cotBusca = "", cotTodos = false;
-/* Classe escolhida em cada visão: a Bolsa lembra a dela (Ações, FIIs, ETFs, BDRs) e a visão EUA, a sua (Ações, ETFs) */
+let b3 = null, eua = null, cotAba = "acoes", cotBusca = "";
+/* Classe escolhida em cada visão: a Bolsa lembra a dela (Ações, FIIs, FI-Infra, Fiagro, ETFs, BDRs) e a visão EUA, a sua (Ações, ETFs) */
 let cotAbaBr = "acoes", cotAbaEua = "usacoes";
 try {
-  const a = localStorage.getItem("radar-cot-aba"); if (["acoes", "fiis", "etfs", "bdrs"].includes(a)) cotAbaBr = cotAba = a;
+  const a = localStorage.getItem("radar-cot-aba"); if (["acoes", "fiis", "fiinfra", "fiagro", "etfs", "bdrs"].includes(a)) cotAbaBr = cotAba = a;
   const u = localStorage.getItem("radar-cot-aba-eua"); if (["usacoes", "usetfs"].includes(u)) cotAbaEua = u;
 } catch (e) {}
 /* Abrangência (Notícias e Esportes): tudo, só nacional ou só internacional. O item pode trazer "escopo"; senão o radar deduz pelo tema. */
@@ -1824,6 +1943,14 @@ function comCvm(x) {
 /* comCvm para uma classe inteira, guardado até b3, eua ou fiiCvm mudarem. Quem usa não pode alterar a lista (só filter/slice).
    As classes dos EUA (usacoes, usetfs) vêm de meta/eua, com us: true, e não passam pela CVM. */
 const ABAS_EUA = new Set(["usacoes", "usetfs"]);
+/* FI-Infra e Fiagro: sem informe de FII na CVM; DY e último rendimento vêm da ficha (Yahoo) */
+const ABAS_FICHA = new Set(["fiinfra", "fiagro"]);
+const SUB_ABA = { "fi-infra": "fiinfra", fiinfra: "fiinfra", fip: "fiinfra", "fi-agro": "fiagro", fiagro: "fiagro" };
+/* Linhas de uma classe da B3. O meta/b3 gravado antes da separação (sem fiinfra/fiagro) traz tudo em "fiis": separa pelo subType. */
+const linhasB3 = (base, aba) => {
+  if (base.fiinfra || !["fiis", "fiinfra", "fiagro"].includes(aba)) return base[aba] || [];
+  return (base.fiis || []).filter((x) => (SUB_ABA[String(x.sub || "").toLowerCase()] || "fiis") === aba);
+};
 const baseDe = (aba) => (ABAS_EUA.has(aba) ? eua : b3);
 const cvmCache = {};
 function listaCvm(aba) {
@@ -1833,7 +1960,7 @@ function listaCvm(aba) {
   const chave = base.atualizado + "|" + (us ? "" : fiiCvm && fiiCvm.ref) + "|" + aba;
   const c = cvmCache[aba];
   if (c && c.chave === chave && c.base === base && (us || c.cvm === fiiCvm)) return c.lista;
-  const linhas = base[us ? aba.slice(2) : aba] || [];
+  const linhas = us ? base[aba.slice(2)] || [] : linhasB3(base, aba);
   const lista = us ? linhas.map((x) => ({ ...x, us: true, liq: x.liq ?? (x.vol != null && x.preco != null ? x.vol * x.preco : null) })) : linhas.map(comCvm);
   cvmCache[aba] = { chave, base, cvm: fiiCvm, lista };
   return lista;
@@ -1844,16 +1971,15 @@ const fmtRs = (v, c = 2) => (v == null ? "–" : "R$ " + fmtNum(v, c));
 const simMoeda = (x) => (x && x.us ? "US$ " : "R$ ");
 const fmtPreco = (x, v = x && x.preco, c = 2) => (v == null ? "–" : simMoeda(x) + fmtNum(v, c));
 const fmtMes = (ym) => { const [a, m] = String(ym).split("-"); return ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][Number(m) - 1] + "/" + String(a).slice(2); };
-const COT_ABAS = [{ id: "acoes", nome: "Ações" }, { id: "fiis", nome: "FIIs" }, { id: "etfs", nome: "ETFs" }, { id: "bdrs", nome: "BDRs" }];
+const COT_ABAS = [{ id: "acoes", nome: "Ações" }, { id: "fiis", nome: "FIIs" }, { id: "fiinfra", nome: "FI-Infra" }, { id: "fiagro", nome: "Fiagro" }, { id: "etfs", nome: "ETFs" }, { id: "bdrs", nome: "BDRs" }];
 const COT_ABAS_EUA = [{ id: "usacoes", nome: "Ações" }, { id: "usetfs", nome: "ETFs" }];
 const TODAS_ABAS = [...COT_ABAS, ...COT_ABAS_EUA];
 const abasDaVisao = () => (emEua() ? COT_ABAS_EUA : COT_ABAS);
 /* Um controle só para o pregão: troca a classe das listas e da tabela juntas */
 function trocarCotAba(id) {
   const foco = document.activeElement && document.activeElement.id;
-  cotAba = id; cotTodos = false;
+  cotAba = id;
   if (ABAS_EUA.has(id)) cotAbaEua = id; else cotAbaBr = id;
-  if (!COT_COLUNAS[id].some((c) => c[0] === cotOrdem.campo)) cotOrdem = { campo: "liq", dir: -1 };
   try { localStorage.setItem(ABAS_EUA.has(id) ? "radar-cot-aba-eua" : "radar-cot-aba", id); } catch (e) {}
   renderRankings(); renderCotacoes(); renderNavBolsa();
   /* o mesmo controle existe no Pregão e na coluna esquerda: o foco fica no botão equivalente de onde veio o clique */
@@ -1863,93 +1989,122 @@ function trocarCotAba(id) {
 const COT_COLUNAS = {
   acoes: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["cap", "Valor de mercado", "so-largo"]],
   etfs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""]],
-  fiis: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["dy", "DY 12m", ""], ["rend", "Últ. rend.", ""], ["pvp", "P/VP", ""], ["liq", "Liquidez", ""], ["cot", "Cotistas", "so-largo"], ["man", "Mandato", "so-xl"]],
+  fiis: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["dy", "DY 12m", ""], ["rend", "Últ. rend.", ""], ["pvp", "P/VP", ""], ["liq", "Liquidez", ""], ["cot", "Cotistas", "so-largo"], ["seg", "Segmento", "so-largo"], ["man", "Mandato", "so-xl"]],
+  fiinfra: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["dy", "DY 12m", ""], ["rend", "Últ. rend.", ""]],
+  fiagro: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["dy", "DY 12m", ""], ["rend", "Últ. rend.", ""]],
   bdrs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["pais", "País", "col-pais so-largo"]],
   usacoes: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço (US$)", ""], ["var", "Dia", ""], ["liq", "Liquidez (US$)", ""]],
   usetfs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço (US$)", ""], ["var", "Dia", ""], ["liq", "Liquidez (US$)", ""]],
 };
-const COL_TEXTO = new Set(["t", "nome", "pais", "man"]);
+const COL_TEXTO = new Set(["t", "nome", "pais", "man", "seg"]);
 /* Na tabela o mandato longo encurta; o nome inteiro fica no title e no diálogo */
 const MAN_CURTO = { "Desenvolvimento para Renda": "Desenv. renda", "Desenvolvimento para Venda": "Desenv. venda" };
 function celula(c, x) {
   if (c === "t") { const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog" }, papelEl(x.t, x)); b.addEventListener("click", () => abrirAtivo(x)); return el("td", {}, el("span", { class: "cot-papel-box" }, b, pontoNoticia(x.t))); }
-  if (c === "nome") return el("td", { title: x.nome, class: "so-largo" }, x.nome);
+  if (c === "nome") return el("td", { title: x.nome, class: "so-largo" }, x.viaFicha ? nomeBonito(x.nome) : x.nome);
   /* nos EUA a moeda já está no cabeçalho da coluna */
   if (c === "preco") return el("td", {}, x.us ? (x.preco == null ? "–" : fmtNum(x.preco, 2)) : fmtRs(x.preco));
   if (c === "var") return el("td", { class: x.var > 0 ? "sobe" : x.var < 0 ? "desce" : "" }, x.var == null ? "–" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%");
   if (c === "liq") return el("td", {}, x.liq == null ? "–" : (x.us ? "" : "R$ ") + fmtVol(x.liq));
   if (c === "pais") { const nome = (nomesPais && x.pais && nomesPais.of(x.pais)) || x.pais || ""; return el("td", { class: "cot-pais so-largo", title: nome ? "Empresa de " + nome : "" }, emojiPais(x.pais) || "–"); }
   if (c === "cap") return el("td", { class: "so-largo" }, x.cap ? "R$ " + fmtVol(x.cap) : "–");
+  if (x.viaFicha && (c === "dy" || c === "rend")) return celulaFicha(c, x);
   if (c === "dy") return el("td", { title: x.dyAnual ? "Menos de 12 meses de informes: valor anualizado" : "" }, x.dy == null ? "–" : fmtNum(x.dy, 2) + "%" + (x.dyAnual ? "*" : ""));
   if (c === "rend") return el("td", {}, x.rend == null ? "–" : fmtRs(x.rend));
+  if (c === "seg") return el("td", { class: "so-largo cot-seg", title: segDeLinha(x) }, segDeLinha(x));
   if (c === "pvp") return el("td", {}, x.pvp == null ? "–" : fmtNum(x.pvp, 2));
   if (c === "cot") return el("td", { class: "so-largo" }, x.cot == null ? "–" : fmtNum(x.cot, 0));
   if (c === "man") return el("td", { class: "so-xl", title: x.man || "" }, MAN_CURTO[x.man] || x.man || "–");
   return el("td", {}, "–");
 }
+/* Linha com o que a ficha (hist/BR:<papel>) trouxe: FI-Infra e Fiagro pegam DY 12m e o último rendimento do Yahoo.
+   A ficha aberta nesta página (fichaMem) vale primeiro; senão, o resumo das fichas guardadas (/api/radar/fundamentos). */
+function comFicha(x) {
+  const r = fichaPronta("BR:" + x.t), h = r && r.existe && r.data;
+  const f = h ? { dy: h.dy, ult: h.ultDiv, ultData: h.ultDivData, div12: h.dividendo12m } : rdFund && rdFund.BR && rdFund.BR[x.t];
+  const temFicha = !!h || !!(rdFund && rdFund.BR && rdFund.BR[x.t]);
+  return { ...x, viaFicha: true, temFicha, dy: f && f.dy != null ? f.dy : null, rend: f && f.ult != null ? f.ult : null, rendData: (f && f.ultData) || "" };
+}
+function celulaFicha(c, x) {
+  if (c === "rend") return el("td", { title: x.rend != null ? "Último pagamento" + (x.rendData ? " em " + ddmm(x.rendData) + "/" + x.rendData.slice(0, 4) : "") + ", via Yahoo" : "" }, x.rend == null ? "–" : fmtRs(x.rend, x.rend < 1 ? 3 : 2));
+  if (x.dy != null) return el("td", { title: "Soma dos pagamentos de 12 meses sobre a cotação, via Yahoo" }, fmtNum(x.dy, 2) + "%");
+  if (x.temFicha) return el("td", { title: "A ficha não trouxe pagamentos de 12 meses" }, "–");
+  const b = el("button", { type: "button", class: "dd-btn dd-btn--link cot-carregar", title: "Abre a ficha, que busca e guarda os pagamentos" }, "carregar");
+  b.addEventListener("click", () => abrirAtivo(x, cotAba));
+  return el("td", {}, "–", b);
+}
+const segDeLinha = (x) => (x.f ? segNome(x.f.s) : "");
+/* Colunas da tabela de cotações no formato do helper (public/tabela.js) */
+const VALOR_COT = {
+  t: (x) => x.t, nome: (x) => (x.viaFicha ? nomeBonito(x.nome) : x.nome), man: (x) => x.man || "", seg: segDeLinha,
+  pais: (x) => (x.pais ? (nomesPais && nomesPais.of(x.pais)) || x.pais : ""),
+};
+const colsCotMemo = {};
+function colunasCot(aba) {
+  if (colsCotMemo[aba]) return colsCotMemo[aba];
+  return (colsCotMemo[aba] = COT_COLUNAS[aba].map(([c, nome, cls]) => {
+    const [rot, moeda] = nome.split(" (US$)");
+    return {
+      id: c, rotulo: rot, cls, tipo: COL_TEXTO.has(c) ? "texto" : "num", valor: VALOR_COT[c] || ((x) => x[c]),
+      rotuloTh: moeda !== undefined ? el("span", {}, rot, el("span", { class: "th-moeda" }, " (US$)")) : null,
+      unidade: c === "dy" || c === "var" ? "%" : undefined,
+      fmt: c === "liq" || c === "cap" ? (v) => fmtVol(v) : undefined,
+    };
+  }));
+}
+/* id fixo de cada tabela de cotações: cot-acoes, cot-fiis, cot-usacoes... */
+const PADRAO_COT = { ordem: [{ c: "liq", d: -1 }], filtros: {}, pagina: 1, porPagina: 25 };
+let cotTab = null;
+function linhasCotacoes() {
+  const q = cotBusca.trim().toUpperCase();
+  let l = listaCvm(cotAba).filter((x) => passaBolsa(x) && (!q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q)));
+  if (ABAS_FICHA.has(cotAba)) l = l.map(comFicha);
+  return l;
+}
 function renderCotacoes() {
   const box = $("cotacoes");
-  if (!emBolsa()) { box.hidden = true; box.textContent = ""; return; }
+  if (!emBolsa()) { box.hidden = true; box.textContent = ""; cotTab = null; return; }
   box.hidden = false;
   if (cotAba === "fiis" && !fiiCvm) lerFii();
+  if (ABAS_FICHA.has(cotAba) && !rdFund) lerFundRadar().then(() => { if (emBolsa() && ABAS_FICHA.has(cotAba)) renderCotacoes(); });
   const foco = document.activeElement && document.activeElement.id;
   const base = baseDe(cotAba), us = ABAS_EUA.has(cotAba);
   box.textContent = "";
   const busca = el("input", { class: "dd-input", id: "cot-busca", type: "search", placeholder: "Filtrar papel", "aria-label": "Filtrar papel ou nome", autocomplete: "off", value: cotBusca });
-  /* filtro: espera 150 ms sem tecla e troca só as linhas e o rodapé; o campo fica, com foco e cursor */
+  /* busca: espera 150 ms sem tecla e troca só as linhas; o campo fica, com foco e cursor */
   let t = 0;
-  busca.addEventListener("input", () => { cotBusca = busca.value; clearTimeout(t); t = setTimeout(() => corpoCotacoes(box, true), 150); });
+  busca.addEventListener("input", () => { cotBusca = busca.value; clearTimeout(t); t = setTimeout(() => { if (cotTab && cotTab.vivo()) { cotTab.atualizar(linhasCotacoes(), { voltarPagina: true }); pintarPeCot(box); } }, 150); });
   box.append(el("div", { class: "cot-topo" }, el("h3", {}, "Cotações"), el("div", { class: "cot-ferr" }, busca)));
-  if (!base) { box.append(el("p", { class: "nota" }, us ? "As cotações dos EUA aparecem depois da primeira consulta." : "As tabelas aparecem depois da primeira consulta.")); return; }
-  corpoCotacoes(box, false);
+  if (!base) { box.append(el("p", { class: "nota" }, us ? "As cotações dos EUA aparecem depois da primeira consulta." : "As tabelas aparecem depois da primeira consulta.")); cotTab = null; return; }
+  const daClasse = listaCvm(cotAba);
+  cotTab = Tabela.criar({
+    id: "cot-" + cotAba, colunas: colunasCot(cotAba), linhas: linhasCotacoes(), total: daClasse.length, rotuloConta: "papéis",
+    padrao: PADRAO_COT, celula: (c, x) => celula(c.id, x), classeTabela: "cot-tab", classeCaixa: "cot-caixa",
+    semOrdem: "Sem critério, a tabela segue a ordem da fonte.",
+    vazio: (comFiltro) => el("p", { class: "vazio" }, el("strong", {}, "Nenhum papel com esses filtros"), cotBusca.trim() ? "Tente outro nome ou papel na busca." : comFiltro ? "Tire um dos filtros das colunas para ver mais papéis." : "Afrouxe os filtros da coluna da esquerda para ver mais papéis."),
+    aoMudar: () => pintarPeCot(box),
+  });
+  box.append(cotTab.el);
+  pintarPeCot(box);
   if (foco && $(foco) && document.activeElement !== $(foco)) { $(foco).focus({ preventScroll: true }); if (foco === "cot-busca") { const v = $(foco).value; $(foco).setSelectionRange(v.length, v.length); } }
 }
 /* Nota do rodapé da tabela (também refeita a cada minuto, pelo "atualizado há X min") */
 function notaCotacoes(linhas, daClasse) {
   const base = baseDe(cotAba), us = ABAS_EUA.has(cotAba);
   if (!base) return "";
-  const universo = cotAba === "usacoes" ? "ações do S&P 100" : cotAba === "usetfs" ? "ETFs americanos" : cotAba === "bdrs" ? "BDRs, os mais negociados da B3" : "papéis, os mais negociados da B3";
+  const universo = cotAba === "usacoes" ? "ações do S&P 100" : cotAba === "usetfs" ? "ETFs americanos" : cotAba === "bdrs" ? "BDRs, os mais negociados da B3" : cotAba === "fiinfra" ? "FI-Infra (com os FIP-IE), os mais negociados da B3" : cotAba === "fiagro" ? "Fiagros, os mais negociados da B3" : "papéis, os mais negociados da B3";
   let nota = (filtrosBolsaAtivos() ? `${linhas} de ${daClasse} papéis com os filtros da esquerda` : `${linhas} ${universo}`) + ` · atualizado ${fmtRel(base.atualizado)} · ` + (us ? `cotações do ${base.fonte || "Yahoo Finance"}, com atraso, em dólar` : "cotações da brapi, com atraso");
   if (cotAba === "bdrs") nota += " · bandeira é o país da empresa";
   if (cotAba === "fiis") nota += fiiCvm && fiiCvm.ref ? ` · DY, rendimento, P/VP e cotistas do informe da CVM de ${fmtMes(fiiCvm.ref)}` : " · dados da CVM ainda não carregados";
+  if (ABAS_FICHA.has(cotAba)) nota += " · FI-Infra e Fiagro não entregam o informe mensal de FII na CVM; DY e rendimento vêm da ficha (Yahoo).";
   return nota;
 }
 let notaCot = null;
-/* Tabela e rodapé abaixo do campo de filtro. soLinhas: veio do filtro, troca só o tbody quando a tabela já existe. */
-function corpoCotacoes(box, soLinhas) {
-  const q = cotBusca.trim().toUpperCase();
-  const daClasse = listaCvm(cotAba);
-  let linhas = daClasse.filter((x) => passaBolsa(x) && (!q || x.t.includes(q) || String(x.nome).toUpperCase().includes(q)));
-  const colunas = COT_COLUNAS[cotAba];
-  const { campo, dir } = cotOrdem;
-  linhas.sort((a, b) => (COL_TEXTO.has(campo) ? String(a[campo] ?? "").localeCompare(String(b[campo] ?? "")) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
-  const mostra = cotTodos || q ? linhas : linhas.slice(0, 15);
-  const tbody = el("tbody");
-  for (const x of mostra) tbody.append(el("tr", {}, ...colunas.map(([c]) => celula(c, x))));
-  const topo = box.querySelector(".cot-topo");
-  const tabAtual = soLinhas && box.querySelector(".cot-caixa > table > tbody");
-  if (tabAtual && linhas.length) tabAtual.replaceWith(tbody);
-  else {
-    while (topo.nextSibling) topo.nextSibling.remove();
-    const thead = el("tr", {}, ...colunas.map(([c, nome, cls]) => {
-      const th = el("th", { scope: "col", class: cls, "aria-sort": campo === c ? (dir > 0 ? "ascending" : "descending") : "none" });
-      /* "(US$)" no cabeçalho só em tela larga; no celular a nota de rodapé já diz que é dólar */
-      const [rot, moedaTh] = nome.split(" (US$)");
-      const b = el("button", { type: "button" }, rot, moedaTh !== undefined ? el("span", { class: "th-moeda" }, "(US$)") : null);
-      b.addEventListener("click", () => { cotOrdem = { campo: c, dir: campo === c ? -dir : (COL_TEXTO.has(c) ? 1 : -1) }; renderCotacoes(); });
-      th.append(b); return th;
-    }));
-    box.append(linhas.length ? el("div", { class: "cot-caixa" }, el("table", { class: "cot-tab" }, el("thead", {}, thead), tbody))
-      : el("p", { class: "vazio" }, el("strong", {}, "Nenhum papel com esses filtros"), q ? "Tente outro nome ou papel na busca." : "Afrouxe os filtros da coluna da esquerda para ver mais papéis."));
-  }
+function pintarPeCot(box) {
+  const daClasse = listaCvm(cotAba).length, n = listaCvm(cotAba).filter((x) => passaBolsa(x)).length;
+  notaCot = [n, daClasse];
+  const pe = el("div", { class: "cot-pe" }, el("span", {}, notaCotacoes(n, daClasse)));
   const velho = box.querySelector(".cot-pe");
-  notaCot = [linhas.length, daClasse.length];
-  const pe = el("div", { class: "cot-pe" }, el("span", {}, notaCotacoes(linhas.length, daClasse.length)));
-  if (!q && linhas.length > 15) {
-    const mais = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "cot-mais" }, cotTodos ? "Mostrar só os 15 primeiros" : `Ver todos os ${linhas.length}`);
-    mais.addEventListener("click", () => { cotTodos = !cotTodos; renderCotacoes(); });
-    pe.append(mais);
-  }
   if (velho) velho.replaceWith(pe); else box.append(pe);
 }
 /* Pregão da B3, como no cron (src/mercado.js): segunda a sexta, 13h às 21h10 UTC; mais 30 min pelo fechamento gravado às 21h35 */
@@ -2031,6 +2186,7 @@ function renderRankings() {
   box.append(el("div", { class: "rk-grade", "data-n": String(cards.length) }, ...cards.map(card)));
   let nota = us ? "Variação em relação ao fechamento do pregão anterior em Nova York. Preços em dólar, com atraso." : "Variação em relação ao fechamento do pregão anterior.";
   if (cotAba === "bdrs") nota += " BDRs são negociados na B3, em reais; a bandeira mostra o país da empresa.";
+  if (ABAS_FICHA.has(cotAba)) nota += " FI-Infra e Fiagro não entregam o informe mensal de FII na CVM; DY e rendimento vêm da ficha (Yahoo).";
   if (cotAba === "fiis") nota += " Líquidos são os fundos com mais de R$ 1 mi negociados por dia; abaixo disso DY e P/VP distorcem." + (fiiCvm && fiiCvm.ref ? " Informe da CVM de " + fmtMes(fiiCvm.ref) + "." : "") + " Mandato, gestão e administrador vêm do informe mensal da CVM.";
   box.append(el("p", { class: "nota" }, nota));
 }
@@ -2056,8 +2212,7 @@ function aplicarVisao() {
   $("cotacoes").setAttribute("aria-label", emEua() ? "Cotações dos EUA" : "Cotações da B3");
   /* cada visão volta para a classe que tinha da última vez */
   if (bolsa && emEua() !== ABAS_EUA.has(cotAba)) {
-    cotAba = emEua() ? cotAbaEua : cotAbaBr; cotTodos = false; cotBusca = "";
-    if (!COT_COLUNAS[cotAba].some((c) => c[0] === cotOrdem.campo)) cotOrdem = { campo: "liq", dir: -1 };
+    cotAba = emEua() ? cotAbaEua : cotAbaBr; cotBusca = "";
   }
   const semFeed = bolsa || emRadar();
   document.querySelector(".feed-topo").hidden = semFeed;
@@ -2221,7 +2376,6 @@ function passaBolsa(x, aba = cotAba, ignorar = "") {
 function mudouBolsa() {
   const foco = document.activeElement && document.activeElement.id;
   try { localStorage.setItem("radar-bolsa-filtros", JSON.stringify(bolsaF)); } catch (e) {}
-  cotTodos = false;
   renderRankings(); renderCotacoes(); renderNavBolsa();
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
@@ -2326,7 +2480,7 @@ function renderHoje() {
 let listas = [], listasCarregadas = false, listasErro = "", listasAviso = "", editandoLista = null, desenhandoListas = false;
 const rascunhos = {};
 const LISTA_MAX_PAPEIS = 60;
-const ORDEM_AUTO = ["carteira-fiis", "carteira-acoes", "carteira-bdrs", "carteira-etfs", "carteira-subscricoes"];
+const ORDEM_AUTO = ["carteira-fiis", "carteira-fiinfra", "carteira-fiagro", "carteira-acoes", "carteira-bdrs", "carteira-etfs", "carteira-subscricoes"];
 const ehAuto = (l) => !!(l && l.auto && ORDEM_AUTO.includes(l.id));
 /* automáticas primeiro, na ordem fixa; depois as manuais na ordem em que foram criadas */
 const ordenarListas = (ls) => [...ls.filter(ehAuto).sort((a, b) => ORDEM_AUTO.indexOf(a.id) - ORDEM_AUTO.indexOf(b.id)), ...ls.filter((l) => !ehAuto(l))];
@@ -2351,7 +2505,7 @@ let avisoListasT = 0;
 function avisarListas(t) { listasAviso = t; listasErro = ""; clearTimeout(avisoListasT); avisoListasT = setTimeout(() => { listasAviso = ""; renderListas(); }, 4000); }
 async function salvarLista(l) {
   renderListas();
-  try { await apiListas("PUT", l.id, { nome: l.nome, papeis: l.papeis }); if (listasErro) { listasErro = ""; renderListas(); } }
+  try { await apiListas("PUT", l.id, { nome: l.nome, papeis: l.papeis, ...(Array.isArray(l.ordem) ? { ordem: l.ordem } : {}) }); if (listasErro) { listasErro = ""; renderListas(); } }
   catch (e) { listasErro = e.message; renderListas(); }
 }
 function nomeLivre(base) {
@@ -2530,6 +2684,39 @@ function sugerirPapeis(q, ja) {
 const LIXEIRA = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
 const TRES_PONTOS = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
 const idSeguro = (s) => String(s).replace(/[^A-Za-z0-9_-]/g, "_");
+/* Ordem das Minhas listas: cabeçalho clicável (Papel, Preço, Dia, DY 12m, P/VP) com a mesma ordenação múltipla das tabelas.
+   Lista manual guarda em "ordem" no próprio doc (PUT /api/listas/<id>); a automática, em /api/prefs/tabelas com id
+   "lista-<id>" (o PUT dela é recusado). Sem ordem, vale a ordem personalizada: a do array de papéis, que muda arrastando. */
+const COLS_LISTA = [
+  { id: "t", rotulo: "Papel", tipo: "texto", valor: (d) => d.t },
+  { id: "preco", rotulo: "Preço", tipo: "num", valor: (d) => d.preco },
+  { id: "var", rotulo: "Dia", tipo: "num", valor: (d) => d.var },
+  { id: "dy", rotulo: "DY 12m", tipo: "num", valor: (d) => d.dy },
+  { id: "pvp", rotulo: "P/VP", tipo: "num", valor: (d) => d.pvp },
+];
+function dadosLista(t) {
+  const c = cotDe(t), x = c && c[0], aba = c && c[1];
+  let dy = null, pvp = null, dyAnual = false, fonte = "";
+  if (x && aba === "fiis") { dy = x.dy; pvp = x.pvp; dyAnual = x.dyAnual; fonte = "informe da CVM"; }
+  else if (x && ABAS_FICHA.has(aba)) { dy = comFicha(x).dy; fonte = "ficha, via Yahoo"; }
+  else {
+    const fu = rdFund && (ehPapelEua(t) || (x && x.us) ? rdFund.US : rdFund.BR);
+    const f = fu && fu[t];
+    if (f) { dy = f.dy ?? null; pvp = f.pvp ?? null; fonte = "ficha do papel"; }
+  }
+  return { t, x, aba, preco: x ? x.preco : null, var: x ? x.var : null, dy, pvp, dyAnual, fonte };
+}
+const PADRAO_LISTA = { ordem: [], filtros: {}, pagina: 1, porPagina: 25 };
+const ordemDaLista = (l) => (ehAuto(l) ? Tabela.estadoDe("lista-" + l.id, PADRAO_LISTA).ordem : Array.isArray(l.ordem) ? l.ordem : []);
+function papeisOrdenados(l) {
+  const o = ordemDaLista(l);
+  return o.length ? Tabela.ordenar(l.papeis.map(dadosLista), COLS_LISTA, o).map((d) => d.t) : l.papeis.slice();
+}
+function definirOrdemLista(l, nova) {
+  if (ehAuto(l)) { Tabela.salvarEstado("lista-" + l.id, { ...PADRAO_LISTA, ordem: nova }); renderListas(); }
+  else { l.ordem = nova; salvarLista(l); }
+}
+let listasOuvemServidor = false;
 function listaEl(l) {
   const auto = ehAuto(l);
   const box = el("div", { class: "lst" + (auto ? " lst-auto" : "") });
@@ -2563,8 +2750,12 @@ function listaEl(l) {
 
   if (l.papeis.length) {
     const tb = el("tbody");
-    l.papeis.forEach((t) => {
-      const c = cotDe(t), x = c && c[0];
+    const ordem = ordemDaLista(l), personalizada = !ordem.length;
+    const dados = new Map(l.papeis.map((t) => [t, dadosLista(t)]));
+    const temDy = [...dados.values()].some((d) => d.dy != null), temPvp = [...dados.values()].some((d) => d.pvp != null);
+    const cols = COLS_LISTA.filter((c) => (c.id !== "dy" || temDy) && (c.id !== "pvp" || temPvp));
+    papeisOrdenados(l).forEach((t) => {
+      const d = dados.get(t), x = d.x;
       const papel = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x && x.nome) || t }, papelEl(t, x));
       papel.addEventListener("click", (e) => { if (tr.dataset.segurou) { e.preventDefault(); delete tr.dataset.segurou; return; } abrirPapel(t); });
       const mais = el("button", { class: "lst-x lst-mais", type: "button", id: `lst-mais-${l.id}-${idSeguro(t)}`, "aria-haspopup": "menu", "aria-label": auto ? `Copiar ${t} para outra lista` : `Mover ou copiar ${t}`, title: auto ? "Copiar para…" : "Mover ou copiar para…", html: TRES_PONTOS });
@@ -2576,12 +2767,33 @@ function listaEl(l) {
         acoes.append(tirar);
       }
       const sem = () => el("span", { class: "sem", title: ehPapelEua(t) ? "Fora das ações e ETFs americanos que acompanhamos; sem cotação aqui" : "Fora dos mais negociados; sem cotação aqui" }, "–");
-      const tr = el("tr", { "data-papel": t },
-        el("td", {}, el("span", { class: "cot-papel-box" }, papel, pontoNoticia(t))),
-        el("td", {}, x && x.preco != null ? fmtPreco(x) : sem()),
-        el("td", { class: x && x.var > 0 ? "sobe" : x && x.var < 0 ? "desce" : "" }, x && x.var != null ? (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%" : x ? "–" : sem()),
-        el("td", { title: x && x.dyAnual ? "Menos de 12 meses de informes: valor anualizado" : "" }, x && c[1] === "fiis" && x.dy != null ? fmtNum(x.dy, 2) + "%" + (x.dyAnual ? "*" : "") : "–"),
-        el("td", {}, acoes));
+      const td = {
+        t: () => el("td", {}, el("span", { class: "cot-papel-box" }, papel, pontoNoticia(t))),
+        preco: () => el("td", {}, x && x.preco != null ? fmtPreco(x) : sem()),
+        var: () => el("td", { class: x && x.var > 0 ? "sobe" : x && x.var < 0 ? "desce" : "" }, x && x.var != null ? (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%" : x ? "–" : sem()),
+        dy: () => el("td", { title: d.dy == null ? "" : (d.dyAnual ? "Menos de 12 meses de informes: valor anualizado. " : "") + "Fonte: " + d.fonte }, d.dy == null ? "–" : fmtNum(d.dy, 2) + "%" + (d.dyAnual ? "*" : "")),
+        pvp: () => el("td", { title: d.pvp == null ? "" : "Fonte: " + d.fonte }, d.pvp == null ? "–" : fmtNum(d.pvp, 2)),
+      };
+      const tr = el("tr", { "data-papel": t }, ...cols.map((c) => td[c.id]()), el("td", {}, acoes));
+      /* ordem personalizada: arrastar a linha para cima de outra da mesma lista põe o papel antes dela */
+      if (!auto && personalizada && podeArrastar()) {
+        tr.addEventListener("dragover", (e) => {
+          if (!arrastoLista || arrastoLista.de !== l.id || arrastoLista.t === t) return;
+          e.preventDefault(); e.dataTransfer.dropEffect = "move";
+          tb.querySelectorAll("tr.cai-antes").forEach((r) => { if (r !== tr) r.classList.remove("cai-antes"); });
+          tr.classList.add("cai-antes");
+        });
+        tr.addEventListener("dragleave", (e) => { if (!tr.contains(e.relatedTarget)) tr.classList.remove("cai-antes"); });
+        tr.addEventListener("drop", (e) => {
+          if (!arrastoLista || arrastoLista.de !== l.id || arrastoLista.t === t) return;
+          e.preventDefault(); e.stopPropagation();
+          const m = arrastoLista.t; arrastoLista = null; limparAlvosLista();
+          const resto = l.papeis.filter((p) => p !== m), k = resto.indexOf(t);
+          l.papeis = [...resto.slice(0, k), m, ...resto.slice(k)];
+          avisarListas(`${m} foi para antes de ${t}.`);
+          salvarLista(l);
+        });
+      }
       /* botão direito no desktop (e o toque longo do Android, que chega como contextmenu) */
       tr.addEventListener("contextmenu", (e) => { e.preventDefault(); abrirMenuPapel(l, t, mais, { x: e.clientX, y: e.clientY }); });
       /* toque longo (iPhone não manda contextmenu): 500 ms parado abre o menu e o toque não abre a ficha */
@@ -2606,9 +2818,14 @@ function listaEl(l) {
       }
       tb.append(tr);
     });
-    box.append(el("table", { class: "lst-tab" },
-      el("thead", {}, el("tr", {}, el("th", { scope: "col" }, "Papel"), el("th", { scope: "col" }, "Preço"), el("th", { scope: "col" }, "Dia"), el("th", { scope: "col", title: "Só para FIIs" }, "DY 12m"), el("th", {}, el("span", { class: "sr" }, "Ações")))),
-      tb));
+    const ordenarPor = (col, shift) => definirOrdemLista(l, Tabela.cliqueOrdem(ordem, col.id, shift, col.tipo === "texto" ? 1 : -1));
+    const ths = cols.map((c) => { const th = Tabela.cabecalho(c, ordem, ordenarPor); const b = th.querySelector("button"); if (b) b.id = `lst-ord-${l.id}-${c.id}`; return th; });
+    box.append(el("table", { class: "lst-tab" }, el("thead", {}, el("tr", {}, ...ths, el("th", {}, el("span", { class: "sr" }, "Ações")))), tb));
+    if (!personalizada) {
+      const volta = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "lst-pers-" + l.id }, auto ? "voltar à ordem da carteira" : "voltar à ordem personalizada");
+      volta.addEventListener("click", () => { definirOrdemLista(l, []); const b = $("lst-ord-" + l.id + "-t"); if (b) b.focus({ preventScroll: true }); });
+      box.append(el("p", { class: "lst-ordem" }, el("span", {}, "Ordenada por " + ordem.map((o) => (COLS_LISTA.find((c) => c.id === o.c) || { rotulo: o.c }).rotulo + (o.d > 0 ? "\u00a0↑" : "\u00a0↓")).join(", ") + " ·"), volta));
+    }
   }
   /* barra de onde o papel arrastado vai cair (fim da lista) */
   if (!auto) box.append(el("div", { class: "lst-cai", "aria-hidden": "true" }, el("span", {})));
@@ -2655,6 +2872,9 @@ function renderListas() {
   const alvo = larga ? $("lat-listas") : $("listas-centro"), outro = larga ? $("listas-centro") : $("lat-listas");
   outro.textContent = "";
   if (!emBolsa()) { alvo.textContent = ""; return; }
+  /* DY e P/VP das ações vêm das fichas guardadas; a ordem das listas automáticas, de /api/prefs/tabelas */
+  if (!rdFund && !rdLendoFund && listas.length) lerFundRadar().then(() => { if (emBolsa()) renderListas(); });
+  if (!listasOuvemServidor) { listasOuvemServidor = true; Tabela.aoChegarServidor(() => { if (emBolsa() && listasCarregadas) renderListas(); }); }
   /* recria o bloco inteiro: guarda o foco (e o cursor) para devolver ao campo equivalente */
   const ativo = document.activeElement;
   const foco = ativo && alvo.contains(ativo) && ativo.id ? ativo.id : null;
@@ -3036,7 +3256,11 @@ function abrirAtivo(x, aba = cotAba, ficha) {
   if (ficha === undefined) {
     const pronta = fichaPronta(fid);
     ficha = pronta ? { r: pronta } : { carregando: true };
-    if (!pronta) lerFicha(fid).then((r) => { const dd = $("ativo-dlg"); if (dd && dd.open && dd.dataset.ficha === fid) abrirAtivo(x, aba, { r }); });
+    if (!pronta) lerFicha(fid).then((r) => {
+      const dd = $("ativo-dlg"); if (dd && dd.open && dd.dataset.ficha === fid) abrirAtivo(x, aba, { r });
+      /* FI-Infra e Fiagro: a linha da tabela ganha o DY e o rendimento que a ficha acabou de trazer */
+      if (ABAS_FICHA.has(cotAba) && cotTab && cotTab.vivo()) cotTab.atualizar(linhasCotacoes());
+    });
   }
   d.dataset.ficha = fid;
   d.classList.toggle("ficha", completa);
@@ -3056,14 +3280,14 @@ function abrirAtivo(x, aba = cotAba, ficha) {
   const fechar = el("button", { type: "button", class: "dd-btn dd-btn--ghost dd-btn--icon ativo-fechar", "aria-label": "Fechar" }, "✕");
   fechar.addEventListener("click", () => d.close());
   const chips = el("div", { class: "ativo-chips" });
-  const tipo = aba === "usetfs" ? "ETF nos EUA" : us ? "Ação nos EUA" : bdr ? "BDR" : aba === "fiis" ? "Fundo imobiliário" : aba === "etfs" ? "ETF" : "Ação na B3";
+  const tipo = aba === "usetfs" ? "ETF nos EUA" : us ? "Ação nos EUA" : bdr ? "BDR" : aba === "fiis" ? "Fundo imobiliário" : aba === "fiinfra" ? "FI-Infra" : aba === "fiagro" ? "Fiagro" : aba === "etfs" ? "ETF" : "Ação na B3";
   /* FII: tipo, mandato, gestão, segmento e prazo, nessa ordem; o que não veio da CVM não vira chip */
   const prazo = f && prazoTexto(f.pz);
   [tipo, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), f && f.s && segNome(f.s), prazo && prazo.chip].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
   if (bdr && x.pais) chips.append(el("span", { class: "chip" }, emojiPais(x.pais), "Empresa de " + ((nomesPais && nomesPais.of(x.pais)) || x.pais)));
   const setor = !f && setorPt(x.setor || (completa && h && h.setor));
   if (setor && setor !== "ETF") chips.append(el("span", { class: "chip" }, setor));
-  const nome = f && f.n ? nomeBonito(f.n) : x.nome || (h && (h.nomeCurto || h.nome)) || "";
+  const nome = f && f.n ? nomeBonito(f.n) : ABAS_FICHA.has(aba) && x.nome ? nomeBonito(x.nome) : x.nome || (h && (h.nomeCurto || h.nome)) || "";
   d.append(el("div", { class: "ativo-cab" },
     el("div", {}, el("h2", { id: "ativo-titulo" }, papelEl(x.t, us ? { ...x, us: true } : x)), el("p", { title: (f && f.n) || nome }, nome), chips), fechar));
   const sim = h ? simDe(h.moeda) : simMoeda(us ? { us: true } : x);
@@ -3101,8 +3325,16 @@ function abrirAtivo(x, aba = cotAba, ficha) {
         k("Valor patrimonial", fmtRs(f.vp), "por cota"),
         k("Patrimônio líquido", f.pl ? "R$ " + fmtVol(f.pl) : "–", ""),
         k("Cotistas", f.cot == null ? "–" : fmtNum(f.cot, 0), f.cotas ? fmtVol(f.cotas) + " cotas emitidas" : ""));
+    } else if (ABAS_FICHA.has(aba)) {
+      /* FI-Infra e Fiagro: sem informe de FII na CVM, os pagamentos vêm do gráfico do Yahoo guardado na ficha */
+      const dv = h && h.ultDiv != null;
+      grade.append(
+        k("DY 12 meses", h && h.dy != null ? fmtNum(h.dy, 2) + "%" : ficha.carregando ? "…" : "–", "pagamentos de 12 meses ÷ cotação, via Yahoo"),
+        k("Último rendimento", dv ? fmtRs(h.ultDiv, h.ultDiv < 1 ? 3 : 2) : ficha.carregando ? "…" : "–", dv && h.ultDivData ? "por cota, pago em " + ddmm(h.ultDivData) + "/" + h.ultDivData.slice(0, 4) + ", via Yahoo" : "por cota, via Yahoo"),
+        k("Pago em 12 meses", h && h.dividendo12m != null ? fmtRs(h.dividendo12m, 2) : ficha.carregando ? "…" : "–", "por cota, soma"));
     } else if (x.cap) grade.append(k("Valor de mercado", "R$ " + fmtVol(x.cap), ""));
     d.append(grade);
+    if (ABAS_FICHA.has(aba)) d.append(el("p", { class: "nota" }, "FI-Infra e Fiagro não entregam o informe mensal de FII na CVM; DY e rendimento vêm da ficha (Yahoo). Confira o valor exato no aviso aos cotistas."));
   }
   /* Faixas e gráfico (todas as classes, quando o dado existe); o resto da ficha só em ações, BDRs e ações dos EUA */
   if (h) {
@@ -3161,6 +3393,8 @@ function abrirAtivo(x, aba = cotAba, ficha) {
   } else if (bdr) {
     links.append(linkYahoo(), " · ", el("a", { href: "https://investidor10.com.br/bdrs/" + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"), " · ",
       el("a", { href: "https://statusinvest.com.br/bdrs/" + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"));
+  } else if (ABAS_FICHA.has(aba)) {
+    links.append(linkYahoo());
   } else {
     if (completa) links.append(linkYahoo(), " · ");
     links.append(el("a", { href: "https://statusinvest.com.br/" + (aba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"), " · ",
@@ -3956,6 +4190,38 @@ function ajustarLados() {
   }
 }
 const pedirLados = () => { cancelAnimationFrame(rafLados); rafLados = requestAnimationFrame(ajustarLados); };
+/* Recolher as colunas: classe no <html>, localStorage para pintar já na abertura e /api/prefs/layout para valer nos outros aparelhos */
+const COLS = { esq: { chave: "radar-col-esq", cls: "col-esq-fechada", btn: "col-esq", abre: CHEV_R, fecha: CHEV_L }, dir: { chave: "radar-col-dir", cls: "col-dir-fechada", btn: "col-dir", abre: CHEV_L, fecha: CHEV_R } };
+let layoutMexido = false;
+function pintarColuna(lado, fechada) {
+  const c = COLS[lado], b = $(c.btn);
+  document.documentElement.classList.toggle(c.cls, fechada);
+  b.innerHTML = fechada ? c.abre : c.fecha;
+  b.setAttribute("aria-expanded", String(!fechada));
+  b.setAttribute("aria-label", fechada ? "Abrir coluna" : "Recolher coluna");
+  b.title = fechada ? "Abrir coluna" : "Recolher coluna";
+  b.querySelector("svg").setAttribute("aria-hidden", "true");
+}
+const colunaFechada = (lado) => document.documentElement.classList.contains(COLS[lado].cls);
+for (const lado of ["esq", "dir"]) {
+  let f = false;
+  try { f = localStorage.getItem(COLS[lado].chave) === "1"; } catch (e) {}
+  pintarColuna(lado, f);
+  $(COLS[lado].btn).addEventListener("click", () => {
+    const f2 = !colunaFechada(lado);
+    layoutMexido = true;
+    pintarColuna(lado, f2);
+    try { localStorage.setItem(COLS[lado].chave, f2 ? "1" : "0"); } catch (e) {}
+    fetch("/api/prefs/layout", { method: "PUT", credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({ esq: colunaFechada("esq"), dir: colunaFechada("dir") }) }).catch(() => {});
+    pedirLados();
+    $(COLS[lado].btn).focus({ preventScroll: true });
+  });
+}
+fetch("/api/prefs/layout", { credentials: "same-origin", cache: "no-store", headers: { "X-Requested-With": "XMLHttpRequest" } })
+  .then((r) => (r.ok ? r.json() : null)).then((j) => {
+    if (!j || layoutMexido || !j.salvo) return;
+    for (const lado of ["esq", "dir"]) { pintarColuna(lado, !!j[lado]); try { localStorage.setItem(COLS[lado].chave, j[lado] ? "1" : "0"); } catch (e) {} }
+  }).catch(() => {});
 window.addEventListener("scroll", pedirLados, { passive: true });
 window.addEventListener("resize", pedirLados);
 pedirLados();
@@ -4419,7 +4685,7 @@ const corpos = {
     const MAX = 4;
     return ls.map((l) => {
       const ol = el("ol", {});
-      l.papeis.slice(0, MAX).forEach((t) => {
+      papeisOrdenados(l).slice(0, MAX).forEach((t) => {
         const c = cotDe(t), x = c && c[0];
         const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x && x.nome) || t }, papelEl(t, x));
         b.addEventListener("click", () => abrirPapel(t));
@@ -4864,11 +5130,11 @@ const somarMes = (ym, n) => { const [a, m] = ym.split("-").map(Number); const x 
 const idxMes = (ym) => { const [a, m] = ym.split("-").map(Number); return a * 12 + m - 1; };
 const dataBr = (d) => (d ? d.slice(8, 10) + "/" + d.slice(5, 7) + "/" + d.slice(0, 4) : "");
 function duracao(meses) { if (meses == null) return "mais de 40 anos"; const a = Math.floor(meses / 12), m = meses % 12; const p = []; if (a) p.push(a + (a === 1 ? " ano" : " anos")); if (m || !a) p.push(m + (m === 1 ? " mês" : " meses")); return p.join(" e "); }
-const NOME_CLASSE = { fii: "FIIs", acao: "Ações", etf: "ETFs", bdr: "BDRs", subscricao: "Subscrições e recibos", outro: "Outros", emprestado: "Em empréstimo" };
-const ORDEM_CLASSE = ["fii", "acao", "etf", "bdr", "subscricao", "outro", "emprestado"];
+const NOME_CLASSE = { fii: "FIIs", fiinfra: "FI-Infra", fiagro: "Fiagro", acao: "Ações", etf: "ETFs", bdr: "BDRs", subscricao: "Subscrições e recibos", outro: "Outros", emprestado: "Em empréstimo" };
+const ORDEM_CLASSE = ["fii", "fiinfra", "fiagro", "acao", "etf", "bdr", "subscricao", "outro", "emprestado"];
 const NOME_PROV = { rend: "Rendimento", div: "Dividendo", jcp: "JCP", amort: "Amortização", reemb: "Reembolso", outro: "Outro" };
 const NOME_MOV = { compra: "Compra", venda: "Venda", emp: "Empréstimo", transf: "Transferência", "transf-sf": "Transferência", bonif: "Bonificação", desdobro: "Desdobro", grupamento: "Grupamento", dir: "Direito de subscrição", "dir-exe": "Subscrição exercida", "dir-nexe": "Direito não exercido", recibo: "Recibo de subscrição", atual: "Atualização", fracao: "Fração", resgate: "Resgate", reemb: "Reembolso", "sub-sol": "Pedido de subscrição", retirada: "Retirada de custódia", venc: "Vencimento", "compra-venda": "Compra ou venda", ...NOME_PROV };
-const nomeDoPapel = (p) => (p.nome ? (p.classe === "fii" ? nomeBonito(p.nome) : p.nome) : "");
+const nomeDoPapel = (p) => (p.nome ? (p.classe === "fii" || p.classe === "fiagro" || p.classe === "fiinfra" ? nomeBonito(p.nome) : p.nome) : "");
 const tagEl = (txt, cls, title) => el("span", { class: "ct-tag" + (cls ? " " + cls : ""), ...(title ? { title } : {}) }, txt);
 async function abrirDaCarteira(t) {
   if (!b3) { const d = await lerMeta("b3"); if (d) b3 = d; }
@@ -5049,7 +5315,7 @@ function desenharCarteira(j) {
 }
 
 /* Visão geral */
-let ctFiltro = "todas", ctBusca = "", ctOrdem = { campo: "valor", dir: -1 }, ctTodas = false;
+let ctFiltro = "todas", ctBusca = "";
 function desenharGeral(box, j) {
   const r = j.resumo;
   const k = el("div", { class: "ct-kpis" });
@@ -5106,6 +5372,8 @@ function cardPosicoes(j) {
   const c = el("section", { class: "ct-card ct-posicoes", id: "ct-posicoes" });
   const classes = new Set(j.posicoes.map((p) => p.classe));
   const filtros = [["todas", "Todas"], ["fii", "FIIs"], ["acao", "Ações"]];
+  if (classes.has("fiinfra")) filtros.push(["fiinfra", "FI-Infra"]);
+  if (classes.has("fiagro")) filtros.push(["fiagro", "Fiagro"]);
   if (classes.has("etf")) filtros.push(["etf", "ETFs"]);
   if (["bdr", "subscricao", "outro"].some((x) => classes.has(x))) filtros.push(["outros", "Outros"]);
   filtros.push(["encerradas", "Encerradas"]);
@@ -5114,77 +5382,87 @@ function cardPosicoes(j) {
   const corpo = el("div", { style: "display:contents" });
   filtros.forEach(([id, n]) => {
     const b = el("button", { type: "button", "aria-pressed": String(ctFiltro === id) }, n);
-    b.addEventListener("click", () => { ctFiltro = id; ctTodas = false; seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); pintar(); });
+    b.addEventListener("click", () => { ctFiltro = id; seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); pintar(); });
     seg.append(b);
   });
   const busca = el("input", { class: "dd-input", type: "search", placeholder: "papel ou nome", "aria-label": "Buscar papel", autocomplete: "off" });
   busca.value = ctBusca;
-  busca.addEventListener("input", () => { ctBusca = busca.value; pintar(); });
+  busca.addEventListener("input", () => { ctBusca = busca.value; if (ctTabAtual && ctTabAtual.vivo()) ctTabAtual.atualizar(linhasCt(j), { voltarPagina: true }); else pintar(); });
   c.append(el("div", { class: "ct-ferr" }, el("h3", {}, "Posições"), seg, el("span", { class: "ct-esp", style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Buscar"), busca)), corpo);
   const pintar = () => { corpo.textContent = ""; corpo.append(...tabelaPosicoes(j, pintar)); };
   pintar();
   return c;
 }
-function tabelaPosicoes(j, repintar) {
+/* Posições, Encerradas e Pagamentos da carteira no helper de tabela (ids carteira-posicoes, carteira-encerradas, carteira-proventos).
+   A classe (Todas, FIIs...) e a busca continuam por fora; ordem, filtro por coluna e página ficam na tabela. */
+let ctTabAtual = null;
+const OUTRAS_CLASSES = new Set(["bdr", "subscricao", "outro"]);
+function linhasCt(j) {
   const q = semAcento(ctBusca.trim().toLowerCase());
   const passa = (p) => !q || semAcento((p.t + " " + (p.nome || "")).toLowerCase()).includes(q);
-  const out = [];
-  if (ctFiltro === "encerradas") {
-    const l = (j.resumo.encerradas || []).filter(passa);
-    const vis = ctTodas ? l : l.slice(0, 10);
-    const tab = el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Papel", "Período", "Resultado", "Proventos", "Total"].map((h, k) => el("th", { class: k ? "" : "e", scope: "col" }, h)))));
-    const tb = el("tbody");
-    vis.forEach((e) => tb.append(el("tr", {}, el("td", { class: "e" }, papelBtn(e.t, e.nome)), el("td", { class: "mono" }, periodo(e.de, e.ate)), el("td", { class: "mono " + clsS(e.resultado) }, rsS(e.resultado)), el("td", { class: "mono" }, rs(e.proventos)), el("td", { class: "mono " + clsS(e.total) }, rsS(e.total)))));
-    if (!vis.length) tb.append(el("tr", {}, el("td", { class: "e", colspan: "5" }, "Nenhuma posição encerrada.")));
-    tab.append(tb);
-    const lista = el("div", { class: "ct-lista-cel" }, ...vis.map((e) => el("div", { class: "ct-lin" }, papelBtn(e.t, e.nome), el("span", { class: "ct-mono " + clsS(e.total) }, rsS(e.total)), el("small", {}, periodo(e.de, e.ate) + " · proventos " + rs(e.proventos)), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)))));
-    out.push(el("div", { class: "ct-caixa" }, tab), lista, rodapeTab(vis.length, l.length, repintar, "Encerradas com histórico de negócio, com o resultado realizado e os proventos recebidos."));
-    return out;
-  }
-  const outros = new Set(["bdr", "subscricao", "outro"]);
-  let l = j.posicoes.filter((p) => (ctFiltro === "todas" || p.classe === ctFiltro || (ctFiltro === "outros" && outros.has(p.classe))) && passa(p));
-  const { campo, dir } = ctOrdem;
-  l = l.slice().sort((a, b) => (campo === "t" ? a.t.localeCompare(b.t) * dir : ((a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir));
-  const vis = ctTodas ? l : l.slice(0, 10);
-  const COLS = [["t", "Papel"], ["q", "Qtd"], ["pm", "Preço médio"], ["preco", "Atual"], ["valor", "Valor"], ["resPct", "Resultado"], ["prov12", "Prov. 12m"], ["yoc", "DY s/ custo"], [null, "Corretora"]];
-  const tr = el("tr");
-  COLS.forEach(([k, n], i) => {
-    const th = el("th", { scope: "col", class: i === 0 || !k ? "e" : "" });
-    if (k) {
-      if (campo === k) th.setAttribute("aria-sort", dir > 0 ? "ascending" : "descending");
-      const b = el("button", { type: "button" }, n);
-      b.addEventListener("click", () => { ctOrdem = campo === k ? { campo: k, dir: -dir } : { campo: k, dir: k === "t" ? 1 : -1 }; repintar(); });
-      th.append(b);
-    } else th.textContent = n;
-    tr.append(th);
-  });
-  const tb = el("tbody");
-  vis.forEach((p) => {
+  if (ctFiltro === "encerradas") return (j.resumo.encerradas || []).filter(passa);
+  return j.posicoes.filter((p) => (ctFiltro === "todas" || p.classe === ctFiltro || (ctFiltro === "outros" && OUTRAS_CLASSES.has(p.classe))) && passa(p));
+}
+const COLS_ENC = [
+  { id: "t", rotulo: "Papel", tipo: "texto", cls: "e", valor: (e) => e.t },
+  { id: "ate", rotulo: "Período", rotuloCurto: "Encerrada", tipo: "data", valor: (e) => e.ate || "" },
+  { id: "resultado", rotulo: "Resultado", tipo: "num", unidade: "R$", valor: (e) => e.resultado },
+  { id: "proventos", rotulo: "Proventos", tipo: "num", unidade: "R$", valor: (e) => e.proventos },
+  { id: "total", rotulo: "Total", tipo: "num", unidade: "R$", valor: (e) => e.total },
+];
+const COLS_POS = [
+  { id: "t", rotulo: "Papel", tipo: "texto", cls: "e", valor: (p) => p.t },
+  { id: "q", rotulo: "Qtd", tipo: "num", valor: (p) => p.q },
+  { id: "pm", rotulo: "Preço médio", tipo: "num", unidade: "R$", valor: (p) => p.pm },
+  { id: "preco", rotulo: "Atual", tipo: "num", unidade: "R$", valor: (p) => p.preco },
+  { id: "valor", rotulo: "Valor", tipo: "num", unidade: "R$", valor: (p) => p.valor },
+  { id: "resPct", rotulo: "Resultado", tipo: "num", unidade: "%", valor: (p) => p.resPct },
+  { id: "prov12", rotulo: "Prov. 12m", tipo: "num", unidade: "R$", valor: (p) => p.prov12 || null },
+  { id: "yoc", rotulo: "DY s/ custo", tipo: "num", unidade: "%", valor: (p) => p.yoc },
+  { id: "corretora", rotulo: "Corretora", tipo: "texto", cls: "e", valor: (p) => p.corretoras.join(", "), valores: (p) => p.corretoras },
+];
+function celulaPos(c, p) {
+  if (c === "t") {
     const nome = nomeDoPapel(p);
-    const papel = el("td", { class: "e" }, papelBtn(p.t, nome), nome ? el("span", { class: "ct-nome", title: nome }, nome) : null);
-    if (p.emprestadas) papel.append(" ", tagEl("em empréstimo", "", `${qtd(p.emprestadas)} emprestadas; continuam suas`));
-    if (p.semCotacao) papel.append(" ", tagEl("sem cotação", "", "Fora das tabelas do pregão do Lookout; o valor usa o preço médio"));
-    tb.append(el("tr", {}, papel, el("td", { class: "mono" }, qtd(p.q)), el("td", { class: "mono" }, rs(p.pm, true)), el("td", { class: "mono" }, p.preco == null ? "–" : rs(p.preco, true)),
-      el("td", { class: "mono" }, rs(p.valor)), el("td", { class: "mono " + clsS(p.resPct) }, pc(p.resPct, true)), el("td", { class: "mono" }, p.prov12 ? rs(p.prov12) : "–"), el("td", { class: "mono" }, p.yoc == null ? "–" : pc(p.yoc)),
-      el("td", { class: "e" }, ...p.corretoras.map((x) => tagEl(x)))));
+    const td = el("td", { class: "e" }, papelBtn(p.t, nome), nome ? el("span", { class: "ct-nome", title: nome }, nome) : null);
+    if (p.emprestadas) td.append(" ", tagEl("em empréstimo", "", `${qtd(p.emprestadas)} emprestadas; continuam suas`));
+    if (p.semCotacao) td.append(" ", tagEl("sem cotação", "", "Fora das tabelas do pregão do Lookout; o valor usa o preço médio"));
+    return td;
+  }
+  if (c === "q") return el("td", { class: "mono" }, qtd(p.q));
+  if (c === "pm") return el("td", { class: "mono" }, rs(p.pm, true));
+  if (c === "preco") return el("td", { class: "mono" }, p.preco == null ? "–" : rs(p.preco, true));
+  if (c === "valor") return el("td", { class: "mono" }, rs(p.valor));
+  if (c === "resPct") return el("td", { class: "mono " + clsS(p.resPct) }, pc(p.resPct, true));
+  if (c === "prov12") return el("td", { class: "mono" }, p.prov12 ? rs(p.prov12) : "–");
+  if (c === "yoc") return el("td", { class: "mono" }, p.yoc == null ? "–" : pc(p.yoc));
+  return el("td", { class: "e" }, ...p.corretoras.map((x) => tagEl(x)));
+}
+function celulaEnc(c, e) {
+  if (c === "t") return el("td", { class: "e" }, papelBtn(e.t, e.nome));
+  if (c === "ate") return el("td", { class: "mono" }, periodo(e.de, e.ate));
+  if (c === "proventos") return el("td", { class: "mono" }, rs(e.proventos));
+  return el("td", { class: "mono " + clsS(e[c]) }, rsS(e[c]));
+}
+const UNID_CLASSE = (c) => (c === "fii" || c === "fiinfra" || c === "fiagro" ? "cotas" : c === "acao" ? "ações" : "un.");
+function tabelaPosicoes(j, repintar) {
+  const enc = ctFiltro === "encerradas";
+  const t = Tabela.criar({
+    id: enc ? "carteira-encerradas" : "carteira-posicoes", colunas: enc ? COLS_ENC : COLS_POS, linhas: linhasCt(j),
+    total: enc ? (j.resumo.encerradas || []).length : j.posicoes.length, rotuloConta: enc ? "encerradas" : "posições",
+    padrao: { ordem: enc ? [] : [{ c: "valor", d: -1 }], filtros: {}, pagina: 1, porPagina: 25 },
+    celula: (c, x) => (enc ? celulaEnc(c.id, x) : celulaPos(c.id, x)), classeTabela: "ct-tab", classeCaixa: "ct-caixa",
+    cel: enc
+      ? (e) => el("div", { class: "ct-lin" }, papelBtn(e.t, e.nome), el("span", { class: "ct-mono " + clsS(e.total) }, rsS(e.total)), el("small", {}, periodo(e.de, e.ate) + " · proventos " + rs(e.proventos)), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)))
+      : (p) => el("div", { class: "ct-lin" }, papelBtn(p.t, nomeDoPapel(p)), el("span", { class: "ct-mono" }, rs(p.valor)),
+        el("small", {}, `${qtd(p.q)} ${UNID_CLASSE(p.classe)} · PM ${rs(p.pm, true)}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(p.resPct) }, pc(p.resPct, true))),
+    vazio: (comFiltro) => el("p", { class: "ct-nota" }, comFiltro ? "Nenhuma linha com esses filtros." : ctBusca ? "Nenhum papel com essa busca." : enc ? "Nenhuma posição encerrada." : "Nenhuma posição nesta classe."),
+    nota: () => el("span", {}, enc ? "Encerradas com histórico de negócio, com o resultado realizado e os proventos recebidos." : "Clique no papel para abrir a ficha."),
   });
-  if (!vis.length) tb.append(el("tr", {}, el("td", { class: "e", colspan: "9" }, ctBusca ? "Nenhum papel com essa busca." : "Nenhuma posição nesta classe.")));
-  const tab = el("table", { class: "ct-tab" }, el("thead", {}, tr), tb);
-  const lista = el("div", { class: "ct-lista-cel" }, ...vis.map((p) => el("div", { class: "ct-lin" }, papelBtn(p.t, nomeDoPapel(p)), el("span", { class: "ct-mono" }, rs(p.valor)),
-    el("small", {}, `${qtd(p.q)} ${p.classe === "fii" ? "cotas" : p.classe === "acao" ? "ações" : "un."} · PM ${rs(p.pm, true)}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(p.resPct) }, pc(p.resPct, true)))));
-  out.push(el("div", { class: "ct-caixa" }, tab), lista, rodapeTab(vis.length, l.length, repintar, "clique no papel abre a ficha"));
-  return out;
+  ctTabAtual = t;
+  return [t.el];
 }
 function periodo(de, ate) { if (!de) return "–"; const a = de.slice(0, 4), b = ate ? ate.slice(0, 4) : a; return a === b ? mesC(ate.slice(0, 7)) : `${a} – ${mesC(ate.slice(0, 7))}`; }
-function rodapeTab(n, total, repintar, dica) {
-  const pe = el("div", { class: "ct-pe" }, el("span", {}, `Mostrando ${n} de ${total}${dica ? " · " + dica : ""}`));
-  if (total > 10) {
-    const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, ctTodas ? "Mostrar menos" : `Ver todas (${total})`);
-    b.addEventListener("click", () => { ctTodas = !ctTodas; repintar(); });
-    pe.append(b);
-  }
-  return pe;
-}
 function maisDaCarteira(j) {
   const r = j.resumo;
   const box = el("div", { class: "ct-mais", id: "ct-mais" });
@@ -5220,7 +5498,7 @@ function maisDaCarteira(j) {
     el("tbody", {}, ...el5.map((e) => el("tr", {}, el("td", { class: "e" }, papelBtn(e.t, e.nome)), el("td", { class: "mono" }, periodo(e.de, e.ate)), el("td", { class: "mono " + clsS(e.resultado) }, rsS(e.resultado)), el("td", { class: "mono " + clsS(e.total), title: "com " + rs(e.proventos) + " de proventos" }, rsS(e.total))))))) : el("p", { class: "ct-nota" }, "Nenhuma posição encerrada."));
   if ((r.encerradas || []).length > 5) {
     const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, `Ver as ${r.encerradas.length} encerradas`);
-    b.addEventListener("click", () => { ctFiltro = "encerradas"; ctTodas = true; desenharCarteira(cartJ); requestAnimationFrame(() => { const p = $("ct-posicoes"); if (p) p.scrollIntoView({ block: "start" }); }); });
+    b.addEventListener("click", () => { ctFiltro = "encerradas"; desenharCarteira(cartJ); requestAnimationFrame(() => { const p = $("ct-posicoes"); if (p) p.scrollIntoView({ block: "start" }); }); });
     en.append(b);
   }
   // IR
@@ -5237,7 +5515,7 @@ function maisDaCarteira(j) {
 }
 function nomeRenda(k) {
   if (k.startsWith("fii:")) return "FIIs · " + k.slice(4);
-  return { acao: "Ações (dividendo e JCP)", etf: "ETFs", bdr: "BDRs", subscricao: "Recibos de subscrição", outro: "Outros" }[k] || k;
+  return { acao: "Ações (dividendo e JCP)", fiinfra: "FI-Infra", fiagro: "Fiagro", etf: "ETFs", bdr: "BDRs", subscricao: "Recibos de subscrição", outro: "Outros" }[k] || k;
 }
 function agendaEl(r, n) {
   const l = (r.agenda || []).slice(0, n);
@@ -5258,7 +5536,7 @@ function rentabEl(r) {
 }
 
 /* Proventos */
-let provPeriodo = "12m", provPapel = "", provTipo = "", provMostrar = 20, provTodosPapeis = false;
+let provPeriodo = "12m", provPapel = "", provTipo = "", provTodosPapeis = false;
 function periodoProv(r) {
   const atual = r.hoje.slice(0, 7), ano = r.hoje.slice(0, 4);
   if (provPeriodo === "ano") return { de: ano + "-01", ate: atual, nome: "em " + ano, meses: Array.from({ length: 12 }, (_, k) => ano + "-" + String(k + 1).padStart(2, "0")) };
@@ -5267,13 +5545,32 @@ function periodoProv(r) {
   const de = somarMes(atual, -12), ate = somarMes(atual, -1);
   return { de, ate, nome: "em 12 meses", meses: Array.from({ length: 12 }, (_, k) => somarMes(de, k)), mais: atual };
 }
+/* Pagamentos: [data, papel, tipo, qtd, por cota, líquido, corretora] */
+const COLS_PROV = [
+  { id: "d", rotulo: "Pagamento", tipo: "data", cls: "e", valor: (p) => p[0] },
+  { id: "t", rotulo: "Papel", tipo: "texto", cls: "e", valor: (p) => p[1] },
+  { id: "tipo", rotulo: "Tipo", tipo: "texto", cls: "e", valor: (p) => NOME_PROV[p[2]] || "Outro" },
+  { id: "q", rotulo: "Qtd", tipo: "num", valor: (p) => p[3] },
+  { id: "unit", rotulo: "Por cota", tipo: "num", unidade: "R$", valor: (p) => p[4] },
+  { id: "liq", rotulo: "Líquido", tipo: "num", unidade: "R$", valor: (p) => p[5] },
+  { id: "corr", rotulo: "Corretora", tipo: "texto", cls: "e", valor: (p) => p[6] || "" },
+];
+function celulaProv(c, p) {
+  if (c === "d") return el("td", { class: "e mono" }, dataBr(p[0]));
+  if (c === "t") return el("td", { class: "e" }, papelBtn(p[1]));
+  if (c === "tipo") return el("td", { class: "e" }, NOME_PROV[p[2]] || "Outro");
+  if (c === "q") return el("td", { class: "mono" }, p[3] == null ? "–" : qtd(p[3]));
+  if (c === "unit") return el("td", { class: "mono" }, p[4] == null ? "–" : "R$ " + fmtNum(p[4], p[4] < 1 ? 3 : 2));
+  if (c === "liq") return el("td", { class: "mono" }, rs(p[5], true));
+  return el("td", { class: "e" }, p[6] ? tagEl(p[6]) : "");
+}
 function desenharProventos(box, j) {
   const r = j.resumo, per = periodoProv(r);
   const ano = r.hoje.slice(0, 4);
   const seg = el("div", { class: "seg", role: "group", "aria-label": "Período" });
   [["12m", "12 meses"], ["ano", ano], ["anterior", String(Number(ano) - 1)], ["inicio", "Desde o início"]].forEach(([id, n]) => {
     const b = el("button", { type: "button", "aria-pressed": String(provPeriodo === id) }, n);
-    b.addEventListener("click", () => { provPeriodo = id; provMostrar = 20; desenharCarteira(j); });
+    b.addEventListener("click", () => { provPeriodo = id; desenharCarteira(j); });
     seg.append(b);
   });
   box.append(el("div", { class: "ct-ferr" }, seg, el("span", { class: "ct-quem" }, `${fmtNum(r.provN, 0)} pagamentos${r.provDesde ? " desde " + mesL(r.provDesde) : ""}`)));
@@ -5315,21 +5612,24 @@ function desenharProventos(box, j) {
   const st = el("select", { class: "dd-input", "aria-label": "Filtrar por tipo" }, ...[["", "Todos"], ["rend", "Rendimento"], ["div", "Dividendo"], ["jcp", "JCP"], ["amort", "Amortização"], ["outro", "Outros"]].map(([v, n]) => { const o = el("option", { value: v }, n); if (v === provTipo) o.selected = true; return o; }));
   const caixa = el("div", { style: "display:contents" });
   tc.append(el("div", { class: "ct-ferr" }, el("h3", {}, "Pagamentos"), el("span", { style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Papel"), ip), el("label", {}, el("span", {}, "Tipo"), st)), caixa);
-  const pintar = () => {
-    caixa.textContent = "";
+  const filtrados = () => {
     const q = provPapel.trim().toUpperCase();
-    const l = lista.filter((p) => (!q || p[1].includes(q)) && (!provTipo || (provTipo === "outro" ? !["rend", "div", "jcp", "amort"].includes(p[2]) : p[2] === provTipo)));
-    const vis = l.slice(0, provMostrar);
-    const tab = el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Pagamento", "Papel", "Tipo", "Qtd", "Por cota", "Líquido", "Corretora"].map((h, i) => el("th", { class: [0, 1, 2, 6].includes(i) ? "e" : "", scope: "col" }, h)))),
-      el("tbody", {}, ...vis.map((p) => el("tr", {}, el("td", { class: "e mono" }, dataBr(p[0])), el("td", { class: "e" }, papelBtn(p[1])), el("td", { class: "e" }, NOME_PROV[p[2]] || "Outro"),
-        el("td", { class: "mono" }, p[3] == null ? "–" : qtd(p[3])), el("td", { class: "mono" }, p[4] == null ? "–" : "R$ " + fmtNum(p[4], p[4] < 1 ? 3 : 2)), el("td", { class: "mono" }, rs(p[5], true)), el("td", { class: "e" }, p[6] ? tagEl(p[6]) : "")))));
-    if (!vis.length) tab.querySelector("tbody").append(el("tr", {}, el("td", { class: "e", colspan: "7" }, "Nenhum pagamento com esse filtro.")));
-    const pe = el("div", { class: "ct-pe" }, el("span", {}, `Mostrando ${vis.length} de ${l.length}`));
-    if (l.length > vis.length) { const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, "Carregar mais"); b.addEventListener("click", () => { provMostrar += 50; pintar(); }); pe.append(b); }
-    caixa.append(el("div", { class: "ct-caixa" }, tab), pe);
+    return lista.filter((p) => (!q || p[1].includes(q)) && (!provTipo || (provTipo === "outro" ? !["rend", "div", "jcp", "amort"].includes(p[2]) : p[2] === provTipo)));
   };
-  ip.addEventListener("input", () => { provPapel = ip.value; provMostrar = 20; pintar(); });
-  st.addEventListener("change", () => { provTipo = st.value; provMostrar = 20; pintar(); });
+  let tabProv = null;
+  const pintar = () => {
+    if (tabProv && tabProv.vivo()) { tabProv.atualizar(filtrados(), { voltarPagina: true }); return; }
+    caixa.textContent = "";
+    tabProv = Tabela.criar({
+      id: "carteira-proventos", colunas: COLS_PROV, linhas: filtrados(), total: lista.length, rotuloConta: "pagamentos",
+      padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 25 }, semOrdem: "Sem critério, do pagamento mais recente para o mais antigo.",
+      celula: (c, p) => celulaProv(c.id, p), classeTabela: "ct-tab", classeCaixa: "ct-caixa",
+      vazio: () => el("p", { class: "ct-nota" }, "Nenhum pagamento com esse filtro."),
+    });
+    caixa.append(tabProv.el);
+  };
+  ip.addEventListener("input", () => { provPapel = ip.value; pintar(); });
+  st.addEventListener("change", () => { provTipo = st.value; pintar(); });
   pintar();
   esq.append(tc);
   const pp = cardEl("Por papel " + per.nome);
@@ -5705,7 +6005,7 @@ corpos["carteira-alertas"] = (j) => {
    da carteira. As variáveis são var: render() pode chamar renderRadarVisao antes de este trecho rodar. */
 var RF = window.RadarFiltro;
 var rdPrefs = null, rdLendoPrefs = null, rdAtualId = null, rdRasc = null, rdSujo = false, rdFund = null, rdLendoFund = null;
-var rdLeit = null, rdLendoLeit = null, rdOrdemCol = null, rdTodos = false, rdTodosCart = false, rdVisto = null, rdEstado = "", rdEstadoCls = "";
+var rdLeit = null, rdLendoLeit = null, rdTodosCart = false, rdVisto = null, rdEstado = "", rdEstadoCls = "";
 var rdFolhaAberta = false, rdFolhaModo = "filtros", rdFolhaAbridor = null, rdNovo = null, rdGerando = false, rdAvisoLeit = "", tRadar = 0, rdLinhasMemo = {};
 try { rdAtualId = localStorage.getItem("radar-rd-atual") || null; } catch (e) {}
 var XHR = { "X-Requested-With": "XMLHttpRequest" };
@@ -5716,7 +6016,7 @@ function escolherAtual(manterRascunho) {
   if (!rdPrefs) return;
   if (manterRascunho && rdRasc && rdPrefs.filtros.some((x) => x.id === rdRasc.id)) return;
   const f = rdPrefs.filtros.find((x) => x.id === rdAtualId) || rdPrefs.filtros.find((x) => x.id === rdPrefs.padrao) || rdPrefs.filtros[0];
-  rdAtualId = f.id; rdRasc = copiaF(f); rdSujo = false; rdOrdemCol = null;
+  rdAtualId = f.id; rdRasc = copiaF(f); rdSujo = false;
 }
 function lerRadarPrefs(fresco) {
   if (rdPrefs && !fresco) return Promise.resolve(rdPrefs);
@@ -5833,7 +6133,7 @@ function renderRadarVisao(forcar) {
   if (!fiiCvm) lerFii();
   if (!cartJ && !cartLendo) lerCarteira().then(() => renderRadarVisao(true));
   if (!rdLeit && !rdLendoLeit) lerLeitura().then(() => renderRadarVisao(true));
-  const k = { b3, eua, cvm: fiiCvm, fund: rdFund, prefs: rdPrefs, rasc: JSON.stringify(rdRasc), cart: cartJ && cartJ._marca, leit: rdLeit, ordem: JSON.stringify(rdOrdemCol), todos: rdTodos, todosC: rdTodosCart, nav: MQ_NAV.matches, folha: rdFolhaAberta + rdFolhaModo, est: rdEstado };
+  const k = { b3, eua, cvm: fiiCvm, fund: rdFund, prefs: rdPrefs, rasc: JSON.stringify(rdRasc), cart: cartJ && cartJ._marca, leit: rdLeit, todosC: rdTodosCart, nav: MQ_NAV.matches, folha: rdFolhaAberta + rdFolhaModo, est: rdEstado };
   if (!forcar && rdVisto && Object.keys(k).every((c) => k[c] === rdVisto[c])) return;
   rdVisto = k;
   const ativo = document.activeElement, foco = ativo && ativo.id && (box.contains(ativo) || $("radar-filtros").contains(ativo) || $("rd-folha").contains(ativo)) ? ativo.id : null;
@@ -5848,7 +6148,7 @@ function renderRadarVisao(forcar) {
 }
 /* Mudou o rascunho: redesenha já (botões) ou depois de 250 ms sem tecla (campos de texto) */
 function mudouRadar(digitando) {
-  rdSujo = true; rdEstado = "Alterações ainda não salvas."; rdEstadoCls = "warn"; rdTodos = false;
+  rdSujo = true; rdEstado = "Alterações ainda não salvas."; rdEstadoCls = "warn";
   clearTimeout(tRadar);
   if (digitando) tRadar = setTimeout(() => renderRadarVisao(true), 250); else renderRadarVisao(true);
 }
@@ -5924,14 +6224,14 @@ function desenharFormRadar() {
   sel.append(el("option", { value: "__novo" }, "Novo filtro…"));
   sel.addEventListener("change", () => { const v = sel.value; if (v === "__novo") { sel.value = f.id; abrirFolhaRadar("novo"); return; } trocarFiltro(v); });
   form.append(el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: "rd-sel" }, "Meu radar"), sel));
-  form.append(segRadar("Classe", "rd-cls-", RF.CLASSES.map((c) => [c, RF.NOME_CLASSE[c]]), f.classe, (c) => { rdRasc = { ...RF.novoFiltro(c, f.nome, f.id) }; rdOrdemCol = null; mudouRadar(); }));
+  form.append(segRadar("Classe", "rd-cls-", RF.CLASSES.map((c) => [c, RF.NOME_CLASSE[c]]), f.classe, (c) => { rdRasc = { ...RF.novoFiltro(c, f.nome, f.id) }; mudouRadar(); }));
   if (f.classe === "fiis") {
     form.append(
       campoRadar("rd-pvp", "P/VP até", f.pvpMax, 2, "", (v) => { rdRasc.pvpMax = v; }),
       campoRadar("rd-dy", "DY 12 meses mínimo", f.dyMin, 1, "%", (v) => { rdRasc.dyMin = v; }, "qualquer"),
       campoRadar("rd-liq", "Liquidez diária mínima", f.liqMin == null ? null : f.liqMin / 1e6, 1, "R$ mi", (v) => { rdRasc.liqMin = v == null ? null : v * 1e6; }, "qualquer"),
       segRadar("Regularidade", "rd-reg-", [["12", "12 de 12 meses"], ["10", "10+"], ["0", "qualquer"]], f.regular, (v) => { rdRasc.regular = v; mudouRadar(); }),
-      segRadar("Mais comprados por", "rd-ord-", [["cotistas", "entrada de cotistas no mês"], ["liq", "liquidez"]], f.ordem, (v) => { rdRasc.ordem = v; rdOrdemCol = null; mudouRadar(); }));
+      segRadar("Mais comprados por", "rd-ord-", [["cotistas", "entrada de cotistas no mês"], ["liq", "liquidez"]], f.ordem, (v) => { rdRasc.ordem = v; zerarOrdemRadar(f.classe); mudouRadar(); }));
     // segmentos e mandatos com a contagem de quem tem cotação
     const linhas = linhasRadar("fiis"), cont = {}, contM = {};
     linhas.forEach((l) => { if (l.seg) cont[l.seg] = (cont[l.seg] || 0) + 1; if (l.man) contM[l.man] = (contM[l.man] || 0) + 1; });
@@ -5951,7 +6251,7 @@ function desenharFormRadar() {
     if (!us) form.append(
       campoRadar("rd-pvp", "P/VP até", f.pvpMax, 2, "", (v) => { rdRasc.pvpMax = v; }),
       campoRadar("rd-liq", "Liquidez diária mínima", f.liqMin == null ? null : f.liqMin / 1e6, 1, "R$ mi", (v) => { rdRasc.liqMin = v == null ? null : v * 1e6; }, "qualquer"));
-    form.append(segRadar("Ordenar por", "rd-ord-", [["dy", us ? "dividend yield" : "DY"], ["liq", "liquidez"]], f.ordem, (v) => { rdRasc.ordem = v; rdOrdemCol = null; mudouRadar(); }));
+    form.append(segRadar("Ordenar por", "rd-ord-", [["dy", us ? "dividend yield" : "DY"], ["liq", "liquidez"]], f.ordem, (v) => { rdRasc.ordem = v; zerarOrdemRadar(f.classe); mudouRadar(); }));
     const cont = {};
     linhasRadar(f.classe).forEach((l) => { if (l.setor) cont[l.setor] = (cont[l.setor] || 0) + 1; });
     f.setor.forEach((s) => { if (!(s in cont)) cont[s] = 0; });
@@ -5968,7 +6268,7 @@ function desenharFormRadar() {
   const salvar = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "rd-salvar" }, "Salvar filtro");
   salvar.addEventListener("click", salvarFiltroAtual);
   const limpar = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "rd-limpar", title: "Volta aos valores de partida da classe" }, "Limpar");
-  limpar.addEventListener("click", () => { rdRasc = { ...RF.novoFiltro(f.classe, f.nome, f.id) }; rdOrdemCol = null; mudouRadar(); });
+  limpar.addEventListener("click", () => { rdRasc = { ...RF.novoFiltro(f.classe, f.nome, f.id) }; zerarOrdemRadar(f.classe); mudouRadar(); });
   form.append(el("div", { class: "rd-acoes" }, salvar, limpar), el("p", { class: "rd-estado" + (rdEstadoCls ? " " + rdEstadoCls : ""), id: "rd-estado", role: "status" }, rdEstado));
   const mais = el("div", { class: "rd-mais" });
   if (rdPrefs.filtros.some((x) => x.id === f.id)) {
@@ -6000,6 +6300,22 @@ const COLS_RADAR = {
   eua: [["t", "Papel"], ["preco", "Preço (US$)"], ["pl", "P/L"], ["pvp", "P/VP"], ["dy", "Div. yield"], ["div12", "Dividendo 12m"], ["liq", "Liq./dia"], ["naMeta", "Na meta"], ["av", "Avisos"]],
 };
 const NOME_COL = { preco: "preço", pvp: "P/VP", dy: "DY", ult12: "último × 12", cot: "cotistas", cotMes: "entrada de cotistas", liq: "liquidez", naMeta: "renda na meta", pl: "P/L", div12: "dividendo 12m", t: "papel" };
+/* Tabela "Passam no filtro hoje" no helper: uma por classe (radar-fiis, radar-acoes, radar-eua). Sem critério de
+   coluna, a ordem é a do filtro (cotistas, liquidez ou DY). Avisos não ordena nem filtra. */
+const PADRAO_RADAR = { ordem: [], filtros: {}, pagina: 1, porPagina: 25 };
+const colsRadarMemo = {};
+function colunasRadar(classe) {
+  if (colsRadarMemo[classe]) return colsRadarMemo[classe];
+  return (colsRadarMemo[classe] = COLS_RADAR[classe].map(([c, nome]) => c === "t"
+    ? { id: "t", rotulo: nome, tipo: "texto", valor: (x) => x.t }
+    : c === "av" ? { id: "av", rotulo: nome, cls: "av", tipo: "texto", ordenavel: false, filtravel: false, valor: () => "" }
+    : { id: c, rotulo: nome.replace(" (US$)", ""), tipo: "num", valor: (x) => x[c], unidade: c === "dy" || c === "ult12" ? "%" : undefined, fmt: c === "liq" || c === "cot" ? (v) => fmtVol(v) : undefined }));
+}
+/* Mudou o critério de ordem do filtro: a ordem de coluna sai, para valer a do filtro */
+function zerarOrdemRadar(classe) {
+  const id = "radar-" + classe, e = Tabela.estadoDe(id, PADRAO_RADAR);
+  if (e.ordem.length) Tabela.salvarEstado(id, { ...e, ordem: [], pagina: 1 });
+}
 function celulaRadar(c, x) {
   const us = x.classe === "eua";
   if (c === "t") {
@@ -6044,33 +6360,25 @@ function desenharCentroRadar() {
   }
   const linhas = linhasRadar(f.classe), ctx = ctxRadar();
   const r = RF.aplicar(linhas, f, ctx);
-  let lista = r.passam;
-  if (rdOrdemCol) {
-    const { campo, dir } = rdOrdemCol;
-    lista = lista.slice().sort((a, b) => (campo === "t" ? a.t.localeCompare(b.t) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
-  }
+  const lista = r.passam;
   const ref = fiiCvm && fiiCvm.ref;
-  const ordemTxt = rdOrdemCol ? "ordenados por " + NOME_COL[rdOrdemCol.campo] : f.ordem === "cotistas" ? "ordenados por entrada de cotistas" + (ref ? " em " + mesNome(ref) : "") : "ordenados por " + ORDEM_TXT[f.ordem];
-  cab.append(el("span", { class: "ct-sub" }, `${lista.length} de ${r.total} ${RF.NOME_CLASSE[f.classe]} · ${ordemTxt}`), el("span", { class: "ct-esp" }),
+  const idTab = "radar-" + f.classe, est = Tabela.estadoDe(idTab, PADRAO_RADAR);
+  const txtOrdem = (e) => {
+    const o = e && e.ordem && e.ordem[0];
+    if (o) return "ordenados por " + (NOME_COL[o.c] || o.c) + (e.ordem.length > 1 ? " e mais " + (e.ordem.length - 1) : "");
+    return f.ordem === "cotistas" ? "ordenados por entrada de cotistas" + (ref ? " em " + mesNome(ref) : "") : "ordenados por " + ORDEM_TXT[f.ordem];
+  };
+  const sub = el("span", { class: "ct-sub", id: "rd-sub" }, `${lista.length} de ${r.total} ${RF.NOME_CLASSE[f.classe]} · ${txtOrdem(est)}`);
+  cab.append(sub, el("span", { class: "ct-esp" }),
     el("label", { class: "rd-aporte", for: "rd-aporte" }, "Simular aporte de " + rdMoeda(f.classe).trim(), aporte));
-  const colunas = COLS_RADAR[f.classe];
   if (lista.length) {
-    const tr = el("tr", {}, ...colunas.map(([c, nome]) => {
-      const th = el("th", { scope: "col", class: c === "av" ? "av" : "" });
-      if (c === "av") { th.textContent = nome; return th; }
-      const on = rdOrdemCol && rdOrdemCol.campo === c;
-      th.setAttribute("aria-sort", on ? (rdOrdemCol.dir > 0 ? "ascending" : "descending") : "none");
-      const b = el("button", { type: "button", id: "rd-col-" + c }, nome);
-      b.addEventListener("click", () => { rdOrdemCol = { campo: c, dir: on ? -rdOrdemCol.dir : c === "t" ? 1 : -1 }; renderRadarVisao(true); });
-      th.append(b); return th;
-    }));
-    const mostra = rdTodos ? lista : lista.slice(0, 20);
-    card.append(el("div", { class: "ct-caixa" }, el("table", { class: "rd-tab" }, el("thead", {}, tr), el("tbody", {}, ...mostra.map((x) => el("tr", {}, ...colunas.map(([c]) => celulaRadar(c, x))))))));
-    if (lista.length > 20) {
-      const m = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "rd-todos" }, rdTodos ? "Mostrar só os 20 primeiros" : `Ver todos os ${lista.length}`);
-      m.addEventListener("click", () => { rdTodos = !rdTodos; renderRadarVisao(true); });
-      card.append(el("div", {}, m));
-    }
+    const tab = Tabela.criar({
+      id: idTab, colunas: colunasRadar(f.classe), linhas: lista, padrao: PADRAO_RADAR, rotuloConta: "na lista",
+      celula: (c, x) => celulaRadar(c.id, x), classeTabela: "rd-tab", classeCaixa: "ct-caixa",
+      semOrdem: "Sem critério, vale a ordem do filtro (" + txtOrdem(null).replace("ordenados por ", "") + ").",
+      aoMudar: (e) => { sub.textContent = `${lista.length} de ${r.total} ${RF.NOME_CLASSE[f.classe]} · ${txtOrdem(e)}`; },
+    });
+    card.append(tab.el);
   } else {
     const cont = {};
     for (const [, fs] of r.falha) fs.forEach((x) => { cont[x.k] = (cont[x.k] || 0) + 1; });

@@ -132,15 +132,17 @@ export function montarLeitura(e) {
 // Só leitura: as fichas são buscadas quando alguém abre a ficha (src/papel.js) e renovadas pelo cron dela.
 export async function lerFundamentos(env) {
   const { results } = await env.DB.prepare(
-    "SELECT id, json_extract(data, '$.pl') AS pl, json_extract(data, '$.pvp') AS pvp, json_extract(data, '$.dy') AS dy, json_extract(data, '$.dividendo12m') AS div12, json_extract(data, '$.var1a') AS var1a, json_extract(data, '$.setor') AS setor, json_extract(data, '$.atualizado') AS em FROM docs WHERE collection = 'hist'"
+    "SELECT id, json_extract(data, '$.pl') AS pl, json_extract(data, '$.pvp') AS pvp, json_extract(data, '$.dy') AS dy, json_extract(data, '$.dividendo12m') AS div12, json_extract(data, '$.var1a') AS var1a, json_extract(data, '$.setor') AS setor, json_extract(data, '$.ultDiv') AS ult, json_extract(data, '$.ultDivData') AS ultData, json_extract(data, '$.fonteDiv') AS fonteDiv, json_extract(data, '$.atualizado') AS em FROM docs WHERE collection = 'hist'"
   ).all();
   const out = { BR: {}, US: {} };
   for (const r of results || []) {
     const [m, t] = String(r.id).split(":");
     if (!out[m] || !t) continue;
     const o = {};
-    for (const k of ["pl", "pvp", "dy", "div12", "var1a"]) if (typeof r[k] === "number") o[k] = r[k];
+    for (const k of ["pl", "pvp", "dy", "div12", "var1a", "ult"]) if (typeof r[k] === "number") o[k] = r[k];
     if (r.setor) o.setor = String(r.setor);
+    if (r.ultData) o.ultData = String(r.ultData);
+    if (r.fonteDiv) o.fonteDiv = String(r.fonteDiv);
     if (r.em) o.em = r.em;
     out[m][t] = o;
   }

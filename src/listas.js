@@ -21,6 +21,8 @@ export const PAPEIS_MAX = 60;
 // Listas automáticas, na ordem em que aparecem. A classe é a de classeDe() em src/carteira.js.
 export const AUTOMATICAS = [
   { id: "carteira-fiis", classe: "fii", nome: "Carteira · FIIs" },
+  { id: "carteira-fiinfra", classe: "fiinfra", nome: "Carteira · FI-Infra" },
+  { id: "carteira-fiagro", classe: "fiagro", nome: "Carteira · Fiagro" },
   { id: "carteira-acoes", classe: "acao", nome: "Carteira · Ações" },
   { id: "carteira-bdrs", classe: "bdr", nome: "Carteira · BDRs" },
   { id: "carteira-etfs", classe: "etf", nome: "Carteira · ETFs" },
@@ -50,8 +52,21 @@ export function validarLista(b) {
     if (vistos.has(p)) return { erro: `${p} aparece duas vezes.` };
     vistos.add(p);
   }
-  return { nome, papeis: [...vistos] };
+  // Ordem escolhida no cabeçalho da lista (até 5 critérios por coluna); sem ela, vale a ordem dos papéis
+  let ordem;
+  if (b.ordem !== undefined && b.ordem !== null) {
+    if (!Array.isArray(b.ordem) || b.ordem.length > ORDEM_MAX) return { erro: "ordem" };
+    const cols = new Set();
+    for (const o of b.ordem) {
+      if (!o || !COLS_ORDEM.has(o.c) || (o.d !== 1 && o.d !== -1) || cols.has(o.c)) return { erro: "ordem" };
+      cols.add(o.c);
+    }
+    ordem = b.ordem.map((o) => ({ c: o.c, d: o.d }));
+  }
+  return ordem && ordem.length ? { nome, papeis: [...vistos], ordem } : { nome, papeis: [...vistos] };
 }
+export const COLS_ORDEM = new Set(["t", "preco", "var", "dy", "pvp"]);
+const ORDEM_MAX = 5;
 
 // ---------- listas automáticas da carteira ----------
 
@@ -190,7 +205,7 @@ export async function rotaListas(request, env, quem, idLista, deps) {
     const v = await lerCorpo();
     if (v.erro) return json({ erro: v.erro }, v.status || 400);
     const agora = agoraIso();
-    const doc = { nome: v.nome, papeis: v.papeis, criado: atual.doc.criado || agora, atualizado: agora };
+    const doc = { nome: v.nome, papeis: v.papeis, ...(v.ordem ? { ordem: v.ordem } : {}), criado: atual.doc.criado || agora, atualizado: agora };
     await gravar([[idLista, doc]]);
     return json({ ok: true, id: idLista, data: doc });
   }

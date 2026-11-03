@@ -19,7 +19,7 @@ Detalhes da coleta e da limpeza: `docs/coleta.md`. Comparação das duas curador
 | Moedas e cripto (`meta/mercado`) | AwesomeAPI; se recusar, PTAX do BC, CoinGecko e por último Mercado Bitcoin | a cada 30 min |
 | Selic, CDI, IPCA 12m (`meta/mercado`) | Banco Central, SGS | duas vezes por dia |
 | Ibovespa (`meta/mercado`) | brapi, só com o secret `BRAPI_TOKEN` | a cada 30 min no pregão |
-| Tabelas de ações, FIIs e ETFs (`meta/b3`) | brapi, rota de lista, sem token | a cada 30 min no pregão e às 21h35 UTC |
+| Tabelas de ações, FIIs, FI-Infra, Fiagro, ETFs e BDRs (`meta/b3`) | brapi, rota de lista, sem token | a cada 30 min no pregão e às 21h35 UTC |
 | Dados dos FIIs (`meta/fii`) | informe mensal da CVM (dados abertos) | 10h12 e 10h17 UTC, em duas etapas |
 
 O botão "Atualizar agora" do painel consulta no máximo uma vez a cada 5 min, para todo mundo.
@@ -30,7 +30,7 @@ Tabela `docs(collection, id, data)` para quase tudo:
 
 - Itens: `items` (Tech), `items-negocios`, `items-investimentos`, `items-politica`, `items-esportes`. Destaques no mesmo padrão (`destaques`, `destaques-negocios`...).
 - Teste do Tech: `sombra-items`, `sombra-destaques`, fora do site.
-- Por pessoa: `favs/<email>`, `listas/<email>`, `prefs/<email>` (o painel do Início, doc `painel`, e doc `radar`, os filtros do Radar), `carteira/<email>` (Minha carteira, cifrada) e `leitura/<email>` (Leitura do dia, cifrada).
+- Por pessoa: `favs/<email>`, `listas/<email>`, `prefs/<email>` (o painel do Início, doc `painel`; doc `radar`, os filtros do Radar; doc `tabelas`, o estado das tabelas; doc `layout`, as colunas recolhidas), `carteira/<email>` (Minha carteira, cifrada) e `leitura/<email>` (Leitura do dia, cifrada).
 - `meta`: `status`, `status-negocios`, `status-investimentos`, `status-politica`, `status-esportes`, `status-sombra` (última rodada de cada curadoria), `mercado`, `b3`, `fii`, `fii-resumo`, `fii-cvm-ant`.
 - `hist`: ficha de cada papel aberto (`US:NVDA`, `BR:PETR4`, `BR:NVDC34`), veja "Ficha do papel".
 - `_sistema`: `seed`, `limpeza`, `b3-erro`, `cvm-etapa`, `cvm-erro`, `sonda-feeds`, `papel-contagem`, `sonda-brapi-quote`.
@@ -66,7 +66,7 @@ Dados (`src/papel.js`), um doc por papel em `hist`, id `US:NVDA` ou `BR:PETR4`:
 
 | O quê | Fonte | Precisa de token |
 |---|---|---|
-| Preço, fechamento anterior, abertura, faixa do dia e de 52 semanas, volume, volume médio de 3 meses, variação em 1 mês, 3 meses, no ano e em 1 ano, série diária de 1 ano, nome e bolsa | Yahoo Finance, gráfico v8 (`range=1y&interval=1d`), query2 e depois query1, mesmo fetch de `src/eua.js`; na B3 o símbolo leva `.SA` | não |
+| Preço, fechamento anterior, abertura, faixa do dia e de 52 semanas, volume, volume médio de 3 meses, variação em 1 mês, 3 meses, no ano e em 1 ano, série diária de 1 ano, nome e bolsa | Yahoo Finance, gráfico v8 (`range=1y&interval=1d&events=div`, que traz também os pagamentos de proventos), query2 e depois query1, mesmo fetch de `src/eua.js`; na B3 o símbolo leva `.SA` | não |
 | Setor da B3 e valor de mercado da B3 | a lista da brapi que já está em `meta/b3` | não |
 | Setor e indústria dos EUA | mapa `SETOR_US` em `src/eua.js` (S&P 100 e ETFs) | não |
 | LPA, P/L, valor de mercado e dividendos de 12 meses (com o yield) na B3 | brapi, `/api/quote/<PAPEL>?fundamental=true&dividends=true` | `BRAPI_TOKEN` |
@@ -88,6 +88,21 @@ Cron: no minuto 23 de cada hora, renova até 30 `hist` vencidos que alguém abri
 Na página, a resposta fica 10 min em memória. A ficha abre na hora com a cotação da lista e um esqueleto nos blocos; quando a resposta chega, redesenha mantendo a rolagem. Se a cotação da lista (30 min) for mais nova que a ficha (até 24 h), preço, variação, dia e os retornos usam a da lista. O gráfico é SVG próprio (linha, área e grade), com eixos, cursor e ponto em HTML por cima; mouse, toque e setas do teclado mostram data e valor. O período escolhido fica em `radar-ficha-periodo`.
 
 Para testar local: `wrangler dev --local --var DEV_FETCH_FALSO:1` troca as fontes por uma série sintética (só vale junto com `DEV_EMAIL`), com 600 ms de atraso e a contagem de chamadas em `_dev.chamadas` na resposta.
+
+## FI-Infra e Fiagro
+
+A rota de lista da brapi (`type=fund`) mistura FIIs, FI-Infra, Fiagro, FIP e ETFs. `atualizarB3` (`src/mercado.js`, função `separarFundos`) separa pelo `subType`, que no `meta/b3` de produção de 03/11/2026 vinha assim: `fii` 114, `fi-infra` 19, `fi-agro` 14, `fip` 7, vazio 1 (o IBOV11) e `etf` 95.
+
+- `fiis`: `fii`, ou sem `subType` com final 11 e com informe na CVM (chaves de `meta/fii-resumo`). O IBOV11 fica de fora.
+- `fiinfra`: `fi-infra` e também `fip` (os FIP-IE, fundos de participação em infraestrutura). Nenhum dos dois entrega o informe mensal de FII.
+- `fiagro`: `fi-agro` (aceita `fiagro`, caso a grafia mude).
+- `etfs`: `etf`. O resto sai.
+
+O `meta/b3` gravado antes da separação não tem `fiinfra` nem `fiagro`; a página e a carteira separam o `fiis` dele pelo `sub` até o cron regravar.
+
+Na Bolsa, a Classe (segmentado do Pregão e coluna esquerda) fica Ações, FIIs, FI-Infra, Fiagro, ETFs e BDRs; no celular o segmentado rola de lado. FI-Infra e Fiagro têm Papel, Nome, Preço, Dia, Liquidez, DY 12m e Último rendimento, e os rankings Maiores altas, Maiores baixas e Mais negociados. DY e rendimento vêm da ficha do papel (`hist/BR:<papel>`): o gráfico do Yahoo passou a pedir `events=div`, e `montarHist` grava `ultDiv` e `ultDivData` (último pagamento) e, quando a brapi não trouxe, `dividendo12m`, `dy` e `fonteDiv: "Yahoo"`. A tabela lê da ficha aberta na página ou do resumo das fichas guardadas (`/api/radar/fundamentos`, que ganhou `ult`, `ultData` e `fonteDiv`). Sem ficha, a célula mostra "–" e um link "carregar", que abre a ficha (a ficha busca e grava) e a linha se atualiza quando ela chega. O rodapé da seção diz: "FI-Infra e Fiagro não entregam o informe mensal de FII na CVM; DY e rendimento vêm da ficha (Yahoo)."
+
+O Radar, classe FIIs, continua só com FIIs (quem tem informe). Na carteira, `classeDe` dá `fiinfra` e `fiagro` pela mesma regra, com filtro próprio em Posições, cor própria na faixa de classes e listas automáticas `carteira-fiinfra` e `carteira-fiagro`. No IR para conferir, venda de Fiagro entra junto com FII (20% sobre o lucro); FI-Infra fica de fora (cota de fundo incentivado de infraestrutura tem alíquota zero para pessoa física).
 
 ## FIIs
 
@@ -144,10 +159,11 @@ Dados: cada widget faz no máximo uma leitura, todas em paralelo, pelas mesmas r
 Na visão Bolsa (trilho direito a partir de 1200 px, abaixo da tabela antes disso) e no widget do Início. Collection `listas/<email>`, código em `src/listas.js` (rota) e na página (`listaEl`, `renderListas`).
 
 - **Manuais:** nome e até 60 papéis (B3, BDR, EUA), até 30 listas. Criar, renomear, "+ papel", tirar (×) e excluir.
-- **Automáticas da carteira:** ids fixos `carteira-fiis`, `carteira-acoes`, `carteira-bdrs`, `carteira-etfs` e `carteira-subscricoes`, nomes "Carteira · FIIs" etc., `auto: true` e `classe`. Papéis = posições abertas da classe (quantidade > 0), na ordem de valor, até 60. Só existem as classes com papel. A sincronia (`sincronizarListasCarteira`) roda depois de `POST /api/carteira/importar` sem `simular` (também quando nada de novo entrou, para trazer de volta uma automática que a pessoa apagou), de `DELETE /api/carteira/importacoes/<id>` e de `DELETE /api/carteira`; lê do D1, regrava só a lista que mudou e apaga por lista de ids a classe que ficou sem papel. Apagar a carteira apaga todas. Quem não tem carteira não tem automática. Elas não contam no limite de 30.
+- **Automáticas da carteira:** ids fixos `carteira-fiis`, `carteira-fiinfra`, `carteira-fiagro`, `carteira-acoes`, `carteira-bdrs`, `carteira-etfs` e `carteira-subscricoes`, nomes "Carteira · FIIs" etc., `auto: true` e `classe`. Papéis = posições abertas da classe (quantidade > 0), na ordem de valor, até 60. Só existem as classes com papel. A sincronia (`sincronizarListasCarteira`) roda depois de `POST /api/carteira/importar` sem `simular` (também quando nada de novo entrou, para trazer de volta uma automática que a pessoa apagou), de `DELETE /api/carteira/importacoes/<id>` e de `DELETE /api/carteira`; lê do D1, regrava só a lista que mudou e apaga por lista de ids a classe que ficou sem papel. Apagar a carteira apaga todas. Quem não tem carteira não tem automática. Elas não contam no limite de 30.
 - **Travadas:** a página não mostra "+ papel", renomear nem × nelas; mostra o selo "da carteira" e "Copiar para lista minha" (cria uma manual, "FIIs (cópia)", "FIIs (cópia 2)" se já existir). `PUT` numa automática responde 400 `lista automática`. `DELETE` é aceito, a tela avisa que ela volta na próxima importação.
 - **Mover e copiar:** em papel de lista manual, menu com "Mover para…" e "Copiar para…" (⋯, botão direito no desktop, toque longo de 500 ms no celular, que abre como folha de baixo). De lista automática, só "Copiar para…". Os destinos são só as manuais. No desktop (mouse e 900 px ou mais), arrastar a linha para outra lista manual move (de uma automática, copia), com a barra de destino como no Início. `POST /api/listas/mover` `{ de, para, papel, copiar }` confere dono (as duas em `listas/<email>`), papel presente na origem, destino não automático, sem duplicar e limite de 60; grava as duas num batch do D1 e manda as duas ao espelho (write-through).
-- Ordem na tela: automáticas primeiro (FIIs, Ações, BDRs, ETFs, Subscrições), depois as manuais na ordem em que foram criadas.
+- Ordem na tela: automáticas primeiro (FIIs, FI-Infra, Fiagro, Ações, BDRs, ETFs, Subscrições), depois as manuais na ordem em que foram criadas.
+- **Ordem dos papéis:** o cabeçalho de cada lista ordena por Papel, Preço, Dia, DY 12m e P/VP (as duas últimas só aparecem quando algum papel da lista tem o dado: CVM para FII, ficha para FI-Infra, Fiagro e ações), com a mesma ordenação múltipla das tabelas (clique e Shift+clique; sem paginação nem filtro por coluna). Na manual, a ordem vai no próprio doc, campo `ordem` (`[{ c, d }]`, até 5, colunas `t`, `preco`, `var`, `dy`, `pvp`), pelo `PUT /api/listas/<id>` de sempre; na automática, em `/api/prefs/tabelas` com id `lista-<id>`, porque o `PUT` dela é recusado. Sem ordem vale a ordem personalizada, a do array de papéis: no desktop dá para arrastar uma linha para cima de outra da mesma lista. Com ordem escolhida, a lista mostra "Ordenada por…" e o link para voltar à ordem personalizada. O widget do Início segue a mesma ordem.
 
 ## Minha carteira
 
@@ -231,9 +247,23 @@ Até 8 fatos curtos por pessoa, montados por templates no Worker (`src/leitura.j
 
 **Widgets.** `radar-meu` (os 5 primeiros do filtro padrão, com `tenho` e `novo hoje`, que vem do `novos` da leitura de hoje), `leitura-dia` (as 3 primeiras frases) e `carteira-contra-filtro` (quantos passam, quem saiu e entrou hoje e a maior posição), todos pessoais, com a marca "seu", no grupo "Minha carteira" do Personalizar. Os dois primeiros só aparecem para quem tem carteira ou filtro salvo; o terceiro, só com carteira. O `carteira-meta` ganhou o link "Simular".
 
+## Tabelas
+
+Toda tabela de dados da página usa o mesmo helper, `public/tabela.js` (script clássico, `window.Tabela`; os testes e o Worker importam pelo efeito e leem `globalThis.Tabela`). `Tabela.criar({ id, colunas, linhas, total, padrao, celula, aoMudar, ... })` monta barra, tabela e rodapé. Tabelas e ids: Cotações da Bolsa e dos EUA (`cot-acoes`, `cot-fiis`, `cot-fiinfra`, `cot-fiagro`, `cot-etfs`, `cot-bdrs`, `cot-usacoes`, `cot-usetfs`), "Passam no filtro hoje" do Radar (`radar-fiis`, `radar-acoes`, `radar-eua`), Posições, Encerradas e Pagamentos da carteira (`carteira-posicoes`, `carteira-encerradas`, `carteira-proventos`). Os rankings do Pregão (cards de 5) e os cards curtos da carteira ficam como eram.
+
+- **Ordenação:** clique no cabeçalho ordena por uma coluna (texto começa de A a Z, número do maior para o menor; o segundo clique inverte, o terceiro limpa). Shift+clique junta a coluna como próximo critério; o cabeçalho mostra a seta e a prioridade (1, 2, 3). O botão "Ordenar" (o caminho no celular) abre um painel com os critérios na ordem, setas para reordenar, menor ou maior primeiro, remover e acrescentar. Até 5 critérios. A ordenação é estável; número como número, texto com `localeCompare('pt-BR')` sem diferenciar acento nem caixa, data como texto ISO, vazio sempre no fim.
+- **Sem pular:** ordenar, filtrar e trocar de página redesenham só cabeçalho, corpo e rodapé; a caixa de rolagem fica. As colunas não encolhem enquanto a tabela está na tela (largura mínima guardada), então a rolagem horizontal fica onde estava; a vertical também é conferida. Quando a seção inteira é refeita (dados novos), a rolagem horizontal da tabela volta pela memória da página.
+- **Filtro por coluna:** funil em cada cabeçalho. Texto (papel, nome, segmento, mandato, corretora, tipo...) abre "contém…" e até 12 valores que existem, os mais frequentes primeiro, para marcar; marcados mandam, sem nenhum vale o texto. Número abre mínimo e máximo (vírgula ou ponto). Data abre de e até. Os ativos viram chips acima da tabela ("P/VP ≤ 1", "Segmento: Logística, Papel (CRI)"), cada um com ×, e "Limpar filtros". Somam com a busca e os filtros que já existiam (coluna esquerda da Bolsa, classe e busca da carteira). A contagem "N de M" fica sempre à vista.
+- **Paginação:** 25 por página (25, 50 ou 100 no rodapé), "‹ 1 2 3 … ›" com elipse e "N–M de T". Trocar de página mantém ordenação e filtros; mudar filtro, ordenação ou busca volta para a página 1. No celular os botões têm 44 px. "Ver todos" e "Carregar mais" saíram.
+- **Estado salvo:** por tabela em `localStorage` (`radar-tabela-<id>`: ordenação, filtros, página, por página), que pinta primeiro, e em `/api/prefs/tabelas`, que manda: na primeira leitura da abertura, tabela que a pessoa ainda não mexeu troca para o estado da conta. `GET` devolve `{ tabelas }`; `PUT { tabelas: { <id>: estado | null } }` manda só as que mudaram (1,2 s depois da última mudança, e no `pagehide`) e o servidor junta com o salvo, cada uma com `em`, guardando as 40 mais recentes. Doc `prefs/<email>`, id `tabelas`, D1 e write-through no espelho. Conferência (`validarEstado`, a mesma na página e no Worker, regras em `src/prefs.js`): id `^[a-z0-9-]{1,80}$`, coluna `^[A-Za-z0-9_]{1,24}$`, até 5 critérios, até 20 filtros, até 12 valores de até 80 caracteres, "contém" até 60, datas AAAA-MM-DD, página 1 a 10000, por página 25, 50 ou 100.
+
+## Colunas recolhíveis
+
+A partir de 900 px, a coluna esquerda e a direita têm um botão no topo (chevron, `aria-label="Recolher coluna"`, e "Abrir coluna" quando recolhida). Recolhida, a coluna vira uma faixa de 36 px só com o botão e o centro passa a `minmax(0, 1fr)`, ocupando o espaço até o limite de 1360 px da página. A troca do `grid-template-columns` tem 180 ms, nada com `prefers-reduced-motion`. Vale para Tech, Negócios, Investimentos (Bolsa, EUA, Radar, Notícias), Notícias e Esportes; Início e carteira não têm colunas. O letreiro e a barra de abas não mudam. A coluna direita só existe a partir de 1200 px (e não existe no Radar), então entre 900 e 1199 px só a esquerda recolhe. Estado por lado em `localStorage` (`radar-col-esq`, `radar-col-dir`, "1" recolhida) e em `/api/prefs/layout` (`{ esq, dir }`, doc `prefs/<email>`, id `layout`; o `GET` responde `salvo: false` para quem nunca mexeu e aí vale o `localStorage`).
+
 ## API
 
-`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas` e `POST /api/listas/mover` (veja "Minhas listas"), `/api/prefs/painel`, `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
+`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas` e `POST /api/listas/mover` (veja "Minhas listas"), `/api/prefs/painel`, `/api/prefs/tabelas` e `/api/prefs/layout` (veja "Tabelas" e "Colunas recolhíveis"), `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
 
 Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`) e recarga manual da CVM (`POST /api/admin/cvm`). Sem grupos criados, todo convidado vê tudo.
 

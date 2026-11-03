@@ -2,7 +2,7 @@
 // "BR:PETR4" ou "BR:NVDC34", buscado quando alguém abre a ficha e válido por 24 h.
 //
 // Fontes:
-// - Yahoo Finance, gráfico v8 de 1 ano (range=1y&interval=1d), sem chave, para os dois mercados. Mesmo fetch, mesmo
+// - Yahoo Finance, gráfico v8 de 1 ano (range=1y&interval=1d&events=div), sem chave, para os dois mercados. Mesmo fetch, mesmo
 //   user-agent e a mesma ordem query2 -> query1 de src/eua.js. Na B3 o símbolo leva ".SA" (PETR4.SA, NVDC34.SA).
 //   Dá preço, fechamento anterior, faixa do dia e de 52 semanas, volume, nome, bolsa e a série diária do ano.
 // - brapi (/api/quote/<PAPEL>?fundamental=true&dividends=true), só com o secret BRAPI_TOKEN, para ações e BDRs da B3:
@@ -106,7 +106,21 @@ export function lerChart1a(j, mercado) {
     if (pre) out.pre = { preco: arred(pre), var: num(m.preMarketChangePercent) !== null ? arred(num(m.preMarketChangePercent), 2) : pct(pre, preco) };
     if (pos) out.pos = { preco: arred(pos), var: num(m.postMarketChangePercent) !== null ? arred(num(m.postMarketChangePercent), 2) : pct(pos, preco) };
   }
+  const divs = lerDividendosYahoo(res, off);
+  if (divs) out.divYahoo = divs;
   return out;
+}
+// Proventos do gráfico (events=div): { "<ts>": { amount, date } }. Devolve a soma dos últimos 12 meses, o último valor
+// e a data dele, ou null. É o que FI-Infra e Fiagro têm de rendimento (não entregam o informe de FII na CVM).
+export function lerDividendosYahoo(res, off = 0, agora = Date.now()) {
+  const ev = res && res.events && res.events.dividends;
+  if (!ev || typeof ev !== "object") return null;
+  const l = Object.values(ev).map((d) => ({ t: num(d && d.date), v: num(d && d.amount) })).filter((d) => d.t && d.v !== null && d.v > 0).sort((a, b) => a.t - b.t);
+  if (!l.length) return null;
+  const corte = agora / 1000 - 365 * 86400;
+  const doAno = l.filter((d) => d.t >= corte);
+  const ult = l[l.length - 1];
+  return { soma12: arred(doAno.reduce((s, d) => s + d.v, 0), 4), n12: doAno.length, ult: arred(ult.v, 4), ultData: dataLocal(ult.t, off) };
 }
 
 // brapi /api/quote/<papel>?fundamental=true&dividends=true -> fundamentos. `preco` para calcular o yield.
@@ -215,7 +229,7 @@ async function pegarJson(env, url, headers) {
 async function yahoo1a(env, sim) {
   let ultimo = null, limites = 0;
   for (const host of ["query2", "query1"]) {
-    try { return await pegarJson(env, `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sim)}?range=1y&interval=1d`); }
+    try { return await pegarJson(env, `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sim)}?range=1y&interval=1d&events=div`); }
     catch (e) { ultimo = e; if (e.limite) limites++; if (/HTTP 404/.test(e.message)) return null; }
   }
   if (limites === 2) throw new Limite("Yahoo respondeu 429 para " + sim);
@@ -247,7 +261,7 @@ export async function montarHist(env, id) {
   const fontes = ["Yahoo Finance"], extra = {}, erros = [];
   if (mercado === "BR") {
     const b3 = await lerMetaDoc(env, "b3");
-    const linha = b3 ? [...(b3.acoes || []), ...(b3.bdrs || []), ...(b3.etfs || []), ...(b3.fiis || [])].find((x) => x.t === papel) : null;
+    const linha = b3 ? [...(b3.acoes || []), ...(b3.bdrs || []), ...(b3.etfs || []), ...(b3.fiis || []), ...(b3.fiinfra || []), ...(b3.fiagro || [])].find((x) => x.t === papel) : null;
     if (linha) {
       if (linha.setor) extra.setor = linha.setor;
       if (linha.cap) extra.cap = linha.cap;
@@ -260,6 +274,16 @@ export async function montarHist(env, id) {
         Object.assign(extra, lerBrapiQuote(q, base.preco));
         fontes.push("brapi");
       } catch (e) { erros.push("brapi: " + String(e.message || e).slice(0, 120)); }
+    }
+    // Proventos pelo Yahoo: o último pagamento sempre; os 12 meses só quando a brapi não trouxe (FI-Infra, Fiagro, sem token)
+    const dv = base.divYahoo;
+    if (dv) {
+      extra.ultDiv = dv.ult; extra.ultDivData = dv.ultData;
+      if (extra.dividendo12m == null && dv.n12) {
+        extra.dividendo12m = dv.soma12;
+        if (base.preco) extra.dy = arred((dv.soma12 / base.preco) * 100, 2);
+        extra.fonteDiv = "Yahoo";
+      }
     }
   } else {
     const s = SETOR_US[papel];
@@ -289,6 +313,7 @@ export async function montarHist(env, id) {
     }
   }
   const agora = new Date().toISOString();
+  delete base.divYahoo;
   const doc = { atualizado: agora, papel, ...base, ...extra, fontes };
   doc.faltando = CAMPOS.filter((k) => doc[k] === null || doc[k] === undefined || doc[k] === "");
   if (erros.length) doc.erros = erros.slice(0, 4);

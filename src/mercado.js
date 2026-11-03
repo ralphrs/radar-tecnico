@@ -193,21 +193,47 @@ async function sondarBdr(env, d) {
     await env.DB.prepare("INSERT INTO docs (collection, id, data) VALUES ('_sistema', 'sonda-brapi-bdr', ?1) ON CONFLICT(collection, id) DO NOTHING").bind(JSON.stringify(amostra)).run();
   } catch (e) {}
 }
+// A lista "fund" da brapi mistura FIIs, FI-Infra, Fiagro, FIP e ETFs. O `subType` decide (valores conferidos em
+// meta/b3 de produção em 03/11/2026: "fii" 114, "fi-infra" 19, "fi-agro" 14, "fip" 7, "" 1, e "etf" 95):
+// - fiis: "fii", ou sem subType, com final 11 e com informe de FII na CVM (o único sem subType era o IBOV11, que fica de fora);
+// - fiinfra: "fi-infra" e também "fip" (FIP-IE, os fundos de participação em infraestrutura: nenhum dos dois entrega o
+//   informe mensal de FII, e o rendimento vem da ficha);
+// - fiagro: "fi-agro" (ou "fiagro", se a brapi mudar a grafia);
+// - etfs: "etf". O resto sai.
+export const SUB_FIINFRA = new Set(["fi-infra", "fiinfra", "fip"]);
+export const SUB_FIAGRO = new Set(["fi-agro", "fiagro"]);
+export function separarFundos(fundos, cvm = new Set()) {
+  const out = { fiis: [], fiinfra: [], fiagro: [], etfs: [] };
+  for (const f of fundos || []) {
+    const sub = String(f.sub || "").toLowerCase();
+    if (sub === "etf") out.etfs.push(f);
+    else if (SUB_FIINFRA.has(sub)) out.fiinfra.push(f);
+    else if (SUB_FIAGRO.has(sub)) out.fiagro.push(f);
+    else if (sub === "fii" || (!sub && /11$/.test(f.t) && cvm.has(f.t))) out.fiis.push(f);
+  }
+  return out;
+}
+// Papéis com informe de FII na CVM (chaves de meta/fii-resumo), para decidir os fundos sem subType
+async function papeisCvm(env) {
+  try {
+    const { results } = await env.DB.prepare("SELECT j.key AS t FROM docs d, json_each(d.data, '$.fundos') j WHERE d.collection = 'meta' AND d.id = 'fii-resumo'").all();
+    return new Set((results || []).map((r) => r.t));
+  } catch { return new Set(); }
+}
 export async function atualizarB3(env) {
   // BDRs numa chamada à parte: se falharem, ações, FIIs e ETFs saem mesmo assim e os BDRs anteriores ficam.
-  const [acoes, fundos, bdrsLidos] = await Promise.all([listaB3("stock", 120), listaB3("fund", 250), listaB3("bdr", 150, env).catch(() => null)]);
-  const fiis = fundos.filter((f) => f.sub !== "etf" && /11$/.test(f.t));
-  const etfs = fundos.filter((f) => f.sub === "etf");
+  const [acoes, fundos, bdrsLidos, cvm] = await Promise.all([listaB3("stock", 120), listaB3("fund", 250), listaB3("bdr", 150, env).catch(() => null), papeisCvm(env)]);
+  const { fiis, fiinfra, fiagro, etfs } = separarFundos(fundos, cvm);
   let bdrs = bdrsLidos ? bdrsLidos.map((x) => ({ ...x, nome: nomeBdr(x.t) || (x.nome !== x.t ? x.nome : x.t), pais: paisBdr(x.t) })) : null;
   if (!bdrs) {
     const r = await env.DB.prepare("SELECT data FROM docs WHERE collection = 'meta' AND id = 'b3'").first();
     try { bdrs = (r && JSON.parse(r.data).bdrs) || []; } catch { bdrs = []; }
   }
-  const doc = { atualizado: new Date().toISOString(), acoes, fiis, etfs, bdrs };
+  const doc = { atualizado: new Date().toISOString(), acoes, fiis, fiinfra, fiagro, etfs, bdrs };
   await env.DB.prepare(
     "INSERT INTO docs (collection, id, data, coletado) VALUES ('meta', 'b3', ?1, ?2) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, coletado = excluded.coletado, atualizado = strftime('%Y-%m-%dT%H:%M:%fZ','now')"
   ).bind(JSON.stringify(doc), doc.atualizado).run();
-  return { acoes: acoes.length, fiis: fiis.length, etfs: etfs.length, bdrs: bdrs.length };
+  return { acoes: acoes.length, fiis: fiis.length, fiinfra: fiinfra.length, fiagro: fiagro.length, etfs: etfs.length, bdrs: bdrs.length };
 }
 export async function cronB3(env, quando) {
   const d = new Date(quando), m = d.getUTCMinutes(), h = d.getUTCHours();

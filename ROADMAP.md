@@ -70,14 +70,20 @@ Investimentos
 - [ ] Domínio próprio
 - [ ] Marcar como lido, esconder fonte, atalhos de teclado
 
-## Pedidos de 03/11 (ainda não feitos)
-Tabelas e sidebars (próximo pacote):
-- [ ] Ordenar sem perder a rolagem horizontal; paginação (25/50/100) no lugar de "Ver todos"; filtro por coluna (texto e faixa numérica, com chips); ordenação por várias colunas (Shift+clique, prioridade no cabeçalho); estado salvo por tabela
-- [ ] Sidebars recolhíveis por um ícone na própria sidebar, estado salvo por pessoa
-- [ ] Bolsa: separar FIIs, FI-Infra e Fiagro pelo `sub` da brapi (IRIF11 é FI-Infra e não tem informe de FII na CVM); proventos deles via ficha (Yahoo) marcados "via Yahoo"
+## Pedidos de 03/11
+Tabelas e sidebars (pacote 1, feito em 03/11):
+- [x] Ordenar sem perder a rolagem horizontal; paginação (25/50/100) no lugar de "Ver todos"; filtro por coluna (texto, faixa numérica e datas, com chips); ordenação por várias colunas (Shift+clique, prioridade no cabeçalho, painel "Ordenar"); estado salvo por tabela em localStorage e em `/api/prefs/tabelas`. Um helper só (`public/tabela.js`) para Cotações da Bolsa e dos EUA, Radar e as tabelas da carteira (docs/LOOKOUT.md, "Tabelas")
+- [x] Minhas listas ordenáveis pelo cabeçalho (Papel, Preço, Dia, DY 12m, P/VP), ordem salva na lista (manual) ou em `/api/prefs/tabelas` (automática); ordem personalizada por arrastar continua como padrão
+- [x] Sidebars recolhíveis por um ícone na própria sidebar, estado salvo por pessoa (`/api/prefs/layout`)
+- [x] Bolsa: FIIs, FI-Infra e Fiagro separados pelo `sub` da brapi (FIP-IE junto com FI-Infra); DY e último rendimento deles pela ficha, com o Yahoo (`events=div`), marcados "via Yahoo"; carteira com as classes e listas automáticas novas
 
 Listas (rodada seguinte):
 - [ ] Listas por regra: na criação, um layout de regras sobre os dados que já existem (P/VP, DY, liquidez, cotistas, segmento, mandato, classe, carteira...); a lista se realimenta a cada atualização e guarda histórico de quem entrou e saiu, com data e motivo
 - [ ] Comparações com a carteira importada, para cada papel que tu tem: preço atual × preço médio, resultado em R$ e %, quanto falta para empatar, DY sobre custo × DY atual, posição contra os parâmetros da regra
 - [ ] Sugestões: o Lookout pode sugerir papéis que passam na regra e ajustes na regra (sempre como fato e conta, nunca como recomendação)
 - [ ] Lista de listas: tela própria (também pelo menu do perfil) com todas as listas, ligar/desligar sem excluir (lista desligada some da Bolsa e do Início, mas fica guardada), ordem e contagem
+
+## Pedidos de 03/11, tarde (pacote 2, ainda não feitos)
+- [ ] Listas: campo Descrição (texto longo, editável; lista criada pelo Claude vem com motivo, critérios, decisões, exclusões e data); linha verde ou vermelha pelo resultado da posição na carteira (sem carteira, pela variação do dia); página própria por lista (`#lista/<id>`) com descrição, histórico de entradas e saídas e a tabela de comparações por papel (atual × preço médio, resultado em R$ e %, quanto falta para empatar, DY sobre custo × atual, P/VP, liquidez, quantidade e valor, situação contra a regra)
+- [ ] Início, Personalizar: arrastar dentro do painel; tamanho por widget só onde o catálogo permitir (1, 2 ou 3 colunas; 1×2 e 2×2), responsivo (3/2/1 colunas) com pré-visualização
+- [ ] Renda fixa e Tesouro: importar o relatório "Posição" da Área do Investidor (CDB, LCI/LCA, CRI, Tesouro), classes novas na carteira, preço do Tesouro pela API pública 1x/dia, CDB/LCI/LCA atualizados pela curva (CDI/IPCA + taxa), IR estimado e isenção, vencimentos na agenda

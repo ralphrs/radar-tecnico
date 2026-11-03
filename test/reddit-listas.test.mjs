@@ -290,5 +290,5 @@ test("as automáticas não contam no limite de listas do POST", async () => {
   // 29 manuais + 1 automática
   assert.equal((await chamar("POST", "", { nome: "Trigésima", papeis: [] })).status, 200);
   assert.equal((await chamar("POST", "", { nome: "Uma a mais", papeis: [] })).status, 400);
-  assert.equal(AUTOMATICAS.length, 5);
+  assert.equal(AUTOMATICAS.length, 7); // FIIs, FI-Infra, Fiagro, Ações, BDRs, ETFs, Subscrições
 });
