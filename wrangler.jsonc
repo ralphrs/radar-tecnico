@@ -15,6 +15,9 @@
   // Importa o histórico em partes, uma por minuto, até terminar. Depois vira uma leitura por minuto e nada mais.
   "triggers": { "crons": ["* * * * *"] },
   // ADMIN_EMAIL, ACCESS_TEAM_DOMAIN e ACCESS_AUD ficam nas variáveis do painel do Cloudflare (não no repositório).
+  // CARTEIRA_KEY (secret): chave AES-GCM da Minha carteira, base64 de 32 bytes. Gere com `openssl rand -base64 32` e
+  // cole no painel (Variables and Secrets, tipo Secret). Sem ela /api/carteira responde 503 "carteira desligada".
+  // Trocar a chave deixa ilegível o que já foi gravado: as pessoas teriam de apagar e importar de novo.
   "keep_vars": true,
   // Sem Smart Placement: o Worker roda na borda, perto de quem acessa, e lê do espelho em São Paulo
   // (Durable Object abaixo, src/espelho.js). O D1, no leste dos EUA, só entra nas gravações e quando o espelho falha.

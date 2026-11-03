@@ -21,6 +21,15 @@ export const WIDGETS = [
   { id: "favoritos", titulo: "Favoritos", tamanho: 1, secao: null },
   ...SECOES.map((s) => ({ id: "destaques-" + s, titulo: "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   ...SECOES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  // Minha carteira (src/carteira.js): pessoais, leem /api/carteira uma vez só para todos; aparecem para quem importou
+  // os extratos (a página esconde enquanto a carteira estiver vazia). Fora do padrão: a pessoa fixa pelo alfinete.
+  { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },
+  { id: "carteira-patrimonio", titulo: "Patrimônio", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-proventos-mes", titulo: "Proventos do mês", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-pagamentos", titulo: "Próximos pagamentos", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-agenda", titulo: "Agenda da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-rentabilidade", titulo: "Rentabilidade", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-alertas", titulo: "Alertas da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
 ];
 const POR_ID = new Map(WIDGETS.map((w) => [w.id, w]));
 
@@ -65,6 +74,6 @@ export function respostaPainel(salvo, secoes) {
     widgets,
     padrao: !salvo,
     atualizado: (salvo && salvo.atualizado) || null,
-    catalogo: catalogoDe(secoes).map(({ id, titulo, tamanho, secao }) => ({ id, titulo, tamanho, secao })),
+    catalogo: catalogoDe(secoes).map(({ id, titulo, tamanho, secao, pessoal }) => ({ id, titulo, tamanho, secao, ...(pessoal ? { pessoal: true } : {}) })),
   };
 }

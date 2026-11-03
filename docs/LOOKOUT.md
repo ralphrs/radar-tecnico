@@ -30,7 +30,7 @@ Tabela `docs(collection, id, data)` para quase tudo:
 
 - Itens: `items` (Tech), `items-negocios`, `items-investimentos`, `items-politica`, `items-esportes`. Destaques no mesmo padrão (`destaques`, `destaques-negocios`...).
 - Teste do Tech: `sombra-items`, `sombra-destaques`, fora do site.
-- Por pessoa: `favs/<email>`, `listas/<email>` e `prefs/<email>` (o painel do Início, doc `painel`).
+- Por pessoa: `favs/<email>`, `listas/<email>`, `prefs/<email>` (o painel do Início, doc `painel`) e `carteira/<email>` (Minha carteira, cifrada).
 - `meta`: `status`, `status-negocios`, `status-investimentos`, `status-politica`, `status-esportes`, `status-sombra` (última rodada de cada curadoria), `mercado`, `b3`, `fii`, `fii-resumo`, `fii-cvm-ant`.
 - `hist`: ficha de cada papel aberto (`US:NVDA`, `BR:PETR4`, `BR:NVDC34`), veja "Ficha do papel".
 - `_sistema`: `seed`, `limpeza`, `b3-erro`, `cvm-etapa`, `cvm-erro`, `sonda-feeds`, `papel-contagem`, `sonda-brapi-quote`.
@@ -139,21 +139,67 @@ Personalizar: painel lateral no desktop e folha de baixo no celular, com todos o
 
 Dados: cada widget faz no máximo uma leitura, todas em paralelo, pelas mesmas rotas da página (cache de memória e de borda, ETag). Os `meta/*` (mercado, b3, eua) ficam numa cópia em memória por 2 min, usada pelo Início e por Investimentos, nos dois sentidos; os ciclos de atualização pedem o doc de novo. A cada 2 min o Início atualiza só os cards que estão na tela (IntersectionObserver), e ao voltar para a aba atualiza os da tela com mais de 1 min.
 
+## Minha carteira
+
+Pessoal, para quem tem Investimentos liberado. Abre pelo menu da conta (Minha carteira, Minha meta, Importar extratos), sem aba na barra de seções: `#carteira`, `#carteira/proventos`, `#carteira/meta`, `#carteira/importar` e `#carteira/mais` (rola até os blocos de baixo). Roda no modo do Início: nenhuma seção fica assinada enquanto ela está aberta. Código em `src/carteira.js` (cálculo e rota), `src/cofre.js` (cifra) e no `public/index.html`.
+
+**Importação.** A pessoa solta os .xlsx que a Área do Investidor da B3 exporta (Negociação, Movimentação, Proventos recebidos; vários de uma vez). A página carrega o SheetJS (`xlsx` 0.18.5 da cdnjs) só nessa tela, lê a primeira planilha, reconhece o tipo pelo cabeçalho, corta o "Produto" no código do papel (o nome da empresa não sai do navegador) e manda as linhas como arrays, junto com o SHA-256 do arquivo. Primeiro com `simular: true` (só contagem, para a prévia), depois de verdade. Arquivo de cabeçalho desconhecido é ignorado com aviso. O arquivo em si nunca vai ao servidor.
+
+**O que é gravado.** Collection `carteira/<email>`, três docs:
+
+- `extrato`: `neg` [data, C/V, papel, quantidade, preço, corretora, imp], `mov` [data, C/D, tipo normalizado, papel, quantidade, preço unitário ou null, corretora, imp], `prov` [data, papel, tipo, quantidade, valor por cota, líquido, corretora, imp]. `imp` é o id da importação que trouxe a linha.
+- `importacoes`: `{ lista: [{ id, em, novos, arquivos: [{ tipo, hash, linhas, novos, repetidos, ignorados, de, ate }] }] }` (até 200; sem nome de arquivo).
+- `meta`: `{ alvo, aporte, yield, reinvestir, atualizado }`.
+
+Não entra: nome, CPF, conta, CNPJ, ISIN, a linha "Produto" inteira, a razão social da corretora (vira sigla por mapa: XP, Rico, Clear, Modal, Nu Invest...; desconhecida vira a primeira palavra em Title Case) nem totais em dinheiro (são calculados na hora). Tesouro Direto, CDB e outros códigos fora de `^[A-Z][A-Z0-9]{3}\d{1,2}F?$` ficam de fora e contam como ignorados.
+
+**Cifra.** AES-GCM 256 com o secret `CARTEIRA_KEY` (base64 de 32 bytes, `openssl rand -base64 32`). O JSON é comprimido com gzip e cifrado; o campo `data` guarda `{ iv, dados, z: 1 }` em base64, IV aleatório de 12 bytes por documento; `atualizado` fica fora. A chave importada fica no isolate. Sem o secret, todas as rotas respondem 503 `carteira desligada` e a página mostra o aviso. Trocar a chave deixa o que já foi gravado ilegível.
+
+**Espelho e limpeza.** `carteira/` entra nos prefixos pessoais do espelho, igual a favs, listas e prefs, e vai cifrada como está. Gravação no D1 e write-through; leitura do GET pelo espelho (D1 de reserva). Importar, desfazer e salvar a meta leem do D1, para não somar em cima de uma cópia atrasada. A limpeza da coleta não toca em `carteira/`. Excluir o convidado no admin apaga os três docs (D1 e espelho). Nenhuma rota de admin lê a carteira; o card Custos mostra `carteira/*` só somada (docs e bytes) e o card do espelho idem. Nada vai para log (o erro loga só nome e começo da mensagem) e nada vai para cache de borda: todas as respostas saem com `cache-control: private, no-store`.
+
+**Rotas** (login, seção investimentos, corpo `application/json` nas gravações):
+
+- `GET /api/carteira`: `{ vazia, posicoes, proventos, resumo, meta, importacoes, cotacoes }`, calculado no Worker a partir do extrato decifrado e de `meta/b3` e `meta/fii-resumo`. Fica 60 s na memória do isolate por e-mail (limpa a cada gravação no mesmo isolate).
+- `POST /api/carteira/importar`: `{ arquivos: [{ nome, tipo: negociacao|movimentacao|proventos, hash, linhas }], simular? }`. Até 20 mil linhas e 40 arquivos por chamada, 8 MB de corpo; a página divide em lotes. Responde `{ novos, repetidos, ignorados, porArquivo }`.
+- `GET` e `PUT /api/carteira/meta`: `{ alvo, aporte, yield (fração, ou null para usar o da carteira), reinvestir }`; o GET (e o `meta` do GET principal) traz a projeção.
+- `DELETE /api/carteira/importacoes/<id>`: tira as linhas daquela importação e o registro dela.
+- `DELETE /api/carteira`: apaga extrato, importações e meta. Na tela, pede para digitar APAGAR.
+
+**Deduplicação.** Chave = todos os campos da linha menos o `imp`. É por multiconjunto: a linha que já está k vezes e vem m vezes no arquivo entra max(0, m − k) vezes. Reimportar o mesmo arquivo dá zero novos, e duas compras iguais no mesmo dia continuam sendo duas.
+
+**Cálculo da posição.**
+
+- Quantidade pela Movimentação, por papel e corretora, fracionário (F) somado no lote. Somam ou tiram pelo Crédito/Débito: liquidação, transferência (inclusive sem financeiro), compra, venda, bonificação, desdobro, grupamento, direito de subscrição, subscrição exercida, recibo, atualização, fração em ativos, retirada de custódia e vencimento. "Não exercido" zera o direito. Não mexem: rendimento, dividendo, JCP, amortização, reembolso, resgate, leilão de fração, cessão de direitos (solicitada e efetivada se anulam no extrato), pedido de subscrição e tudo com " - Transferido" ou " - Cancelado". Atualização num papel fora dos recibos consome o recibo da mesma raiz (o recibo virou cota). Empréstimo não tira da posição: a última linha de empréstimo dos últimos 60 dias marca as cotas emprestadas (nos extratos reais o empréstimo vem quase sempre como Crédito, não Débito). Tipo desconhecido vai para `resumo.avisos` com a contagem e também aparece na prévia. Papel sem Movimentação usa a Negociação.
+- Preço médio pela Negociação (ou pela liquidação da Movimentação, quando o papel não tem Negociação): média ponderada das compras; venda baixa a quantidade sem mudar o PM e entra no resultado realizado; posição que zera recomeça o PM. Bonificação, desdobro e grupamento mudam a quantidade e mantêm o custo. A subscrição exercida entra como compra ao preço do exercício quando a atualização transforma o recibo em cota.
+- Classe: subscrição (final 1, 2, 9, 10, 12 a 15), ETF (em `etfs` do b3), FII (em `fiis` do b3 ou no informe da CVM), ação (em `acoes` do b3, inclusive units, ou final 3 a 8), BDR (final 31 a 39), outro.
+- Proventos: do extrato de proventos; os períodos que nenhum arquivo de proventos cobriu (pelas datas de cada arquivo importado) são completados pelos rendimentos, dividendos, JCP e amortizações da Movimentação. "12 meses" são os 12 meses fechados antes do atual. Yield sobre o custo por papel e da carteira.
+- Resumo: patrimônio (quantidade × cotação; sem cotação usa o PM e marca `semCotacao`), custo, resultado, divisão por classe (empréstimo à parte), por segmento de FII, por corretora, renda por classe e segmento, aportes mês a mês, encerradas (resultado realizado + proventos), movimentos recentes, a receber (FII da carteira sem pagamento no mês: último rendimento do `meta/fii-resumo` × quantidade, data a confirmar, descartado quando passa de 5% da cota), agenda e alertas (rendimento pago menor que o anterior nos últimos 45 dias, direito de subscrição em carteira com "prazo a confirmar", papel acima de 20% da carteira).
+- Rentabilidade por cotas (TWR) mês a mês em 12 meses, no ano e desde o início. Os meses passados usam o preço da última negociação da pessoa em cada papel; o mês atual usa a cotação. A comparação com IFIX, CDI e Ibovespa fica "em breve": o Lookout não guarda série histórica desses índices.
+- IR (só conferência): vendas em ações no mês, lucro em FII no mês, JCP no ano e prejuízo acumulado em ações (e FIIs), sem day trade nem custos.
+
+**Meta.** Cada mês: renda = P × yield / 12; depois P += aporte (+ renda, se reinvestir). P inicial = renda média de 12 meses × 12 / yield (o patrimônio que, a esse yield, paga a renda de hoje); sem proventos, o custo. Mostra a data no ritmo atual, com o yield 2 pontos menor, o aporte para chegar em 10 anos (busca binária), marcos de R$ 500, 1.000, 2.500 e a meta, a trajetória (realizado: média móvel de 12 meses; projetado até a meta, limite de 40 anos) e o mês contra o plano (compras menos vendas do mês contra aporte planejado mais os proventos do mês, quando reinvestir). O bloco "onde o aporte rende mais pelo seu filtro" só entra com o radar de dividendos.
+
+**Widgets no Início.** `carteira-meta` (tamanho 2), `carteira-patrimonio`, `carteira-proventos-mes`, `carteira-pagamentos`, `carteira-agenda`, `carteira-rentabilidade` e `carteira-alertas`, todos `pessoal: true` no catálogo de `src/painel.js`, fora do padrão. Leem `/api/carteira` uma vez só (a mesma leitura das telas, 1 min na memória da página), levam a marca "seu" e só aparecem para quem importou extratos. No Personalizar ficam no grupo "Minha carteira". Cada bloco da carteira com widget equivalente tem o alfinete, que liga e desliga o widget em `/api/prefs/painel` (entra no topo da grade).
+
+**Limites.** 20 mil linhas e 40 arquivos por chamada, 15 MB por arquivo na página, doc cifrado até 1,8 MB (um extrato de seis anos dá uns 250 KB de JSON, bem menos depois do gzip), 200 importações no histórico.
+
+**Testes.** `npm test` roda `test/carteira.test.mjs` (linhas sintéticas em `test/fixtures-carteira.mjs`) e `test/cofre.test.mjs`.
+
 ## API
 
-`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas`, `/api/prefs/painel`, `/api/painel/hoje`, `/api/papel`, `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
+`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas`, `/api/prefs/painel`, `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
 
 Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`) e recarga manual da CVM (`POST /api/admin/cvm`). Sem grupos criados, todo convidado vê tudo.
 
 ## Segredos
 
-Ficam no painel da Cloudflare (Workers & Pages → `news` → Variables and Secrets), nunca no repositório: `ADMIN_EMAIL`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `BRAPI_TOKEN`, `FINNHUB_TOKEN` (cotações e ficha dos EUA), `CF_API_TOKEN` e `CF_ACCOUNT_ID` (estes dois para o card de custos). O `wrangler.jsonc` usa `keep_vars: true`, então deploy não apaga nada. Para rodar local, `DEV_EMAIL` vai no `.dev.vars`, que o git ignora.
+Ficam no painel da Cloudflare (Workers & Pages → `news` → Variables and Secrets), nunca no repositório: `ADMIN_EMAIL`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `BRAPI_TOKEN`, `FINNHUB_TOKEN` (cotações e ficha dos EUA), `CF_API_TOKEN` e `CF_ACCOUNT_ID` (estes dois para o card de custos) e `CARTEIRA_KEY` (cifra da Minha carteira). O `wrangler.jsonc` usa `keep_vars: true`, então deploy não apaga nada. Para rodar local, `DEV_EMAIL` vai no `.dev.vars`, que o git ignora.
 
 ## Regras para agentes
 
 - Nunca `DROP`.
 - `UPDATE` e `DELETE` só com lista explícita de ids.
-- Coletores e curadoria não tocam em `favs/`, `listas/` nem `prefs/`. `hist` só é gravado pela rota `/api/papel` e pelo cron dele.
+- Coletores e curadoria não tocam em `favs/`, `listas/`, `prefs/` nem `carteira/`. Ninguém abre `carteira/` fora da rota da própria pessoa. `hist` só é gravado pela rota `/api/papel` e pelo cron dele.
 - O prompt de cada tarefa só roda os comandos que ele mesmo lista.
 
 ## Custos

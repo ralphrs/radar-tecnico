@@ -652,7 +652,7 @@ footer b { color: var(--foreground); font-weight: 500; }
 /* Início: painel de widgets. Sem colunas laterais; a barra de abas fica no topo do centro em qualquer largura
    e o resto da página (feed, Bolsa, filtros, rodapé) sai de cena enquanto o Início está aberto. */
 a.marca { color: inherit; text-decoration: none; border-radius: var(--radius-md); }
-html.no-inicio .nav-temas, html.no-inicio .lateral, html.no-inicio .centro > :not(#inicio):not(#barra), html.no-inicio header .status { display: none !important; }
+html.no-inicio .nav-temas, html.no-inicio .lateral, html.no-inicio .centro > :not(#inicio):not(#barra):not(#carteira), html.no-inicio header .status { display: none !important; }
 html.no-inicio .barra-linha { display: none; }
 html.no-inicio .conta-btn { margin-left: auto; }
 @media (min-width: 900px) {
@@ -774,6 +774,185 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .pers-item .seg button { height: 24px; padding: 0 9px; font-size: 12px; }
 .pers-item .seg button:disabled { opacity: .35; }
 .pers .painel-pe .dd-btn { height: 40px; }
+/* Minha carteira (#carteira, #carteira/proventos, #carteira/meta, #carteira/importar): pessoal, abre pelo menu da conta.
+   Usa o mesmo modo do Início (uma coluna, sem laterais) com a seção #carteira no lugar da grade. */
+.cart { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.ct-cab { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; }
+.ct-cab h2 { margin: 0; font: 700 26px/1.15 var(--font-display); letter-spacing: -0.02em; }
+.ct-volta { font: 500 13px/20px var(--font-sans); color: var(--primary); text-decoration: none; }
+.ct-volta:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ct-cab .ct-esp { flex: 1 1 auto; }
+.ct-quem { font: 400 12px/16px var(--font-mono); color: var(--muted-foreground); }
+.ct-nav { flex-wrap: wrap; }
+.ct-nav a { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 6px; font: 500 13px/1 var(--font-sans); color: var(--muted-foreground); text-decoration: none; }
+.ct-nav a:hover { color: var(--foreground); }
+.ct-nav a[aria-current="page"] { background: var(--card); color: var(--foreground); box-shadow: var(--shadow-sm); }
+.ct-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ct-card.suave { background: var(--secondary); }
+.ct-card h3 { margin: 0; font: 600 17px/1.3 var(--font-display); letter-spacing: -0.02em; }
+.ct-tit { display: flex; align-items: baseline; gap: 6px 12px; flex-wrap: wrap; min-width: 0; }
+.ct-tit .ct-sub { font-size: 13px; color: var(--muted-foreground); }
+.cart a.dd-btn { text-decoration: none; }
+.ct-linhas.alertas > div { justify-content: flex-start; flex-wrap: wrap; }
+.ct-tit .ct-esp { flex: 1 1 auto; }
+.ct-tit .ct-pin { align-self: center; }
+.ct-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.ct-kpi { gap: 6px; }
+.ct-kpi .r { display: flex; align-items: center; gap: 8px; }
+.ct-kpi .r .rotulo { flex: 1; }
+.ct-kpi .v { font: 500 26px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-kpi .d { font-size: 13px; color: var(--muted-foreground); }
+.ct-pos { color: var(--ok); } .ct-neg { color: var(--err); } .ct-aviso { color: var(--warn); }
+.ct-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.ct-pin { flex: none; width: 30px; height: 30px; border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--card); color: var(--muted-foreground); display: inline-grid; place-items: center; cursor: pointer; padding: 0; }
+.ct-pin svg { width: 15px; height: 15px; }
+.ct-pin:hover { background: var(--accent); color: var(--foreground); }
+.ct-pin[aria-pressed="true"] { background: color-mix(in srgb, var(--primary) 14%, var(--card)); border-color: color-mix(in srgb, var(--primary) 45%, transparent); color: var(--primary); }
+.ct-pin:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ct-meta { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: center; }
+.ct-meta > div { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ct-barra { position: relative; height: 14px; border-radius: 999px; background: var(--secondary); box-shadow: inset 0 0 0 1px var(--border); }
+.ct-barra > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--primary); min-width: 4px; }
+.ct-barra i { position: absolute; top: -3px; height: 20px; border-left: 2px solid var(--input); }
+.ct-barra i.prox { border-left-color: var(--warn); }
+.ct-fatos { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted-foreground); }
+.ct-fatos b { font: 500 13px var(--font-mono); color: var(--foreground); font-variant-numeric: tabular-nums; }
+.ct-spark { width: 100%; height: 60px; display: block; }
+.ct-spark-pe { display: flex; justify-content: space-between; font: 400 11px var(--font-mono); color: var(--muted-foreground); }
+.ct-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.ct-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.ct-faixa { display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 2px; background: var(--secondary); }
+.ct-faixa span { display: block; height: 100%; min-width: 3px; }
+.ct-legenda { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted-foreground); }
+.ct-legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.ct-c-fii { background: var(--primary); } .ct-c-acao { background: var(--brand-end); } .ct-c-etf { background: var(--ok); } .ct-c-bdr { background: var(--chart-1); }
+.ct-c-subscricao { background: var(--warn); } .ct-c-outro { background: var(--muted-foreground); }
+.ct-c-emprestado { background: repeating-linear-gradient(45deg, var(--muted-foreground) 0 3px, color-mix(in srgb, var(--muted-foreground) 45%, transparent) 3px 6px); }
+.ct-c-rend { background: var(--primary); } .ct-c-div { background: var(--brand-end); } .ct-c-jcp { background: var(--warn); } .ct-c-outros { background: var(--muted-foreground); }
+.ct-ferr { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+.ct-ferr .dd-input { height: var(--control-h-sm); width: 160px; }
+.ct-ferr label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted-foreground); }
+.ct-ferr select.dd-input { width: auto; padding-right: 8px; }
+.ct-caixa { overflow-x: auto; margin-inline: -4px; }
+.ct-tab { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
+.ct-tab th { text-align: right; font: 600 11.5px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.ct-tab td { padding: 9px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+.ct-tab tr:last-child td { border-bottom: 0; }
+.ct-tab .e, .ct-tab th.e { text-align: left; }
+.ct-tab td.mono, .ct-tab .mono { font-family: var(--font-mono); font-size: 13px; }
+.ct-tab th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.ct-tab th button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
+.ct-tab th[aria-sort="ascending"] button::after { content: "▲"; font-size: 9px; }
+.ct-tab th[aria-sort="descending"] button::after { content: "▼"; font-size: 9px; }
+.ct-nome { color: var(--muted-foreground); font-size: 13px; margin-left: 6px; max-width: 220px; display: inline-block; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.ct-tag { display: inline-block; font: 600 11.5px/16px var(--font-sans); padding: 1px 8px; border-radius: var(--radius-md); border: 1px solid var(--border); color: var(--muted-foreground); background: var(--secondary); white-space: nowrap; }
+.ct-tag + .ct-tag { margin-left: 4px; }
+.ct-tag.err { color: var(--err); border-color: color-mix(in srgb, var(--err) 35%, transparent); background: color-mix(in srgb, var(--err) 8%, var(--card)); }
+.ct-tag.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); background: color-mix(in srgb, var(--warn) 8%, var(--card)); }
+.ct-tag.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); background: color-mix(in srgb, var(--ok) 8%, var(--card)); }
+.ct-pe { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted-foreground); }
+.ct-lista-cel { display: none; flex-direction: column; }
+.ct-lin { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.ct-lin:first-child { border-top: 0; }
+.ct-lin .ct-mono { text-align: right; }
+.ct-lin small { color: var(--muted-foreground); font-size: 12.5px; }
+.ct-barras { display: flex; align-items: flex-end; gap: 6px; height: 96px; }
+.ct-barras > div { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 3px 3px 0 0; overflow: hidden; }
+.ct-barras > div > span { display: block; width: 100%; }
+.ct-barras > div.vazio-b { background: color-mix(in srgb, var(--foreground) 5%, transparent); }
+.ct-barras.alto { height: 170px; }
+.ct-barras-pe { display: flex; gap: 6px; font: 500 11px/16px var(--font-mono); color: var(--muted-foreground); }
+.ct-barras-pe > span { flex: 1; min-width: 0; text-align: center; overflow: hidden; white-space: nowrap; text-overflow: clip; }
+.ct-barras-pe.pontas { justify-content: space-between; } .ct-barras-pe.pontas > span { flex: none; }
+.ct-linhas { display: flex; flex-direction: column; }
+.ct-linhas > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 0; border-top: 1px solid var(--border); font-size: 14px; min-width: 0; }
+.ct-linhas > div:first-child { border-top: 0; padding-top: 0; }
+.ct-linhas > div > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ct-linhas .ct-mono { white-space: nowrap; }
+.ct-linhas small { color: var(--muted-foreground); font-size: 12.5px; }
+.ct-mini { height: 6px; border-radius: 3px; background: var(--secondary); overflow: hidden; margin-top: 4px; }
+.ct-mini span { display: block; height: 100%; background: var(--primary); border-radius: 3px; }
+.ct-mov { font-size: 13px; color: var(--muted-foreground); display: flex; flex-direction: column; gap: 8px; }
+.ct-mov b { font: 500 12.5px var(--font-mono); color: var(--foreground); }
+.ct-nota { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.ct-mais { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 20px; align-items: start; }
+.ct-mais .ct-tab th, .ct-mais .ct-tab td { padding: 8px 6px; font-size: 13px; }
+.ct-mais .ct-tab th { font-size: 11px; letter-spacing: .04em; }
+.ct-mais .ct-tab td.mono { font-size: 12.5px; }
+.ct-mais.dois { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+.ct-ir { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ct-ir > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--secondary); }
+.ct-ir span:first-child { font-size: 12.5px; color: var(--muted-foreground); }
+.ct-ir .ct-mono { font-size: 17px; }
+.ct-ir small { font-size: 12px; color: var(--muted-foreground); }
+.ct-vazio { align-items: flex-start; padding: 28px; gap: 10px; }
+.ct-vazio p { margin: 0; max-width: 62ch; color: var(--muted-foreground); }
+.ct-perigo { border-color: color-mix(in srgb, var(--err) 30%, var(--border)); }
+.ct-perigo .ct-ferr .dd-input { width: 140px; }
+.dd-btn--perigo { background: var(--err); color: #fff; }
+.dd-btn--perigo:hover:not(:disabled) { opacity: .9; }
+/* Proventos */
+.ct-dois { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+.ct-kpi .tipos { font-size: 13.5px; line-height: 1.6; }
+/* Meta */
+.ct-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 12px 16px; align-items: end; }
+.ct-form label.rotulo { display: block; margin-bottom: 6px; }
+.ct-form .campo { display: flex; align-items: center; gap: 8px; }
+.ct-form .campo span { font-size: 12.5px; color: var(--muted-foreground); white-space: nowrap; }
+.ct-form .check { display: flex; align-items: center; gap: 8px; height: var(--control-h); font-size: 14px; }
+.ct-form .check input { width: 16px; height: 16px; accent-color: var(--primary); margin: 0; }
+.ct-cen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.ct-cen .v { font: 500 22px/1.2 var(--font-mono); }
+.ct-graf { width: 100%; height: auto; display: block; }
+.ct-graf text { font: 400 12px var(--font-mono); fill: var(--muted-foreground); }
+.ct-graf .forte { fill: var(--foreground); }
+.ct-graf .meta-t { fill: var(--warn); }
+.ct-leg-graf { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted-foreground); }
+.ct-leg-graf i { display: inline-block; width: 18px; height: 0; border-top: 2.5px solid var(--primary); margin-right: 6px; vertical-align: 3px; }
+.ct-leg-graf i.tr { border-top-style: dashed; border-top-width: 2px; }
+.ct-leg-graf i.bx { border-top: 2px dashed var(--brand-end); }
+/* Importar */
+.ct-solta { border: 2px dashed var(--input); border-radius: var(--radius-xl); background: var(--card); padding: 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.ct-solta.sobre { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 6%, var(--card)); }
+.ct-solta svg { width: 34px; height: 34px; color: var(--primary); }
+.ct-solta strong { font: 600 18px/1.3 var(--font-display); letter-spacing: -0.02em; }
+.ct-solta p { margin: 0; max-width: 60ch; color: var(--muted-foreground); font-size: 14px; }
+.ct-solta input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.ct-arq { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); font-size: 13.5px; }
+.ct-arq:first-child { border-top: 0; }
+.ct-arq .n { font: 400 12.5px var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-arq .d { grid-column: 2; font-size: 12.5px; color: var(--muted-foreground); }
+.ct-arq .st { grid-row: 1 / span 2; grid-column: 3; text-align: right; font: 500 12.5px var(--font-sans); }
+.ct-passos { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.ct-passos > div { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; align-items: start; }
+.ct-passos .num { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 14%, var(--card)); color: var(--primary); font: 600 12px var(--font-sans); }
+.ct-ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.ct-acoes { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+/* Widgets da carteira no Início */
+.seu { flex: none; align-self: center; font: 600 10.5px/15px var(--font-sans); padding: 0 6px; border-radius: var(--radius-md); color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--card)); }
+.wdg-big { font: 500 22px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+.wdg-big small { font: 400 12px var(--font-sans); color: var(--muted-foreground); margin-left: 6px; }
+.wdg-cart { display: flex; flex-direction: column; gap: 8px; }
+.pers-grupo { list-style: none; margin: 12px 0 2px; padding: 8px 0 0; border-top: 1px solid var(--border); font: 600 12px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); }
+.pers-grupo small { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12.5px; margin-top: 2px; }
+@media (max-width: 1099px) { .ct-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ct-corpo, .ct-dois { grid-template-columns: minmax(0, 1fr); } .ct-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 699px) {
+  .cart { gap: 14px; }
+  .ct-cab h2 { font-size: 22px; }
+  .ct-kpis { gap: 10px; }
+  .ct-kpi .v { font-size: 20px; }
+  .ct-card { padding: 14px; }
+  .ct-meta { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .ct-cen { grid-template-columns: minmax(0, 1fr); }
+  .ct-form { grid-template-columns: minmax(0, 1fr); }
+  .ct-ir { grid-template-columns: minmax(0, 1fr); }
+  .ct-posicoes .ct-caixa { display: none; }
+  .ct-posicoes .ct-lista-cel { display: flex; }
+  .ct-ferr .dd-input { width: 100%; }
+  .ct-ferr .seg { flex-wrap: wrap; max-width: 100%; }
+  .ct-ferr label { flex: 1 1 100%; }
+  .ct-quem { flex: 1 1 100%; order: 5; }
+}
 </style>
 
 <div class="wrap">
@@ -865,6 +1044,7 @@ html.no-inicio .conta-btn { margin-left: auto; }
     <p class="ini-aviso" id="ini-aviso" role="status" hidden></p>
     <div class="ini-grade" id="ini-grade"></div>
   </section>
+  <section class="cart" id="carteira" aria-labelledby="ct-titulo" hidden></section>
   <div class="seg visoes" id="visoes" role="group" aria-label="Visão de Investimentos" hidden>
     <button type="button" id="visao-bolsa" aria-pressed="true">Bolsa</button>
     <button type="button" id="visao-eua" aria-pressed="false">EUA</button>
@@ -909,6 +1089,10 @@ html.no-inicio .conta-btn { margin-left: auto; }
 <div class="conta-menu" id="conta-menu" role="menu" aria-labelledby="conta">
   <div class="conta-quem" role="none"><span class="conta-av conta-av--g" id="conta-av-g" aria-hidden="true"></span><div><span class="conta-nome"><span id="conta-nome"></span><span class="dd-badge b-release" id="conta-admin-marca" hidden>admin</span></span><span class="conta-email" id="conta-email"></span></div></div>
   <div class="conta-sep" role="separator"></div>
+  <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira" id="conta-carteira"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18M7 6V4h10v2"/></svg>Minha carteira</a>
+  <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira/meta" id="conta-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Minha meta</a>
+  <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira/importar" id="conta-importar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Importar extratos</a>
+  <div class="conta-sep" role="separator" id="conta-sep-cart"></div>
   <button class="conta-item" type="button" role="menuitem" tabindex="-1" id="aparencia" data-fica></button>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/admin" id="conta-admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Administração</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sair</a>
@@ -2725,7 +2909,7 @@ function renderUrgente() {
 function renderRadares() {
   [["radares-barra", "aba-"], ["radares-nav", "navaba-"]].forEach(([id, pre]) => {
     const s = $(id); s.textContent = "";
-    const ini = el("button", { type: "button", id: pre + "inicio", "aria-pressed": String(inicio) }, "Início");
+    const ini = el("button", { type: "button", id: pre + "inicio", "aria-pressed": String(inicio && !carteiraVista) }, "Início");
     ini.addEventListener("click", () => irInicio());
     s.append(ini);
     radaresVisiveis().forEach((r) => {
@@ -3704,6 +3888,13 @@ const CATALOGO_LOCAL = [
   { id: "favoritos", titulo: "Favoritos", tamanho: 1, secao: null },
   ...ORDEM_RADARES.map((s) => ({ id: "destaques-" + s, titulo: "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   ...ORDEM_RADARES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },
+  { id: "carteira-patrimonio", titulo: "Patrimônio", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-proventos-mes", titulo: "Proventos do mês", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-pagamentos", titulo: "Próximos pagamentos", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-agenda", titulo: "Agenda da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-rentabilidade", titulo: "Rentabilidade", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-alertas", titulo: "Alertas da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
 ];
 const PADRAO_LOCAL = ["hoje", "mercado", "destaques-tech", "destaques-negocios", "destaques-investimentos", "destaques-politica", "pregao", "eua", "listas", "favoritos", "destaques-esportes", "ultimas-tech"];
 let painelCat = null, painelW = null, painelSalvoTxt = null, painelMontado = false, prefsPedidas = false, meuNome = "";
@@ -3725,6 +3916,9 @@ function destinoDe(id) {
   if (id.startsWith("ultimas-")) return "#" + id.slice(8);
   if (id === "eua") return "#investimentos/eua";
   if (id === "mercado" || id === "pregao" || id === "fiis" || id === "listas") return "#investimentos";
+  if (id === "carteira-meta") return "#carteira/meta";
+  if (id === "carteira-proventos-mes" || id === "carteira-pagamentos") return "#carteira/proventos";
+  if (id.startsWith("carteira-")) return "#carteira";
   if (id === "favoritos") { const f = favoritosRecentes()[0]; return "#" + (f ? radarDoFav(f._id) : radaresVisiveis()[0] || "tech"); }
   return null;
 }
@@ -3758,6 +3952,12 @@ function leitor(id) {
     return { d: ls, marca: JSON.stringify(ls) + marcaDe(d1, d2) };
   };
   if (id === "favoritos") return async () => { const l = favoritosRecentes(); return { d: l, marca: JSON.stringify(l.slice(0, 5)) + l.length }; };
+  if (id.startsWith("carteira-")) return async () => {
+    const j = await lerCarteira();
+    if (!j || j.erro) return undefined;
+    if (j.vazia || j.desligada) setTimeout(() => { if (inicio && !carteiraVista) montarGrade(); }, 0);
+    return { d: j, marca: j._marca };
+  };
   if (id === "hoje") return async () => {
     const r = await fetch("/api/painel/hoje", { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } });
     if (!r.ok) return undefined;
@@ -3942,7 +4142,7 @@ function pintarWidget(id) {
   if (destino) ligarDestino(titulo, id);
   const alca = el("span", { class: "wdg-alca", draggable: "true", title: "Arraste para mudar a ordem", html: ALCA });
   const sub = subtituloDe(id, x);
-  const cab = el("div", { class: "wdg-cab" }, el("h3", { id: "wdg-t-" + id }, titulo), sub ? (typeof sub === "string" ? el("small", { title: sub }, sub) : sub) : null, alca);
+  const cab = el("div", { class: "wdg-cab" }, el("h3", { id: "wdg-t-" + id }, titulo), def.pessoal ? el("span", { class: "seu", title: "Vem da sua carteira; só você vê" }, "seu") : null, sub ? (typeof sub === "string" ? el("small", { title: sub }, sub) : sub) : null, alca);
   let corpo;
   if (!x || (x.estado === "carregando" && !x.d)) corpo = [esqueleto(tipoDoWidget(id) === "hoje" ? 5 : 6)];
   else if (x.estado === "erro") {
@@ -3970,7 +4170,8 @@ function montarGrade() {
   naTela.clear();
   g.textContent = "";
   painelMontado = true;
-  const ws = widgetsAtuais();
+  /* os da carteira só aparecem para quem importou os extratos */
+  const ws = widgetsAtuais().filter((w) => !(defDe(w.id).pessoal && cartSemDados()));
   if (!ws.length) { g.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum card no Início"), "Use Personalizar para escolher o que aparece aqui.")); return; }
   ws.forEach((w) => {
     const card = el("article", { class: "wdg", "data-id": w.id, "data-tam": String(w.tamanho), "aria-labelledby": "wdg-t-" + w.id });
@@ -4029,7 +4230,8 @@ async function carregarPrefs() {
     if (persAberto) return;
     const mudou = JSON.stringify(widgetsAtuais()) !== painelSalvoTxt;
     painelW = j.widgets; guardarPainelLocal();
-    if (inicio && mudou) montarGrade();
+    if (inicio && !carteiraVista && mudou) montarGrade();
+    atualizarPins();
   } catch (e) {}
 }
 function avisoPainel(txt) { const a = $("ini-aviso"); a.textContent = txt || ""; a.hidden = !txt; }
@@ -4051,11 +4253,18 @@ const salvarDepois = () => { clearTimeout(tSalvar); tSalvar = setTimeout(salvarP
 
 function entrarInicio() {
   aplicarModo();
-  montarGrade();
+  if (carteiraVista) renderCarteira(); else montarGrade();
   atualizarCabInicio();
   if (!prefsPedidas) { prefsPedidas = true; carregarPrefs(); }
 }
 function irInicio(porHash) {
+  if (inicio && carteiraVista) {
+    /* da carteira para a grade: nada para desligar, a carteira não assina nada */
+    carteiraVista = null;
+    if (!porHash) escreverHash(true);
+    render(); entrarInicio(); window.scrollTo({ top: 0 });
+    return;
+  }
   if (inicio) { if (!porHash) escreverHash(); return; }
   fecharPainel();
   /* sai da seção: as assinaturas dela param (e respostas atrasadas são ignoradas pela geração) */
@@ -4071,10 +4280,13 @@ function aplicarModo() {
   document.documentElement.classList.toggle("no-inicio", inicio);
   $("inicio").hidden = !inicio;
   const h1 = document.querySelector("h1");
-  if (inicio) { document.title = "Início · Lookout"; h1.textContent = "Lookout"; }
+  $("inicio").hidden = !inicio || !!carteiraVista;
+  $("carteira").hidden = !inicio || !carteiraVista;
+  if (inicio && carteiraVista) { document.title = (TITULOS_CART[carteiraVista] || "Minha carteira") + " · Lookout"; h1.textContent = "Lookout"; }
+  else if (inicio) { document.title = "Início · Lookout"; h1.textContent = "Lookout"; }
   else { document.title = R().titulo + " · Lookout"; h1.textContent = R().titulo; }
 }
-$("marca").addEventListener("click", (e) => { if (inicio) { e.preventDefault(); window.scrollTo({ top: 0 }); } });
+$("marca").addEventListener("click", (e) => { if (inicio && !carteiraVista) { e.preventDefault(); window.scrollTo({ top: 0 }); } });
 
 /* ---- Personalizar: lista de todos os widgets disponíveis, com mostrar, ordem e largura. Aplica na hora; grava ao fechar. ---- */
 let persAberto = false, persLista = [], persAbridor = null;
@@ -4082,22 +4294,33 @@ function montarPersLista() {
   const ws = widgetsAtuais(), ja = new Set(ws.map((w) => w.id));
   persLista = [...ws.map((w) => ({ ...w, mostrar: true })), ...catalogo().filter((w) => !ja.has(w.id)).map((w) => ({ id: w.id, tamanho: w.tamanho, mostrar: false }))];
 }
+/* Os widgets da carteira ficam num grupo à parte na lista; as setas trocam só com o vizinho do mesmo grupo */
+const ehPessoal = (id) => { const d = defDe(id); return !!(d && d.pessoal); };
 function aplicarPers(foco) {
   painelW = persLista.filter((w) => w.mostrar).map(({ id, tamanho }) => ({ id, tamanho }));
   montarGrade(); renderPers(foco);
 }
 function renderPers(foco) {
   const ul = $("pers-lista"); ul.textContent = "";
-  persLista.forEach((w, n) => {
+  const semCart = cartSemDados();
+  const ordem = [...persLista.map((w, n) => [w, n]).filter(([w]) => !ehPessoal(w.id)), ...persLista.map((w, n) => [w, n]).filter(([w]) => ehPessoal(w.id))];
+  let grupo = false;
+  ordem.forEach(([w, n]) => {
     const def = defDe(w.id); if (!def) return;
+    if (def.pessoal && !grupo) {
+      grupo = true;
+      ul.append(el("li", { class: "pers-grupo" }, "Minha carteira", el("small", {}, semCart ? "Aparecem depois que você importar os extratos da B3 em Minha carteira." : "Só você vê. Também dá para fixar pelo alfinete de cada bloco da carteira.")));
+    }
+    const vizinho = (d) => { for (let k = n + d; k >= 0 && k < persLista.length; k += d) if (ehPessoal(persLista[k].id) === !!def.pessoal) return k; return -1; };
     const chk = el("input", { type: "checkbox", id: "pers-chk-" + w.id });
     chk.checked = w.mostrar;
     chk.addEventListener("change", () => { w.mostrar = chk.checked; aplicarPers("pers-chk-" + w.id); });
-    const mover = (d) => { const k = n + d; if (k < 0 || k >= persLista.length) return; [persLista[n], persLista[k]] = [persLista[k], persLista[n]]; aplicarPers("pers-" + (d < 0 ? "cima" : "baixo") + "-" + w.id); };
+    const mover = (d) => { const k = vizinho(d); if (k < 0) return; [persLista[n], persLista[k]] = [persLista[k], persLista[n]]; aplicarPers("pers-" + (d < 0 ? "cima" : "baixo") + "-" + w.id); };
     const cima = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon alvo", type: "button", id: "pers-cima-" + w.id, "aria-label": "Subir " + def.titulo, title: "Subir" }, "▲");
     const baixo = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon alvo", type: "button", id: "pers-baixo-" + w.id, "aria-label": "Descer " + def.titulo, title: "Descer" }, "▼");
-    if (n === 0) cima.disabled = true;
-    if (n === persLista.length - 1) baixo.disabled = true;
+    if (vizinho(-1) < 0) cima.disabled = true;
+    if (vizinho(1) < 0) baixo.disabled = true;
+    if (def.pessoal && semCart && !w.mostrar) chk.disabled = true;
     cima.addEventListener("click", () => mover(-1));
     baixo.addEventListener("click", () => mover(1));
     const tam = el("div", { class: "seg", role: "group", "aria-label": "Largura de " + def.titulo });
@@ -4195,10 +4418,933 @@ $("ini-grade").addEventListener("dragend", () => {
   arrastado = null; alvoSolta = null; limparMarcas();
 });
 
+/* ---------- Minha carteira: #carteira, #carteira/proventos, #carteira/meta, #carteira/importar (e #carteira/mais) ----------
+   Pessoal: abre pelo menu da conta, sem aba na barra de seções. Roda no modo do Início (inicio = true, nenhuma seção
+   assinada), com a seção #carteira no lugar da grade. Os dados vêm de /api/carteira, uma leitura só por minuto,
+   compartilhada pelas telas e pelos widgets da carteira no Início. Os .xlsx da B3 são lidos aqui no navegador
+   (SheetJS, carregado só na tela de importar); o servidor recebe só as linhas, e o nome da empresa fica por aqui. */
+var carteiraVista = null;
+const VISTAS_CART = { "": "geral", mais: "geral", proventos: "proventos", meta: "meta", importar: "importar" };
+const TITULOS_CART = { geral: "Minha carteira", proventos: "Proventos", meta: "Minha meta", importar: "Importar extratos da B3" };
+function carteiraDoHash() { const p = partesDoHash(); return p[0] === "carteira" ? VISTAS_CART[p[1] || ""] || "geral" : null; }
+carteiraVista = carteiraDoHash();
+function hashCarteira() {
+  const cur = location.hash || "";
+  if (cur.startsWith("#carteira") && carteiraDoHash() === carteiraVista) return cur;
+  return "#carteira" + (carteiraVista === "geral" ? "" : "/" + carteiraVista);
+}
+function irCarteira(vista, porHash) {
+  if (secoesLiberadas && !secoesLiberadas.includes("investimentos")) { carteiraVista = null; if (inicio) { escreverHash(); render(); entrarInicio(); } else escreverHash(); return; }
+  fecharPainel(); if (persAberto) fecharPers();
+  if (!inicio) { desligar.forEach((f) => { try { if (typeof f === "function") f(); } catch (e) {} }); desligar = []; geracao++; inicio = true; }
+  const veio = carteiraVista;
+  carteiraVista = vista;
+  if (!porHash) escreverHash(true);
+  render();
+  renderCarteira();
+  if (!prefsPedidas) { prefsPedidas = true; carregarPrefs(); }
+  const mais = partesDoHash()[1] === "mais";
+  if (veio !== vista || mais) requestAnimationFrame(() => { const a = mais && $("ct-mais"); if (a) a.scrollIntoView({ block: "start" }); else window.scrollTo({ top: 0 }); });
+}
+function ajustarMenuCarteira() {
+  const ok = !secoesLiberadas || secoesLiberadas.includes("investimentos");
+  ["conta-carteira", "conta-meta", "conta-importar", "conta-sep-cart"].forEach((id) => { $(id).hidden = !ok; });
+}
+
+/* ---- dados ---- */
+let cartJ = null, cartEm = 0, cartLendo = null;
+const assinaturaTxt = (t) => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193); } return t.length + "-" + (h >>> 0).toString(36); };
+function lerCarteira(fresco) {
+  if (!fresco && cartJ && Date.now() - cartEm < 60000) return Promise.resolve(cartJ);
+  if (cartLendo) return cartLendo;
+  cartLendo = (async () => {
+    try {
+      const r = await fetch("/api/carteira", { credentials: "same-origin", cache: "no-store", headers: { "X-Requested-With": "XMLHttpRequest" } });
+      if (r.status === 401) { location.reload(); return null; }
+      const txt = await r.text();
+      let j = {};
+      try { j = JSON.parse(txt); } catch (e) {}
+      if (r.status === 503) j = { desligada: true };
+      else if (!r.ok) j = { erro: j.erro || "http " + r.status };
+      j._marca = assinaturaTxt(txt);
+      if (!j.erro) { cartJ = j; cartEm = Date.now(); }
+      return j;
+    } catch (e) { return cartJ || { erro: "rede", _marca: "erro" }; }
+    finally { cartLendo = null; }
+  })();
+  return cartLendo;
+}
+const cartSemDados = () => !!(cartJ && (cartJ.vazia || cartJ.desligada));
+function invalidarCarteira() {
+  cartJ = null; cartEm = 0;
+  [...wDados.keys()].forEach((k) => { if (k.startsWith("carteira-")) wDados.delete(k); });
+}
+async function apiCart(metodo, caminho, corpo) {
+  const o = { method: metodo, credentials: "same-origin", cache: "no-store", headers: { "X-Requested-With": "XMLHttpRequest" } };
+  if (corpo !== undefined) { o.headers["content-type"] = "application/json"; o.body = JSON.stringify(corpo); }
+  const r = await fetch("/api/carteira" + caminho, o);
+  if (r.status === 401) { location.reload(); throw new Error("sessão"); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.erro || (r.status === 503 ? "carteira desligada" : "http " + r.status));
+  return j;
+}
+
+/* ---- formatação: R$ com separador pt-BR, grandes em mil/mi, percentuais com uma casa, datas curtas ---- */
+const MENOS = "−";
+function rs(v, cent) {
+  if (v == null || !Number.isFinite(v)) return "–";
+  const a = Math.abs(v);
+  const t = !cent && a >= 1e6 ? fmtNum(a / 1e6, a >= 1e8 ? 0 : 1) + " mi" : !cent && a >= 1e5 ? fmtNum(a / 1e3, 0) + " mil" : fmtNum(a, cent ? 2 : 0);
+  return (v < 0 && a >= (cent ? 0.005 : 0.5) ? MENOS : "") + "R$ " + t;
+}
+const rsS = (v, cent) => (v > 0 && Math.abs(v) >= (cent ? 0.005 : 0.5) ? "+" : "") + rs(v, cent);
+const pc = (v, sinal) => (v == null || !Number.isFinite(v) ? "–" : (sinal && v > 0.05 ? "+" : v < -0.05 ? MENOS : "") + fmtNum(Math.abs(v), 1) + "%");
+const clsS = (v) => (v > 0.005 ? "ct-pos" : v < -0.005 ? "ct-neg" : "");
+const qtd = (q) => fmtNum(q, Number.isInteger(q) ? 0 : 2);
+const MESES_NOME = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const mesL = (ym) => { if (!ym) return "–"; const [a, m] = ym.split("-"); return ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][Number(m) - 1] + "/" + a; };
+const mesNome = (ym) => MESES_NOME[Number(String(ym).slice(5, 7)) - 1] || "";
+const somarMes = (ym, n) => { const [a, m] = ym.split("-").map(Number); const x = a * 12 + m - 1 + n; return Math.floor(x / 12) + "-" + String((x % 12) + 1).padStart(2, "0"); };
+const idxMes = (ym) => { const [a, m] = ym.split("-").map(Number); return a * 12 + m - 1; };
+const dataBr = (d) => (d ? d.slice(8, 10) + "/" + d.slice(5, 7) + "/" + d.slice(0, 4) : "");
+function duracao(meses) { if (meses == null) return "mais de 40 anos"; const a = Math.floor(meses / 12), m = meses % 12; const p = []; if (a) p.push(a + (a === 1 ? " ano" : " anos")); if (m || !a) p.push(m + (m === 1 ? " mês" : " meses")); return p.join(" e "); }
+const NOME_CLASSE = { fii: "FIIs", acao: "Ações", etf: "ETFs", bdr: "BDRs", subscricao: "Subscrições e recibos", outro: "Outros", emprestado: "Em empréstimo" };
+const ORDEM_CLASSE = ["fii", "acao", "etf", "bdr", "subscricao", "outro", "emprestado"];
+const NOME_PROV = { rend: "Rendimento", div: "Dividendo", jcp: "JCP", amort: "Amortização", reemb: "Reembolso", outro: "Outro" };
+const NOME_MOV = { compra: "Compra", venda: "Venda", emp: "Empréstimo", transf: "Transferência", "transf-sf": "Transferência", bonif: "Bonificação", desdobro: "Desdobro", grupamento: "Grupamento", dir: "Direito de subscrição", "dir-exe": "Subscrição exercida", "dir-nexe": "Direito não exercido", recibo: "Recibo de subscrição", atual: "Atualização", fracao: "Fração", resgate: "Resgate", reemb: "Reembolso", "sub-sol": "Pedido de subscrição", retirada: "Retirada de custódia", venc: "Vencimento", "compra-venda": "Compra ou venda", ...NOME_PROV };
+const nomeDoPapel = (p) => (p.nome ? (p.classe === "fii" ? nomeBonito(p.nome) : p.nome) : "");
+const tagEl = (txt, cls, title) => el("span", { class: "ct-tag" + (cls ? " " + cls : ""), ...(title ? { title } : {}) }, txt);
+async function abrirDaCarteira(t) {
+  if (!b3) { const d = await lerMeta("b3"); if (d) b3 = d; }
+  abrirPapel(t);
+}
+function papelBtn(t, nome) {
+  const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: nome ? nome + " · abrir a ficha" : "Abrir a ficha de " + t }, t);
+  b.addEventListener("click", () => abrirDaCarteira(t));
+  return b;
+}
+
+/* ---- alfinete: liga e desliga o widget no Início (em /api/prefs/painel) ---- */
+const PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 11V5h6v6l2 2H7l2-2z"/></svg>';
+const PIN_CHEIO = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 11V5h6v6l2 2H7l2-2z"/></svg>';
+const fixado = (id) => widgetsAtuais().some((w) => w.id === id);
+function pinBtn(id) {
+  const b = el("button", { type: "button", class: "ct-pin", "data-pin": id });
+  b.addEventListener("click", () => alternarPin(id));
+  pintarPin(b);
+  return b;
+}
+function pintarPin(b) {
+  const id = b.dataset.pin, on = fixado(id), def = defDe(id);
+  const nome = def ? def.titulo : "este bloco";
+  b.setAttribute("aria-pressed", String(on));
+  b.innerHTML = on ? PIN_CHEIO : PIN;
+  const t = on ? `${nome} está no Início. Tirar do Início` : `Fixar ${nome} no Início`;
+  b.title = t; b.setAttribute("aria-label", t);
+}
+function atualizarPins() { document.querySelectorAll(".ct-pin[data-pin]").forEach(pintarPin); }
+async function alternarPin(id) {
+  if (painelSalvoTxt == null) await carregarPrefs();
+  const def = defDe(id); if (!def) return;
+  const ws = widgetsAtuais();
+  const i = ws.findIndex((w) => w.id === id);
+  if (i >= 0) ws.splice(i, 1); else ws.unshift({ id, tamanho: def.tamanho });
+  painelW = ws; guardarPainelLocal(); atualizarPins();
+  await salvarPainel();
+}
+
+/* ---- pedaços compartilhados com os widgets ---- */
+function barraMeta(m) {
+  const alvo = m.cfg.alvo;
+  const barra = el("div", { class: "ct-barra", role: "img", "aria-label": `${pc(m.pct)} da meta de ${rs(alvo)} por mês` });
+  barra.append(el("span", { style: `width:${Math.min(100, Math.max(0, (m.rendaHoje / alvo) * 100))}%` }));
+  (m.marcos || []).filter((x) => x.renda < alvo).forEach((x) => {
+    barra.append(el("i", { class: m.proximoMarco && m.proximoMarco.renda === x.renda ? "prox" : "", style: `left:${(x.renda / alvo) * 100}%`, title: `${rs(x.renda)} por mês: ${x.atingido ? "já chegou" : x.quando ? mesC(x.quando) : "mais de 40 anos"}` }));
+  });
+  return barra;
+}
+const mesC = (ym) => (ym ? fmtMes(ym) : "–");
+function fatosMeta(m, curto) {
+  const f = el("div", { class: "ct-fatos" });
+  f.append(el("span", {}, "Hoje ", el("b", {}, rs(m.rendaHoje) + "/mês")));
+  if (m.proximoMarco && m.proximoMarco.renda < m.cfg.alvo) f.append(el("span", {}, "Próximo marco ", el("b", {}, rs(m.proximoMarco.renda)), " em " + mesC(m.proximoMarco.quando)));
+  f.append(el("span", {}, curto ? "No ritmo atual " : "Meta no ritmo atual ", el("b", {}, m.quando ? mesL(m.quando) : "mais de 40 anos")));
+  if (m.mesPlano) f.append(el("span", {}, "Este mês ", el("b", { class: clsS(m.mesPlano.contra) }, rsS(m.mesPlano.contra)), " contra o plano"));
+  return f;
+}
+function sparkProventos(r) {
+  const ult = somarMes(r.hoje.slice(0, 7), -1);
+  const por = new Map((r.meses || []).map((x) => [x.mes, x.total]));
+  const vals = Array.from({ length: 12 }, (_, k) => por.get(somarMes(ult, k - 11)) || 0);
+  const max = Math.max(1, ...vals), min = Math.min(...vals);
+  const pts = vals.map((v, k) => `${Math.round((k / 11) * 296 + 2)},${Math.round(54 - ((v - min) / Math.max(1, max - min)) * 46)}`);
+  const svg = `<svg class="ct-spark" viewBox="0 0 300 60" preserveAspectRatio="none" role="img" aria-label="Proventos por mês nos últimos 12 meses, de ${rs(vals[0])} a ${rs(vals[11])}"><polyline fill="none" stroke="var(--primary)" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts.join(" ")}"/></svg>`;
+  return [el("div", { html: svg }), el("div", { class: "ct-spark-pe" }, el("span", {}, rs(vals[0])), el("span", {}, rs(vals[11])))];
+}
+function faixaClasses(r) {
+  const fat = ORDEM_CLASSE.map((k) => [k, k === "emprestado" ? r.emprestado : r.porClasse[k] || 0]).filter(([, v]) => v > 0.5);
+  const tot = fat.reduce((s, [, v]) => s + v, 0) || 1;
+  const faixa = el("div", { class: "ct-faixa", role: "img", "aria-label": "Divisão por classe: " + fat.map(([k, v]) => NOME_CLASSE[k] + " " + pc((v / tot) * 100)).join(", ") });
+  fat.forEach(([k, v]) => faixa.append(el("span", { class: "ct-c-" + k, style: `width:${(v / tot) * 100}%`, title: `${NOME_CLASSE[k]}: ${rs(v)}` })));
+  return { faixa, fat, tot };
+}
+/* Barras de proventos por mês, empilhadas por tipo quando `tipos` */
+function barrasMes(meses, por, { alto, tipos, destacarUltimo, rotulos } = {}) {
+  const max = Math.max(1, ...meses.map((m) => (por.get(m) || {}).total || 0));
+  const caixa = el("div", { class: "ct-barras" + (alto ? " alto" : ""), role: "img", "aria-label": "Proventos por mês: " + meses.map((m) => mesC(m) + " " + rs((por.get(m) || {}).total || 0)).join(", ") });
+  meses.forEach((m, k) => {
+    const x = por.get(m) || { total: 0 };
+    const col = el("div", { class: x.total ? "" : "vazio-b", title: `${mesL(m)}: ${rs(x.total, true)}`, style: x.total ? "" : "height:4%" });
+    if (x.total) {
+      col.style.height = Math.max(3, (x.total / max) * 100) + "%";
+      if (tipos) {
+        [["jcp", "jcp"], ["div", "div"], ["rend", "rend"]].concat([["outros", null]]).forEach(([cls, k2]) => {
+          const v = k2 ? x[k2] || 0 : (x.amort || 0) + (x.outro || 0);
+          if (v > 0) col.append(el("span", { class: "ct-c-" + cls, style: `height:${(v / x.total) * 100}%` }));
+        });
+      } else col.append(el("span", { class: "ct-c-rend", style: `height:100%;opacity:${destacarUltimo && k < meses.length - 1 ? 0.55 : 1}` }));
+    }
+    caixa.append(col);
+  });
+  const pe = rotulos ? el("div", { class: "ct-barras-pe" }, ...meses.map((m) => el("span", {}, rotulos(m, por.get(m)))))
+    : el("div", { class: "ct-barras-pe pontas" }, el("span", {}, mesC(meses[0])), el("span", {}, mesC(meses[meses.length - 1])));
+  return [caixa, pe];
+}
+const porMesMap = (r) => new Map((r.meses || []).map((x) => [x.mes, x]));
+const ultimos12 = (r) => { const ult = somarMes(r.hoje.slice(0, 7), -1); return Array.from({ length: 12 }, (_, k) => somarMes(ult, k - 11)); };
+function provPorPapel(j, de, ate) {
+  const m = new Map();
+  for (const [d, t, , , , liq] of j.proventos || []) { const ym = d.slice(0, 7); if (ym >= de && ym <= ate) m.set(t, (m.get(t) || 0) + liq); }
+  return [...m].sort((a, b) => b[1] - a[1]);
+}
+const linhaEl = (a, b, sub) => el("div", {}, el("span", {}, a, sub ? el("small", {}, " " + sub) : null), el("span", { class: "ct-mono" }, b));
+function cardEl(titulo, opts = {}) {
+  const c = el("section", { class: "ct-card" + (opts.cls ? " " + opts.cls : ""), ...(opts.id ? { id: opts.id } : {}) });
+  if (titulo) {
+    const t = el("div", { class: "ct-tit" }, el("h3", {}, titulo));
+    if (opts.sub) t.append(el("span", { class: "ct-sub" }, opts.sub));
+    if (opts.pin || opts.extra) t.append(el("span", { class: "ct-esp" }));
+    if (opts.extra) t.append(opts.extra);
+    if (opts.pin) t.append(pinBtn(opts.pin));
+    c.append(t);
+  }
+  return c;
+}
+function textoAlerta(a) {
+  if (a.tipo === "rendimento-menor") return [tagEl("rendimento menor", "warn"), " ", papelBtn(a.t), el("span", { class: "ct-mono" }, ` ${fmtNum(a.de, 3)} → ${fmtNum(a.para, 3)}`)];
+  if (a.tipo === "subscricao") return [tagEl("subscrição em carteira", "err"), " ", papelBtn(a.t), el("span", {}, ` ${qtd(a.q)} direitos · prazo a confirmar`)];
+  return [tagEl("concentração", "warn"), " ", papelBtn(a.t), el("span", { class: "ct-mono" }, ` ${pc(a.pct)} da carteira`)];
+}
+
+/* ---- tela ---- */
+function cabCarteira(j) {
+  const v = carteiraVista;
+  const cab = el("div", { class: "ct-cab" });
+  cab.append(el("h2", { id: "ct-titulo" }, TITULOS_CART[v]));
+  const nav = el("nav", { class: "seg ct-nav", "aria-label": "Partes da carteira" });
+  [["geral", "Visão geral", "#carteira"], ["proventos", "Proventos", "#carteira/proventos"], ["meta", "Meta", "#carteira/meta"], ["importar", "Importar", "#carteira/importar"]]
+    .forEach(([id, n, h]) => nav.append(el("a", { href: h, ...(id === v ? { "aria-current": "page" } : {}) }, n)));
+  cab.append(nav, el("span", { class: "ct-esp" }));
+  const quem = ["no seu perfil, só você vê"];
+  if (j && !j.vazia && j.importacoes && j.importacoes[0]) quem.push("importado " + fmtRel(j.importacoes[0].em));
+  if (j && j.resumo && j.resumo.corretoras.length) quem.push(j.resumo.corretoras.join(", "));
+  cab.append(el("span", { class: "ct-quem" }, quem.join(" · ")));
+  if (v !== "importar" && j && !j.desligada) cab.append(el("a", { class: "dd-btn dd-btn--primary", href: "#carteira/importar" }, "Importar extratos"));
+  return cab;
+}
+function estadoCarteira(j) {
+  if (!j || j.erro) {
+    const b = el("button", { class: "dd-btn dd-btn--outline", type: "button" }, "Tentar de novo");
+    b.addEventListener("click", () => { invalidarCarteira(); renderCarteira(); });
+    return el("section", { class: "ct-card ct-vazio" }, el("h3", {}, "Não deu para abrir a carteira agora"), el("p", {}, "A leitura falhou. Seus dados continuam guardados."), b);
+  }
+  if (j.desligada) return el("section", { class: "ct-card ct-vazio", role: "status" }, el("h3", {}, "A carteira está desligada neste servidor"),
+    el("p", {}, "Falta a chave que cifra os dados (o secret CARTEIRA_KEY do Worker). Sem ela nada é importado nem gravado. Quem cuida do Lookout gera a chave com openssl rand -base64 32 e cola no painel da Cloudflare."));
+  return el("section", { class: "ct-card ct-vazio" }, el("h3", {}, "Sua carteira ainda está vazia"),
+    el("p", {}, "Exporte da Área do Investidor da B3 os extratos de Negociação, Movimentação e Proventos recebidos e solte os arquivos na tela de importar. O Lookout monta as posições, o preço médio, os proventos e a meta a partir deles."),
+    el("p", {}, "Os dados ficam cifrados na sua conta e só você vê."),
+    el("a", { class: "dd-btn dd-btn--primary", href: "#carteira/importar" }, "Importar extratos"));
+}
+function esqueletoCart() {
+  const k = el("div", { class: "ct-kpis" });
+  for (let i = 0; i < 4; i++) k.append(el("div", { class: "ct-card ct-kpi" }, esqueleto(2)));
+  return [k, el("div", { class: "ct-card" }, esqueleto(3)), el("div", { class: "ct-card" }, esqueleto(6))];
+}
+let renderCartGer = 0;
+async function renderCarteira() {
+  const box = $("carteira"), v = carteiraVista, g = ++renderCartGer;
+  if (!cartJ) { box.textContent = ""; box.append(cabCarteira(null), ...(v === "importar" ? [] : esqueletoCart())); if (v === "importar") desenharImportar(box, null); }
+  const j = await lerCarteira();
+  if (g !== renderCartGer || !inicio || carteiraVista !== v) return;
+  desenharCarteira(j);
+}
+function desenharCarteira(j) {
+  const box = $("carteira"), v = carteiraVista;
+  const rolar = window.scrollY;
+  box.textContent = "";
+  box.append(cabCarteira(j));
+  if (v === "importar") { desenharImportar(box, j); }
+  else if (!j || j.erro || j.desligada || (j.vazia && v !== "meta")) box.append(estadoCarteira(j));
+  else if (v === "geral") desenharGeral(box, j);
+  else if (v === "proventos") desenharProventos(box, j);
+  else if (v === "meta") desenharMeta(box, j);
+  atualizarPins();
+  window.scrollTo({ top: rolar });
+}
+
+/* Visão geral */
+let ctFiltro = "todas", ctBusca = "", ctOrdem = { campo: "valor", dir: -1 }, ctTodas = false;
+function desenharGeral(box, j) {
+  const r = j.resumo;
+  const k = el("div", { class: "ct-kpis" });
+  const kpi = (rot, val, cls, desc, pin) => el("div", { class: "ct-card ct-kpi" }, el("div", { class: "r" }, el("span", { class: "rotulo" }, rot), pin ? pinBtn(pin) : null), el("span", { class: "v " + (cls || "") }, val), el("span", { class: "d" }, desc));
+  const nc = r.corretoras.length;
+  k.append(
+    kpi("Patrimônio em bolsa", rs(r.patrimonio), "", `${r.papeis} ${r.papeis === 1 ? "papel" : "papéis"} · ${nc} ${nc === 1 ? "corretora" : "corretoras"}${r.semCotacao ? ` · ${r.semCotacao} sem cotação` : ""}`, "carteira-patrimonio"),
+    kpi("Resultado sobre o custo", rsS(r.resultado), clsS(r.resultado), `${pc(r.resultadoPct, true)} · custo ${rs(r.custo)}`),
+    kpi("Proventos em 12 meses", rs(r.prov12), "", `${pc(r.yoc)} sobre o custo · ${rs(r.media12)}/mês`),
+    kpi("Proventos em " + mesNome(r.mesAnterior.mes), rs(r.mesAnterior.total), "", `${r.mesAnterior.n} ${r.mesAnterior.n === 1 ? "pagamento" : "pagamentos"}${r.provDesde ? ` · desde ${r.provDesde.slice(0, 4)}: ${rs(r.provTotal)}` : ""}`));
+  box.append(k);
+  box.append(faixaMetaGeral(j));
+  const corpo = el("div", { class: "ct-corpo" }), esq = el("div", { class: "ct-col" }), dir = el("div", { class: "ct-col" });
+  // Como está dividido
+  const { faixa, fat, tot } = faixaClasses(r);
+  const div = cardEl("Como está dividido", { sub: "por valor atual" });
+  div.append(faixa, el("div", { class: "ct-legenda" }, ...fat.map(([k2, v2]) => el("span", {}, el("i", { class: "ct-c-" + k2 }), `${NOME_CLASSE[k2]} ${pc((v2 / tot) * 100)} · ${rs(v2)}`))));
+  esq.append(div, cardPosicoes(j));
+  // Lateral
+  const pm = cardEl("Proventos por mês", { pin: "carteira-proventos-mes" });
+  pm.append(...barrasMes(ultimos12(r), porMesMap(r), { destacarUltimo: true }), el("a", { href: "#carteira/proventos", class: "ct-volta" }, "Ver proventos"));
+  const top = provPorPapel(j, somarMes(r.hoje.slice(0, 7), -12), somarMes(r.hoje.slice(0, 7), -1)).slice(0, 5);
+  const quem = cardEl("Quem mais pagou em 12 meses");
+  quem.append(top.length ? el("div", { class: "ct-linhas" }, ...top.map(([t, v2]) => el("div", {}, papelBtn(t), el("span", { class: "ct-mono" }, rs(v2))))) : el("p", { class: "ct-nota" }, "Nenhum provento nos últimos 12 meses."));
+  const mov = cardEl("Movimentos recentes");
+  mov.append(el("div", { class: "ct-mov" }, ...(r.recentes || []).slice(0, 6).map((x) => el("div", {}, el("b", {}, ddmm(x.d)), " · " + (NOME_MOV[x.o] || x.o) + " · ", papelBtn(x.t),
+    " " + (x.v != null ? rs(x.v, true) : x.p != null ? `${qtd(x.q)} × ${rs(x.p, true)}` : x.q ? qtd(x.q) + (x.o === "emp" ? " emprestadas" : "") : "")))));
+  dir.append(pm, quem, mov);
+  if (r.alertas && r.alertas.length) {
+    const al = cardEl("Alertas", { sub: String(r.alertas.length), pin: "carteira-alertas" });
+    al.append(el("div", { class: "ct-linhas alertas" }, ...r.alertas.slice(0, 6).map((a) => el("div", {}, el("span", {}, ...textoAlerta(a))))));
+    dir.append(al);
+  } else dir.append((() => { const al = cardEl("Alertas", { sub: "nenhum agora", pin: "carteira-alertas" }); al.append(el("p", { class: "ct-nota" }, "Avisos de rendimento menor que o anterior, subscrição em carteira e papel com mais de 20% da carteira aparecem aqui.")); return al; })());
+  dir.append(el("div", { class: "ct-card suave" }, el("p", { class: "ct-nota" }, `Posições montadas a partir dos extratos da B3 (negociação, movimentação e proventos). Cotação do pregão do Lookout${j.cotacoes && j.cotacoes.b3 ? ", " + fmtRel(j.cotacoes.b3) : ""}, com atraso de até 30 min. Nada aqui é recomendação.`)));
+  corpo.append(esq, dir);
+  box.append(corpo);
+  box.append(maisDaCarteira(j));
+}
+function faixaMetaGeral(j) {
+  const m = j.meta, r = j.resumo;
+  const c = el("section", { class: "ct-card" });
+  if (!m || !m.definida) {
+    c.append(el("div", { class: "ct-tit" }, el("h3", {}, "Meta de renda"), el("span", { class: "ct-sub" }, `hoje ${rs(r.media12)}/mês em proventos`), el("span", { class: "ct-esp" }), el("a", { href: "#carteira/meta", class: "ct-volta" }, "Definir meta"), pinBtn("carteira-meta")),
+      el("p", { class: "ct-nota" }, "Escolha quanto quer receber por mês e quanto aporta. O Lookout mostra a data no ritmo atual, os marcos no caminho e o mês contra o plano."));
+    return c;
+  }
+  const g = el("div", { class: "ct-meta" }), esq = el("div", {}), dir = el("div", {});
+  esq.append(el("div", { class: "ct-tit" }, el("h3", {}, `Meta: ${rs(m.cfg.alvo)}/mês em proventos`), el("span", { class: "ct-sub" }, `${pc(m.pct)} · faltam ${rs(Math.max(0, m.cfg.alvo - m.rendaHoje))}/mês`), el("span", { class: "ct-esp" }), el("a", { href: "#carteira/meta", class: "ct-volta" }, "Simular"), pinBtn("carteira-meta")), barraMeta(m), fatosMeta(m));
+  dir.append(el("span", { class: "rotulo" }, "Evolução (12 meses)"), ...sparkProventos(r));
+  g.append(esq, dir); c.append(g);
+  return c;
+}
+function cardPosicoes(j) {
+  const c = el("section", { class: "ct-card ct-posicoes", id: "ct-posicoes" });
+  const classes = new Set(j.posicoes.map((p) => p.classe));
+  const filtros = [["todas", "Todas"], ["fii", "FIIs"], ["acao", "Ações"]];
+  if (classes.has("etf")) filtros.push(["etf", "ETFs"]);
+  if (["bdr", "subscricao", "outro"].some((x) => classes.has(x))) filtros.push(["outros", "Outros"]);
+  filtros.push(["encerradas", "Encerradas"]);
+  if (!filtros.some(([id]) => id === ctFiltro)) ctFiltro = "todas";
+  const seg = el("div", { class: "seg", role: "group", "aria-label": "Filtrar posições" });
+  const corpo = el("div", { style: "display:contents" });
+  filtros.forEach(([id, n]) => {
+    const b = el("button", { type: "button", "aria-pressed": String(ctFiltro === id) }, n);
+    b.addEventListener("click", () => { ctFiltro = id; ctTodas = false; seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); pintar(); });
+    seg.append(b);
+  });
+  const busca = el("input", { class: "dd-input", type: "search", placeholder: "papel ou nome", "aria-label": "Buscar papel", autocomplete: "off" });
+  busca.value = ctBusca;
+  busca.addEventListener("input", () => { ctBusca = busca.value; pintar(); });
+  c.append(el("div", { class: "ct-ferr" }, el("h3", {}, "Posições"), seg, el("span", { class: "ct-esp", style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Buscar"), busca)), corpo);
+  const pintar = () => { corpo.textContent = ""; corpo.append(...tabelaPosicoes(j, pintar)); };
+  pintar();
+  return c;
+}
+function tabelaPosicoes(j, repintar) {
+  const q = semAcento(ctBusca.trim().toLowerCase());
+  const passa = (p) => !q || semAcento((p.t + " " + (p.nome || "")).toLowerCase()).includes(q);
+  const out = [];
+  if (ctFiltro === "encerradas") {
+    const l = (j.resumo.encerradas || []).filter(passa);
+    const vis = ctTodas ? l : l.slice(0, 10);
+    const tab = el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Papel", "Período", "Resultado", "Proventos", "Total"].map((h, k) => el("th", { class: k ? "" : "e", scope: "col" }, h)))));
+    const tb = el("tbody");
+    vis.forEach((e) => tb.append(el("tr", {}, el("td", { class: "e" }, papelBtn(e.t, e.nome)), el("td", { class: "mono" }, periodo(e.de, e.ate)), el("td", { class: "mono " + clsS(e.resultado) }, rsS(e.resultado)), el("td", { class: "mono" }, rs(e.proventos)), el("td", { class: "mono " + clsS(e.total) }, rsS(e.total)))));
+    if (!vis.length) tb.append(el("tr", {}, el("td", { class: "e", colspan: "5" }, "Nenhuma posição encerrada.")));
+    tab.append(tb);
+    const lista = el("div", { class: "ct-lista-cel" }, ...vis.map((e) => el("div", { class: "ct-lin" }, papelBtn(e.t, e.nome), el("span", { class: "ct-mono " + clsS(e.total) }, rsS(e.total)), el("small", {}, periodo(e.de, e.ate) + " · proventos " + rs(e.proventos)), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)))));
+    out.push(el("div", { class: "ct-caixa" }, tab), lista, rodapeTab(vis.length, l.length, repintar, "Encerradas com histórico de negócio, com o resultado realizado e os proventos recebidos."));
+    return out;
+  }
+  const outros = new Set(["bdr", "subscricao", "outro"]);
+  let l = j.posicoes.filter((p) => (ctFiltro === "todas" || p.classe === ctFiltro || (ctFiltro === "outros" && outros.has(p.classe))) && passa(p));
+  const { campo, dir } = ctOrdem;
+  l = l.slice().sort((a, b) => (campo === "t" ? a.t.localeCompare(b.t) * dir : ((a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir));
+  const vis = ctTodas ? l : l.slice(0, 10);
+  const COLS = [["t", "Papel"], ["q", "Qtd"], ["pm", "Preço médio"], ["preco", "Atual"], ["valor", "Valor"], ["resPct", "Resultado"], ["prov12", "Prov. 12m"], ["yoc", "DY s/ custo"], [null, "Corretora"]];
+  const tr = el("tr");
+  COLS.forEach(([k, n], i) => {
+    const th = el("th", { scope: "col", class: i === 0 || !k ? "e" : "" });
+    if (k) {
+      if (campo === k) th.setAttribute("aria-sort", dir > 0 ? "ascending" : "descending");
+      const b = el("button", { type: "button" }, n);
+      b.addEventListener("click", () => { ctOrdem = campo === k ? { campo: k, dir: -dir } : { campo: k, dir: k === "t" ? 1 : -1 }; repintar(); });
+      th.append(b);
+    } else th.textContent = n;
+    tr.append(th);
+  });
+  const tb = el("tbody");
+  vis.forEach((p) => {
+    const nome = nomeDoPapel(p);
+    const papel = el("td", { class: "e" }, papelBtn(p.t, nome), nome ? el("span", { class: "ct-nome", title: nome }, nome) : null);
+    if (p.emprestadas) papel.append(" ", tagEl("em empréstimo", "", `${qtd(p.emprestadas)} emprestadas; continuam suas`));
+    if (p.semCotacao) papel.append(" ", tagEl("sem cotação", "", "Fora das tabelas do pregão do Lookout; o valor usa o preço médio"));
+    tb.append(el("tr", {}, papel, el("td", { class: "mono" }, qtd(p.q)), el("td", { class: "mono" }, rs(p.pm, true)), el("td", { class: "mono" }, p.preco == null ? "–" : rs(p.preco, true)),
+      el("td", { class: "mono" }, rs(p.valor)), el("td", { class: "mono " + clsS(p.resPct) }, pc(p.resPct, true)), el("td", { class: "mono" }, p.prov12 ? rs(p.prov12) : "–"), el("td", { class: "mono" }, p.yoc == null ? "–" : pc(p.yoc)),
+      el("td", { class: "e" }, ...p.corretoras.map((x) => tagEl(x)))));
+  });
+  if (!vis.length) tb.append(el("tr", {}, el("td", { class: "e", colspan: "9" }, ctBusca ? "Nenhum papel com essa busca." : "Nenhuma posição nesta classe.")));
+  const tab = el("table", { class: "ct-tab" }, el("thead", {}, tr), tb);
+  const lista = el("div", { class: "ct-lista-cel" }, ...vis.map((p) => el("div", { class: "ct-lin" }, papelBtn(p.t, nomeDoPapel(p)), el("span", { class: "ct-mono" }, rs(p.valor)),
+    el("small", {}, `${qtd(p.q)} ${p.classe === "fii" ? "cotas" : p.classe === "acao" ? "ações" : "un."} · PM ${rs(p.pm, true)}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(p.resPct) }, pc(p.resPct, true)))));
+  out.push(el("div", { class: "ct-caixa" }, tab), lista, rodapeTab(vis.length, l.length, repintar, "clique no papel abre a ficha"));
+  return out;
+}
+function periodo(de, ate) { if (!de) return "–"; const a = de.slice(0, 4), b = ate ? ate.slice(0, 4) : a; return a === b ? mesC(ate.slice(0, 7)) : `${a} – ${mesC(ate.slice(0, 7))}`; }
+function rodapeTab(n, total, repintar, dica) {
+  const pe = el("div", { class: "ct-pe" }, el("span", {}, `Mostrando ${n} de ${total}${dica ? " · " + dica : ""}`));
+  if (total > 10) {
+    const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, ctTodas ? "Mostrar menos" : `Ver todas (${total})`);
+    b.addEventListener("click", () => { ctTodas = !ctTodas; repintar(); });
+    pe.append(b);
+  }
+  return pe;
+}
+function maisDaCarteira(j) {
+  const r = j.resumo;
+  const box = el("div", { class: "ct-mais", id: "ct-mais" });
+  // Agenda
+  const ag = cardEl("Agenda", { sub: "o que já se sabe", pin: "carteira-agenda" });
+  ag.append(...[].concat(agendaEl(r, 8)));
+  // Rentabilidade
+  const re = cardEl("Rentabilidade", { sub: "preço + proventos", pin: "carteira-rentabilidade" });
+  re.append(...[].concat(rentabEl(r)));
+  // Renda por classe e segmento
+  const rc = cardEl("Renda por classe e segmento", { sub: "12 meses" });
+  const rl = Object.entries(r.rendaClasse || {}).sort((a, b) => b[1] - a[1]);
+  const totR = rl.reduce((s, [, v]) => s + v, 0) || 1;
+  rc.append(rl.length ? el("div", { class: "ct-linhas" }, ...rl.map(([k2, v2]) => el("div", { style: "flex-direction:column;align-items:stretch;gap:0" },
+    el("div", { style: "display:flex;justify-content:space-between;gap:10px" }, el("span", {}, nomeRenda(k2)), el("span", { class: "ct-mono" }, `${rs(v2)} · ${pc((v2 / totR) * 100)}`)),
+    el("div", { class: "ct-mini" }, el("span", { style: `width:${(v2 / totR) * 100}%` }))))) : el("p", { class: "ct-nota" }, "Nenhum provento nos últimos 12 meses."));
+  // Por corretora
+  const pcor = cardEl("Por corretora");
+  const tc = el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Corretora", "Papéis", "Valor", "Prov. 12m"].map((h, k) => el("th", { class: k ? "" : "e", scope: "col" }, h)))),
+    el("tbody", {}, ...(r.porCorretora || []).map((x) => el("tr", {}, el("td", { class: "e" }, x.corretora), el("td", { class: "mono" }, String(x.papeis)), el("td", { class: "mono" }, rs(x.valor)), el("td", { class: "mono" }, rs(x.prov12))))));
+  pcor.append(el("div", { class: "ct-caixa" }, tc), el("p", { class: "ct-nota" }, "Transferências entre corretoras vêm da Movimentação e não contam como compra ou venda."));
+  // Aportes
+  const ap = cardEl("Aportes mês a mês", { sub: "compras menos vendas" });
+  const apMax = Math.max(1, ...r.aportes.map((x) => Math.abs(x.liquido)));
+  const barras = el("div", { class: "ct-barras", role: "img", "aria-label": "Aportes por mês: " + r.aportes.map((x) => mesC(x.mes) + " " + rsS(x.liquido)).join(", ") });
+  r.aportes.forEach((x) => barras.append(el("div", { class: x.liquido ? "" : "vazio-b", title: `${mesL(x.mes)}: compras ${rs(x.compras)}, vendas ${rs(x.vendas)}`, style: `height:${x.liquido ? Math.max(4, (Math.abs(x.liquido) / apMax) * 100) : 4}%` }, x.liquido ? el("span", { style: `height:100%;background:${x.liquido < 0 ? "var(--err)" : "var(--primary)"}` }) : null)));
+  const negativos = r.aportes.filter((x) => x.liquido < 0).map((x) => mesC(x.mes));
+  ap.append(barras, el("div", { class: "ct-barras-pe pontas" }, el("span", {}, mesC(r.aportes[0].mes)), negativos.length ? el("span", {}, "venda líquida em " + negativos.join(", ")) : null, el("span", {}, mesC(r.aportes[r.aportes.length - 1].mes) + (j.meta && j.meta.definida ? " · plano " + rs(j.meta.cfg.aporte) : ""))));
+  // Encerradas
+  const en = cardEl("Encerradas", { sub: "resultado realizado, com proventos" });
+  const el5 = (r.encerradas || []).slice(0, 5);
+  en.append(el5.length ? el("div", { class: "ct-caixa" }, el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Papel", "Período", "Resultado", "Total"].map((h, k) => el("th", { class: k ? "" : "e", scope: "col" }, h)))),
+    el("tbody", {}, ...el5.map((e) => el("tr", {}, el("td", { class: "e" }, papelBtn(e.t, e.nome)), el("td", { class: "mono" }, periodo(e.de, e.ate)), el("td", { class: "mono " + clsS(e.resultado) }, rsS(e.resultado)), el("td", { class: "mono " + clsS(e.total), title: "com " + rs(e.proventos) + " de proventos" }, rsS(e.total))))))) : el("p", { class: "ct-nota" }, "Nenhuma posição encerrada."));
+  if ((r.encerradas || []).length > 5) {
+    const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, `Ver as ${r.encerradas.length} encerradas`);
+    b.addEventListener("click", () => { ctFiltro = "encerradas"; ctTodas = true; desenharCarteira(cartJ); requestAnimationFrame(() => { const p = $("ct-posicoes"); if (p) p.scrollIntoView({ block: "start" }); }); });
+    en.append(b);
+  }
+  // IR
+  const ir = cardEl("Imposto de renda", { sub: "só para conferir; o cálculo oficial é seu ou do contador" });
+  const x = r.ir;
+  ir.append(el("div", { class: "ct-ir" },
+    el("div", {}, el("span", {}, "Vendas em ações em " + mesNome(x.mes)), el("span", { class: "ct-mono" }, rs(x.vendasAcoes)), el("small", {}, x.vendasAcoes > 20000 ? "passou de R$ 20 mil: lucro tributável" : "isento até R$ 20 mil no mês")),
+    el("div", {}, el("span", {}, "Lucro em FII em " + mesNome(x.mes)), el("span", { class: "ct-mono " + clsS(x.lucroFii) }, rsS(x.lucroFii)), el("small", {}, "20% sobre o lucro, sem isenção")),
+    el("div", {}, el("span", {}, "JCP recebido em " + x.ano), el("span", { class: "ct-mono" }, rs(x.jcpAno, true)), el("small", {}, "tributado na fonte, vai na declaração")),
+    el("div", {}, el("span", {}, "Prejuízo a compensar"), el("span", { class: "ct-mono" }, rs(x.prejuizoAcoes)), el("small", {}, `ações, acumulado${x.prejuizoFii ? " · FIIs " + rs(x.prejuizoFii) : ""}`))),
+    el("p", { class: "ct-nota" }, "Conta simplificada pelo preço médio, sem day trade, custos de corretagem nem IR retido na fonte das vendas."));
+  box.append(ag, re, rc, pcor, ap, en, ir);
+  return box;
+}
+function nomeRenda(k) {
+  if (k.startsWith("fii:")) return "FIIs · " + k.slice(4);
+  return { acao: "Ações (dividendo e JCP)", etf: "ETFs", bdr: "BDRs", subscricao: "Recibos de subscrição", outro: "Outros" }[k] || k;
+}
+function agendaEl(r, n) {
+  const l = (r.agenda || []).slice(0, n);
+  if (!l.length) return el("p", { class: "ct-nota" }, "Nada anunciado por enquanto. Rendimentos dos FIIs da carteira e direitos de subscrição aparecem aqui.");
+  return [el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {},
+      el("span", {}, x.o === "subscricao" ? tagEl("subscrição", "err") : "Rendimento", " ", papelBtn(x.t), el("small", {}, x.data ? " " + ddmm(x.data) : x.o === "subscricao" ? " prazo a confirmar" : " data a confirmar")),
+      el("span", { class: "ct-mono" }, x.o === "subscricao" ? qtd(x.q) + " direitos" : "≈ " + rs(x.valor))))),
+    el("p", { class: "ct-nota" }, "Rendimentos estimados pelo último informe da CVM vezes a sua quantidade. A CVM não traz a data de pagamento, então ela fica a confirmar.")];
+}
+function rentabEl(r) {
+  const x = r.rentabilidade;
+  if (!x) return el("p", { class: "ct-nota" }, "Sem negócios suficientes para calcular.");
+  const tab = el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, el("th", { class: "e", scope: "col" }, ""), el("th", { scope: "col" }, "12 meses"), el("th", { scope: "col" }, r.hoje.slice(0, 4)), el("th", { scope: "col" }, "Desde " + mesC(x.desde)))),
+    el("tbody", {}, el("tr", {}, el("td", { class: "e" }, "Carteira"), ...[x.m12, x.ano, x.inicio].map((v) => el("td", { class: "mono " + clsS(v) }, pc(v, true))))));
+  return [el("div", { class: "ct-caixa" }, tab),
+    el("p", { class: "ct-nota" }, "Pelo método de cotas (TWR), que tira o efeito dos aportes. Os meses passados usam o preço da sua última negociação de cada papel; o mês atual usa a cotação do pregão."),
+    el("p", { class: "ct-nota" }, "Comparação com IFIX, CDI e Ibovespa em breve: o Lookout ainda não guarda o histórico desses índices.")];
+}
+
+/* Proventos */
+let provPeriodo = "12m", provPapel = "", provTipo = "", provMostrar = 20, provTodosPapeis = false;
+function periodoProv(r) {
+  const atual = r.hoje.slice(0, 7), ano = r.hoje.slice(0, 4);
+  if (provPeriodo === "ano") return { de: ano + "-01", ate: atual, nome: "em " + ano, meses: Array.from({ length: 12 }, (_, k) => ano + "-" + String(k + 1).padStart(2, "0")) };
+  if (provPeriodo === "anterior") { const a = String(Number(ano) - 1); return { de: a + "-01", ate: a + "-12", nome: "em " + a, meses: Array.from({ length: 12 }, (_, k) => a + "-" + String(k + 1).padStart(2, "0")) }; }
+  if (provPeriodo === "inicio") { const de = r.provDesde || atual; const n = idxMes(atual) - idxMes(de) + 1; return { de, ate: atual, nome: "desde " + mesL(de), meses: Array.from({ length: n }, (_, k) => somarMes(de, k)) }; }
+  const de = somarMes(atual, -12), ate = somarMes(atual, -1);
+  return { de, ate, nome: "em 12 meses", meses: Array.from({ length: 12 }, (_, k) => somarMes(de, k)), mais: atual };
+}
+function desenharProventos(box, j) {
+  const r = j.resumo, per = periodoProv(r);
+  const ano = r.hoje.slice(0, 4);
+  const seg = el("div", { class: "seg", role: "group", "aria-label": "Período" });
+  [["12m", "12 meses"], ["ano", ano], ["anterior", String(Number(ano) - 1)], ["inicio", "Desde o início"]].forEach(([id, n]) => {
+    const b = el("button", { type: "button", "aria-pressed": String(provPeriodo === id) }, n);
+    b.addEventListener("click", () => { provPeriodo = id; provMostrar = 20; desenharCarteira(j); });
+    seg.append(b);
+  });
+  box.append(el("div", { class: "ct-ferr" }, seg, el("span", { class: "ct-quem" }, `${fmtNum(r.provN, 0)} pagamentos${r.provDesde ? " desde " + mesL(r.provDesde) : ""}`)));
+  const noPer = (d) => { const m = d.slice(0, 7); return m >= per.de && m <= (per.mais || per.ate); };
+  const lista = (j.proventos || []).filter((p) => noPer(p[0]));
+  const soFechado = lista.filter((p) => p[0].slice(0, 7) <= per.ate);
+  const total = soFechado.reduce((s, p) => s + p[5], 0);
+  const por = porMesMap(r);
+  const comDado = per.meses.filter((m) => m <= per.ate && (por.get(m) || {}).total);
+  const nMeses = provPeriodo === "12m" ? 12 : Math.max(1, per.meses.filter((m) => m <= per.ate && m >= (r.provDesde || m)).length);
+  const melhor = comDado.reduce((b, m) => (!b || por.get(m).total > por.get(b).total ? m : b), "");
+  const tipos = {};
+  soFechado.forEach((p) => { const k = p[2] === "rend" || p[2] === "div" || p[2] === "jcp" ? p[2] : "outro"; tipos[k] = (tipos[k] || 0) + p[5]; });
+  const tot = total || 1;
+  const yc = (cls) => { const ps = j.posicoes.filter((p) => cls.includes(p.classe) && p.custo); const c = ps.reduce((s, p) => s + p.custo, 0); return c ? (ps.reduce((s, p) => s + p.prov12, 0) / c) * 100 : null; };
+  const k = el("div", { class: "ct-kpis" });
+  const kpi = (rot, v, d) => el("div", { class: "ct-card ct-kpi" }, el("span", { class: "rotulo" }, rot), v, el("span", { class: "d" }, d));
+  k.append(
+    kpi("Recebido " + per.nome, el("span", { class: "v" }, rs(total)), provPeriodo === "12m" ? `${mesL(per.de)} a ${mesL(per.ate)}` : provPeriodo === "ano" ? `até ${Number(r.hoje.slice(8, 10))} de ${mesNome(r.hoje)}` : `${soFechado.length} pagamentos`),
+    kpi("Média por mês", el("span", { class: "v" }, rs(total / nMeses)), melhor ? `melhor mês: ${mesC(melhor)}, ${rs(por.get(melhor).total)}` : "–"),
+    kpi("Por tipo", el("span", { class: "tipos" }, ...[["rend", "Rendimento de FII"], ["div", "Dividendo"], ["jcp", "JCP"], ["outro", "Outros"]].filter(([t]) => tipos[t]).map(([t, n], i) => el("span", { style: "display:block" }, n + " ", el("b", { class: "ct-mono" }, pc((tipos[t] / tot) * 100))))), ""),
+    kpi("Yield sobre o custo", el("span", { class: "v" }, pc(r.yoc)), `12 meses · FIIs ${pc(yc(["fii"]))}, ações ${pc(yc(["acao"]))}`));
+  box.append(k);
+  // Barras
+  const bc = cardEl(provPeriodo === "inicio" && per.meses.length > 24 ? "Por ano" : "Por mês " + per.nome, { extra: el("span", { class: "ct-legenda" }, el("span", {}, el("i", { class: "ct-c-rend" }), "Rendimento"), el("span", {}, el("i", { class: "ct-c-div" }), "Dividendo"), el("span", {}, el("i", { class: "ct-c-jcp" }), "JCP"), el("span", {}, el("i", { class: "ct-c-outros" }), "Outros")) });
+  if (provPeriodo === "inicio" && per.meses.length > 24) {
+    const anos = new Map();
+    for (const m of per.meses) { const a = m.slice(0, 4); const x = por.get(m); const y = anos.get(a) || { total: 0, rend: 0, div: 0, jcp: 0, amort: 0, outro: 0 }; if (x) for (const kk of Object.keys(y)) y[kk] += x[kk] || 0; anos.set(a, y); }
+    bc.append(...barrasMes([...anos.keys()], anos, { alto: true, tipos: true, rotulos: (a, x) => `${a} · ${fmtNum((x && x.total) || 0, 0)}` }));
+  } else {
+    const atual = r.hoje.slice(0, 7);
+    bc.append(...barrasMes(per.meses, por, { alto: true, tipos: true, rotulos: (m, x) => (m > atual ? mesC(m).slice(0, 3) : m === atual && !(x && x.total) ? mesC(m).slice(0, 3) + " · a receber" : `${mesC(m).slice(0, 3)} · ${fmtNum((x && x.total) || 0, 0)}`) }));
+  }
+  box.append(bc);
+  // Tabela e lateral
+  const dois = el("div", { class: "ct-dois" }), esq = el("div", { class: "ct-col" }), dir = el("div", { class: "ct-col" });
+  const tc = el("section", { class: "ct-card" });
+  const ip = el("input", { class: "dd-input", type: "search", placeholder: "todos", "aria-label": "Filtrar por papel", autocomplete: "off" }); ip.value = provPapel;
+  const st = el("select", { class: "dd-input", "aria-label": "Filtrar por tipo" }, ...[["", "Todos"], ["rend", "Rendimento"], ["div", "Dividendo"], ["jcp", "JCP"], ["amort", "Amortização"], ["outro", "Outros"]].map(([v, n]) => { const o = el("option", { value: v }, n); if (v === provTipo) o.selected = true; return o; }));
+  const caixa = el("div", { style: "display:contents" });
+  tc.append(el("div", { class: "ct-ferr" }, el("h3", {}, "Pagamentos"), el("span", { style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Papel"), ip), el("label", {}, el("span", {}, "Tipo"), st)), caixa);
+  const pintar = () => {
+    caixa.textContent = "";
+    const q = provPapel.trim().toUpperCase();
+    const l = lista.filter((p) => (!q || p[1].includes(q)) && (!provTipo || (provTipo === "outro" ? !["rend", "div", "jcp", "amort"].includes(p[2]) : p[2] === provTipo)));
+    const vis = l.slice(0, provMostrar);
+    const tab = el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Pagamento", "Papel", "Tipo", "Qtd", "Por cota", "Líquido", "Corretora"].map((h, i) => el("th", { class: [0, 1, 2, 6].includes(i) ? "e" : "", scope: "col" }, h)))),
+      el("tbody", {}, ...vis.map((p) => el("tr", {}, el("td", { class: "e mono" }, dataBr(p[0])), el("td", { class: "e" }, papelBtn(p[1])), el("td", { class: "e" }, NOME_PROV[p[2]] || "Outro"),
+        el("td", { class: "mono" }, p[3] == null ? "–" : qtd(p[3])), el("td", { class: "mono" }, p[4] == null ? "–" : "R$ " + fmtNum(p[4], p[4] < 1 ? 3 : 2)), el("td", { class: "mono" }, rs(p[5], true)), el("td", { class: "e" }, p[6] ? tagEl(p[6]) : "")))));
+    if (!vis.length) tab.querySelector("tbody").append(el("tr", {}, el("td", { class: "e", colspan: "7" }, "Nenhum pagamento com esse filtro.")));
+    const pe = el("div", { class: "ct-pe" }, el("span", {}, `Mostrando ${vis.length} de ${l.length}`));
+    if (l.length > vis.length) { const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, "Carregar mais"); b.addEventListener("click", () => { provMostrar += 50; pintar(); }); pe.append(b); }
+    caixa.append(el("div", { class: "ct-caixa" }, tab), pe);
+  };
+  ip.addEventListener("input", () => { provPapel = ip.value; provMostrar = 20; pintar(); });
+  st.addEventListener("change", () => { provTipo = st.value; provMostrar = 20; pintar(); });
+  pintar();
+  esq.append(tc);
+  const pp = cardEl("Por papel " + per.nome);
+  const pl = provPorPapel(j, per.de, per.mais || per.ate);
+  const maxP = pl.length ? pl[0][1] : 1;
+  const visP = provTodosPapeis ? pl : pl.slice(0, 8);
+  pp.append(pl.length ? el("div", { class: "ct-linhas" }, ...visP.map(([t, v]) => el("div", { style: "flex-direction:column;align-items:stretch;gap:0" }, el("div", { style: "display:flex;justify-content:space-between;gap:10px" }, papelBtn(t), el("span", { class: "ct-mono" }, rs(v))), el("div", { class: "ct-mini" }, el("span", { style: `width:${(v / maxP) * 100}%` }))))) : el("p", { class: "ct-nota" }, "Nada no período."));
+  if (pl.length > 8) { const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, provTodosPapeis ? "Mostrar menos" : `Ver os ${pl.length}`); b.addEventListener("click", () => { provTodosPapeis = !provTodosPapeis; desenharCarteira(j); }); pp.append(b); }
+  const ar = cardEl("A receber", { pin: "carteira-pagamentos" });
+  ar.append(...aReceberEl(r, j, 8));
+  dir.append(ar, pp);
+  dois.append(esq, dir);
+  box.append(dois);
+}
+function aReceberEl(r, j, n) {
+  const l = (r.aReceber || []).slice(0, n);
+  const ref = j.cotacoes && j.cotacoes.cvm;
+  const out = [el("p", { class: "ct-nota" }, `Rendimentos que os FIIs da carteira ainda não pagaram este mês, estimados pelo último informe da CVM${ref ? " (" + mesC(ref) + ")" : ""} vezes a sua quantidade. A data fica a confirmar.`)];
+  out.push(l.length ? el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " data a confirmar")), el("span", { class: "ct-mono" }, "≈ " + rs(x.valor, x.valor < 100))))) : el("p", { class: "ct-nota" }, "Nada a receber pelo que o Lookout conhece agora."));
+  return out;
+}
+
+/* Meta */
+const numBr = (t) => { const s = String(t || "").replace(/[^\d,.-]/g, ""); if (!s) return null; const n = Number(s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(\.\d{3})+$/.test(s) ? s.replace(/\./g, "") : s); return Number.isFinite(n) ? n : null; };
+function desenharMeta(box, j) {
+  const m = j.meta, cfg = m.cfg;
+  const f = el("section", { class: "ct-card" });
+  const campo = (id, rot, val, ph, sufixo) => el("div", {}, el("label", { class: "rotulo", for: id }, rot), el("div", { class: "campo" }, el("input", { class: "dd-input", id, type: "text", inputmode: "decimal", value: val, placeholder: ph, autocomplete: "off" }), sufixo ? el("span", {}, sufixo) : null));
+  const yc = m.yieldCarteira;
+  const chk = el("input", { type: "checkbox", id: "mt-reinv" }); chk.checked = cfg.reinvestir !== false;
+  const salvar = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, "Salvar meta");
+  const aviso = el("p", { class: "ct-nota", role: "status" });
+  const form = el("div", { class: "ct-form" },
+    campo("mt-alvo", "Meta de renda", cfg.alvo != null ? fmtNum(cfg.alvo, 0) : "", "5.000", "R$ por mês em proventos"),
+    campo("mt-aporte", "Aporte mensal", cfg.aporte != null ? fmtNum(cfg.aporte, 0) : "", "2.000", "R$"),
+    campo("mt-yield", "Yield esperado", cfg.yield != null ? fmtNum(cfg.yield * 100, 1) : "", yc ? fmtNum(yc * 100, 1) + " (o da carteira)" : "10,0", "% ao ano"),
+    el("div", {}, el("span", { class: "rotulo", style: "display:block;margin-bottom:6px" }, "Proventos"), el("label", { class: "check", for: "mt-reinv" }, chk, "reinvestir tudo")),
+    salvar);
+  salvar.addEventListener("click", async () => {
+    const alvo = numBr($("mt-alvo").value), aporte = numBr($("mt-aporte").value), y = numBr($("mt-yield").value);
+    if (!alvo || alvo <= 0) { aviso.textContent = "Escreva quanto quer receber por mês."; $("mt-alvo").focus(); return; }
+    salvar.disabled = true; aviso.textContent = "Salvando…";
+    try {
+      const r = await apiCart("PUT", "/meta", { alvo, aporte: aporte || 0, yield: y ? y / 100 : null, reinvestir: chk.checked });
+      if (cartJ) cartJ.meta = r.meta;
+      [...wDados.keys()].forEach((k) => { if (k.startsWith("carteira-")) wDados.delete(k); });
+      desenharCarteira(cartJ || { ...j, meta: r.meta });
+      const a = $("carteira").querySelector('[role="status"]'); if (a) a.textContent = "Meta salva.";
+    } catch (e) { aviso.textContent = "Não deu para salvar: " + e.message; salvar.disabled = false; }
+  });
+  f.append(form, aviso);
+  if (j.vazia) f.append(el("p", { class: "ct-nota" }, "Sem extratos importados, a conta parte do zero e usa o yield que você escrever."));
+  box.append(f);
+  if (!m.definida) { box.append(el("section", { class: "ct-card suave" }, el("p", { class: "ct-nota" }, "Escreva a renda por mês que quer ter em proventos e quanto pretende aportar. A meta fica guardada cifrada na sua carteira."))); return; }
+  if (!(m.yieldUsado > 0)) { box.append(el("section", { class: "ct-card suave" }, el("p", { class: "ct-nota" }, "Ainda não há proventos para calcular o yield da carteira. Escreva um yield esperado para ver a projeção."))); return; }
+  // Barra
+  const b = el("section", { class: "ct-card" });
+  b.append(el("div", { class: "ct-tit" }, el("span", {}, "Hoje: ", el("b", { class: "ct-mono" }, rs(m.rendaHoje) + "/mês"), ` · ${pc(m.pct)} da meta`), el("span", { class: "ct-esp" }), el("span", {}, "Faltam ", el("b", { class: "ct-mono" }, rs(Math.max(0, cfg.alvo - m.rendaHoje)) + "/mês")), pinBtn("carteira-meta")), barraMeta(m));
+  box.append(b);
+  // Cenários
+  const y = m.yieldUsado;
+  const cen = el("div", { class: "ct-cen" });
+  const c1 = (rot, v, d) => el("div", { class: "ct-card" }, el("span", { class: "rotulo" }, rot), el("span", { class: "v ct-mono" }, v), el("span", { class: "ct-nota" }, d));
+  cen.append(
+    c1("No ritmo atual", m.quando ? mesL(m.quando) : "mais de 40 anos", `${m.quando ? duracao(m.mesesAteAlvo) + " · " : ""}${rs(cfg.aporte)}/mês${cfg.reinvestir ? " + reinvestindo" : ""}, yield ${pc(y * 100)}`),
+    c1("Se o yield cair 2 pontos", m.cenarioBaixo.quando ? mesL(m.cenarioBaixo.quando) : "mais de 40 anos", `yield ${pc(m.cenarioBaixo.yield * 100)} · patrimônio precisa chegar a ${rs(m.cenarioBaixo.patrimonio)}`),
+    c1("Para chegar em 10 anos", m.aporte10anos != null ? rs(m.aporte10anos) + "/mês" : "–", m.aporte10anos === 0 ? "nem precisa de aporte: o reinvestimento já leva lá" : `de aporte, mantendo o yield${cfg.reinvestir ? " e reinvestindo" : ""}`));
+  box.append(cen);
+  // Trajetória
+  const t = cardEl("Trajetória", { sub: "proventos por mês, realizado e projetado" });
+  t.append(el("div", { html: grafMeta(m) }), el("div", { class: "ct-leg-graf" }, el("span", {}, el("i", {}), "realizado (média móvel de 12 meses)"), el("span", {}, el("i", { class: "tr" }), "projetado, yield " + pc(y * 100)), el("span", {}, el("i", { class: "bx" }), "yield " + pc(m.cenarioBaixo.yield * 100))),
+    el("p", { class: "ct-nota" }, "Projeção simples: aporte fixo, proventos reinvestidos ao mesmo yield, sem inflação nem imposto. Serve para ver a ordem de grandeza, não para prometer data."));
+  box.append(t);
+  // Marcos e mês
+  const dois = el("div", { class: "ct-mais dois" });
+  const mc = cardEl("Marcos");
+  mc.append(el("div", { class: "ct-caixa" }, el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Proventos/mês", "Patrimônio", "Quando"].map((h, i) => el("th", { class: i ? "" : "e", scope: "col" }, h)))),
+    el("tbody", {}, ...m.marcos.map((x) => el("tr", {}, el("td", { class: "e mono" }, rs(x.renda)), el("td", { class: "mono" }, rs(x.patrimonio)), el("td", { class: "mono " + (x.atingido ? "ct-pos" : "") }, x.atingido ? "já chegou" : x.quando ? (x.meses <= 2 ? "quase · " : "") + mesC(x.quando) : "mais de 40 anos")))))));
+  const mp = cardEl("Este mês contra o plano");
+  const p = m.mesPlano;
+  mp.append(el("div", { class: "ct-linhas" }, linhaEl("Aporte planejado", rs(p.planejado)), linhaEl("Aportado (compras menos vendas)", rs(p.aportado)), linhaEl("Proventos recebidos", rs(p.proventos)),
+    linhaEl("Reinvestidos", rs(p.reinvestidos)), el("div", {}, el("span", {}, "Contra o plano"), el("span", { class: "ct-mono " + clsS(p.contra) }, rsS(p.contra)))),
+    el("p", { class: "ct-nota" }, cfg.reinvestir ? "O plano conta o aporte mais os proventos do mês reinvestidos. Atualiza a cada importação dos extratos." : "Atualiza a cada importação dos extratos."));
+  dois.append(mc, mp);
+  box.append(dois);
+}
+function grafMeta(m) {
+  const W = 1200, H = 300, x0 = 56, x1 = 1180, y0 = 262, y1 = 24;
+  const alvo = m.cfg.alvo;
+  const real = m.realizado || [];
+  const ini = real.length ? real[0][0] : m.mes;
+  const proj = m.projetado || [], baixo = m.projetadoBaixo || [];
+  const fim = somarMes(m.mes, Math.max(proj.length, baixo.length, 1) - 1);
+  const n = Math.max(1, idxMes(fim) - idxMes(ini));
+  const vmax = Math.max(alvo * 1.08, ...real.map((r) => r[1]));
+  const X = (ym) => x0 + ((idxMes(ym) - idxMes(ini)) / n) * (x1 - x0);
+  const Y = (v) => y0 - (Math.min(v, vmax) / vmax) * (y0 - y1);
+  const pts = (l) => { const passo = Math.max(1, Math.ceil(l.length / 260)); return l.filter((_, k) => k % passo === 0 || k === l.length - 1).map(([ym, v]) => `${X(ym).toFixed(1)},${Y(v).toFixed(1)}`).join(" "); };
+  const serie = (vals) => vals.map((v, k) => [somarMes(m.mes, k), v]);
+  const anos = [];
+  const a0 = Number(ini.slice(0, 4)), a1 = Number(fim.slice(0, 4));
+  const passoA = Math.max(1, Math.ceil((a1 - a0) / 6));
+  for (let a = a0; a <= a1; a += passoA) anos.push(a);
+  const meio = Math.round(alvo / 2);
+  let s = `<svg class="ct-graf" viewBox="0 0 ${W} ${H}" role="img" aria-label="Proventos mensais de ${mesL(ini)} até ${m.quando ? "a meta em " + mesL(m.quando) : mesL(fim)}">`;
+  s += `<line x1="${x0}" y1="${y1}" x2="${x0}" y2="${y0}" stroke="var(--border)"/><line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y0}" stroke="var(--border)"/>`;
+  s += `<line x1="${x0}" y1="${Y(alvo)}" x2="${x1}" y2="${Y(alvo)}" stroke="var(--warn)" stroke-dasharray="4 4"/><text x="${x0 + 6}" y="${Y(alvo) - 6}" class="meta-t">meta ${escHtml(rs(alvo))}</text>`;
+  [[0, "0"], [meio, fmtNum(meio, 0)], [alvo, fmtNum(alvo, 0)]].forEach(([v, t]) => { s += `<text x="4" y="${Y(v) + 4}">${t}</text>`; });
+  anos.forEach((a) => { const xa = X(a + "-01"); if (xa >= x0 - 1) s += `<text x="${Math.min(x1 - 30, xa).toFixed(1)}" y="${H - 14}">${a}</text>`; });
+  if (baixo.length) s += `<polyline fill="none" stroke="var(--brand-end)" stroke-width="1.5" stroke-dasharray="3 5" points="${pts(serie(baixo))}"/>`;
+  if (proj.length) s += `<polyline fill="none" stroke="var(--primary)" stroke-width="2" stroke-dasharray="5 5" points="${pts(serie(proj))}"/>`;
+  if (real.length) s += `<polyline fill="none" stroke="var(--primary)" stroke-width="2.5" points="${pts(real)}"/>`;
+  const hx = X(m.mes), hy = Y(m.rendaHoje);
+  s += `<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="4" fill="var(--primary)"/><text x="${Math.max(x0 + 4, hx - 12).toFixed(1)}" y="${(hy - 14).toFixed(1)}" text-anchor="end" class="forte">hoje ${escHtml(rs(m.rendaHoje))}</text>`;
+  if (m.quando) { const mx = X(m.quando); s += `<circle cx="${mx.toFixed(1)}" cy="${Y(alvo).toFixed(1)}" r="4" fill="var(--warn)"/><text x="${Math.min(x1, mx + 10).toFixed(1)}" y="${(Y(alvo) + 20).toFixed(1)}" text-anchor="${mx > x1 - 80 ? "end" : "start"}" class="forte">${escHtml(mesC(m.quando))}</text>`; }
+  return s + "</svg>";
+}
+
+/* Importar */
+const SHEETJS = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+let sheetP = null;
+function carregarSheetJS() {
+  if (window.XLSX) return Promise.resolve();
+  if (!sheetP) sheetP = new Promise((ok, erro) => {
+    const sc = document.createElement("script");
+    sc.src = SHEETJS; sc.async = true;
+    sc.onload = () => ok(); sc.onerror = () => { sheetP = null; erro(new Error("Não deu para carregar o leitor de planilhas.")); };
+    document.head.append(sc);
+  });
+  return sheetP;
+}
+const NOME_TIPO_ARQ = { negociacao: "Negociação", movimentacao: "Movimentação", proventos: "Proventos" };
+const UNID_ARQ = { negociacao: "negócios", movimentacao: "linhas", proventos: "pagamentos" };
+function detectarTipo(cab) {
+  const c = cab.map((v) => semAcento(String(v || "")).toLowerCase().trim());
+  const tem = (x) => c.some((v) => v.includes(x));
+  if (tem("data do negocio") && tem("codigo de negociacao")) return "negociacao";
+  if (tem("entrada/saida") && tem("movimentacao") && tem("produto")) return "movimentacao";
+  if (tem("produto") && tem("pagamento") && tem("tipo de evento")) return "proventos";
+  return null;
+}
+/* "PETR4 - PETROLEO BRASILEIRO S/A" vira PETR4 antes de sair do navegador: o nome da empresa não vai ao servidor */
+function reduzirLinha(tipo, r) {
+  const l = r.slice(0, tipo === "negociacao" ? 9 : tipo === "movimentacao" ? 8 : 7);
+  const k = tipo === "movimentacao" ? 3 : tipo === "proventos" ? 0 : -1;
+  if (k >= 0 && l[k] != null) l[k] = String(l[k]).split(" - ")[0].trim();
+  return l;
+}
+let imp = { fase: "inicio", arquivos: [], erro: "", resultado: null };
+async function lerArquivos(files) {
+  imp = { fase: "lendo", arquivos: [], erro: "", resultado: null };
+  desenharCarteira(cartJ);
+  try { await carregarSheetJS(); } catch (e) { imp.fase = "inicio"; imp.erro = e.message; desenharCarteira(cartJ); return; }
+  for (const f of files) {
+    const it = { nome: f.name, tipo: null, linhas: [], hash: "", erro: "" };
+    try {
+      if (f.size > 15e6) throw new Error("grande");
+      const buf = await f.arrayBuffer();
+      const h = new Uint8Array(await crypto.subtle.digest("SHA-256", buf));
+      it.hash = [...h.slice(0, 16)].map((x) => x.toString(16).padStart(2, "0")).join("");
+      const wb = XLSX.read(buf, { type: "array" });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: null });
+      it.tipo = detectarTipo(rows[0] || []);
+      if (it.tipo) it.linhas = rows.slice(1).filter((r) => r && r.some((v) => v != null && String(v).trim() !== "")).map((r) => reduzirLinha(it.tipo, r));
+    } catch (e) { it.erro = e.message === "grande" ? "arquivo grande demais" : "não deu para ler como planilha"; }
+    imp.arquivos.push(it);
+  }
+  await enviarImportacao(true);
+}
+function lotesImportacao() {
+  const lotes = [];
+  let atual = [], n = 0;
+  imp.arquivos.forEach((a, i) => {
+    if (!a.tipo || !a.linhas.length) return;
+    for (let k = 0; k < a.linhas.length; k += 20000) {
+      const parte = a.linhas.slice(k, k + 20000);
+      if (n + parte.length > 20000 && atual.length) { lotes.push(atual); atual = []; n = 0; }
+      atual.push({ i, nome: a.nome, tipo: a.tipo, hash: a.hash, linhas: parte });
+      n += parte.length;
+    }
+  });
+  if (atual.length) lotes.push(atual);
+  return lotes;
+}
+async function enviarImportacao(simular) {
+  imp.fase = simular ? "conferindo" : "enviando"; imp.erro = "";
+  desenharCarteira(cartJ);
+  imp.arquivos.forEach((a) => { a.r = null; });
+  try {
+    for (const lote of lotesImportacao()) {
+      const j = await apiCart("POST", "/importar", { simular, arquivos: lote.map(({ nome, tipo, hash, linhas }) => ({ nome, tipo, hash, linhas })) });
+      j.porArquivo.forEach((x, k) => {
+        const a = imp.arquivos[lote[k].i];
+        a.r = a.r ? { ...a.r, linhas: a.r.linhas + x.linhas, novos: a.r.novos + x.novos, repetidos: a.r.repetidos + x.repetidos, ignorados: a.r.ignorados + x.ignorados, de: a.r.de < x.de ? a.r.de : x.de, ate: a.r.ate > x.ate ? a.r.ate : x.ate } : x;
+      });
+    }
+    if (simular) imp.fase = "previa";
+    else {
+      imp.fase = "pronto";
+      imp.resultado = imp.arquivos.reduce((s, a) => s + (a.r ? a.r.novos : 0), 0);
+      invalidarCarteira();
+      await lerCarteira(true);
+    }
+  } catch (e) { imp.fase = simular ? "inicio" : "previa"; imp.erro = e.message === "carteira desligada" ? "A carteira está desligada neste servidor (falta o secret CARTEIRA_KEY)." : "Não deu para " + (simular ? "conferir" : "importar") + " agora: " + e.message; }
+  if (carteiraVista === "importar") desenharCarteira(cartJ);
+}
+function desenharImportar(box, j) {
+  const dois = el("div", { class: "ct-dois" }), esq = el("div", { class: "ct-col" }), dir = el("div", { class: "ct-col" });
+  const input = el("input", { type: "file", multiple: "", accept: ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", id: "ct-arquivos", "aria-label": "Escolher arquivos .xlsx" });
+  input.addEventListener("change", () => { if (input.files && input.files.length) lerArquivos([...input.files]); });
+  const solta = el("div", { class: "ct-solta" }, el("span", { html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>' }),
+    el("strong", {}, "Solte aqui os arquivos exportados da Área do Investidor"),
+    el("p", {}, "Negociação, Movimentação e Proventos recebidos, em .xlsx, do jeito que a B3 exporta. Pode soltar vários de uma vez e de várias corretoras. O Lookout reconhece cada tipo pelo cabeçalho."),
+    el("label", { class: "dd-btn dd-btn--outline", for: "ct-arquivos", style: "position:relative" }, "Escolher arquivos", input));
+  solta.addEventListener("dragover", (e) => { e.preventDefault(); solta.classList.add("sobre"); });
+  solta.addEventListener("dragleave", () => solta.classList.remove("sobre"));
+  solta.addEventListener("drop", (e) => { e.preventDefault(); solta.classList.remove("sobre"); const fs = [...(e.dataTransfer.files || [])]; if (fs.length) lerArquivos(fs); });
+  if (j && j.desligada) esq.append(estadoCarteira(j)); else esq.append(solta);
+  if (imp.erro) esq.append(el("p", { class: "ct-nota ct-neg", role: "alert" }, imp.erro));
+  if (imp.fase !== "inicio") esq.append(previaImportacao());
+  // Importações anteriores
+  const ant = cardEl("Importações anteriores");
+  const lista = (j && j.importacoes) || [];
+  ant.append(lista.length ? el("div", { class: "ct-linhas" }, ...lista.slice(0, 12).map((x, k) => {
+    const d = new Date(x.em);
+    const quando = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const n = (x.arquivos || []).length;
+    const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, "Desfazer");
+    b.addEventListener("click", async () => {
+      if (!confirm(`Tirar da carteira as ${fmtNum(x.novos, 0)} linhas que entraram nesta importação?`)) return;
+      b.disabled = true;
+      try { await apiCart("DELETE", "/importacoes/" + encodeURIComponent(x.id)); invalidarCarteira(); imp = { fase: "inicio", arquivos: [], erro: "", resultado: null }; await lerCarteira(true); desenharCarteira(cartJ); }
+      catch (e) { b.disabled = false; alert("Não deu para desfazer: " + e.message); }
+    });
+    return el("div", {}, el("span", {}, el("b", { class: "ct-mono" }, quando), ` · ${n} ${n === 1 ? "arquivo" : "arquivos"} · ${fmtNum(x.novos, 0)} linhas novas`), b);
+  })) : el("p", { class: "ct-nota" }, "Nenhuma ainda."));
+  esq.append(ant);
+  // Lateral: passo a passo, como monta, privacidade, apagar
+  const passos = cardEl("Como exportar na B3");
+  const passo = (n, ...t) => el("div", {}, el("span", { class: "num" }, String(n)), el("span", {}, ...t));
+  passos.append(el("div", { class: "ct-passos" },
+    passo(1, "Entre em ", el("span", { class: "ct-mono" }, "investidor.b3.com.br"), " com a conta gov.br."),
+    passo(2, el("b", {}, "Extratos → Negociação"), ": filtre o período todo e clique em Exportar."),
+    passo(3, el("b", {}, "Extratos → Movimentação"), ": o mesmo caminho. Aqui vêm bonificação, subscrição, grupamento, empréstimo e transferência entre corretoras."),
+    passo(4, el("b", {}, "Extratos → Proventos recebidos"), ": a B3 limita o período, por isso saem vários arquivos. Solte todos.")),
+    el("p", { class: "ct-nota" }, "Depois da primeira vez, basta exportar o último mês. O que já está guardado não entra de novo."));
+  const como = cardEl("Como a posição é montada");
+  como.append(el("ul", { class: "ct-ul" },
+    el("li", {}, "A quantidade vem da ", el("b", {}, "Movimentação"), " (liquidação, bonificação, desdobro, grupamento, subscrição, transferência). O fracionário (PETR4F) soma com o lote."),
+    el("li", {}, "O preço médio vem da ", el("b", {}, "Negociação"), ", pela média ponderada das compras, e recomeça quando a posição zera."),
+    el("li", {}, "Cotas em ", el("b", {}, "empréstimo"), " continuam contando como suas."),
+    el("li", {}, "Proventos vêm do extrato de proventos; o período que ele não cobre é completado pela Movimentação."),
+    el("li", {}, "Tesouro Direto, CDB e outros títulos de renda fixa ficam de fora por enquanto."),
+    el("li", {}, "A cotação atual vem do pregão do Lookout.")));
+  const priv = cardEl("O que fica guardado");
+  priv.append(el("ul", { class: "ct-ul" },
+    el("li", {}, "Entra: data, papel, compra ou venda, quantidade, preço, tipo do evento, valor por cota, líquido do provento e a sigla da corretora (XP, Rico, Modal)."),
+    el("li", {}, "Não entra: nome, CPF, conta, CNPJ, ISIN, o nome da empresa, a razão social da corretora nem totais em dinheiro (são calculados na hora)."),
+    el("li", {}, "A planilha é lida aqui no navegador; o arquivo não vai para o servidor, só as linhas."),
+    el("li", {}, "Tudo é cifrado (AES-GCM) antes de gravar, numa coleção só sua. Nem o admin vê a carteira de outra pessoa; excluir a conta apaga a carteira junto.")));
+  const apagar = cardEl("Apagar minha carteira", { cls: "ct-perigo" });
+  const conf = el("input", { class: "dd-input", type: "text", placeholder: "APAGAR", "aria-label": "Digite APAGAR para confirmar", autocomplete: "off" });
+  const ba = el("button", { type: "button", class: "dd-btn dd-btn--perigo", disabled: "" }, "Apagar tudo");
+  const msg = el("p", { class: "ct-nota", role: "status" });
+  conf.addEventListener("input", () => { ba.disabled = conf.value.trim() !== "APAGAR"; });
+  ba.addEventListener("click", async () => {
+    ba.disabled = true; msg.textContent = "Apagando…";
+    try { await apiCart("DELETE", ""); invalidarCarteira(); imp = { fase: "inicio", arquivos: [], erro: "", resultado: null }; await lerCarteira(true); desenharCarteira(cartJ); const s = $("carteira").querySelector(".ct-perigo [role=status]"); if (s) s.textContent = "Carteira apagada: extrato, meta e importações."; }
+    catch (e) { msg.textContent = "Não deu para apagar: " + e.message; ba.disabled = false; }
+  });
+  apagar.append(el("p", { class: "ct-nota" }, "Tira do banco o extrato, a meta e o histórico de importações. Não tem volta. Digite APAGAR para liberar o botão."), el("div", { class: "ct-ferr" }, conf, ba), msg);
+  dir.append(passos, como, priv, apagar);
+  dois.append(esq, dir);
+  box.append(dois);
+}
+function previaImportacao() {
+  const c = cardEl(imp.fase === "pronto" ? "Importação concluída" : imp.fase === "lendo" ? "Lendo os arquivos…" : imp.fase === "conferindo" ? "Conferindo com o que já está guardado…" : imp.fase === "enviando" ? "Importando…" : "O que vai entrar");
+  if (imp.fase === "lendo") { c.append(esqueleto(3)); return c; }
+  const l = el("div", {});
+  let novos = 0;
+  imp.arquivos.forEach((a) => {
+    const r = a.r;
+    let st, cls = "";
+    if (a.erro) { st = a.erro + ", ignorado"; cls = "ct-neg"; }
+    else if (!a.tipo) { st = "cabeçalho não reconhecido, ignorado"; cls = "ct-aviso"; }
+    else if (!r) st = "…";
+    else if (r.novos) { st = `${fmtNum(r.novos, 0)} novos`; cls = "ct-pos"; novos += r.novos; }
+    else { st = `${fmtNum(r.repetidos, 0)} já estavam · nada novo`; cls = "ct-aviso"; }
+    const det = [];
+    if (r) {
+      det.push(`${fmtNum(r.linhas, 0)} ${UNID_ARQ[a.tipo]}`);
+      if (r.de) det.push(r.de.slice(0, 7) === r.ate.slice(0, 7) ? mesL(r.de.slice(0, 7)) : `${mesL(r.de.slice(0, 7))} a ${mesL(r.ate.slice(0, 7))}`);
+      if (r.novos && r.repetidos) det.push(`${fmtNum(r.repetidos, 0)} já estavam`);
+      if (r.ignorados) det.push(`${fmtNum(r.ignorados, 0)} fora (renda fixa, código fora do padrão ou rodapé)`);
+      const tn = Object.entries(r.tiposDesconhecidos || {});
+      if (tn.length) det.push("tipos que o Lookout ainda não conhece: " + tn.map(([k, n]) => `${k} (${n})`).join(", "));
+    }
+    l.append(el("div", { class: "ct-arq" }, tagEl(a.tipo ? NOME_TIPO_ARQ[a.tipo] : "?"), el("span", { class: "n", title: a.nome }, a.nome), el("span", { class: "st " + cls }, st), el("span", { class: "d" }, det.join(" · "))));
+  });
+  c.append(l);
+  if (imp.fase === "previa") {
+    const ok = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, novos ? `Importar ${fmtNum(novos, 0)} ${novos === 1 ? "linha" : "linhas"}` : "Nada novo para importar");
+    if (!novos) ok.disabled = true;
+    ok.addEventListener("click", () => enviarImportacao(false));
+    const can = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Cancelar");
+    can.addEventListener("click", () => { imp = { fase: "inicio", arquivos: [], erro: "", resultado: null }; desenharCarteira(cartJ); });
+    c.append(el("div", { class: "ct-acoes" }, ok, can), el("p", { class: "ct-nota" }, "Linha repetida (mesma data, papel, tipo, quantidade e valor) não entra duas vezes. Dá para reimportar o mesmo arquivo sem medo."));
+  }
+  if (imp.fase === "pronto") {
+    c.append(el("p", { class: "ct-nota", role: "status" }, imp.resultado ? `Pronto: ${fmtNum(imp.resultado, 0)} linhas novas entraram na sua carteira.` : "Nada novo entrou."),
+      el("div", { class: "ct-acoes" }, el("a", { class: "dd-btn dd-btn--primary", href: "#carteira" }, "Ver carteira"), el("a", { class: "dd-btn dd-btn--outline", href: "#carteira/proventos" }, "Ver proventos")));
+  }
+  return c;
+}
+
+/* ---- widgets da carteira no Início (uma leitura de /api/carteira para todos) ---- */
+const semCartW = (j) => (!j || j.vazia ? [vazioW("Importe seus extratos da B3 em Minha carteira.")] : null);
+corpos["carteira-meta"] = (j) => {
+  const v = semCartW(j); if (v) return v;
+  const m = j.meta;
+  if (!m || !m.definida) return [vazioW("Defina sua meta de renda em Minha meta.")];
+  return [el("div", { class: "wdg-cart" }, el("div", { class: "ct-tit" }, el("span", { class: "ct-mono" }, `${pc(m.pct)} · faltam ${rs(Math.max(0, m.cfg.alvo - m.rendaHoje))}`)), barraMeta(m), fatosMeta(m, true))];
+};
+corpos["carteira-patrimonio"] = (j) => {
+  const v = semCartW(j); if (v) return v;
+  const r = j.resumo;
+  const comVar = j.posicoes.filter((p) => p.var != null && p.preco != null);
+  const tv = comVar.reduce((s, p) => s + p.valor, 0);
+  const vd = tv ? comVar.reduce((s, p) => s + p.valor * p.var, 0) / tv : null;
+  const { faixa, fat, tot } = faixaClasses(r);
+  return [el("div", { class: "wdg-cart" }, el("span", { class: "wdg-big" }, rs(r.patrimonio)),
+    el("div", { class: "ct-fatos" }, el("span", {}, "Hoje ", el("b", { class: clsS(vd) }, pc(vd, true))), el("span", {}, "Sobre o custo ", el("b", { class: clsS(r.resultadoPct) }, pc(r.resultadoPct, true)))),
+    faixa, el("span", { class: "ct-nota", style: "font-size:12.5px" }, fat.slice(0, 3).map(([k, v2]) => `${NOME_CLASSE[k]} ${pc((v2 / tot) * 100)}`).join(" · ")))];
+};
+corpos["carteira-proventos-mes"] = (j) => {
+  const v = semCartW(j); if (v) return v;
+  const r = j.resumo;
+  const aRec = (r.aReceber || []).reduce((s, x) => s + x.valor, 0);
+  return [el("div", { class: "wdg-cart" }, el("span", { class: "wdg-big" }, rs(r.mesAtual.total), el("small", {}, "até hoje")),
+    el("div", { class: "ct-linhas" }, linhaEl("A receber (estimado)", "≈ " + rs(aRec)), linhaEl(mesNome(r.mesAnterior.mes).replace(/^./, (c) => c.toUpperCase()) + " inteiro", rs(r.mesAnterior.total)), linhaEl("Média 12m", rs(r.media12))))];
+};
+corpos["carteira-pagamentos"] = (j) => {
+  const v = semCartW(j); if (v) return v;
+  const l = (j.resumo.aReceber || []).slice(0, 5);
+  if (!l.length) return [vazioW("Nada a receber pelo que o Lookout conhece agora.")];
+  return [el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " data a confirmar")), el("span", { class: "ct-mono" }, "≈ " + rs(x.valor, x.valor < 100)))))];
+};
+corpos["carteira-agenda"] = (j) => {
+  const v = semCartW(j); if (v) return v;
+  const l = (j.resumo.agenda || []).slice(0, 5);
+  if (!l.length) return [vazioW("Nada anunciado por enquanto.")];
+  return [el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, x.o === "subscricao" ? tagEl("subscrição", "err") : "Rendimento", " ", papelBtn(x.t)), el("span", { class: "ct-mono" }, x.o === "subscricao" ? "prazo a confirmar" : "≈ " + rs(x.valor)))))];
+};
+corpos["carteira-rentabilidade"] = (j) => {
+  const v = semCartW(j); if (v) return v;
+  const x = j.resumo.rentabilidade;
+  if (!x) return [vazioW("Sem negócios suficientes para calcular.")];
+  return [el("div", { class: "ct-linhas" }, ...[["12 meses", x.m12], [j.resumo.hoje.slice(0, 4), x.ano], ["Desde " + mesC(x.desde), x.inicio]].map(([n, val]) => el("div", {}, el("span", {}, n), el("span", { class: "ct-mono " + clsS(val) }, pc(val, true))))),
+    el("span", { class: "ct-nota", style: "font-size:12px" }, "Método de cotas (TWR). Índices para comparar em breve.")];
+};
+corpos["carteira-alertas"] = (j) => {
+  const v = semCartW(j); if (v) return v;
+  const l = j.resumo.alertas || [];
+  if (!l.length) return [vazioW("Nenhum alerta agora.")];
+  return [el("div", { class: "ct-linhas" }, ...l.slice(0, 5).map((a) => el("div", {}, el("span", {}, ...textoAlerta(a)))))];
+};
+
 /* push: sair do Início para uma seção (ou voltar a ele pela aba) cria uma entrada no histórico, para o "voltar"
    do navegador trazer o Início de volta. Entre seções e visões o endereço é só trocado, como antes. */
 function escreverHash(push) {
-  const alvo = inicio ? "#inicio" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
+  const alvo = inicio && carteiraVista ? hashCarteira() : inicio ? "#inicio" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
   if ((location.hash || "") === alvo) return;
   try { history[push ? "pushState" : "replaceState"](null, "", location.pathname + location.search + alvo); }
   catch (e) { try { location.hash = alvo; } catch (e2) {} }
@@ -4206,7 +5352,7 @@ function escreverHash(push) {
 function trocarRadar(id, porHash) {
   if (!RADARES[id] || !radaresVisiveis().includes(id) || (!inicio && id === radar)) return;
   const doInicio = inicio;
-  if (doInicio) { fecharPers(); inicio = false; }
+  if (doInicio) { fecharPers(); inicio = false; carteiraVista = null; }
   fecharPainel();
   radar = id;
   /* Investimentos abre sempre na Bolsa, a não ser que o endereço peça os EUA ou as notícias */
@@ -4225,6 +5371,8 @@ function trocarRadar(id, porHash) {
   window.scrollTo({ top: 0 });
 }
 window.addEventListener("hashchange", () => {
+  const cv = carteiraDoHash();
+  if (cv) { irCarteira(cv, true); return; }
   const h = radarDoHash();
   if (!h) { irInicio(true); if (location.hash !== "#inicio") escreverHash(); return; }
   if (!inicio && h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); return; }
@@ -4250,6 +5398,7 @@ if (inicio) entrarInicio();
   const me = (await pMe) || {};
   if (Array.isArray(me.secoes)) secoesLiberadas = me.secoes;
   meuNome = String(me.nome || "").trim();
+  ajustarMenuCarteira();
   const vis = radaresVisiveis();
   if (!vis.length) {
     desligar.forEach((f) => { try { if (typeof f === "function") f(); } catch (e) {} }); desligar = []; geracao++;
@@ -4262,7 +5411,7 @@ if (inicio) entrarInicio();
   if (inicio) {
     /* a seção guardada por trás do Início precisa ser uma das liberadas; o painel refaz a lista com as seções certas */
     if (!vis.includes(radar)) { radar = vis[0]; visao = "bolsa"; aplicarRadar(); }
-    renderRadares(); montarGrade(); atualizarCabInicio();
+    renderRadares(); if (carteiraVista) renderCarteira(); else montarGrade(); atualizarCabInicio();
   }
   else if (!vis.includes(radar)) {
     radar = vis[0]; visao = "bolsa";

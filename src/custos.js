@@ -95,7 +95,8 @@ async function cloudflare(env) {
 async function local(env) {
   const ini = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
   const [tam, cand, rod] = await Promise.all([
-    env.DB.prepare("SELECT collection, count(*) AS n, sum(length(data)) AS bytes FROM docs GROUP BY collection ORDER BY bytes DESC").all(),
+    // carteira/<email> sai somada em "carteira/*": só quantidade de docs e bytes (cifrados), sem e-mail e sem abrir nada
+    env.DB.prepare("SELECT CASE WHEN collection >= 'carteira/' AND collection < 'carteira0' THEN 'carteira/*' ELSE collection END AS collection, count(*) AS n, sum(length(data)) AS bytes FROM docs GROUP BY 1 ORDER BY bytes DESC").all(),
     env.DB.prepare("SELECT count(*) AS n, sum(length(titulo) + length(coalesce(trecho, '')) + length(url)) AS bytes FROM candidatos").first(),
     env.DB.prepare("SELECT collection, count(DISTINCT coletado) AS rodadas, count(*) AS itens FROM docs WHERE (collection LIKE 'items%' OR collection = 'sombra-items') AND coletado >= ?1 GROUP BY collection").bind(ini).all(),
   ]);

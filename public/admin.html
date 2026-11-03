@@ -409,7 +409,7 @@ async function carregarCustos() {
     h += '<details><summary>Rodadas por aba e espaço por coleção</summary><table class="custo-tab"><thead><tr><th>Aba</th><th>Rodadas no mês</th><th>Itens</th></tr></thead><tbody>'
       + L.rodadasMes.map((x) => `<tr><td>${esc(NOMEC[x.collection] || x.collection)}</td><td>${x.rodadas}</td><td>${x.itens}</td></tr>`).join("")
       + '</tbody></table><table class="custo-tab" style="margin-top:10px"><thead><tr><th>Coleção</th><th>Registros</th><th>Tamanho</th></tr></thead><tbody>'
-      + L.colecoes.slice(0, 15).map((x) => `<tr><td>${esc(x.collection)}</td><td>${fmt(x.n)}</td><td>${fmtBytes(x.bytes || 0)}</td></tr>`).join("")
+      + L.colecoes.slice(0, 15).map((x) => `<tr><td>${esc(x.collection === "carteira/*" ? "carteira, cifrada (todas as pessoas)" : x.collection)}</td><td>${fmt(x.n)}</td><td>${fmtBytes(x.bytes || 0)}</td></tr>`).join("")
       + `<tr><td>candidatos</td><td>${fmt(L.candidatos.n)}</td><td>${fmtBytes(L.candidatos.bytes || 0)}</td></tr></tbody></table></details>`;
     h += '<p class="dica">Plano: Workers Paid (US$ 5/mês) desde 01/11/2026, porque o grátis estourou o limite diário de leituras do D1. Domínio: o endereço gratuito workers.dev. Preços e limites são os publicados pela Cloudflare para Workers e D1.</p>';
     box.innerHTML = h;
@@ -458,7 +458,7 @@ function pintarEspelho(r) {
   }
   if (e.porColecao && e.porColecao.length)
     h += '<details><summary>Docs por coleção</summary><table class="custo-tab"><thead><tr><th>Coleção</th><th>Docs</th></tr></thead><tbody>'
-      + e.porColecao.map((x) => `<tr><td>${esc(x.collection === "favs/*" ? "favs (todas as pessoas)" : x.collection === "listas/*" ? "listas (todas as pessoas)" : x.collection === "prefs/*" ? "painel do Início (todas as pessoas)" : x.collection)}</td><td>${fmt(x.n)}</td></tr>`).join("") + "</tbody></table></details>";
+      + e.porColecao.map((x) => `<tr><td>${esc(x.collection === "favs/*" ? "favs (todas as pessoas)" : x.collection === "listas/*" ? "listas (todas as pessoas)" : x.collection === "prefs/*" ? "painel do Início (todas as pessoas)" : x.collection === "carteira/*" ? "carteira, cifrada (todas as pessoas)" : x.collection)}</td><td>${fmt(x.n)}</td></tr>`).join("") + "</tbody></table></details>";
   $("espelho").innerHTML = h;
 }
 async function carregarEspelho() {

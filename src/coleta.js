@@ -197,7 +197,7 @@ function vencido(radar, item, coletado, t) {
   return t - ref > dias * DIA;
 }
 
-// Só mexe nas collections de itens e destaques, em hist (fichas de papel) e em candidatos: favs/, listas/ e prefs/ (de cada pessoa) ficam de fora.
+// Só mexe nas collections de itens e destaques, em hist (fichas de papel) e em candidatos: favs/, listas/, prefs/ e carteira/ (de cada pessoa) ficam de fora.
 export async function limpar(env) {
   const t = Date.now();
   const relatorio = {};

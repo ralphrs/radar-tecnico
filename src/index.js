@@ -10,6 +10,7 @@ import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1,
 import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
 import { rotaPapel, cronPapel, ID_OK as PAPEL_ID_OK } from "./papel.js";
 import { BDR_DE_US, US_DE_BDR } from "./bdr.js";
+import { rotaCarteira, limparCacheCarteira } from "./carteira.js";
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
 export { Espelho } from "./espelho.js";
@@ -420,12 +421,14 @@ async function adminUsuarios(request, env, email) {
     return json({ ok: true });
   }
   if (request.method === "DELETE" && email) {
-    const cols = ["favs/", "listas/", "prefs/"].map((p) => p + email.toLowerCase());
+    // carteira/<email>: os três docs cifrados da Minha carteira saem junto (sem abrir)
+    const cols = ["favs/", "listas/", "prefs/", "carteira/"].map((p) => p + email.toLowerCase());
     // As chaves saem antes do DELETE para o espelho apagar as mesmas linhas logo depois
-    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?, ?)").bind(...cols).all();
+    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?, ?, ?)").bind(...cols).all();
     await env.DB.prepare("DELETE FROM usuarios WHERE email = ?").bind(email.toLowerCase()).run();
     for (const c of cols) await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind(c).run();
     removerDoEspelho(env, chaves);
+    limparCacheCarteira(email.toLowerCase());
     try { await env.DB.prepare("DELETE FROM usuario_grupo WHERE email = ?").bind(email.toLowerCase()).run(); } catch (e) {}
     return json({ ok: true });
   }
@@ -498,6 +501,15 @@ export default {
       if (idLista === null) return json({ erro: "id" }, 400);
       if (!corpoJson(request)) return json({ erro: "json" }, 415);
       return listas(request, env, quem, idLista);
+    }
+
+    // Minha carteira (src/carteira.js): extratos da B3 cifrados, posições, proventos e meta. Pessoal, sem cache de borda.
+    if (p === "/api/carteira" || p.startsWith("/api/carteira/")) {
+      if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      const resto = p.length > 14 ? decodificar(p.slice(14)) : "";
+      if (resto === null) return json({ erro: "id" }, 400);
+      return rotaCarteira(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
     }
 
     if (p === "/admin" || p === "/admin.html" || p.startsWith("/api/admin/")) {

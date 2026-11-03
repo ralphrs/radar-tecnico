@@ -28,6 +28,9 @@
 - [ ] Próximo nos FIIs: vacância e imóveis, a partir do informe trimestral da CVM
 - [x] ~~Site abrir direto na Bolsa~~: substituído pelo painel inicial (03/11)
 - [x] Início: painel de widgets configurável (resumos de cada seção, mercado, pregão, FIIs, EUA, listas, favoritos e "Hoje no Lookout"), com ordem, largura e o que aparece salvos na conta em `prefs/<email>`, arrastar e soltar no desktop e o site abrindo nele (03/11)
+- [x] Minha carteira: importação dos extratos da B3 no navegador, posições, preço médio, proventos, meta com projeção, rentabilidade por cotas, IR para conferir, widgets "seu" no Início, tudo cifrado com `CARTEIRA_KEY` em `carteira/<email>` (03/11)
+- [ ] Carteira: comparação com IFIX, CDI e Ibovespa (falta guardar a série histórica dos índices), datas com e de pagamento dos rendimentos, Tesouro e renda fixa, lista de bens e direitos para a declaração, exportar CSV
+- [ ] Radar de dividendos pelo filtro da pessoa e o bloco "onde o aporte rende mais" na Meta
 - [ ] Busca com IA só quando o acervo de Tech passar de 3 mil itens ou a busca atual deixar de dar conta
 
 ## Próximo: Negócios e Investimentos
