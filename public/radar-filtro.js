@@ -16,8 +16,12 @@
   "use strict";
 
   const CLASSES = ["fiis", "acoes", "eua"];
-  const NOME_CLASSE = { fiis: "FIIs", acoes: "Ações BR", eua: "EUA" };
-  const ORDENS = { fiis: ["cotistas", "liq"], acoes: ["dy", "liq"], eua: ["dy", "liq"] };
+  // Regras das Minhas listas (src/listas.js) aceitam também as classes da B3 que o Radar não mostra.
+  // Nelas os critérios são só DY (das fichas guardadas) e liquidez.
+  const EXTRAS = ["fiinfra", "fiagro", "etfs", "bdrs"];
+  const CLASSES_REGRA = [...CLASSES, ...EXTRAS];
+  const NOME_CLASSE = { fiis: "FIIs", acoes: "Ações BR", eua: "EUA", fiinfra: "FI-Infra", fiagro: "Fiagro", etfs: "ETFs", bdrs: "BDRs" };
+  const ORDENS = { fiis: ["cotistas", "liq"], acoes: ["dy", "liq"], eua: ["dy", "liq"], fiinfra: ["liq", "dy"], fiagro: ["liq", "dy"], etfs: ["liq", "dy"], bdrs: ["liq", "dy"] };
   const REGULAR = ["12", "10", "0"];
   const MAX_FILTROS = 10;
   const NOME_MAX = 30;
@@ -28,6 +32,7 @@
     acoes: { dyMin: 6, plMax: 15, pvpMax: 2, liqMin: 5e6, setor: [], ordem: "dy", semMinhas: false, aporte: 1000 },
     eua: { dyMin: 2, plMax: 25, pvpMax: null, liqMin: null, setor: [], ordem: "dy", semMinhas: false, aporte: 1000 },
   };
+  for (const c of EXTRAS) PADRAO_CLASSE[c] = { dyMin: null, liqMin: 1e6, ordem: "liq", semMinhas: false, aporte: 0 };
   // Para quem nunca salvou nada: P/VP até 1, DY 12m de 10% ou mais, R$ 1 mi por dia, 12 de 12 meses, por cotistas.
   const FABRICA = { id: "fiis-padrao", nome: "FIIs P/VP < 1 e DY > 10%", classe: "fiis", ...PADRAO_CLASSE.fiis };
 
@@ -44,10 +49,12 @@
     acoes: ["dyMin", "plMax", "pvpMax", "liqMin", "setor", "ordem", "semMinhas", "aporte"],
     eua: ["dyMin", "plMax", "pvpMax", "liqMin", "setor", "ordem", "semMinhas", "aporte"],
   };
-  function validarFiltro(b) {
+  for (const c of EXTRAS) CAMPOS[c] = ["dyMin", "liqMin", "ordem", "semMinhas", "aporte"];
+  // todas: aceita as classes das regras de lista (CLASSES_REGRA); sem ela, só as do Radar
+  function validarFiltro(b, todas) {
     if (!b || typeof b !== "object" || Array.isArray(b)) return { erro: "filtro" };
     const classe = b.classe;
-    if (!CLASSES.includes(classe)) return { erro: "Classe desconhecida." };
+    if (!(todas ? CLASSES_REGRA : CLASSES).includes(classe)) return { erro: "Classe desconhecida." };
     const nome = String(b.nome == null ? "" : b.nome).replace(/\s+/g, " ").trim();
     if (!nome) return { erro: "Dê um nome ao filtro." };
     if (nome.length > NOME_MAX) return { erro: `O nome passa de ${NOME_MAX} caracteres.` };
@@ -153,6 +160,27 @@
       return { t: x.t, classe: "eua", us: true, nome: x.nome || "", preco, var: num(x.var), liq: num(x.liq), setor: f.setor || "",
         pl: num(f.pl), pvp: num(f.pvp), dy: num(f.dy), div12: num(f.div12), var1a: num(f.var1a), temFicha: !!(fund && fund[x.t]) };
     });
+  }
+
+  // FI-Infra, Fiagro, ETFs e BDRs: cotação da B3 e o DY da ficha guardada (fund.BR), quando houver.
+  // O meta/b3 gravado antes da separação traz FI-Infra e Fiagro dentro de "fiis", marcados pelo subType.
+  const SUB_EXTRA = { fiinfra: ["fi-infra", "fiinfra", "fip"], fiagro: ["fi-agro", "fiagro"] };
+  function linhasB3(b3, classe, fund) {
+    let base = (b3 && b3[classe]) || null;
+    if (!base && SUB_EXTRA[classe]) base = ((b3 && b3.fiis) || []).filter((x) => SUB_EXTRA[classe].includes(String(x.sub || "").toLowerCase()));
+    return (base || []).map((x) => {
+      const preco = num(x.preco), f = (fund && fund[x.t]) || {};
+      return { t: x.t, classe, nome: x.nome || "", preco, var: num(x.var), liq: num(x.vol) != null && preco != null ? x.vol * preco : null, setor: x.setor || "",
+        dy: num(f.dy), div12: num(f.div12), var1a: num(f.var1a), temFicha: !!(fund && fund[x.t]) };
+    });
+  }
+  // Linhas de qualquer classe de regra. d: { b3, fiiResumo, eua, fund: { BR, US } }
+  function linhasDe(classe, d) {
+    const fund = (d && d.fund) || {};
+    if (classe === "fiis") return linhasFii(d && d.b3, d && d.fiiResumo && d.fiiResumo.fundos, fund.BR);
+    if (classe === "acoes") return linhasAcoes(d && d.b3, fund.BR);
+    if (classe === "eua") return linhasEua(d && d.eua, fund.US);
+    return linhasB3(d && d.b3, classe, fund.BR);
   }
 
   // ---------- formatação dos textos ----------
@@ -278,7 +306,87 @@
     return [...new Set(l)];
   }
 
+  // ---------- regra em frases (Minhas listas) ----------
+  const ORDEM_FRASE = { cotistas: "entrada de cotistas", liq: "liquidez", dy: "DY" };
+  const ROTULO = { pvpMax: "P/VP até", dyMin: "DY 12m mínimo", liqMin: "liquidez mínima", plMax: "P/L até" };
+  function valorCampo(k, v, classe) {
+    if (v == null) return "sem limite";
+    if (k === "pvpMax") return fmt(v, 2);
+    if (k === "dyMin") return fmt(v, Number.isInteger(v) ? 0 : 1) + "%";
+    if (k === "liqMin") return fmtMi(v, classe === "eua").replace(/,0 (mi|bi)$/, " $1");
+    if (k === "plMax") return fmt(v, Number.isInteger(v) ? 0 : 1);
+    return String(v);
+  }
+  // "FIIs · P/VP até 1,00 · DY 12m mínimo 10% · liquidez mínima R$ 1 mi · 12 de 12 meses · ordenado por entrada de cotistas"
+  function fraseRegra(classe, f, soCarteira) {
+    const p = [NOME_CLASSE[classe] || classe];
+    for (const k of ["pvpMax", "dyMin", "plMax", "liqMin"]) {
+      if (!CAMPOS[classe] || !CAMPOS[classe].includes(k) || f[k] == null || ((k === "dyMin" || k === "liqMin") && !f[k])) continue;
+      p.push(ROTULO[k] + " " + valorCampo(k, f[k], classe));
+    }
+    if (classe === "fiis") { if (f.regular === "12") p.push("12 de 12 meses"); else if (f.regular === "10") p.push("10 ou mais meses pagando"); }
+    for (const [k, n] of [["seg", "segmento"], ["man", "mandato"], ["setor", "setor"]]) if (Array.isArray(f[k]) && f[k].length) p.push(n + " " + f[k].join(", "));
+    if (f.estavel) p.push("rendimento estável ou subindo");
+    if (soCarteira) p.push("só papéis que tenho");
+    if (f.ordem) p.push("ordenado por " + (ORDEM_FRASE[f.ordem] || f.ordem));
+    return p.join(" · ");
+  }
+  // O que mudou entre duas regras: ["DY 12m mínimo 10% → 9%", ...]
+  function mudancasRegra(a, b) {
+    if (!a || !b) return [];
+    if (a.classe !== b.classe) return [`classe ${NOME_CLASSE[a.classe] || a.classe} → ${NOME_CLASSE[b.classe] || b.classe}`];
+    const fa = a.criterios || {}, fb = b.criterios || {}, out = [];
+    for (const k of ["pvpMax", "dyMin", "plMax", "liqMin"]) if ((fa[k] ?? null) !== (fb[k] ?? null)) out.push(`${ROTULO[k]} ${valorCampo(k, fa[k] ?? null, a.classe)} → ${valorCampo(k, fb[k] ?? null, b.classe)}`);
+    if ((fa.regular || "0") !== (fb.regular || "0")) out.push(`regularidade ${fa.regular || "0"} → ${fb.regular || "0"} meses`);
+    for (const k of ["seg", "man", "setor"]) if (JSON.stringify(fa[k] || []) !== JSON.stringify(fb[k] || [])) out.push(({ seg: "segmentos", man: "mandatos", setor: "setores" })[k] + " mudaram");
+    if (!!fa.estavel !== !!fb.estavel) out.push(fb.estavel ? "passou a pedir rendimento estável" : "deixou de pedir rendimento estável");
+    if (!!a.soCarteira !== !!b.soCarteira) out.push(b.soCarteira ? "passou a olhar só papéis que tenho" : "deixou de olhar só papéis que tenho");
+    if (fa.ordem !== fb.ordem) out.push(`ordem por ${ORDEM_FRASE[fa.ordem] || fa.ordem} → ${ORDEM_FRASE[fb.ordem] || fb.ordem}`);
+    return out;
+  }
+  // Valores que contam a entrada de um papel: "P/VP 0,93, DY 11,2%"
+  function resumoValores(l) {
+    const p = [];
+    if (l.classe === "fiis") { if (l.pvp != null) p.push("P/VP " + fmt(l.pvp, 2)); if (l.dy != null) p.push("DY " + fmt(l.dy, 1) + "%"); }
+    else if (l.classe === "acoes" || l.classe === "eua") { if (l.dy != null) p.push("DY " + fmt(l.dy, 1) + "%"); if (l.pl != null) p.push("P/L " + fmt(l.pl, 1)); }
+    else { if (l.dy != null) p.push("DY " + fmt(l.dy, 1) + "%"); if (l.liq != null) p.push("liquidez " + fmtMi(l.liq)); }
+    return p.join(", ");
+  }
+  // Duas variações (uma mais folgada, uma mais apertada) de cada critério numérico ligado, com quem entraria e quem sairia.
+  // Conta pura sobre as mesmas linhas. ctx igual ao de aplicar.
+  const PASSOS = {
+    pvpMax: (v) => [Math.round((v + 0.05) * 100) / 100, Math.max(0.05, Math.round((v - 0.05) * 100) / 100)],
+    dyMin: (v) => [Math.max(0, v - 1), v + 1],
+    liqMin: (v) => [Math.round(v / 2), Math.round(v * 1.5)],
+    plMax: (v) => [v + 2, Math.max(0.5, v - 2)],
+  };
+  function variacoes(linhas, f, ctx) {
+    const base = new Set(aplicar(linhas, f, ctx).passam.map((l) => l.t));
+    const out = [];
+    for (const k of ["pvpMax", "dyMin", "liqMin", "plMax"]) {
+      if (!CAMPOS[f.classe] || !CAMPOS[f.classe].includes(k) || f[k] == null || ((k === "dyMin" || k === "liqMin") && !(f[k] > 0))) continue;
+      for (const v of PASSOS[k](f[k])) {
+        if (v === f[k]) continue;
+        const novo = new Set(aplicar(linhas, { ...f, [k]: v }, ctx).passam.map((l) => l.t));
+        const entrariam = [...novo].filter((t) => !base.has(t)), sairiam = [...base].filter((t) => !novo.has(t));
+        out.push({ campo: k, de: f[k], valor: v, entrariam, sairiam, texto: `${ROTULO[k]} ${valorCampo(k, v, f.classe)}` });
+      }
+    }
+    return out;
+  }
+
+  // ---------- comparações com a carteira (página da lista) ----------
+  // Quanto o preço precisa subir, em %, para chegar ao preço médio. 0 quando já está acima; null sem os dois.
+  function paraEmpatar(pm, preco) {
+    if (!(pm > 0) || !(preco > 0)) return null;
+    return preco >= pm ? 0 : Math.round((pm / preco - 1) * 1e4) / 100;
+  }
+  // Proventos de 12 meses sobre o custo da posição, em %
+  const dySobreCusto = (prov12, custo) => (custo > 0 && prov12 != null ? Math.round((prov12 / custo) * 1e4) / 100 : null);
+
   raiz.RadarFiltro = {
+    paraEmpatar, dySobreCusto,
+    CLASSES_REGRA, EXTRAS, CAMPOS, linhasB3, linhasDe, fraseRegra, mudancasRegra, resumoValores, variacoes, valorCampo, ROTULO,
     CLASSES, NOME_CLASSE, ORDENS, PADRAO_CLASSE, FABRICA, MAX_FILTROS, NOME_MAX,
     novoFiltro, padraoPrefs, validarFiltro, validarPrefs, respostaPrefs, filtroPadrao,
     linhasFii, linhasAcoes, linhasEua, avaliar, avisos, naMeta, ordenar, aplicar, ctxCarteira, contraFiltro, caindo,

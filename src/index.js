@@ -12,7 +12,7 @@ import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
 import { rotaPapel, cronPapel, ID_OK as PAPEL_ID_OK } from "./papel.js";
 import { BDR_DE_US, US_DE_BDR } from "./bdr.js";
 import { rotaCarteira, limparCacheCarteira } from "./carteira.js";
-import { rotaListas, sincronizarListasCarteira } from "./listas.js";
+import { rotaListas, sincronizarListasCarteira, cronListas } from "./listas.js";
 import { rotaLeitura, cronLeitura, lerFundamentos } from "./leitura.js";
 // Radar de dividendos: o mesmo arquivo que a página carrega (critérios, avisos e validação dos filtros salvos)
 import "../public/radar-filtro.js";
@@ -238,11 +238,12 @@ async function favoritos(request, env, quem, idFav) {
   return json({ erro: "metodo" }, 405);
 }
 
-// Listas de acompanhamento (Investimentos): manuais e automáticas da carteira, mover e copiar papel. Tudo em src/listas.js.
+// Listas de acompanhamento (Investimentos): manuais, por regra e automáticas da carteira, mover e copiar papel,
+// ordem de exibição e recálculo. Tudo em src/listas.js; as regras leem meta/* pelo espelho e as fichas guardadas.
 export { validarLista } from "./listas.js";
 export async function listas(request, env, quem, idLista) {
   if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
-  return rotaListas(request, env, quem, idLista, { lerLinhas, gravarNoEspelho, removerDoEspelho });
+  return rotaListas(request, env, quem, idLista, { lerLinhas, lerLinha, lerFundamentos, gravarNoEspelho, removerDoEspelho });
 }
 
 // Painel inicial (aba Início): ordem, tamanho e o que aparece, um doc por pessoa em prefs/<email>, id "painel".
@@ -592,6 +593,8 @@ export default {
       const r = await cronLeitura(env, evento.scheduledTime || Date.now(), { lerLinhas, lerLinha, gravarNoEspelho }, podeVer);
       if (r && (r.geradas || r.erros)) console.log("leitura", JSON.stringify(r));
     } catch (e) { console.error("leitura", String((e && e.message) || e).slice(0, 120)); }
+    // Minhas listas por regra: recalcula as ligadas de todo mundo no minuto 41 (grava só as que mudaram)
+    try { const r = await cronListas(env, evento.scheduledTime || Date.now(), { lerLinha, lerFundamentos, gravarNoEspelho }); if (r && r.listas) console.log("listas", JSON.stringify(r)); } catch (e) { console.error("listas", String((e && e.message) || e).slice(0, 120)); }
     if (minuto === 7) {
       // Índice que a coleta precisa (barato: só confere o catálogo). Fica aqui para valer mesmo onde o schema.sql não foi reaplicado.
       try { await env.DB.prepare("CREATE INDEX IF NOT EXISTS docs_url ON docs (json_extract(data, '$.url'))").run(); } catch (e) { console.error("indice", e); }

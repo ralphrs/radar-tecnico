@@ -821,8 +821,19 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .ini-sub { margin: 4px 0 0; font: 400 12.5px/1.45 var(--font-mono); color: var(--muted-foreground); }
 .ini-sub::first-letter { text-transform: uppercase; }
 .ini-aviso { margin: 0; font-size: 12.5px; color: var(--warn); }
-.ini-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start; }
-@media (min-width: 700px) { .wdg[data-tam="2"] { grid-column: span 2; } }
+/* Grade do Início: 3 colunas a partir de 1200 px, 2 entre 700 e 1200, 1 abaixo. Formato "colunas x linhas" em data-c e
+   data-r; a largura nunca passa do número de colunas da tela e a altura (linhas) vale em qualquer largura. */
+.ini-grade { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(180px, auto); grid-auto-flow: dense; gap: 16px; }
+@media (min-width: 700px) { .ini-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wdg[data-c="2"], .wdg[data-c="3"] { grid-column: span 2; } }
+@media (min-width: 1200px) { .ini-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); } .wdg[data-c="3"] { grid-column: span 3; } }
+.wdg[data-r="2"] { grid-row: span 2; }
+.wdg > .wdg-corpo { flex: 1 1 auto; min-height: 0; }
+@media (min-width: 700px) {
+.wdg[data-c="2"] .wdg-lsts, .wdg[data-c="3"] .wdg-lsts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; }
+.wdg[data-c="2"] .wdg-lsts .wdg-lst + .wdg-lst, .wdg[data-c="3"] .wdg-lsts .wdg-lst + .wdg-lst { padding-top: 0; border-top: 0; }
+.wdg[data-c="2"] .wdg-2col, .wdg[data-c="3"] .wdg-2col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+.wdg[data-c="2"] .wdg-2col > div:nth-child(2), .wdg[data-c="3"] .wdg-2col > div:nth-child(2) { border-top: 0; padding-top: 0; }
+}
 @media (max-width: 699px) { .ini-cab h2 { font-size: 20px; } .ini-grade { gap: 12px; } }
 .wdg { container-type: inline-size; position: relative; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-sm); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .wdg-cab { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
@@ -1205,6 +1216,121 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 }
 .rd-folha .painel-corpo { padding-block: 14px; }
 .rd-folha .rd-form .dd-input { height: 40px; font-size: 16px; }
+
+/* Personalizar: alça para arrastar (e setas do teclado), formatos em miniatura */
+.pers-item { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.pers-item.cai-antes { box-shadow: inset 0 2px 0 var(--primary); }
+.pers-item.cai-depois { box-shadow: inset 0 -2px 0 var(--primary); }
+.pers-item.arrastando { opacity: .45; }
+.pers-alca { display: inline-grid; place-items: center; width: 22px; height: 28px; border-radius: 4px; color: var(--muted-foreground); cursor: grab; }
+.pers-alca svg { width: 16px; height: 16px; }
+.pers-alca:hover { color: var(--foreground); }
+.pers-alca:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.pers-fmt { display: inline-flex; gap: 4px; }
+.pers-fmt button { all: unset; box-sizing: border-box; display: inline-grid; place-items: center; width: 34px; height: 28px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--card); }
+.pers-fmt button:hover { border-color: var(--muted-foreground); }
+.pers-fmt button[aria-checked="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--card)); }
+.pers-fmt button:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.pers-fmt button:disabled { opacity: .35; cursor: default; }
+.fmt-ico { display: grid; grid-template-columns: repeat(3, 6px); grid-template-rows: repeat(2, 5px); gap: 1.5px; }
+.fmt-ico i { border-radius: 1px; background: color-mix(in srgb, var(--muted-foreground) 30%, transparent); }
+.fmt-ico i.on { background: var(--primary); }
+.pers-setas { display: none; }
+@media (pointer: coarse) { .pers-setas { display: inline-flex; } .pers-alca { display: none; } .pers-item { grid-template-columns: minmax(0, 1fr) auto auto; } .pers-fmt button { width: 40px; height: 36px; } }
+.pers-cel { display: none; margin: 0; font-size: 12.5px; color: var(--muted-foreground); }
+@media (max-width: 699px) { .pers-cel { display: block; } }
+
+.lst-cab-acoes { display: inline-flex; gap: 12px; align-items: baseline; }
+a.lst-link, #lista-todas { text-decoration: none; cursor: pointer; }
+a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.wdg-lst h4 .wdg-lst-nome { flex: 1; min-width: 0; color: var(--foreground); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wdg-lst h4 .wdg-lst-nome:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.wdg-lst a.mais { color: var(--primary); text-decoration: none; }
+
+/* Minhas listas: página da lista, lista de listas e o painel de nova lista */
+.lp { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.lp-volta { font-size: 13px; color: var(--primary); text-decoration: none; }
+.lp-volta:hover { text-decoration: underline; text-underline-offset: 3px; }
+.lp-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.lp-cab h2 { margin: 0; font: 700 26px/1.15 var(--font-display); letter-spacing: -0.02em; min-width: 0; overflow-wrap: anywhere; }
+.lp-cab .dd-input { height: 38px; font: 700 20px var(--font-display); min-width: 0; width: min(420px, 100%); }
+.lp-nome { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.lp-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lp-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.lp-acoes .dd-btn { height: 32px; }
+.lp-desc { font-size: 14px; line-height: 1.55; color: var(--foreground); max-width: 78ch; }
+.lp-desc p { margin: 0 0 8px; } .lp-desc p:last-child, .lp-desc ul:last-child { margin-bottom: 0; }
+.lp-desc ul { margin: 0 0 8px; padding-left: 20px; }
+.lp-desc-vazia { margin: 0; color: var(--muted-foreground); font-size: 14px; }
+.lp-desc-edit textarea { width: 100%; min-height: 180px; box-sizing: border-box; resize: vertical; font: 14px/1.5 var(--font-sans); padding: 10px 12px; }
+.lp-desc-pe { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lp-desc-pe small { margin-left: auto; color: var(--muted-foreground); font: 400 12px var(--font-mono); }
+.lp-regra { margin: 0; padding-top: 10px; border-top: 1px solid var(--border); font: 400 13px/1.5 var(--font-mono); color: var(--muted-foreground); }
+.lp-regra b { font-family: var(--font-sans); color: var(--foreground); font-weight: 600; margin-right: 6px; }
+.lp-legenda { margin: 0; font-size: 12.5px; color: var(--muted-foreground); display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.lp-legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; border: 1px solid var(--border); }
+.lp-legenda .v { background: color-mix(in srgb, var(--ok) 8%, var(--card)); border-color: color-mix(in srgb, var(--ok) 45%, transparent); } .lp-legenda .r { background: color-mix(in srgb, var(--err) 8%, var(--card)); border-color: color-mix(in srgb, var(--err) 45%, transparent); }
+.lp-tab tr.lp-pos td { background: color-mix(in srgb, var(--ok) 8%, var(--card)); }
+.lp-tab tr.lp-neg td { background: color-mix(in srgb, var(--err) 8%, var(--card)); }
+.lp-tab td.lp-sit, .lp-tab th.lp-sit { text-align: left; }
+.lp-tab td .ct-tag { font-size: 11px; line-height: 15px; padding: 0 6px; }
+.lp-tab .nome-t { display: block; max-width: 170px; overflow: hidden; text-overflow: ellipsis; font: 400 12.5px var(--font-sans); color: var(--muted-foreground); }
+.rd-tab td.lp-txt, .rd-tab th.lp-txt { text-align: left; font-family: var(--font-sans); font-size: 12.5px; }
+.lp-bloco > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 10px; }
+.lp-bloco > summary::-webkit-details-marker { display: none; }
+.lp-bloco > summary h3 { margin: 0; font: 600 17px/1.3 var(--font-display); letter-spacing: -0.02em; }
+.lp-bloco > summary::after { content: "▾"; margin-left: auto; color: var(--muted-foreground); font-size: 12px; }
+.lp-bloco:not([open]) > summary::after { content: "▸"; }
+.lp-bloco > summary small { color: var(--muted-foreground); font-size: 13px; }
+.lp-bloco[open] > summary { margin-bottom: 10px; }
+.lp-hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lp-hist > li { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13.5px; line-height: 1.5; }
+.lp-hist > li:first-child { border-top: 0; padding-top: 0; }
+.lp-hist .dia { font: 500 12.5px/1.6 var(--font-mono); color: var(--muted-foreground); }
+.lp-hist .ev + .ev::before { content: " · "; color: var(--muted-foreground); }
+.lp-hist .ent { color: var(--ok); font-weight: 600; } .lp-hist .sai { color: var(--err); font-weight: 600; }
+.lp-hist .mot { color: var(--muted-foreground); }
+.lp-sug { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.lp-sug p { margin: 0; }
+.lp-sug .papeis { display: inline; }
+.lp-var { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lp-var li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 7px 0; border-top: 1px solid var(--border); }
+.lp-var li:first-child { border-top: 0; }
+.lp-var li span { flex: 1 1 260px; min-width: 0; }
+.lp-fecho { font: 400 12px var(--font-mono); color: var(--muted-foreground); }
+.lp-aviso { margin: 0; font-size: 13px; color: var(--warn); }
+.ll-tab tr.lst-off td { opacity: .55; }
+.ll-tab tr.lst-off td:last-child { opacity: 1; }
+.ll-tab td.lp-txt { max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+.ll-tab tr[draggable="true"] td:first-child { cursor: grab; }
+.ll-tab tr.cai-antes td { box-shadow: inset 0 2px 0 var(--primary); }
+.ll-tab .ll-nome { font: 600 13.5px var(--font-sans); color: var(--foreground); text-decoration: none; }
+.ll-tab .ll-nome:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.ll-acoes { display: inline-flex; gap: 2px; }
+.ll-acoes .dd-btn { height: 28px; padding: 0 8px; font-size: 12.5px; }
+.ll-acoes .dd-btn--icon { width: 26px; padding: 0; font-size: 10px; }
+.lp-switch { all: unset; position: relative; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font: 500 12.5px var(--font-sans); color: var(--muted-foreground); }
+.lp-switch::before { content: ""; flex: none; width: 28px; height: 16px; border-radius: 999px; background: var(--border); transition: background 120ms; }
+.lp-switch::after { content: ""; position: absolute; left: 2px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--card); box-shadow: var(--shadow-sm); transition: transform 120ms; }
+.lp-switch[aria-checked="true"] { color: var(--foreground); }
+.lp-switch[aria-checked="true"]::before { background: var(--primary); }
+.lp-switch[aria-checked="true"]::after { transform: translateX(12px); }
+.lp-switch:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+.lp-folha .painel-corpo { gap: 14px; }
+.lp-folha textarea.dd-input { min-height: 96px; height: auto; resize: vertical; padding: 8px 10px; font: 14px/1.45 var(--font-sans); }
+.lp-previa { padding: 10px 12px; border-radius: var(--radius-md); background: var(--secondary); font-size: 13.5px; display: flex; flex-direction: column; gap: 4px; }
+.lp-previa b { font: 600 15px var(--font-sans); }
+.lp-previa small { color: var(--muted-foreground); font: 400 12px/1.5 var(--font-mono); overflow-wrap: anywhere; }
+.lp-papeis { display: flex; flex-wrap: wrap; gap: 6px; }
+.lp-papeis .chip { height: 26px; padding: 0 8px; font-size: 12.5px; }
+.lp-add { position: relative; }
+.lp-add .lst-sug { position: absolute; left: 0; right: 0; top: 100%; z-index: 3; }
+@media (max-width: 699px) {
+  .lp-cab h2 { font-size: 22px; }
+  .lp-acoes { margin-left: 0; width: 100%; }
+  .lp-acoes .dd-btn { height: 40px; flex: 1 1 auto; }
+  .lp-hist > li { grid-template-columns: 46px minmax(0, 1fr); }
+}
 </style>
 
 <div class="wrap">
@@ -1348,6 +1474,7 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
   <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira" id="conta-carteira"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18M7 6V4h10v2"/></svg>Minha carteira</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira/meta" id="conta-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Minha meta</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira/importar" id="conta-importar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Importar extratos</a>
+  <a class="conta-item" role="menuitem" tabindex="-1" href="#listas" id="conta-listas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>Minhas listas</a>
   <div class="conta-sep" role="separator" id="conta-sep-cart"></div>
   <button class="conta-item" type="button" role="menuitem" tabindex="-1" id="aparencia" data-fica></button>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/admin" id="conta-admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Administração</a>
@@ -1363,6 +1490,15 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
   <div class="painel-corpo" id="rd-folha-corpo"></div>
   <div class="painel-pe" id="rd-folha-pe"></div>
 </div>
+<div class="pers-veu" id="lp-veu" hidden></div>
+<div class="pers rd-folha lp-folha" id="lp-folha" role="dialog" aria-modal="true" aria-labelledby="lp-folha-titulo" tabindex="-1" hidden>
+  <div class="painel-topo">
+    <h2 id="lp-folha-titulo">Nova lista</h2>
+    <button class="dd-btn dd-btn--ghost alvo" type="button" id="lp-folha-fechar">Fechar</button>
+  </div>
+  <div class="painel-corpo" id="lp-folha-corpo"></div>
+  <div class="painel-pe" id="lp-folha-pe"></div>
+</div>
 <div class="pers-veu" id="pers-veu" hidden></div>
 <div class="pers" id="pers" role="dialog" aria-modal="true" aria-labelledby="pers-titulo" tabindex="-1" hidden>
   <div class="painel-topo">
@@ -1370,7 +1506,8 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
     <button class="dd-btn dd-btn--ghost alvo" type="button" id="pers-fechar">Fechar</button>
   </div>
   <div class="painel-corpo">
-    <p class="pers-dica" id="pers-dica">Marque o que aparece, mude a ordem com as setas e escolha a largura de cada card. A grade muda na hora e fica salva na sua conta quando você fecha.</p>
+    <p class="pers-dica" id="pers-dica">Marque o que aparece, arraste pela alça (ou use as setas do teclado nela) para mudar a ordem e escolha o formato de cada card. A grade muda na hora e fica salva na sua conta quando você fecha.</p>
+    <p class="pers-cel">No celular a grade mostra uma coluna só. O formato que você escolher vale no computador.</p>
     <ul class="pers-lista" id="pers-lista" aria-describedby="pers-dica"></ul>
   </div>
   <div class="painel-pe">
@@ -2482,8 +2619,12 @@ const rascunhos = {};
 const LISTA_MAX_PAPEIS = 60;
 const ORDEM_AUTO = ["carteira-fiis", "carteira-fiinfra", "carteira-fiagro", "carteira-acoes", "carteira-bdrs", "carteira-etfs", "carteira-subscricoes"];
 const ehAuto = (l) => !!(l && l.auto && ORDEM_AUTO.includes(l.id));
-/* automáticas primeiro, na ordem fixa; depois as manuais na ordem em que foram criadas */
-const ordenarListas = (ls) => [...ls.filter(ehAuto).sort((a, b) => ORDEM_AUTO.indexOf(a.id) - ORDEM_AUTO.indexOf(b.id)), ...ls.filter((l) => !ehAuto(l))];
+/* Lista por regra (dinâmica): os papéis vêm da regra; "+ papel" fixa e "×" exclui da regra */
+const ehDin = (l) => !!(l && l.regra && !l.regra.referencia && !l.auto);
+const listaAtiva = (l) => !!l && l.ativa !== false;
+/* Ordem de exibição: a posição gravada na lista de listas; sem ela, automáticas na ordem fixa e as manuais por criação */
+const pesoLista = (l, i) => (Number.isInteger(l.posicao) ? l.posicao : 1000 + (ehAuto(l) ? ORDEM_AUTO.indexOf(l.id) : 100)) * 1000 + i;
+const ordenarListas = (ls) => ls.map((l, i) => [l, pesoLista(l, i)]).sort((a, b) => a[1] - b[1]).map((x) => x[0]);
 async function apiListas(metodo, id, corpo) {
   const r = await fetch("/api/listas" + (id ? "/" + encodeURIComponent(id) : ""), {
     method: metodo, credentials: "same-origin", cache: "no-store",
@@ -2503,9 +2644,13 @@ async function carregarListas() {
 }
 let avisoListasT = 0;
 function avisarListas(t) { listasAviso = t; listasErro = ""; clearTimeout(avisoListasT); avisoListasT = setTimeout(() => { listasAviso = ""; renderListas(); }, 4000); }
-async function salvarLista(l) {
+async function salvarLista(l, campos) {
   renderListas();
-  try { await apiListas("PUT", l.id, { nome: l.nome, papeis: l.papeis, ...(Array.isArray(l.ordem) ? { ordem: l.ordem } : {}) }); if (listasErro) { listasErro = ""; renderListas(); } }
+  try {
+    const j = await apiListas("PUT", l.id, campos || { nome: l.nome, papeis: l.papeis, ...(Array.isArray(l.ordem) ? { ordem: l.ordem } : {}) });
+    if (j && j.data) { Object.assign(l, j.data); if (campos) renderListas(); }
+    if (listasErro) { listasErro = ""; renderListas(); }
+  }
   catch (e) { listasErro = e.message; renderListas(); }
 }
 function nomeLivre(base) {
@@ -2514,6 +2659,9 @@ function nomeLivre(base) {
   for (let n = 2; ; n++) { const t = base.replace(/\)$/, " " + n + ")"); if (!nomes.has(t)) return t; }
 }
 async function novaLista() {
+  abrirPainelLista({ volta: $("lista-nova") });
+}
+async function novaListaRapida() {
   const nomes = new Set(listas.map((l) => l.nome));
   let nome = "Minha lista", n = 2;
   while (nomes.has(nome)) nome = "Lista " + n++;
@@ -2547,8 +2695,10 @@ function adicionarPapel(l, t) {
   if (!PAPEL_OK.test(t)) { listasErro = "Use o código do papel, como PETR4, HGLG11 ou AAPL."; renderListas(); return; }
   rascunhos[l.id] = "";
   if (l.papeis.includes(t)) { listasErro = `${t} já está nesta lista.`; renderListas(); return; }
-  if (l.papeis.length >= LISTA_MAX_PAPEIS) { listasErro = `Uma lista guarda até ${LISTA_MAX_PAPEIS} papéis.`; renderListas(); return; }
+  if (l.papeis.length >= LISTA_MAX_PAPEIS && !ehDin(l)) { listasErro = `Uma lista guarda até ${LISTA_MAX_PAPEIS} papéis.`; renderListas(); return; }
   listasErro = "";
+  /* na lista por regra o papel entra nos fixos e o servidor refaz a conta */
+  if (ehDin(l)) { salvarLista(l, { fixos: [...(l.fixos || []).filter((x) => x !== t), t], excluidos: (l.excluidos || []).filter((x) => x !== t) }); avisarListas(`${t} fixado em “${l.nome}”.`); return; }
   l.papeis = [...l.papeis, t];
   salvarLista(l);
 }
@@ -2723,7 +2873,7 @@ function listaEl(l) {
   ligarArrasto(box, l);
   const cab = el("div", { class: "lst-cab" });
   if (auto) {
-    cab.append(el("span", { class: "lst-nome lst-nome-fixo", id: "lst-nomebtn-" + l.id }, l.nome),
+    cab.append(el("a", { class: "lst-nome lst-nome-fixo lst-link", id: "lst-nomebtn-" + l.id, href: "#lista/" + encodeURIComponent(l.id), title: "Abrir a lista" }, l.nome),
       el("span", { class: "seu", title: "Montada pela sua carteira a cada importação de extratos. Para mexer, copie para uma lista sua." }, "da carteira"));
   } else if (editandoLista === l.id) {
     const inp = el("input", { class: "dd-input", id: "lst-nome-" + l.id, value: l.nome, maxlength: "40", "aria-label": "Nome da lista", autocomplete: "off" });
@@ -2739,9 +2889,9 @@ function listaEl(l) {
     inp.addEventListener("blur", () => { if (!desenhandoListas) fim(true, false); });
     cab.append(inp);
   } else {
-    const nome = el("button", { class: "lst-nome", type: "button", id: "lst-nomebtn-" + l.id, title: "Renomear a lista" }, l.nome);
-    nome.addEventListener("click", () => { editandoLista = l.id; renderListas(); const i = $("lst-nome-" + l.id); if (i) { i.focus(); i.select(); } });
-    cab.append(nome);
+    /* o nome abre a página da lista (descrição, comparações, histórico); renomear fica lá */
+    cab.append(el("a", { class: "lst-nome lst-link", id: "lst-nomebtn-" + l.id, href: "#lista/" + encodeURIComponent(l.id), title: "Abrir a lista" }, l.nome),
+      ...(ehDin(l) ? [el("span", { class: "seu", title: "Os papéis vêm de uma regra, recalculada a cada hora" }, "por regra")] : []));
   }
   const apagar = el("button", { class: "lst-x", type: "button", "aria-label": `Excluir a lista ${l.nome}`, title: auto ? "Excluir a lista (volta na próxima importação)" : "Excluir a lista", html: LIXEIRA });
   apagar.addEventListener("click", () => excluirLista(l));
@@ -2762,8 +2912,12 @@ function listaEl(l) {
       mais.addEventListener("click", () => { if (menuPapel && menuPapel.volta === mais) fecharMenuPapel(true); else abrirMenuPapel(l, t, mais); });
       const acoes = el("span", { class: "lst-acoes" }, mais);
       if (!auto) {
-        const tirar = el("button", { class: "lst-x", type: "button", "aria-label": `Tirar ${t} da lista`, title: "Tirar da lista" }, "×");
-        tirar.addEventListener("click", () => { l.papeis = l.papeis.filter((p) => p !== t); salvarLista(l); });
+        const din = ehDin(l);
+        const tirar = el("button", { class: "lst-x", type: "button", "aria-label": din ? `Excluir ${t} da regra` : `Tirar ${t} da lista`, title: din ? "Excluir da regra (não volta enquanto estiver excluído)" : "Tirar da lista" }, "×");
+        tirar.addEventListener("click", () => {
+          if (din) { salvarLista(l, { excluidos: [...(l.excluidos || []).filter((x) => x !== t), t], fixos: (l.fixos || []).filter((x) => x !== t) }); avisarListas(`${t} excluído da regra de “${l.nome}”.`); return; }
+          l.papeis = l.papeis.filter((p) => p !== t); salvarLista(l);
+        });
         acoes.append(tirar);
       }
       const sem = () => el("span", { class: "sem", title: ehPapelEua(t) ? "Fora das ações e ETFs americanos que acompanhamos; sem cotação aqui" : "Fora dos mais negociados; sem cotação aqui" }, "–");
@@ -2776,7 +2930,7 @@ function listaEl(l) {
       };
       const tr = el("tr", { "data-papel": t }, ...cols.map((c) => td[c.id]()), el("td", {}, acoes));
       /* ordem personalizada: arrastar a linha para cima de outra da mesma lista põe o papel antes dela */
-      if (!auto && personalizada && podeArrastar()) {
+      if (!auto && !ehDin(l) && personalizada && podeArrastar()) {
         tr.addEventListener("dragover", (e) => {
           if (!arrastoLista || arrastoLista.de !== l.id || arrastoLista.t === t) return;
           e.preventDefault(); e.dataTransfer.dropEffect = "move";
@@ -2839,7 +2993,7 @@ function listaEl(l) {
 
   /* + papel: sugere até 6 a partir de 2 letras; Enter escolhe a sugestão marcada ou o código digitado */
   const idInp = "lst-add-" + l.id;
-  const inp = el("input", { class: "dd-input", id: idInp, placeholder: "+ papel", "aria-label": `Adicionar papel à lista ${l.nome}`, autocomplete: "off", autocapitalize: "characters", spellcheck: "false", maxlength: "40", value: rascunhos[l.id] || "", role: "combobox", "aria-expanded": "false", "aria-controls": idInp + "-sug", "aria-autocomplete": "list" });
+  const inp = el("input", { class: "dd-input", id: idInp, placeholder: ehDin(l) ? "+ fixar papel" : "+ papel", "aria-label": ehDin(l) ? `Fixar papel na lista ${l.nome}` : `Adicionar papel à lista ${l.nome}`, autocomplete: "off", autocapitalize: "characters", spellcheck: "false", maxlength: "40", value: rascunhos[l.id] || "", role: "combobox", "aria-expanded": "false", "aria-controls": idInp + "-sug", "aria-autocomplete": "list" });
   const sug = el("ul", { class: "lst-sug", id: idInp + "-sug", role: "listbox", "aria-label": "Sugestões", hidden: "" });
   let opcoes = [], marcada = -1;
   const desenhar = () => {
@@ -2881,12 +3035,15 @@ function renderListas() {
   const cursor = foco && ativo.tagName === "INPUT" ? ativo.selectionStart : null;
   desenhandoListas = true;
   alvo.textContent = "";
-  const nova = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "lista-nova" }, "Nova lista");
+  const nova = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "lista-nova", "aria-haspopup": "dialog" }, "Nova lista");
   nova.addEventListener("click", novaLista);
-  const sec = el("section", { class: "bloco", id: "bloco-listas", "aria-label": "Minhas listas" }, el("h3", {}, "Minhas listas", nova));
+  const todas = el("a", { class: "dd-btn dd-btn--link", href: "#listas", id: "lista-todas" }, "Todas");
+  const sec = el("section", { class: "bloco", id: "bloco-listas", "aria-label": "Minhas listas" }, el("h3", {}, "Minhas listas", el("span", { class: "lst-cab-acoes" }, todas, nova)));
+  const ligadas = listas.filter(listaAtiva), desligadas = listas.length - ligadas.length;
   if (!listasCarregadas) sec.append(el("p", { class: "nota" }, "Carregando suas listas…"));
   else if (!listas.length) sec.append(el("p", { class: "nota", id: "listas-vazio" }, "Crie uma lista com os papéis da sua corretora para acompanhar cotação e DY aqui. Vale papel da B3, BDR e ação americana."));
-  listas.forEach((l) => sec.append(listaEl(l)));
+  ligadas.forEach((l) => sec.append(listaEl(l)));
+  if (desligadas) sec.append(el("p", { class: "nota" }, el("a", { href: "#listas" }, desligadas === 1 ? "1 lista desligada" : `${desligadas} listas desligadas`), " fica" + (desligadas === 1 ? "" : "m") + " só em Minhas listas."));
   if (listasErro) sec.append(el("p", { class: "lst-erro", role: "alert" }, listasErro));
   else if (listasAviso) sec.append(el("p", { class: "lst-aviso", role: "status" }, listasAviso));
   alvo.append(sec);
@@ -4508,17 +4665,30 @@ const CATALOGO_LOCAL = [
   { id: "leitura-dia", titulo: "Leitura do dia", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-contra-filtro", titulo: "Carteira contra o filtro", tamanho: 1, secao: "investimentos", pessoal: true },
 ];
+/* Formatos de cada widget ("colunas x linhas"), os mesmos de src/painel.js; o primeiro é o padrão. O catálogo do servidor manda. */
+const FORMATOS_LOCAL = { hoje: ["1x1"], mercado: ["1x1", "1x2"], pregao: ["2x1", "3x1", "2x2"], fiis: ["1x1", "2x1"], eua: ["1x1", "2x1"], listas: ["1x1", "1x2", "2x1"], favoritos: ["1x1", "1x2"], destaques: ["1x1", "1x2"], ultimas: ["1x1", "1x2"],
+  "carteira-meta": ["2x1", "3x1"], "carteira-patrimonio": ["1x1", "2x1"], "carteira-proventos-mes": ["1x1"], "carteira-pagamentos": ["1x1", "1x2"], "carteira-agenda": ["1x1", "1x2"], "carteira-rentabilidade": ["1x1", "2x1"],
+  "carteira-alertas": ["1x1", "1x2"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"], "carteira-contra-filtro": ["1x1"] };
+const formatosW = (id) => { const d = (painelCat || []).find((w) => w.id === id); return (d && Array.isArray(d.formatos) && d.formatos.length ? d.formatos : null) || FORMATOS_LOCAL[id] || FORMATOS_LOCAL[String(id).replace(/-.*$/, "")] || ["1x1"]; };
+/* { id, formato } a partir do que veio (formato, ou o tamanho antigo 1 ou 2) */
+function comFormato(w) {
+  const ok = formatosW(w.id);
+  if (typeof w.formato === "string" && ok.includes(w.formato)) return { id: w.id, formato: w.formato };
+  const quer = w.tamanho === 2 ? "2x1" : "1x1";
+  return { id: w.id, formato: ok.includes(quer) ? quer : ok[0] };
+}
+const fmtCR = (f) => { const [c, r] = String(f || "1x1").split("x").map(Number); return { c: c || 1, r: r || 1 }; };
 const PADRAO_LOCAL = ["hoje", "mercado", "destaques-tech", "destaques-negocios", "destaques-investimentos", "destaques-politica", "pregao", "eua", "listas", "favoritos", "destaques-esportes", "ultimas-tech"];
 let painelCat = null, painelW = null, painelSalvoTxt = null, painelMontado = false, prefsPedidas = false, meuNome = "";
 try {
   const s = JSON.parse(localStorage.getItem("radar-painel") || "null");
-  if (s && Array.isArray(s.widgets)) painelW = s.widgets.filter((w) => w && typeof w.id === "string").map((w) => ({ id: w.id, tamanho: w.tamanho === 2 ? 2 : 1 }));
   if (s && Array.isArray(s.catalogo)) painelCat = s.catalogo.filter((w) => w && typeof w.id === "string" && typeof w.titulo === "string");
+  if (s && Array.isArray(s.widgets)) painelW = s.widgets.filter((w) => w && typeof w.id === "string").map(comFormato);
 } catch (e) {}
 const catalogo = () => (painelCat || CATALOGO_LOCAL).filter((w) => !w.secao || !secoesLiberadas || secoesLiberadas.includes(w.secao));
 const defDe = (id) => catalogo().find((w) => w.id === id);
-const padraoLocal = () => PADRAO_LOCAL.map(defDe).filter(Boolean).map((w) => ({ id: w.id, tamanho: w.tamanho }));
-const widgetsAtuais = () => (painelW || padraoLocal()).filter((w) => defDe(w.id));
+const padraoLocal = () => PADRAO_LOCAL.map(defDe).filter(Boolean).map((w) => ({ id: w.id, formato: formatosW(w.id)[0] }));
+const widgetsAtuais = () => (painelW || padraoLocal()).filter((w) => defDe(w.id)).map(comFormato);
 function guardarPainelLocal() { try { localStorage.setItem("radar-painel", JSON.stringify({ widgets: painelW, catalogo: painelCat })); } catch (e) {} }
 
 /* Para onde leva o título (e o "Ver tudo") de cada widget */
@@ -4554,7 +4724,7 @@ async function lerEuaPainel(fresco) { const d = await lerMeta("eua", fresco); if
 const marcaDe = (...ds) => ds.map((d) => (d && d.atualizado) || (d === null ? "-" : "?")).join("|");
 function leitor(id) {
   if (id.startsWith("destaques-")) { const r = RADARES[id.slice(10)]; return async () => { const x = await lerFeedResumo(r.destaques, "data", 1); return x && { d: x.d[0] || null, marca: x.marca }; }; }
-  if (id.startsWith("ultimas-")) { const r = RADARES[id.slice(8)]; return () => lerFeedResumo(r.items, "", 5); }
+  if (id.startsWith("ultimas-")) { const r = RADARES[id.slice(8)]; return () => lerFeedResumo(r.items, "", 10); }
   if (id === "mercado") return async (f) => { const d = await lerMeta("mercado", f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
   if (id === "pregao") return async (f) => { const d = await lerB3Painel(f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
   if (id === "eua") return async (f) => { const d = await lerEuaPainel(f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
@@ -4626,14 +4796,14 @@ function miniLista(titulo, lista, valor, cls, aba, so2) {
   return el("section", { class: "wdg-rk" }, el("h4", {}, titulo), ol);
 }
 const corpos = {
-  destaques(d) {
-    const l = d && Array.isArray(d.itens) ? d.itens.filter((x) => x && x.url).slice(0, 3) : [];
+  destaques(d, fm = { c: 1, r: 1 }) {
+    const l = d && Array.isArray(d.itens) ? d.itens.filter((x) => x && x.url).slice(0, 3 * fm.r) : [];
     if (!l.length) return [vazioW()];
     return [el("ul", { class: "wdg-lista" }, ...l.map((i) => el("li", {}, linkNoticia(i), i.porque || i.resumo ? el("p", { title: i.porque || i.resumo }, i.porque || i.resumo) : null)))];
   },
-  ultimas(l) {
+  ultimas(l, fm = { c: 1, r: 1 }) {
     if (!l || !l.length) return [vazioW()];
-    return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5).map((i) => el("li", {}, linkNoticia(i), el("div", { class: "n" }, fonteEl(i), el("span", {}, fmtRel(chave(i)))))))];
+    return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5 * fm.r).map((i) => el("li", {}, linkNoticia(i), el("div", { class: "n" }, fonteEl(i), el("span", {}, fmtRel(chave(i)))))))];
   },
   mercado(p) {
     const l = (p && p.itens) || [];
@@ -4650,14 +4820,14 @@ const corpos = {
     if (taxas.length) a.append(el("div", { class: "wdg-taxas" }, ...taxas.map((i) => el("span", { title: i.nome + " · " + (i.fonte || "") }, i.nome, el("b", {}, fmtNum(i.valor, i.casas) + (i.unidade === "%" ? "%" : " " + i.unidade))))));
     return [a];
   },
-  pregao() {
+  pregao(d, fm = { c: 1, r: 1 }) {
     if (!b3) return [vazioW()];
-    const l = listaCvm("acoes");
+    const l = listaCvm("acoes"), n = 5 * fm.r;
     const corVar = (x) => clsVar(x.var);
     return [el("div", { class: "wdg-cols c3" },
-      miniLista("Maiores altas", l.filter((x) => x.var > 0).sort((a, b) => b.var - a.var).slice(0, 5), (x) => pctVar(x.var), corVar, "acoes"),
-      miniLista("Maiores baixas", l.filter((x) => x.var < 0).sort((a, b) => a.var - b.var).slice(0, 5), (x) => pctVar(x.var), corVar, "acoes"),
-      miniLista("Mais negociadas", l.filter((x) => x.liq != null).sort((a, b) => b.liq - a.liq).slice(0, 5), (x) => "R$ " + fmtVol(x.liq), null, "acoes"))];
+      miniLista("Maiores altas", l.filter((x) => x.var > 0).sort((a, b) => b.var - a.var).slice(0, n), (x) => pctVar(x.var), corVar, "acoes"),
+      miniLista("Maiores baixas", l.filter((x) => x.var < 0).sort((a, b) => a.var - b.var).slice(0, n), (x) => pctVar(x.var), corVar, "acoes"),
+      miniLista("Mais negociadas", l.filter((x) => x.liq != null).sort((a, b) => b.liq - a.liq).slice(0, n), (x) => "R$ " + fmtVol(x.liq), null, "acoes"))];
   },
   fiis() {
     if (!b3) return [vazioW()];
@@ -4667,8 +4837,9 @@ const corpos = {
       miniLista("Maior DY", liquidos.filter((x) => x.dy != null && !x.dyAnual).sort((a, b) => b.dy - a.dy).slice(0, 4), (x) => fmtNum(x.dy, 2) + "%", null, "fiis", true),
       miniLista("Mais descontados", liquidos.filter((x) => x.pvp != null && x.pvp > 0.2).sort((a, b) => a.pvp - b.pvp).slice(0, 4), (x) => fmtNum(x.pvp, 2), null, "fiis", true))];
   },
-  eua(e) {
+  eua(e, fm = { c: 1, r: 1 }) {
     if (!e) return [vazioW()];
+    const n = fm.c > 1 ? 6 : 4;
     const out = [];
     const idx = Array.isArray(e.indices) ? e.indices.slice(0, 3) : [];
     if (idx.length) out.push(el("a", { class: "wdg-idx", href: "#investimentos/eua", title: "Abrir a visão EUA" }, ...idx.map((x) => el("div", {},
@@ -4676,14 +4847,17 @@ const corpos = {
     const l = listaCvm("usacoes");
     const corVar = (x) => clsVar(x.var);
     out.push(el("div", { class: "wdg-cols c2" },
-      miniLista("Maiores altas", l.filter((x) => x.var > 0).sort((a, b) => b.var - a.var).slice(0, 4), (x) => pctVar(x.var), corVar, "usacoes", true),
-      miniLista("Maiores baixas", l.filter((x) => x.var < 0).sort((a, b) => a.var - b.var).slice(0, 4), (x) => pctVar(x.var), corVar, "usacoes", true)));
+      miniLista("Maiores altas", l.filter((x) => x.var > 0).sort((a, b) => b.var - a.var).slice(0, n), (x) => pctVar(x.var), corVar, "usacoes", true),
+      miniLista("Maiores baixas", l.filter((x) => x.var < 0).sort((a, b) => a.var - b.var).slice(0, n), (x) => pctVar(x.var), corVar, "usacoes", true)));
     return out;
   },
-  listas(ls) {
-    if (!ls || !ls.length) return [vazioW("Nada por aqui ainda. As listas que você criar na Bolsa aparecem aqui.")];
-    const MAX = 4;
-    return ls.map((l) => {
+  listas(todas, fm = { c: 1, r: 1 }) {
+    const ls = (todas || []).filter(listaAtiva);
+    if (!ls.length) return [vazioW(todas && todas.length ? "Todas as suas listas estão desligadas. Ligue uma em Minhas listas." : "Nada por aqui ainda. As listas que você criar na Bolsa aparecem aqui.")];
+    /* linhas que cabem no card, divididas entre as listas: 2 linhas de grade dão o dobro, 2 colunas põem duas listas lado a lado */
+    const porColuna = Math.ceil(ls.length / (fm.c > 1 ? 2 : 1));
+    const MAX = Math.max(2, Math.min(fm.r > 1 ? 9 : 4, Math.floor((fm.r > 1 ? 22 : 12) / porColuna) - 1));
+    return [el("div", { class: "wdg-lsts" }, ...ls.map((l) => {
       const ol = el("ol", {});
       papeisOrdenados(l).slice(0, MAX).forEach((t) => {
         const c = cotDe(t), x = c && c[0];
@@ -4692,13 +4866,13 @@ const corpos = {
         ol.append(el("li", {}, b, el("span", { class: "rk-preco" }, x && x.preco != null ? fmtPreco(x) : "–"), el("span", { class: "rk-val " + clsVar(x && x.var) }, x && x.var != null ? pctVar(x.var) : "–")));
       });
       if (!l.papeis.length) ol.append(el("li", { class: "rk-vazio" }, "Lista vazia"));
-      return el("div", { class: "wdg-lst" }, el("h4", {}, el("span", {}, l.nome), ehAuto(l) ? el("span", { class: "seu", title: "Montada pela sua carteira" }, "da carteira") : null, el("small", {}, l.papeis.length === 1 ? "1 papel" : l.papeis.length + " papéis")),
-        el("div", { class: "wdg-rk" }, ol), l.papeis.length > MAX ? el("span", { class: "mais" }, `+${l.papeis.length - MAX} na Bolsa`) : null);
-    });
+      return el("div", { class: "wdg-lst" }, el("h4", {}, el("a", { href: "#lista/" + encodeURIComponent(l.id), class: "wdg-lst-nome" }, l.nome), ehAuto(l) ? el("span", { class: "seu", title: "Montada pela sua carteira" }, "da carteira") : ehDin(l) ? el("span", { class: "seu", title: "Os papéis vêm de uma regra, recalculada a cada hora" }, "por regra") : null, el("small", {}, l.papeis.length === 1 ? "1 papel" : l.papeis.length + " papéis")),
+        el("div", { class: "wdg-rk" }, ol), l.papeis.length > MAX ? el("a", { class: "mais", href: "#lista/" + encodeURIComponent(l.id) }, `+${l.papeis.length - MAX} na lista`) : null);
+    }))];
   },
-  favoritos(l) {
+  favoritos(l, fm = { c: 1, r: 1 }) {
     if (!l || !l.length) return [vazioW("Nada por aqui ainda. Toque no coração ao lado de uma notícia para guardar.")];
-    return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5).map((i) => el("li", {}, linkNoticia(i), el("div", { class: "n" }, el("b", {}, RADARES[radarDoFav(i._id)].aba), fonteEl(i)))))];
+    return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5 * fm.r).map((i) => el("li", {}, linkNoticia(i), el("div", { class: "n" }, el("b", {}, RADARES[radarDoFav(i._id)].aba), fonteEl(i)))))];
   },
   hoje(j) {
     const l = (j && j.secoes) || [];
@@ -4767,7 +4941,7 @@ function pintarWidget(id) {
     const b = el("button", { class: "dd-btn dd-btn--link", type: "button" }, "Tentar de novo");
     b.addEventListener("click", () => { wDados.delete(id); pintarWidget(id); carregarWidget(id, true); });
     corpo = [el("p", { class: "wdg-vazio" }, "Não deu para carregar agora. ", b)];
-  } else corpo = corpos[tipoDoWidget(id)](x.d);
+  } else corpo = corpos[tipoDoWidget(id)](x.d, fmtCR(card.dataset.formato));
   card.textContent = "";
   card.append(cab, el("div", { class: "wdg-corpo" }, ...corpo), rodapeDe(id, x));
 }
@@ -4792,7 +4966,8 @@ function montarGrade() {
   const ws = widgetsAtuais().filter((w) => !(defDe(w.id).pessoal && pessoalOculto(w.id)));
   if (!ws.length) { g.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum card no Início"), "Use Personalizar para escolher o que aparece aqui.")); return; }
   ws.forEach((w) => {
-    const card = el("article", { class: "wdg", "data-id": w.id, "data-tam": String(w.tamanho), "aria-labelledby": "wdg-t-" + w.id });
+    const { c, r } = fmtCR(w.formato);
+    const card = el("article", { class: "wdg", "data-id": w.id, "data-c": String(c), "data-r": String(r), "data-formato": w.formato, "aria-labelledby": "wdg-t-" + w.id });
     g.append(card);
     pintarWidget(w.id);
     if (olhoPainel) olhoPainel.observe(card);
@@ -4900,7 +5075,7 @@ function aplicarModo() {
   const h1 = document.querySelector("h1");
   $("inicio").hidden = !inicio || !!carteiraVista;
   $("carteira").hidden = !inicio || !carteiraVista;
-  if (inicio && carteiraVista) { document.title = (TITULOS_CART[carteiraVista] || "Minha carteira") + " · Lookout"; h1.textContent = "Lookout"; }
+  if (inicio && carteiraVista) { document.title = (ehVistaLista(carteiraVista) ? "Minhas listas" : TITULOS_CART[carteiraVista] || "Minha carteira") + " · Lookout"; h1.textContent = "Lookout"; }
   else if (inicio) { document.title = "Início · Lookout"; h1.textContent = "Lookout"; }
   else { document.title = R().titulo + " · Lookout"; h1.textContent = R().titulo; }
 }
@@ -4910,14 +5085,29 @@ $("marca").addEventListener("click", (e) => { if (inicio && !carteiraVista) { e.
 let persAberto = false, persLista = [], persAbridor = null;
 function montarPersLista() {
   const ws = widgetsAtuais(), ja = new Set(ws.map((w) => w.id));
-  persLista = [...ws.map((w) => ({ ...w, mostrar: true })), ...catalogo().filter((w) => !ja.has(w.id)).map((w) => ({ id: w.id, tamanho: w.tamanho, mostrar: false }))];
+  persLista = [...ws.map((w) => ({ ...w, mostrar: true })), ...catalogo().filter((w) => !ja.has(w.id)).map((w) => ({ id: w.id, formato: formatosW(w.id)[0], mostrar: false }))];
 }
 /* Os widgets da carteira ficam num grupo à parte na lista; as setas trocam só com o vizinho do mesmo grupo */
 const ehPessoal = (id) => { const d = defDe(id); return !!(d && d.pessoal); };
 function aplicarPers(foco) {
-  painelW = persLista.filter((w) => w.mostrar).map(({ id, tamanho }) => ({ id, tamanho }));
+  painelW = persLista.filter((w) => w.mostrar).map(({ id, formato }) => ({ id, formato }));
   montarGrade(); renderPers(foco);
 }
+const NOME_FMT = { "1x1": "1 coluna, 1 linha", "2x1": "2 colunas, 1 linha", "3x1": "3 colunas, 1 linha", "1x2": "1 coluna, 2 linhas", "2x2": "2 colunas, 2 linhas" };
+function icoFormato(f) {
+  const { c, r } = fmtCR(f), box = el("span", { class: "fmt-ico", "aria-hidden": "true" });
+  for (let y = 1; y <= 2; y++) for (let x = 1; x <= 3; x++) box.append(el("i", { class: x <= c && y <= r ? "on" : "" }));
+  return box;
+}
+/* Move o item n de persLista para antes (ou depois) do item k, sem passar para o outro grupo (carteira e os demais) */
+function moverPers(n, k, depois) {
+  if (n === k || n < 0 || k < 0) return;
+  const alvo = persLista[k];
+  const [w] = persLista.splice(n, 1);
+  const i = persLista.indexOf(alvo) + (depois ? 1 : 0);
+  persLista.splice(i, 0, w);
+}
+let persArrasto = null;
 function renderPers(foco) {
   const ul = $("pers-lista"); ul.textContent = "";
   const semCart = cartSemDados();
@@ -4935,23 +5125,64 @@ function renderPers(foco) {
     const chk = el("input", { type: "checkbox", id: "pers-chk-" + w.id });
     chk.checked = w.mostrar;
     chk.addEventListener("change", () => { w.mostrar = chk.checked; aplicarPers("pers-chk-" + w.id); });
-    const mover = (d) => { const k = vizinho(d); if (k < 0) return; [persLista[n], persLista[k]] = [persLista[k], persLista[n]]; aplicarPers("pers-" + (d < 0 ? "cima" : "baixo") + "-" + w.id); };
+    const mover = (d, focoId) => { const k = vizinho(d); if (k < 0) return; [persLista[n], persLista[k]] = [persLista[k], persLista[n]]; aplicarPers(focoId); };
+    /* alça: arrasta com o mouse; com o foco nela, as setas sobem e descem o card */
+    /* span e não button: o Chromium não começa a arrastar a partir de um <button> */
+    const alca = el("span", { class: "pers-alca", role: "button", tabindex: "0", id: "pers-alca-" + w.id, draggable: "true", "aria-label": `Mover ${def.titulo}. Use as setas para cima e para baixo`, title: "Arraste ou use as setas", html: ALCA });
+    alca.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); mover(e.key === "ArrowUp" ? -1 : 1, "pers-alca-" + w.id); }
+    });
+    const li = el("li", { class: "pers-item" + (w.mostrar ? "" : " oculto"), "data-id": w.id });
+    alca.addEventListener("dragstart", (e) => {
+      persArrasto = { id: w.id, pessoal: !!def.pessoal };
+      e.dataTransfer.effectAllowed = "move";
+      try { e.dataTransfer.setData("text/plain", w.id); e.dataTransfer.setDragImage(li, 16, 16); } catch (er) {}
+      requestAnimationFrame(() => li.classList.add("arrastando"));
+    });
+    alca.addEventListener("dragend", () => { persArrasto = null; li.classList.remove("arrastando"); ul.querySelectorAll(".cai-antes, .cai-depois").forEach((x) => x.classList.remove("cai-antes", "cai-depois")); });
+    li.addEventListener("dragover", (e) => {
+      if (!persArrasto || persArrasto.id === w.id || persArrasto.pessoal !== !!def.pessoal) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = "move";
+      const r = li.getBoundingClientRect(), antes = e.clientY < r.top + r.height / 2;
+      ul.querySelectorAll(".cai-antes, .cai-depois").forEach((x) => { if (x !== li) x.classList.remove("cai-antes", "cai-depois"); });
+      li.classList.toggle("cai-antes", antes); li.classList.toggle("cai-depois", !antes);
+    });
+    li.addEventListener("dragleave", (e) => { if (!li.contains(e.relatedTarget)) li.classList.remove("cai-antes", "cai-depois"); });
+    li.addEventListener("drop", (e) => {
+      if (!persArrasto || persArrasto.id === w.id) return;
+      e.preventDefault();
+      const id = persArrasto.id, de = persLista.findIndex((x) => x.id === id), depois = li.classList.contains("cai-depois");
+      persArrasto = null;
+      moverPers(de, persLista.indexOf(w), depois);
+      aplicarPers("pers-alca-" + id);
+    });
     const cima = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon alvo", type: "button", id: "pers-cima-" + w.id, "aria-label": "Subir " + def.titulo, title: "Subir" }, "▲");
     const baixo = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon alvo", type: "button", id: "pers-baixo-" + w.id, "aria-label": "Descer " + def.titulo, title: "Descer" }, "▼");
     if (vizinho(-1) < 0) cima.disabled = true;
     if (vizinho(1) < 0) baixo.disabled = true;
     if (def.pessoal && pessoalOculto(w.id) && !w.mostrar) chk.disabled = true;
-    cima.addEventListener("click", () => mover(-1));
-    baixo.addEventListener("click", () => mover(1));
-    const tam = el("div", { class: "seg", role: "group", "aria-label": "Largura de " + def.titulo });
-    [1, 2].forEach((t) => {
-      const b = el("button", { type: "button", id: `pers-tam${t}-${w.id}`, "aria-pressed": String(w.tamanho === t), title: t === 1 ? "Uma coluna" : "Duas colunas (a partir de 700 px)", "aria-label": t === 1 ? "Uma coluna" : "Duas colunas" }, t === 1 ? "1" : "2");
-      if (!w.mostrar) b.disabled = true;
-      b.addEventListener("click", () => { if (w.tamanho !== t) { w.tamanho = t; aplicarPers(`pers-tam${t}-${w.id}`); } });
-      tam.append(b);
-    });
-    ul.append(el("li", { class: "pers-item" + (w.mostrar ? "" : " oculto") },
-      el("label", { for: "pers-chk-" + w.id }, chk, el("span", {}, def.titulo)), tam, el("span", { class: "pers-setas" }, cima, baixo)));
+    cima.addEventListener("click", () => mover(-1, "pers-cima-" + w.id));
+    baixo.addEventListener("click", () => mover(1, "pers-baixo-" + w.id));
+    /* formato: miniaturas só com os que o widget aceita (com um só, nada) */
+    const fmts = formatosW(w.id);
+    let fmt = null;
+    if (fmts.length > 1) {
+      fmt = el("div", { class: "pers-fmt", role: "radiogroup", "aria-label": "Formato de " + def.titulo });
+      fmts.forEach((f) => {
+        const b = el("button", { type: "button", role: "radio", id: `pers-fmt-${f}-${w.id}`, "aria-checked": String(w.formato === f), "aria-label": NOME_FMT[f] || f, title: NOME_FMT[f] || f, tabindex: w.formato === f ? "0" : "-1" }, icoFormato(f));
+        if (!w.mostrar) b.disabled = true;
+        b.addEventListener("click", () => { if (w.formato !== f) { w.formato = f; aplicarPers(`pers-fmt-${f}-${w.id}`); } });
+        b.addEventListener("keydown", (e) => {
+          const k = fmts.indexOf(f), d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+          if (!d) return;
+          e.preventDefault();
+          const nf = fmts[(k + d + fmts.length) % fmts.length]; w.formato = nf; aplicarPers(`pers-fmt-${nf}-${w.id}`);
+        });
+        fmt.append(b);
+      });
+    }
+    li.append(alca, el("label", { for: "pers-chk-" + w.id }, chk, el("span", {}, def.titulo)), fmt || el("span"), el("span", { class: "pers-setas" }, cima, baixo));
+    ul.append(li);
   });
   if (foco && $(foco)) { const f = $(foco); (f.disabled ? $("pers-lista").querySelector("button:not(:disabled), input") : f).focus({ preventScroll: false }); }
 }
@@ -4984,7 +5215,7 @@ $("pers-ok").addEventListener("click", fecharPers);
 $("pers-veu").addEventListener("click", fecharPers);
 $("pers-restaurar").addEventListener("click", () => {
   const p = padraoLocal(), ja = new Set(p.map((w) => w.id));
-  persLista = [...p.map((w) => ({ ...w, mostrar: true })), ...catalogo().filter((w) => !ja.has(w.id)).map((w) => ({ id: w.id, tamanho: w.tamanho, mostrar: false }))];
+  persLista = [...p.map((w) => ({ ...w, mostrar: true })), ...catalogo().filter((w) => !ja.has(w.id)).map((w) => ({ id: w.id, formato: formatosW(w.id)[0], mostrar: false }))];
   aplicarPers("pers-restaurar");
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && persAberto) { e.preventDefault(); fecharPers(); } });
@@ -5048,9 +5279,18 @@ $("ini-grade").addEventListener("dragend", () => {
 var carteiraVista = null;
 const VISTAS_CART = { "": "geral", mais: "geral", proventos: "proventos", meta: "meta", importar: "importar" };
 const TITULOS_CART = { geral: "Minha carteira", proventos: "Proventos", meta: "Minha meta", importar: "Importar extratos da B3" };
-function carteiraDoHash() { const p = partesDoHash(); return p[0] === "carteira" ? VISTAS_CART[p[1] || ""] || "geral" : null; }
+/* Minhas listas usam o mesmo modo: "listas" (#listas) e "lista:<id>" (#lista/<id>) */
+function carteiraDoHash() {
+  const p = partesDoHash();
+  if (p[0] === "listas") return "listas";
+  if (p[0] === "lista" && p[1]) { try { return "lista:" + decodeURIComponent(p[1]); } catch (e) { return "listas"; } }
+  return p[0] === "carteira" ? VISTAS_CART[p[1] || ""] || "geral" : null;
+}
+const ehVistaLista = (v) => v === "listas" || String(v || "").startsWith("lista:");
 carteiraVista = carteiraDoHash();
 function hashCarteira() {
+  if (carteiraVista === "listas") return "#listas";
+  if (ehVistaLista(carteiraVista)) return "#lista/" + encodeURIComponent(carteiraVista.slice(6));
   const cur = location.hash || "";
   if (cur.startsWith("#carteira") && carteiraDoHash() === carteiraVista) return cur;
   return "#carteira" + (carteiraVista === "geral" ? "" : "/" + carteiraVista);
@@ -5070,7 +5310,7 @@ function irCarteira(vista, porHash) {
 }
 function ajustarMenuCarteira() {
   const ok = !secoesLiberadas || secoesLiberadas.includes("investimentos");
-  ["conta-carteira", "conta-meta", "conta-importar", "conta-sep-cart"].forEach((id) => { $(id).hidden = !ok; });
+  ["conta-carteira", "conta-meta", "conta-importar", "conta-listas", "conta-sep-cart"].forEach((id) => { $(id).hidden = !ok; });
 }
 
 /* ---- dados ---- */
@@ -5170,7 +5410,7 @@ async function alternarPin(id) {
   const def = defDe(id); if (!def) return;
   const ws = widgetsAtuais();
   const i = ws.findIndex((w) => w.id === id);
-  if (i >= 0) ws.splice(i, 1); else ws.unshift({ id, tamanho: def.tamanho });
+  if (i >= 0) ws.splice(i, 1); else ws.unshift({ id, formato: formatosW(id)[0] });
   painelW = ws; guardarPainelLocal(); atualizarPins();
   await salvarPainel();
 }
@@ -5294,6 +5534,8 @@ function esqueletoCart() {
 }
 let renderCartGer = 0;
 async function renderCarteira() {
+  if (carteiraVista === "listas") return renderTodasListas(true);
+  if (ehVistaLista(carteiraVista)) return renderPaginaLista(carteiraVista.slice(6), true);
   const box = $("carteira"), v = carteiraVista, g = ++renderCartGer;
   if (!cartJ) { box.textContent = ""; box.append(cabCarteira(null), ...(v === "importar" ? [] : esqueletoCart())); if (v === "importar") desenharImportar(box, null); }
   const j = await lerCarteira();
@@ -5301,6 +5543,7 @@ async function renderCarteira() {
   desenharCarteira(j);
 }
 function desenharCarteira(j) {
+  if (ehVistaLista(carteiraVista)) return;
   const box = $("carteira"), v = carteiraVista;
   const rolar = window.scrollY;
   box.textContent = "";
@@ -5972,15 +6215,15 @@ corpos["carteira-proventos-mes"] = (j) => {
   return [el("div", { class: "wdg-cart" }, el("span", { class: "wdg-big" }, rs(r.mesAtual.total), el("small", {}, "até hoje")),
     el("div", { class: "ct-linhas" }, linhaEl("A receber (estimado)", "≈ " + rs(aRec)), linhaEl(mesNome(r.mesAnterior.mes).replace(/^./, (c) => c.toUpperCase()) + " inteiro", rs(r.mesAnterior.total)), linhaEl("Média 12m", rs(r.media12))))];
 };
-corpos["carteira-pagamentos"] = (j) => {
+corpos["carteira-pagamentos"] = (j, fm = { r: 1 }) => {
   const v = semCartW(j); if (v) return v;
-  const l = (j.resumo.aReceber || []).slice(0, 5);
+  const l = (j.resumo.aReceber || []).slice(0, 5 * fm.r);
   if (!l.length) return [vazioW("Nada a receber pelo que o Lookout conhece agora.")];
   return [el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " data a confirmar")), el("span", { class: "ct-mono" }, "≈ " + rs(x.valor, x.valor < 100)))))];
 };
-corpos["carteira-agenda"] = (j) => {
+corpos["carteira-agenda"] = (j, fm = { r: 1 }) => {
   const v = semCartW(j); if (v) return v;
-  const l = (j.resumo.agenda || []).slice(0, 5);
+  const l = (j.resumo.agenda || []).slice(0, 5 * fm.r);
   if (!l.length) return [vazioW("Nada anunciado por enquanto.")];
   return [el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, x.o === "subscricao" ? tagEl("subscrição", "err") : "Rendimento", " ", papelBtn(x.t)), el("span", { class: "ct-mono" }, x.o === "subscricao" ? "prazo a confirmar" : "≈ " + rs(x.valor)))))];
 };
@@ -5991,11 +6234,11 @@ corpos["carteira-rentabilidade"] = (j) => {
   return [el("div", { class: "ct-linhas" }, ...[["12 meses", x.m12], [j.resumo.hoje.slice(0, 4), x.ano], ["Desde " + mesC(x.desde), x.inicio]].map(([n, val]) => el("div", {}, el("span", {}, n), el("span", { class: "ct-mono " + clsS(val) }, pc(val, true))))),
     el("span", { class: "ct-nota", style: "font-size:12px" }, "Método de cotas (TWR). Índices para comparar em breve.")];
 };
-corpos["carteira-alertas"] = (j) => {
+corpos["carteira-alertas"] = (j, fm = { r: 1 }) => {
   const v = semCartW(j); if (v) return v;
   const l = j.resumo.alertas || [];
   if (!l.length) return [vazioW("Nenhum alerta agora.")];
-  return [el("div", { class: "ct-linhas" }, ...l.slice(0, 5).map((a) => el("div", {}, el("span", {}, ...textoAlerta(a)))))];
+  return [el("div", { class: "ct-linhas" }, ...l.slice(0, 5 * fm.r).map((a) => el("div", {}, el("span", {}, ...textoAlerta(a)))))];
 };
 
 /* ---------- Radar de dividendos: #investimentos/radar ----------
@@ -6190,9 +6433,10 @@ function segRadar(rot, idPre, opcoes, atual, acao) {
   });
   return el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, rot), g);
 }
-function campoRadar(id, rot, valor, casas, sufixo, definir, ph) {
+const campoRadar = (id, rot, valor, casas, sufixo, definir, ph) => campoRadarBase(id, rot, valor, casas, sufixo, definir, ph, mudouRadar);
+function campoRadarBase(id, rot, valor, casas, sufixo, definir, ph, mudou) {
   const inp = el("input", { class: "dd-input", id, type: "text", inputmode: "decimal", autocomplete: "off", value: valor == null ? "" : fmtNum(valor, casas), placeholder: ph || "sem limite" });
-  inp.addEventListener("input", () => { definir(numBr(inp.value)); mudouRadar(true); });
+  inp.addEventListener("input", () => { definir(numBr(inp.value)); mudou(true); });
   return el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: id }, rot), el("div", { class: "campo" }, inp, sufixo ? el("span", {}, sufixo) : null));
 }
 function chipsRadar(rot, idPre, valores, escolhidos, alternar, dica) {
@@ -6206,6 +6450,55 @@ function chipsRadar(rot, idPre, valores, escolhidos, alternar, dica) {
     box.append(b);
   });
   return el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, rot, dica ? el("small", { class: "dica" }, " " + dica) : null), box);
+}
+/* Critérios de um filtro (classe, números, segmentos, mostrar), no Radar e no painel de lista por regra.
+   o: { pre (prefixo dos ids), classes, linhas(classe), mudou(digitando), aoOrdem(classe)?, semMinhas, trocarClasse(c) } */
+function camposCriterios(form, f, o) {
+  const campoRadar = (id, rot, v, c, suf, def, ph) => campoRadarBase(id, rot, v, c, suf, def, ph, o.mudou);
+  form.append(segRadar("Classe", o.pre + "cls-", o.classes.map((c) => [c, RF.NOME_CLASSE[c]]), f.classe, o.trocarClasse));
+  if (f.classe === "fiis") {
+    form.append(
+      campoRadar(o.pre + "pvp", "P/VP até", f.pvpMax, 2, "", (v) => { f.pvpMax = v; }),
+      campoRadar(o.pre + "dy", "DY 12 meses mínimo", f.dyMin, 1, "%", (v) => { f.dyMin = v; }, "qualquer"),
+      campoRadar(o.pre + "liq", "Liquidez diária mínima", f.liqMin == null ? null : f.liqMin / 1e6, 1, "R$ mi", (v) => { f.liqMin = v == null ? null : v * 1e6; }, "qualquer"),
+      segRadar("Regularidade", o.pre + "reg-", [["12", "12 de 12 meses"], ["10", "10+"], ["0", "qualquer"]], f.regular, (v) => { f.regular = v; o.mudou(); }),
+      segRadar("Ordenar por", o.pre + "ord-", [["cotistas", "entrada de cotistas no mês"], ["liq", "liquidez"]], f.ordem, (v) => { f.ordem = v; if (o.aoOrdem) o.aoOrdem(f.classe); o.mudou(); }));
+    // segmentos e mandatos com a contagem de quem tem cotação
+    const linhas = o.linhas("fiis"), cont = {}, contM = {};
+    linhas.forEach((l) => { if (l.seg) cont[l.seg] = (cont[l.seg] || 0) + 1; if (l.man) contM[l.man] = (contM[l.man] || 0) + 1; });
+    f.seg.forEach((s) => { if (!(s in cont)) cont[s] = 0; });
+    const alternarLista = (campo) => (v) => { f[campo] = v === null ? [] : f[campo].includes(v) ? f[campo].filter((x) => x !== v) : [...f[campo], v]; o.mudou(); };
+    form.append(chipsRadar("Segmento", o.pre + "seg-", Object.keys(cont).sort((a, b) => cont[b] - cont[a] || a.localeCompare(b, "pt-BR")).map((s) => [s, segNome(s), cont[s]]), f.seg, alternarLista("seg"), "vários"));
+    if (Object.keys(contM).length) form.append(chipsRadar("Mandato", o.pre + "man-", Object.keys(contM).sort((a, b) => contM[b] - contM[a]).map((m) => [m, m, contM[m]]), f.man, alternarLista("man"), "vários"));
+    const chip = (id, txt, on, dica, acao) => { const b = el("button", { class: "chip", type: "button", id, "aria-pressed": String(on), title: dica }, txt); b.addEventListener("click", acao); return b; };
+    form.append(el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, "Mostrar"), el("div", { class: "chips" },
+      o.semMinhas ? chip(o.pre + "semminhas", "esconder o que já tenho", f.semMinhas, "Tira da lista os papéis que estão na sua carteira", () => { f.semMinhas = !f.semMinhas; o.mudou(); }) : null,
+      chip(o.pre + "estavel", "só com rendimento estável ou subindo", f.estavel, "Último rendimento × 12 de pelo menos 90% do DY de 12 meses", () => { f.estavel = !f.estavel; o.mudou(); }))));
+  } else if (RF.EXTRAS.includes(f.classe)) {
+    /* FI-Infra, Fiagro, ETFs e BDRs: DY das fichas guardadas e liquidez */
+    form.append(
+      campoRadar(o.pre + "dy", "DY 12 meses mínimo", f.dyMin, 1, "%", (v) => { f.dyMin = v; }, "qualquer"),
+      campoRadar(o.pre + "liq", "Liquidez diária mínima", f.liqMin == null ? null : f.liqMin / 1e6, 1, "R$ mi", (v) => { f.liqMin = v == null ? null : v * 1e6; }, "qualquer"),
+      segRadar("Ordenar por", o.pre + "ord-", [["liq", "liquidez"], ["dy", "DY"]], f.ordem, (v) => { f.ordem = v; o.mudou(); }),
+      el("p", { class: "rd-dica" }, "O DY vem das fichas de papel já abertas no Lookout; papel sem ficha não passa em DY mínimo."));
+  } else {
+    const us = f.classe === "eua";
+    form.append(
+      campoRadar(o.pre + "dy", us ? "Dividend yield mínimo" : "DY 12 meses mínimo", f.dyMin, 1, "%", (v) => { f.dyMin = v; }, "qualquer"),
+      campoRadar(o.pre + "pl", "P/L até", f.plMax, 1, "", (v) => { f.plMax = v; }));
+    if (!us) form.append(
+      campoRadar(o.pre + "pvp", "P/VP até", f.pvpMax, 2, "", (v) => { f.pvpMax = v; }),
+      campoRadar(o.pre + "liq", "Liquidez diária mínima", f.liqMin == null ? null : f.liqMin / 1e6, 1, "R$ mi", (v) => { f.liqMin = v == null ? null : v * 1e6; }, "qualquer"));
+    form.append(segRadar("Ordenar por", o.pre + "ord-", [["dy", us ? "dividend yield" : "DY"], ["liq", "liquidez"]], f.ordem, (v) => { f.ordem = v; if (o.aoOrdem) o.aoOrdem(f.classe); o.mudou(); }));
+    const cont = {};
+    o.linhas(f.classe).forEach((l) => { if (l.setor) cont[l.setor] = (cont[l.setor] || 0) + 1; });
+    f.setor.forEach((s) => { if (!(s in cont)) cont[s] = 0; });
+    if (Object.keys(cont).length) form.append(chipsRadar("Setor", o.pre + "set-", Object.keys(cont).sort((a, b) => cont[b] - cont[a] || a.localeCompare(b)).map((s) => [s, s, cont[s]]), f.setor,
+      (v) => { f.setor = v === null ? [] : f.setor.includes(v) ? f.setor.filter((x) => x !== v) : [...f.setor, v]; o.mudou(); }, "vários"));
+    const b = el("button", { class: "chip", type: "button", id: o.pre + "semminhas", "aria-pressed": String(f.semMinhas), title: "Tira da lista os papéis que estão na sua carteira" }, "esconder o que já tenho");
+    b.addEventListener("click", () => { f.semMinhas = !f.semMinhas; o.mudou(); });
+    if (!us && o.semMinhas) form.append(el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, "Mostrar"), el("div", { class: "chips" }, b)));
+  }
 }
 function desenharFormRadar() {
   const largo = MQ_NAV.matches;
@@ -6224,43 +6517,8 @@ function desenharFormRadar() {
   sel.append(el("option", { value: "__novo" }, "Novo filtro…"));
   sel.addEventListener("change", () => { const v = sel.value; if (v === "__novo") { sel.value = f.id; abrirFolhaRadar("novo"); return; } trocarFiltro(v); });
   form.append(el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: "rd-sel" }, "Meu radar"), sel));
-  form.append(segRadar("Classe", "rd-cls-", RF.CLASSES.map((c) => [c, RF.NOME_CLASSE[c]]), f.classe, (c) => { rdRasc = { ...RF.novoFiltro(c, f.nome, f.id) }; mudouRadar(); }));
-  if (f.classe === "fiis") {
-    form.append(
-      campoRadar("rd-pvp", "P/VP até", f.pvpMax, 2, "", (v) => { rdRasc.pvpMax = v; }),
-      campoRadar("rd-dy", "DY 12 meses mínimo", f.dyMin, 1, "%", (v) => { rdRasc.dyMin = v; }, "qualquer"),
-      campoRadar("rd-liq", "Liquidez diária mínima", f.liqMin == null ? null : f.liqMin / 1e6, 1, "R$ mi", (v) => { rdRasc.liqMin = v == null ? null : v * 1e6; }, "qualquer"),
-      segRadar("Regularidade", "rd-reg-", [["12", "12 de 12 meses"], ["10", "10+"], ["0", "qualquer"]], f.regular, (v) => { rdRasc.regular = v; mudouRadar(); }),
-      segRadar("Mais comprados por", "rd-ord-", [["cotistas", "entrada de cotistas no mês"], ["liq", "liquidez"]], f.ordem, (v) => { rdRasc.ordem = v; zerarOrdemRadar(f.classe); mudouRadar(); }));
-    // segmentos e mandatos com a contagem de quem tem cotação
-    const linhas = linhasRadar("fiis"), cont = {}, contM = {};
-    linhas.forEach((l) => { if (l.seg) cont[l.seg] = (cont[l.seg] || 0) + 1; if (l.man) contM[l.man] = (contM[l.man] || 0) + 1; });
-    f.seg.forEach((s) => { if (!(s in cont)) cont[s] = 0; });
-    const alternarLista = (campo) => (v) => { rdRasc[campo] = v === null ? [] : rdRasc[campo].includes(v) ? rdRasc[campo].filter((x) => x !== v) : [...rdRasc[campo], v]; mudouRadar(); };
-    form.append(chipsRadar("Segmento", "rd-seg-", Object.keys(cont).sort((a, b) => cont[b] - cont[a] || a.localeCompare(b, "pt-BR")).map((s) => [s, segNome(s), cont[s]]), f.seg, alternarLista("seg"), "vários"));
-    if (Object.keys(contM).length) form.append(chipsRadar("Mandato", "rd-man-", Object.keys(contM).sort((a, b) => contM[b] - contM[a]).map((m) => [m, m, contM[m]]), f.man, alternarLista("man"), "vários"));
-    const chip = (id, txt, on, dica, acao) => { const b = el("button", { class: "chip", type: "button", id, "aria-pressed": String(on), title: dica }, txt); b.addEventListener("click", acao); return b; };
-    form.append(el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, "Mostrar"), el("div", { class: "chips" },
-      chip("rd-semminhas", "esconder o que já tenho", f.semMinhas, "Tira da lista os papéis que estão na sua carteira", () => { rdRasc.semMinhas = !rdRasc.semMinhas; mudouRadar(); }),
-      chip("rd-estavel", "só com rendimento estável ou subindo", f.estavel, "Último rendimento × 12 de pelo menos 90% do DY de 12 meses", () => { rdRasc.estavel = !rdRasc.estavel; mudouRadar(); }))));
-  } else {
-    const us = f.classe === "eua";
-    form.append(
-      campoRadar("rd-dy", us ? "Dividend yield mínimo" : "DY 12 meses mínimo", f.dyMin, 1, "%", (v) => { rdRasc.dyMin = v; }, "qualquer"),
-      campoRadar("rd-pl", "P/L até", f.plMax, 1, "", (v) => { rdRasc.plMax = v; }));
-    if (!us) form.append(
-      campoRadar("rd-pvp", "P/VP até", f.pvpMax, 2, "", (v) => { rdRasc.pvpMax = v; }),
-      campoRadar("rd-liq", "Liquidez diária mínima", f.liqMin == null ? null : f.liqMin / 1e6, 1, "R$ mi", (v) => { rdRasc.liqMin = v == null ? null : v * 1e6; }, "qualquer"));
-    form.append(segRadar("Ordenar por", "rd-ord-", [["dy", us ? "dividend yield" : "DY"], ["liq", "liquidez"]], f.ordem, (v) => { rdRasc.ordem = v; zerarOrdemRadar(f.classe); mudouRadar(); }));
-    const cont = {};
-    linhasRadar(f.classe).forEach((l) => { if (l.setor) cont[l.setor] = (cont[l.setor] || 0) + 1; });
-    f.setor.forEach((s) => { if (!(s in cont)) cont[s] = 0; });
-    if (Object.keys(cont).length) form.append(chipsRadar("Setor", "rd-set-", Object.keys(cont).sort((a, b) => cont[b] - cont[a] || a.localeCompare(b)).map((s) => [s, s, cont[s]]), f.setor,
-      (v) => { rdRasc.setor = v === null ? [] : rdRasc.setor.includes(v) ? rdRasc.setor.filter((x) => x !== v) : [...rdRasc.setor, v]; mudouRadar(); }, "vários"));
-    const b = el("button", { class: "chip", type: "button", id: "rd-semminhas", "aria-pressed": String(f.semMinhas), title: "Tira da lista os papéis que estão na sua carteira" }, "esconder o que já tenho");
-    b.addEventListener("click", () => { rdRasc.semMinhas = !rdRasc.semMinhas; mudouRadar(); });
-    if (!us) form.append(el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, "Mostrar"), el("div", { class: "chips" }, b)));
-  }
+  camposCriterios(form, f, { pre: "rd-", classes: RF.CLASSES, linhas: linhasRadar, mudou: mudouRadar, aoOrdem: zerarOrdemRadar, semMinhas: true,
+    trocarClasse: (c) => { rdRasc = { ...RF.novoFiltro(c, f.nome, f.id) }; mudouRadar(); } });
   // nome, salvar, limpar
   const nome = el("input", { class: "dd-input", id: "rd-nome", type: "text", maxlength: String(RF.NOME_MAX), value: f.nome, autocomplete: "off" });
   nome.addEventListener("input", () => { rdRasc.nome = nome.value; rdSujo = true; rdEstado = "Alterações ainda não salvas."; rdEstadoCls = "warn"; const e = $("rd-estado"); if (e) { e.textContent = rdEstado; e.className = "rd-estado warn"; } });
@@ -6556,22 +6814,22 @@ function radarDoPadrao() {
   return { f, linhas, r: RF.aplicar(linhas, f, ctxRadar()) };
 }
 const novosHoje = (f) => new Set(rdLeit && rdLeit.existe && rdLeit.filtro && rdLeit.filtro.id === f.id && Array.isArray(rdLeit.novos) ? rdLeit.novos : []);
-corpos["radar-meu"] = () => {
+corpos["radar-meu"] = (d, fm = { c: 1, r: 1 }) => {
   const { f, r } = radarDoPadrao();
   if ((f.classe === "eua" ? !eua : !b3) || (f.classe === "fiis" && !fiiCvm)) return [esqueleto(5)];
   if (!r.passam.length) return [vazioW(`Nenhum papel passa no filtro "${f.nome}" hoje.`)];
   const novos = novosHoje(f), ctx = ctxRadar();
   const val = (x) => (x.classe === "fiis" ? `P/VP ${rdNum(x.pvp, 2)} · DY ${rdPct(x.dy)}` : `P/L ${rdNum(x.pl, 1)} · DY ${rdPct(x.dy)}`);
-  return [el("div", { class: "ct-linhas wdg-rd" }, ...r.passam.slice(0, 5).map((x) => el("div", {},
+  return [el("div", { class: "ct-linhas wdg-rd" + (fm.c > 1 ? " wdg-2col" : "") }, ...r.passam.slice(0, 5 * fm.r * (fm.c > 1 ? 2 : 1)).map((x) => el("div", {},
     el("span", {}, papelBtn(x.t), ctx.posicoes.has(x.t) ? tagEl("tenho", "ok") : null, novos.has(x.t) ? tagEl("novo hoje") : null),
     el("span", { class: "ct-mono" }, val(x)))))];
 };
-corpos["leitura-dia"] = () => {
+corpos["leitura-dia"] = (d, fm = { c: 1, r: 1 }) => {
   const L = rdLeit;
   if (!L) return [esqueleto(4)];
   if (L.desligada) return [vazioW("A Leitura do dia precisa da chave da carteira neste servidor.")];
   if (!L.existe || !Array.isArray(L.itens)) return [vazioW(L.erro ? "Não deu para abrir a leitura agora." : "A leitura de hoje sai às 7h40.")];
-  return [el("ul", { class: "wdg-leitura" }, ...L.itens.slice(0, 3).map((i) => el("li", {}, ...textoComPapeis(i.texto, i.papeis)))), el("span", { class: "wdg-fecho" }, "Só fatos. Nada aqui é recomendação.")];
+  return [el("ul", { class: "wdg-leitura" }, ...L.itens.slice(0, fm.r > 1 ? 8 : fm.c > 1 ? 5 : 3).map((i) => el("li", {}, ...textoComPapeis(i.texto, i.papeis)))), el("span", { class: "wdg-fecho" }, "Só fatos. Nada aqui é recomendação.")];
 };
 corpos["carteira-contra-filtro"] = (d) => {
   if (!d || !d.cj || d.cj.vazia || !temCarteira()) return [vazioW("Importe seus extratos da B3 em Minha carteira.")];
@@ -6613,6 +6871,656 @@ function blocoMetaRadar(m) {
   })();
   return c;
 }
+
+/* ---------- Minhas listas: página da lista (#lista/<id>), lista de listas (#listas) e o painel de nova lista ----------
+   As duas telas rodam no modo do Início, como a Minha carteira (carteiraVista = "listas" ou "lista:<id>"), dentro da
+   seção #carteira. Os dados das linhas (cotação, DY, P/VP, cotistas) vêm de meta/b3, meta/fii-resumo, meta/eua e das
+   fichas guardadas; os da carteira, de /api/carteira. Tudo o que aparece é conta e fato: nada diz o que fazer com o papel. */
+var lpDoc = null, lpId = null, lpErro = "", lpAviso = "", lpEditDesc = false, lpRascDesc = null, lpEditNome = false, lpHistTudo = false, lpTodas = null, lpTodasErro = "";
+var lpLinhasMemo = null;
+const ehDinDoc = (d) => !!(d && d.regra && !d.regra.referencia && !d.auto);
+const nPap = (n) => (n === 1 ? "1 papel" : `${n} papéis`);
+const diaMes = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); };
+const celularLp = () => window.matchMedia("(max-width: 699px)").matches;
+
+/* Markdown simples da descrição: parágrafos, "- " para lista e **negrito**. Só nós de texto: nada de HTML cru. */
+function mdEl(txt) {
+  const box = el("div", { class: "lp-desc" });
+  const inline = (linha) => {
+    const out = [], re = /\*\*([^*]+)\*\*/g; let i = 0, m;
+    while ((m = re.exec(linha))) { if (m.index > i) out.push(linha.slice(i, m.index)); out.push(el("strong", {}, m[1])); i = m.index + m[0].length; }
+    if (i < linha.length) out.push(linha.slice(i));
+    return out;
+  };
+  String(txt || "").split(/\n{2,}/).forEach((bloco) => {
+    const linhas = bloco.split("\n");
+    let ul = null, par = [];
+    const fechaPar = () => { if (par.length) { const p = el("p"); par.forEach((l, k) => { if (k) p.append(el("br")); p.append(...inline(l)); }); box.append(p); par = []; } };
+    linhas.forEach((l) => {
+      const m = /^\s*[-*]\s+(.*)$/.exec(l);
+      if (m) { fechaPar(); if (!ul) { ul = el("ul"); box.append(ul); } ul.append(el("li", {}, ...inline(m[1]))); }
+      else { ul = null; if (l.trim()) par.push(l.trim()); }
+    });
+    fechaPar();
+  });
+  return box;
+}
+
+/* ---- dados ---- */
+async function apiLista(metodo, caminho, corpo) {
+  const r = await fetch("/api/listas" + (caminho ? "/" + caminho : ""), {
+    method: metodo, credentials: "same-origin", cache: "no-store",
+    headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: corpo ? JSON.stringify(corpo) : undefined,
+  });
+  if (r.status === 401) { location.reload(); throw new Error("sessão"); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.erro && /\s/.test(j.erro) ? j.erro : "Não deu para salvar agora. Tente de novo."), { status: r.status, j });
+  return j;
+}
+/* b3, eua, CVM, fichas e carteira nas variáveis da página (estamos no modo do Início) */
+async function baseLista() {
+  await Promise.all([lerB3Painel(false), lerEuaPainel(false), lerFii(), lerFundRadar(), lerCarteira()]);
+}
+/* Linha de cada papel, de qualquer classe, no formato do radar-filtro */
+function linhasLp() {
+  const k = [b3, eua, fiiCvm, rdFund];
+  if (lpLinhasMemo && lpLinhasMemo.k.every((x, i) => x === k[i])) return lpLinhasMemo;
+  const d = { b3, eua, fiiResumo: fiiCvm, fund: rdFund || { BR: {}, US: {} } };
+  const porT = new Map(), porClasse = {};
+  RF.CLASSES_REGRA.forEach((c) => { porClasse[c] = RF.linhasDe(c, d); });
+  /* FI-Infra e Fiagro antes dos FIIs: no meta/b3 antigo eles vêm dentro da lista de FIIs */
+  ["fiinfra", "fiagro", "fiis", "acoes", "etfs", "bdrs", "eua"].forEach((c) => porClasse[c].forEach((l) => { if (!porT.has(l.t)) porT.set(l.t, l); }));
+  lpLinhasMemo = { k, porT, porClasse };
+  return lpLinhasMemo;
+}
+const posicaoDe = (t) => (temCarteira() ? cartJ.posicoes.find((p) => p.t === t && p.q > 0) : null);
+/* Situação de uma linha contra a regra (dinâmica ou de referência) */
+function situacaoLp(l, regra) {
+  if (!regra) return null;
+  if (!l) return { passa: false, motivo: "sem dados no Lookout" };
+  const f = { ...regra.criterios, classe: regra.classe, id: "regra", nome: "regra", semMinhas: false, aporte: 0 };
+  if (l.classe !== regra.classe) return { passa: false, motivo: "outra classe" };
+  const fs = RF.avaliar(l, f, { posicoes: new Map(), patrimonio: 0 });
+  if (!fs.length && regra.soCarteira && !posicaoDe(l.t)) return { passa: false, motivo: "não está na carteira" };
+  return fs.length ? { passa: false, motivo: fs[0].curto } : { passa: true, motivo: "" };
+}
+function linhaLp(t, regra) {
+  const L = linhasLp(), l = L.porT.get(t) || null;
+  const c = cotDe(t), x = c && c[0];
+  const p = posicaoDe(t);
+  const pat = temCarteira() ? cartJ.resumo.patrimonio : 0;
+  const preco = l && l.preco != null ? l.preco : x ? x.preco : null;
+  const nome = l && l.nome ? (["fiis", "fiinfra", "fiagro"].includes(l.classe) ? nomeBonito(l.nome) : l.nome) : x && x.nome ? x.nome : "";
+  const cls = l ? (RF.NOME_CLASSE[l.classe] || l.classe) + (l.seg ? " · " + segNome(l.seg) : l.setor ? " · " + l.setor : "") : "";
+  const ctx = temCarteira() ? RF.ctxCarteira(cartJ.posicoes, pat) : { posicoes: new Map(), patrimonio: 0 };
+  return {
+    t, l, x, nome, cls, preco, var: l && l.var != null ? l.var : x ? x.var : null,
+    dy: l ? l.dy ?? null : null, pvp: l ? l.pvp ?? null : null, liq: l ? l.liq ?? null : null, cot: l ? l.cot ?? null : null, cotMes: l ? l.cotMes ?? null : null,
+    pos: p, q: p ? p.q : null, pm: p ? p.pm : null, valor: p ? p.valor : null, res: p ? p.resultado : null, resPct: p ? p.resPct : null,
+    emp: p ? RF.paraEmpatar(p.pm, p.preco) : null, yoc: p ? RF.dySobreCusto(p.prov12, p.custo) : null, prov12: p ? p.prov12 : null,
+    peso: p && pat > 0 ? Math.round((p.valor / pat) * 1000) / 10 : null,
+    sit: situacaoLp(l, regra), avisos: l ? RF.avisos(l, { aporte: 0 }, ctx).filter((a) => a.k !== "tenho" && a.k !== "concentra") : [],
+  };
+}
+
+/* ---- tabela de comparações ---- */
+const COLS_LP = [
+  ["t", "Papel", "texto"], ["nome", "Nome", "texto"], ["cls", "Classe", "texto"], ["preco", "Preço", "num"], ["var", "Dia", "num", "%"],
+  ["dy", "DY 12m", "num", "%"], ["pvp", "P/VP", "num"], ["liq", "Liquidez", "num"], ["cot", "Cotistas", "num"], ["cotMes", "No mês", "num"],
+  ["q", "Quantidade", "num"], ["pm", "Preço médio", "num"], ["valor", "Valor", "num"], ["res", "Resultado", "num"], ["resPct", "Resultado %", "num", "%"],
+  ["emp", "Para empatar", "num", "%"], ["yoc", "DY sobre custo", "num", "%"], ["prov12", "Proventos 12m", "num"], ["peso", "% da carteira", "num", "%"],
+  ["sit", "Situação", "texto"], ["av", "Avisos", "texto"],
+];
+const DA_CARTEIRA = new Set(["q", "pm", "valor", "res", "resPct", "emp", "yoc", "prov12", "peso"]);
+const PRINCIPAIS_CEL = new Set(["t", "preco", "var", "resPct", "sit"]);
+function colunasLp(linhas, regra) {
+  const tem = (id) => linhas.some((r) => (id === "sit" ? !!r.sit : id === "av" ? r.avisos.length : r[id] != null && r[id] !== ""));
+  const cel = celularLp();
+  return COLS_LP.filter(([id]) => (id === "t" || tem(id)) && (!cel || PRINCIPAIS_CEL.has(id)) && (id !== "sit" || regra)).map(([id, rotulo, tipo, unidade]) => ({
+    id, rotulo, tipo, unidade,
+    valor: id === "sit" ? (r) => (r.sit ? (r.sit.passa ? "passa" : "não passa") : "") : id === "av" ? (r) => r.avisos.map((a) => a.txt).join(", ") : (r) => r[id],
+    valores: id === "av" ? (r) => r.avisos.map((a) => a.txt) : undefined,
+    ordenavel: id !== "av", cls: id === "sit" ? "lp-sit" : id === "av" ? "av" : id === "nome" || id === "cls" ? "lp-txt" : undefined,
+    fmt: id === "liq" || id === "cot" ? (v) => fmtVol(v) : undefined,
+  }));
+}
+const rsLp = (v) => (v == null ? "–" : rs(v, true));
+function celulaLp(c, r) {
+  const v = r[c.id];
+  const num = (txt, cls, title) => el("td", { ...(cls ? { class: cls } : {}), ...(title ? { title } : {}) }, txt);
+  if (c.id === "t") {
+    const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (r.nome ? r.nome + " · " : "") + "abrir a ficha" }, papelEl(r.t, r.x));
+    b.addEventListener("click", () => abrirPapel(r.t));
+    return el("td", {}, el("span", { class: "cot-papel-box" }, b, pontoNoticia(r.t)), r.pos ? el("span", { class: "seg-t" }, "tenho") : null);
+  }
+  if (c.id === "nome") return el("td", { class: "lp-txt" }, el("span", { class: "nome-t", title: r.nome }, r.nome || "–"));
+  if (c.id === "cls") return el("td", { class: "lp-txt" }, r.cls || "–");
+  if (c.id === "preco") return num(v == null ? "–" : (r.l && r.l.classe === "eua" ? "US$ " : "") + fmtNum(v, 2));
+  if (c.id === "var") return num(v == null ? "–" : (v > 0 ? "+" : "") + fmtNum(v, 2) + "%", v > 0 ? "sobe" : v < 0 ? "desce" : "");
+  if (c.id === "dy" || c.id === "yoc" || c.id === "peso") return num(v == null ? "–" : fmtNum(v, c.id === "peso" ? 1 : 2) + "%");
+  if (c.id === "pvp") return num(v == null ? "–" : fmtNum(v, 2));
+  if (c.id === "liq") return num(v == null ? "–" : fmtVol(v));
+  if (c.id === "cot") return num(v == null ? "–" : rdMil(v));
+  if (c.id === "cotMes") return num(rdVar(v), v > 0 ? "sobe" : v < 0 ? "desce" : "", "Cotistas no último informe da CVM contra o anterior");
+  if (c.id === "q") return num(v == null ? "–" : fmtNum(v, Number.isInteger(v) ? 0 : 2));
+  if (c.id === "pm") return num(v == null ? "–" : fmtNum(v, 2));
+  if (c.id === "valor" || c.id === "prov12") return num(rsLp(v));
+  if (c.id === "res") return num(v == null ? "–" : (v > 0 ? "+" : "") + rsLp(v), v > 0 ? "sobe" : v < 0 ? "desce" : "");
+  if (c.id === "resPct") return num(v == null ? "–" : (v > 0 ? "+" : "") + fmtNum(v, 2) + "%", v > 0 ? "sobe" : v < 0 ? "desce" : "");
+  if (c.id === "emp") return num(v == null ? "–" : v === 0 ? "acima do PM" : "+" + fmtNum(v, 2) + "%", "", v ? "Quanto o preço precisa subir para chegar ao seu preço médio" : "");
+  if (c.id === "sit") return el("td", { class: "lp-sit" }, !r.sit ? "–" : r.sit.passa ? tagEl("passa", "ok") : celularLp() ? tagEl("não passa", "warn", r.sit.motivo) : tagEl("não passa: " + r.sit.motivo, "warn"));
+  if (c.id === "av") return el("td", { class: "av" }, ...r.avisos.map((a) => tagEl(a.txt, a.cls, a.dica)));
+  return el("td", {}, "–");
+}
+/* Linha verde ou vermelha: o resultado da posição para quem tem o papel; sem carteira, a variação do dia */
+const tomLp = (r) => { const v = r.pos ? r.resPct : r.var; return v > 0 ? "lp-pos" : v < 0 ? "lp-neg" : ""; };
+
+/* ---- página da lista ---- */
+async function renderPaginaLista(id, fresco) {
+  const box = $("carteira"), g = ++renderCartGer;
+  if (lpId !== id) { lpId = id; lpDoc = null; lpErro = ""; lpAviso = ""; lpEditDesc = false; lpEditNome = false; lpHistTudo = false; }
+  if (!lpDoc) { box.textContent = ""; box.append(el("div", { class: "lp" }, el("a", { class: "lp-volta", href: "#listas" }, "← Minhas listas"), el("section", { class: "ct-card" }, esqueleto(3)), el("section", { class: "ct-card" }, esqueleto(8)))); }
+  try {
+    const [j] = await Promise.all([lpDoc && !fresco ? { id, data: lpDoc } : apiLista("GET", encodeURIComponent(id)), baseLista()]);
+    if (g !== renderCartGer || carteiraVista !== "lista:" + id) return;
+    lpDoc = j.data; lpErro = "";
+  } catch (e) {
+    if (g !== renderCartGer) return;
+    lpErro = e.status === 404 ? "Essa lista não existe mais ou foi excluída." : "Não deu para abrir a lista agora.";
+  }
+  desenharPaginaLista();
+}
+function desenharPaginaLista() {
+  const box = $("carteira"), d = lpDoc, id = lpId;
+  const rolar = window.scrollY;
+  box.textContent = "";
+  const raiz = el("div", { class: "lp" }, el("a", { class: "lp-volta", href: "#listas" }, "← Minhas listas"));
+  box.append(raiz);
+  if (!d) {
+    const b = el("button", { class: "dd-btn dd-btn--outline", type: "button" }, "Tentar de novo");
+    b.addEventListener("click", () => renderPaginaLista(id, true));
+    raiz.append(el("section", { class: "ct-card ct-vazio" }, el("h3", {}, lpErro || "Não deu para abrir a lista agora"), el("p", {}, "Suas listas continuam guardadas."), b));
+    return;
+  }
+  const auto = !!d.auto, din = ehDinDoc(d), regra = d.regra || null, l = { id, ...d };
+  document.title = d.nome + " · Lookout";
+  /* cabeçalho */
+  const cab = el("div", { class: "lp-cab" });
+  if (lpEditNome && !auto) {
+    const inp = el("input", { class: "dd-input", id: "lp-nome-inp", value: d.nome, maxlength: "40", "aria-label": "Nome da lista", autocomplete: "off" });
+    let feito = false;
+    const fim = async (salvar) => {
+      if (feito) return; feito = true; lpEditNome = false;
+      const nome = inp.value.replace(/\s+/g, " ").trim();
+      if (salvar && nome && nome !== d.nome) await salvarLp({ nome }, "Nome trocado."); else desenharPaginaLista();
+      const b = $("lp-renomear"); if (b) b.focus({ preventScroll: true });
+    };
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); fim(true); } if (e.key === "Escape") { e.preventDefault(); fim(false); } });
+    inp.addEventListener("blur", () => fim(true));
+    cab.append(inp);
+    requestAnimationFrame(() => { inp.focus(); inp.select(); });
+  } else {
+    const nome = el("div", { class: "lp-nome" }, el("h2", { id: "ct-titulo" }, d.nome));
+    if (!auto) {
+      const ren = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon alvo", type: "button", id: "lp-renomear", "aria-label": "Renomear a lista", title: "Renomear", html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' });
+      ren.addEventListener("click", () => { lpEditNome = true; desenharPaginaLista(); });
+      nome.append(ren);
+    }
+    cab.append(nome);
+  }
+  const ativa = d.ativa !== false;
+  cab.append(el("span", { class: "lp-chips" },
+    tagEl(auto ? "da carteira" : din ? "por regra" : "manual"),
+    tagEl(ativa ? "ligada" : "desligada", ativa ? "ok" : "warn", ativa ? "Aparece na lateral da Bolsa, no Início e no Radar" : "Fica só em Minhas listas"),
+    el("span", { class: "ct-sub" }, nPap((d.papeis || []).length))));
+  const acoes = el("div", { class: "lp-acoes" });
+  const btn = (idb, txt, f, cls = "dd-btn--outline") => { const b = el("button", { class: "dd-btn " + cls, type: "button", id: idb }, txt); b.addEventListener("click", f); acoes.append(b); return b; };
+  if (!auto) btn("lp-regra", din ? "Editar regra" : regra ? "Editar regra de referência" : "Comparar com uma regra", () => abrirPainelLista({ id, doc: d, volta: $("lp-regra") })).setAttribute("aria-haspopup", "dialog");
+  if (din) btn("lp-recalc", "Recalcular", recalcularLp);
+  btn("lp-ligar", ativa ? "Desligar" : "Ligar", () => salvarLp({ ativa: !ativa }, ativa ? "Lista desligada. Ela sai da lateral, do Início e do Radar." : "Lista ligada de novo."));
+  if (auto) btn("lp-copiar", "Copiar para lista minha", async () => { await copiarLista({ ...l, papeis: d.papeis || [] }); if (listasErro) { lpAviso = listasErro; desenharPaginaLista(); } else location.hash = "#listas"; });
+  btn("lp-csv", "Exportar CSV", () => exportarCsvLp(d));
+  btn("lp-excluir", "Excluir", excluirLp, "dd-btn--ghost");
+  cab.append(acoes);
+  raiz.append(cab);
+  if (lpAviso) raiz.append(el("p", { class: "ct-nota", role: "status", id: "lp-aviso" }, lpAviso));
+
+  /* descrição e regra em frases */
+  const desc = el("section", { class: "ct-card", "aria-labelledby": "lp-desc-t" });
+  const tit = el("div", { class: "ct-tit" }, el("h3", { id: "lp-desc-t" }, "Descrição"), el("span", { class: "ct-esp" }));
+  if (!lpEditDesc) { const e = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "lp-desc-editar" }, "Editar"); e.addEventListener("click", () => { lpEditDesc = true; lpRascDesc = d.descricao || ""; desenharPaginaLista(); const t = $("lp-desc-txt"); if (t) t.focus(); }); tit.append(e); }
+  desc.append(tit);
+  if (lpEditDesc) {
+    const ta = el("textarea", { class: "dd-input", id: "lp-desc-txt", maxlength: "4000", "aria-label": "Descrição da lista", placeholder: "Por que a lista existe, os critérios que você usou e as decisões. Aceita **negrito**, listas com - e parágrafos." });
+    ta.value = lpRascDesc || "";
+    const cont = el("small", {}, `${ta.value.length.toLocaleString("pt-BR")} de 4.000`);
+    ta.addEventListener("input", () => { lpRascDesc = ta.value; cont.textContent = `${ta.value.length.toLocaleString("pt-BR")} de 4.000`; });
+    const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "lp-desc-salvar" }, "Salvar descrição");
+    ok.addEventListener("click", async () => { lpEditDesc = false; await salvarLp({ descricao: lpRascDesc || "" }, "Descrição salva."); const b = $("lp-desc-editar"); if (b) b.focus({ preventScroll: true }); });
+    const can = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "lp-desc-cancelar" }, "Cancelar");
+    can.addEventListener("click", () => { lpEditDesc = false; desenharPaginaLista(); const b = $("lp-desc-editar"); if (b) b.focus({ preventScroll: true }); });
+    ta.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); can.click(); } });
+    desc.append(el("div", { class: "lp-desc-edit" }, ta), el("div", { class: "lp-desc-pe" }, ok, can, cont));
+  } else if (d.descricao) desc.append(mdEl(d.descricao));
+  else desc.append(el("p", { class: "lp-desc-vazia" }, "Sem descrição. Escreva o motivo da lista, os critérios e as decisões."));
+  if (regra) {
+    desc.append(el("p", { class: "lp-regra", id: "lp-regra-frase" }, el("b", {}, din ? "Regra" : "Regra de referência"), RF.fraseRegra(regra.classe, regra.criterios, regra.soCarteira)));
+    const extra = [];
+    if ((d.fixos || []).length) extra.push("fixos: " + d.fixos.join(", "));
+    if ((d.excluidos || []).length) extra.push("excluídos: " + d.excluidos.join(", "));
+    if (din && d.calculado) extra.push("calculada " + fmtRel(d.calculado));
+    if (extra.length) desc.append(el("p", { class: "lp-fecho" }, extra.join(" · ")));
+    if (din && d.cortados > 0) desc.append(el("p", { class: "lp-aviso" }, `${nPap(d.cortados)} ${d.cortados === 1 ? "passa" : "passam"} na regra e ${d.cortados === 1 ? "ficou" : "ficaram"} de fora: a lista guarda até ${LISTA_MAX_PAPEIS}, cortados pela ordem da regra.`));
+  }
+  raiz.append(desc);
+
+  /* comparações */
+  const linhas = (d.papeis || []).map((t) => linhaLp(t, regra));
+  const comp = el("section", { class: "ct-card", "aria-labelledby": "lp-comp-t" });
+  const temPos = linhas.some((r) => r.pos);
+  comp.append(el("div", { class: "ct-tit" }, el("h3", { id: "lp-comp-t" }, "Comparações"), el("span", { class: "ct-sub" }, temPos ? `${linhas.filter((r) => r.pos).length} de ${linhas.length} na sua carteira` : "nenhum papel desta lista na sua carteira")));
+  if (!linhas.length) comp.append(el("p", { class: "ct-nota" }, din ? "Nenhum papel passa na regra hoje." : auto ? "A carteira não tem papéis desta classe agora." : "A lista está vazia. Ponha papéis pela lateral da Bolsa ou mova de outra lista."));
+  else {
+    comp.append(el("p", { class: "lp-legenda" }, el("span", {}, el("i", { class: "v" }), "positivo"), el("span", {}, el("i", { class: "r" }), "negativo"),
+      el("span", {}, temPos ? "Na carteira, a cor é o resultado da posição; fora dela, a variação do dia." : "A cor é a variação do dia.")));
+    const tab = Tabela.criar({
+      id: "lista-" + id, colunas: colunasLp(linhas, regra), linhas, padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 25 }, rotuloConta: "papéis",
+      celula: (c, r) => celulaLp(c, r), classeTabela: "rd-tab lp-tab", classeCaixa: "ct-caixa",
+      attrsLinha: (r) => ({ class: tomLp(r), "data-papel": r.t }),
+      semOrdem: din ? "Sem critério, vale a ordem da regra." : "Sem critério, vale a ordem da lista.",
+    });
+    comp.append(tab.el);
+    if (celularLp()) comp.append(el("p", { class: "ct-nota" }, "No celular ficam as colunas principais. Toque no papel para ver o resto na ficha."));
+  }
+  raiz.append(comp);
+
+  /* histórico e sugestões: acordeões no celular */
+  const cel = celularLp();
+  raiz.append(blocoHistorico(d, cel));
+  if (regra) raiz.append(blocoSugestoes(d, linhas, cel));
+  window.scrollTo({ top: rolar });
+}
+function blocoHistorico(d, fechado) {
+  const h = (Array.isArray(d.historico) ? d.historico : []).slice().reverse();
+  const det = el("details", { class: "ct-card lp-bloco", id: "lp-hist" });
+  if (!fechado) det.open = true;
+  det.append(el("summary", {}, el("h3", {}, "Histórico"), el("small", {}, h.length ? `${h.length} ${h.length === 1 ? "mudança" : "mudanças"}` : "")));
+  if (!h.length) { det.append(el("p", { class: "ct-nota" }, "Nada mudou nesta lista ainda.")); return det; }
+  const mostra = lpHistTudo ? h : h.slice(0, 50);
+  const ul = el("ul", { class: "lp-hist" });
+  let dia = null, li = null, corpo = null;
+  mostra.forEach((x) => {
+    const dm = diaMes(x.quando);
+    if (dm !== dia) { dia = dm; corpo = el("div"); li = el("li", {}, el("span", { class: "dia" }, dm), corpo); ul.append(li); }
+    const ev = el("span", { class: "ev" });
+    if (x.acao === "entrou" || x.acao === "saiu") ev.append(el("span", { class: x.acao === "entrou" ? "ent" : "sai" }, x.acao), " ", x.papel ? papelBtn(x.papel) : "", x.motivo ? el("span", { class: "mot" }, ` (${x.motivo})`) : "");
+    else ev.append(x.motivo || x.acao);
+    corpo.append(ev);
+  });
+  det.append(ul);
+  if (h.length > 50) {
+    const b = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "lp-hist-tudo" }, lpHistTudo ? "Mostrar só as 50 últimas" : `Ver tudo (${h.length})`);
+    b.addEventListener("click", () => { lpHistTudo = !lpHistTudo; desenharPaginaLista(); const n = $("lp-hist-tudo"); if (n) n.focus({ preventScroll: true }); });
+    det.append(b);
+  }
+  return det;
+}
+/* Sugestões: só fatos sobre a regra e a lista; as variações são a mesma conta com um critério mexido */
+function blocoSugestoes(d, linhasLista, fechado) {
+  const regra = d.regra, din = ehDinDoc(d);
+  const det = el("details", { class: "ct-card lp-bloco", id: "lp-sug" });
+  if (!fechado) det.open = true;
+  det.append(el("summary", {}, el("h3", {}, "Sugestões"), el("small", {}, "contas com a regra")));
+  const L = linhasLp(), linhas = L.porClasse[regra.classe] || [];
+  if (!linhas.length) { det.append(el("p", { class: "ct-nota" }, "As cotações desta classe ainda não chegaram.")); return det; }
+  const f = { ...regra.criterios, classe: regra.classe, id: "regra", nome: "regra", semMinhas: false, aporte: 0 };
+  let passam = RF.aplicar(linhas, f, { posicoes: new Map(), patrimonio: 0 }).passam.map((l) => l.t);
+  if (regra.soCarteira) passam = passam.filter((t) => posicaoDe(t));
+  const na = new Set(d.papeis || []);
+  const fora = passam.filter((t) => !na.has(t));
+  const naoPassam = linhasLista.filter((r) => r.sit && !r.sit.passa);
+  const corpo = el("div", { class: "lp-sug" });
+  const papeis = (l, max = 8) => el("span", { class: "papeis" }, ...l.slice(0, max).flatMap((t, i) => (i ? [", ", papelBtn(t)] : [papelBtn(t)])), l.length > max ? ` e mais ${l.length - max}` : "");
+  if (fora.length) corpo.append(el("p", {}, din ? "Passam na regra e não estão na lista (excluídos por você ou fora do limite de 60): " : "Passam na regra e não estão na lista: ", papeis(fora)));
+  else corpo.append(el("p", {}, din ? "Tudo o que passa na regra está na lista." : "Nenhum papel fora da lista passa na regra hoje."));
+  if (naoPassam.length) corpo.append(el("p", {}, "Estão na lista e não passam: ", el("span", { class: "papeis" }, ...naoPassam.slice(0, 8).flatMap((r, i) => [...(i ? ["; "] : []), papelBtn(r.t), ` (${r.sit.motivo})`]))));
+  else if (linhasLista.length) corpo.append(el("p", {}, "Todos os papéis da lista passam na regra hoje."));
+  const ctxV = { posicoes: new Map(), patrimonio: 0 };
+  const vs = RF.variacoes(linhas, f, ctxV).filter((v) => v.entrariam.length || v.sairiam.length);
+  if (vs.length) {
+    const ul = el("ul", { class: "lp-var" });
+    vs.forEach((v, k) => {
+      const partes = [];
+      if (v.sairiam.length) partes.push(`sairiam ${v.sairiam.length}`);
+      if (v.entrariam.length) partes.push(`entrariam ${v.entrariam.length}`);
+      const quem = [...v.sairiam.slice(0, 4).map((t) => "−" + t), ...v.entrariam.slice(0, 4).map((t) => "+" + t)].join(" ");
+      const ap = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "lp-var-" + k }, "aplicar");
+      ap.addEventListener("click", () => salvarLp({ regra: { ...regra, criterios: { ...regra.criterios, [v.campo]: v.valor } } }, `Regra alterada: ${RF.ROTULO[v.campo]} ${RF.valorCampo(v.campo, v.valor, regra.classe)}.`));
+      const rot = RF.ROTULO[v.campo] + (/m[ií]nim[oa]$/.test(RF.ROTULO[v.campo]) ? " de " : " ");
+      ul.append(el("li", {}, el("span", {}, `Com ${rot}${RF.valorCampo(v.campo, v.valor, regra.classe)}, ${partes.join(" e ")}.`, el("small", { class: "lp-fecho" }, " " + quem)), ap));
+    });
+    corpo.append(el("p", { class: "ct-nota" }, din ? "Variações da regra e o efeito na lista:" : "Variações da regra e quem passaria:"), ul);
+  }
+  corpo.append(el("p", { class: "lp-fecho" }, "Conta aritmética, não recomendação."));
+  det.append(corpo);
+  return det;
+}
+async function salvarLp(campos, msg) {
+  try {
+    const j = await apiLista("PUT", encodeURIComponent(lpId), campos);
+    lpDoc = j.data; lpAviso = msg || ""; lpLinhasMemo = null;
+    listas = listas.map((x) => (x.id === lpId ? { id: lpId, ...j.data } : x));
+    wDados.delete("listas");
+  } catch (e) { lpAviso = e.message; }
+  if (carteiraVista === "lista:" + lpId) desenharPaginaLista();
+}
+async function recalcularLp() {
+  try {
+    const j = await apiLista("POST", encodeURIComponent(lpId) + "/recalcular", {});
+    lpDoc = j.data; wDados.delete("listas");
+    const e = (j.novas || []).filter((x) => x.acao === "entrou").length, s = (j.novas || []).filter((x) => x.acao === "saiu").length;
+    lpAviso = e || s ? `Recalculada: ${e} ${e === 1 ? "entrou" : "entraram"} e ${s} ${s === 1 ? "saiu" : "saíram"}.` : "Recalculada. Nada mudou.";
+  } catch (e) { lpAviso = e.status === 429 ? `A lista foi recalculada há pouco. Dá para recalcular de novo em ${Math.max(1, Math.ceil(((e.j && e.j.aguarde) || 60) / 60))} min.` : e.message; }
+  desenharPaginaLista();
+  const b = $("lp-recalc"); if (b) b.focus({ preventScroll: true });
+}
+async function excluirLp() {
+  const d = lpDoc;
+  const msg = d.auto ? `Excluir a lista “${d.nome}”? Ela é montada pela sua carteira e volta na próxima importação de extratos.` : `Excluir a lista “${d.nome}”? Os papéis, a descrição e o histórico saem junto.`;
+  if (!confirm(msg)) return;
+  try { await apiLista("DELETE", encodeURIComponent(lpId)); listas = listas.filter((x) => x.id !== lpId); wDados.delete("listas"); lpTodas = null; location.hash = "#listas"; }
+  catch (e) { lpAviso = e.message; desenharPaginaLista(); }
+}
+function exportarCsvLp(d) {
+  const linhas = (d.papeis || []).map((t) => linhaLp(t, d.regra));
+  const cols = COLS_LP.filter(([id]) => id === "t" || linhas.some((r) => (id === "sit" ? !!r.sit : id === "av" ? r.avisos.length : r[id] != null && r[id] !== "")));
+  const n = (v, c = 2) => (v == null ? "" : Number(v).toFixed(c).replace(".", ","));
+  const val = (id, r) => (id === "sit" ? (r.sit ? (r.sit.passa ? "passa" : "não passa: " + r.sit.motivo) : "") : id === "av" ? r.avisos.map((a) => a.txt).join(", ") : typeof r[id] === "number" ? n(r[id], id === "q" || id === "cot" || id === "cotMes" || id === "liq" ? 0 : 2) : r[id] || "");
+  const esc = (s) => (/[";\n]/.test(String(s)) ? '"' + String(s).replace(/"/g, '""') + '"' : String(s));
+  const txt = "﻿" + [cols.map(([, r]) => r).join(";"), ...linhas.map((r) => cols.map(([id]) => esc(val(id, r))).join(";"))].join("\n");
+  const a = el("a", { href: URL.createObjectURL(new Blob([txt], { type: "text/csv;charset=utf-8" })), download: (d.nome || "lista").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") + ".csv" });
+  document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* ---- lista de listas ---- */
+async function renderTodasListas(fresco) {
+  const box = $("carteira"), g = ++renderCartGer;
+  if (!lpTodas) { box.textContent = ""; box.append(el("div", { class: "lp" }, cabTodas(), el("section", { class: "ct-card" }, esqueleto(6)))); }
+  try {
+    if (!lpTodas || fresco) { const j = await apiLista("GET"); lpTodas = ordenarListas((j.docs || []).map((x) => ({ id: x.id, ...x.data }))); }
+    lpTodasErro = "";
+  } catch (e) { lpTodasErro = "Não deu para carregar suas listas agora."; }
+  if (g !== renderCartGer || carteiraVista !== "listas") return;
+  desenharTodasListas();
+}
+function cabTodas() {
+  const nova = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ll-nova", "aria-haspopup": "dialog" }, "Nova lista");
+  nova.addEventListener("click", () => abrirPainelLista({ volta: nova }));
+  return el("div", { class: "lp-cab" }, el("h2", { id: "ct-titulo" }, "Minhas listas"), el("span", { class: "ct-quem" }, "no seu perfil, só você vê"), el("div", { class: "lp-acoes" }, nova));
+}
+const tipoTxt = (l) => (ehAuto(l) ? "da carteira" : ehDin(l) ? "por regra" : "manual");
+const primeiraLinha = (t) => String(t || "").split("\n").map((x) => x.replace(/\*\*/g, "").replace(/^\s*[-*]\s+/, "").trim()).find(Boolean) || "";
+function mov7(l) { const h = l.historico || []; return { e: h.filter((x) => x.acao === "entrou").length, s: h.filter((x) => x.acao === "saiu").length }; }
+async function salvarOrdemTodas() {
+  try { await apiLista("PUT", "ordem", { ids: lpTodas.map((l) => l.id) }); lpTodas.forEach((l, k) => { l.posicao = k; }); listas = ordenarListas(listas.map((x) => ({ ...x, posicao: lpTodas.findIndex((y) => y.id === x.id) }))); wDados.delete("listas"); }
+  catch (e) { lpAviso = e.message; }
+}
+function desenharTodasListas() {
+  const box = $("carteira");
+  const rolar = window.scrollY;
+  box.textContent = "";
+  document.title = "Minhas listas · Lookout";
+  const raiz = el("div", { class: "lp" }, cabTodas());
+  box.append(raiz);
+  if (lpAviso) { raiz.append(el("p", { class: "ct-nota", role: "status" }, lpAviso)); lpAviso = ""; }
+  const card = el("section", { class: "ct-card", "aria-label": "Todas as listas" });
+  raiz.append(card);
+  if (lpTodasErro) { card.append(el("p", { class: "ct-nota" }, lpTodasErro)); return; }
+  if (!lpTodas.length) { card.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhuma lista ainda"), "Crie uma lista manual com os papéis que você acompanha ou uma lista por regra, que se refaz sozinha a cada hora.")); return; }
+  /* arrastar e as setas só valem sem ordenação nem filtro: aí a ordem da tela é a da lateral */
+  const livreAgora = () => { const est = Tabela.estadoDe("listas-todas", { ordem: [], filtros: {}, pagina: 1, porPagina: 25 }); return !est.ordem.length && !Object.keys(est.filtros || {}).some((k) => Tabela.ativo(est.filtros[k])); };
+  const mover = (l, d) => { const i = lpTodas.indexOf(l), k = i + d; if (k < 0 || k >= lpTodas.length) return; [lpTodas[i], lpTodas[k]] = [lpTodas[k], lpTodas[i]]; desenharTodasListas(); salvarOrdemTodas(); const b = $(`ll-${d < 0 ? "cima" : "baixo"}-${l.id}`); if (b && !b.disabled) b.focus({ preventScroll: true }); else { const o = $(`ll-${d < 0 ? "baixo" : "cima"}-${l.id}`); if (o) o.focus({ preventScroll: true }); } };
+  const cols = [
+    { id: "nome", rotulo: "Lista", tipo: "texto", valor: (l) => l.nome },
+    { id: "tipo", rotulo: "Tipo", tipo: "texto", valor: tipoTxt, cls: "lp-txt" },
+    { id: "n", rotulo: "Papéis", tipo: "num", valor: (l) => (l.papeis || []).length },
+    { id: "ativa", rotulo: "Ligada", tipo: "texto", valor: (l) => (listaAtiva(l) ? "ligada" : "desligada"), cls: "lp-txt" },
+    { id: "ult", rotulo: "Última mudança", tipo: "data", valor: (l) => l.ultimaMudanca || l.atualizado || "" },
+    { id: "m7", rotulo: "Entradas e saídas (7 dias)", tipo: "num", valor: (l) => { const m = mov7(l); return m.e + m.s; } },
+    { id: "desc", rotulo: "Descrição", tipo: "texto", valor: (l) => primeiraLinha(l.descricao), cls: "lp-txt" },
+    { id: "acoes", rotulo: "Ações", tipo: "texto", valor: () => "", ordenavel: false, filtravel: false, cls: "lp-txt" },
+  ];
+  const celula = (c, l) => {
+    if (c.id === "nome") return el("td", {}, el("a", { class: "ll-nome", href: "#lista/" + encodeURIComponent(l.id) }, l.nome));
+    if (c.id === "tipo") return el("td", { class: "lp-txt" }, tipoTxt(l));
+    if (c.id === "n") return el("td", {}, String((l.papeis || []).length));
+    if (c.id === "ativa") {
+      const on = listaAtiva(l);
+      const b = el("button", { class: "lp-switch", type: "button", role: "switch", id: "ll-ativa-" + l.id, "aria-checked": String(on), "aria-label": `${l.nome}: ${on ? "ligada" : "desligada"}` }, on ? "ligada" : "desligada");
+      b.addEventListener("click", async () => {
+        try { const j = await apiLista("PUT", encodeURIComponent(l.id), { ativa: !on }); Object.assign(l, resumoLocal(j.data)); listas = listas.map((x) => (x.id === l.id ? { ...x, ativa: !on } : x)); wDados.delete("listas"); }
+        catch (e) { lpAviso = e.message; }
+        desenharTodasListas(); const n = $("ll-ativa-" + l.id); if (n) n.focus({ preventScroll: true });
+      });
+      return el("td", { class: "lp-txt" }, b);
+    }
+    if (c.id === "ult") { const v = l.ultimaMudanca || l.atualizado; return el("td", { title: v ? fmtData(v) : "" }, v ? fmtRel(v) : "–"); }
+    if (c.id === "m7") { const m = mov7(l); return el("td", { title: `Nos últimos 7 dias: ${m.e} ${m.e === 1 ? "entrou" : "entraram"} e ${m.s} ${m.s === 1 ? "saiu" : "saíram"}` }, m.e || m.s ? `+${m.e} / ${MENOS}${m.s}` : "–"); }
+    if (c.id === "desc") { const t = primeiraLinha(l.descricao); return el("td", { class: "lp-txt", title: t }, t || "–"); }
+    const i = lpTodas.indexOf(l);
+    const ed = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ll-editar-" + l.id, "aria-haspopup": "dialog", title: ehAuto(l) ? "Lista da carteira: só descrição e liga/desliga, na página dela" : "" }, "Editar");
+    if (ehAuto(l)) ed.disabled = true; else ed.addEventListener("click", async () => { try { const j = await apiLista("GET", encodeURIComponent(l.id)); abrirPainelLista({ id: l.id, doc: j.data, volta: ed }); } catch (e) { lpAviso = e.message; desenharTodasListas(); } });
+    const ex = el("button", { class: "dd-btn dd-btn--ghost", type: "button", "aria-label": "Excluir " + l.nome }, "Excluir");
+    ex.addEventListener("click", async () => {
+      if (!confirm(ehAuto(l) ? `Excluir a lista “${l.nome}”? Ela volta na próxima importação de extratos.` : `Excluir a lista “${l.nome}”? Os papéis, a descrição e o histórico saem junto.`)) return;
+      try { await apiLista("DELETE", encodeURIComponent(l.id)); lpTodas = lpTodas.filter((x) => x !== l); listas = listas.filter((x) => x.id !== l.id); wDados.delete("listas"); } catch (e) { lpAviso = e.message; }
+      desenharTodasListas();
+    });
+    const sobe = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon", type: "button", id: "ll-cima-" + l.id, "aria-label": `Subir ${l.nome} na ordem da lateral`, title: "Subir" }, "▲");
+    const desce = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon", type: "button", id: "ll-baixo-" + l.id, "aria-label": `Descer ${l.nome} na ordem da lateral`, title: "Descer" }, "▼");
+    const livre = livreAgora();
+    if (!livre || i === 0) sobe.disabled = true;
+    if (!livre || i === lpTodas.length - 1) desce.disabled = true;
+    sobe.addEventListener("click", () => mover(l, -1)); desce.addEventListener("click", () => mover(l, 1));
+    return el("td", { class: "lp-txt" }, el("span", { class: "ll-acoes" }, ed, ex, sobe, desce));
+  };
+  const tab = Tabela.criar({
+    id: "listas-todas", colunas: cols, linhas: lpTodas, padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 25 }, rotuloConta: "listas",
+    celula, classeTabela: "rd-tab ll-tab", classeCaixa: "ct-caixa",
+    attrsLinha: (l) => ({ class: listaAtiva(l) ? "" : "lst-off", "data-lista": l.id, ...(livreAgora() && podeArrastar() ? { draggable: "true" } : {}) }),
+    semOrdem: "Sem critério, vale a ordem da lateral (arraste as linhas ou use as setas).",
+  });
+  /* arrastar a linha muda a ordem da lateral (só sem ordenação nem filtro, para a ordem da tela ser a de verdade) */
+  let arr = null;
+  tab.el.addEventListener("dragstart", (e) => { const tr = e.target.closest && e.target.closest("tr[data-lista]"); if (!tr) return; arr = tr.dataset.lista; e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", arr); } catch (er) {} });
+  tab.el.addEventListener("dragover", (e) => { if (!arr) return; const tr = e.target.closest && e.target.closest("tr[data-lista]"); if (!tr || tr.dataset.lista === arr) return; e.preventDefault(); tab.el.querySelectorAll("tr.cai-antes").forEach((x) => { if (x !== tr) x.classList.remove("cai-antes"); }); tr.classList.add("cai-antes"); });
+  tab.el.addEventListener("drop", (e) => {
+    if (!arr) return; const tr = e.target.closest && e.target.closest("tr[data-lista]"); if (!tr) return; e.preventDefault();
+    const m = lpTodas.find((x) => x.id === arr), alvo = lpTodas.find((x) => x.id === tr.dataset.lista); arr = null;
+    if (!m || !alvo || m === alvo) return;
+    lpTodas = lpTodas.filter((x) => x !== m); lpTodas.splice(lpTodas.indexOf(alvo), 0, m);
+    desenharTodasListas(); salvarOrdemTodas();
+  });
+  tab.el.addEventListener("dragend", () => { arr = null; tab.el.querySelectorAll("tr.cai-antes").forEach((x) => x.classList.remove("cai-antes")); });
+  card.append(tab.el, el("p", { class: "ct-nota" }, "A ordem daqui é a da lateral da Bolsa e do card Minhas listas no Início. Lista desligada fica só aqui."));
+  window.scrollTo({ top: rolar });
+}
+const resumoLocal = (d) => { const { historico, ...r } = d; return r; };
+
+/* ---- painel: nova lista e editar regra ---- */
+var lpP = null, lpPAberto = false, lpPAbridor = null, tLpP = 0;
+function abrirPainelLista({ id, doc, volta } = {}) {
+  const d = doc || {};
+  const regra = d.regra || null;
+  const classe = regra ? regra.classe : "fiis";
+  lpP = {
+    id: id || null, nome: d.nome || "", descricao: d.descricao || "", tipo: regra && !regra.referencia ? "regra" : "manual", ref: !!(regra && regra.referencia),
+    f: { ...RF.novoFiltro(classe, "regra", "regra"), ...(regra ? regra.criterios : {}), classe, id: "regra", nome: "regra" },
+    soCarteira: !!(regra && regra.soCarteira), fixos: (d.fixos || []).slice(), excluidos: (d.excluidos || []).slice(), erro: "", salvando: false,
+    original: regra ? JSON.stringify(regra) : null, editando: !!id, papeis: (d.papeis || []).slice(),
+  };
+  if (!lpPAberto) {
+    lpPAberto = true; lpPAbridor = volta || document.activeElement;
+    const html = document.documentElement, sb = window.innerWidth - html.clientWidth;
+    if (sb > 0) html.style.paddingRight = sb + "px";
+    html.classList.add("trava");
+    $("lp-veu").hidden = false; $("lp-folha").hidden = false;
+  }
+  baseLista().then(() => { if (lpPAberto) desenharPainelLista(); });
+  desenharPainelLista();
+  const alvo = id ? $("lp-p-tipo-" + lpP.tipo) : $("lp-p-nome");
+  (alvo || $("lp-folha")).focus({ preventScroll: true });
+}
+function fecharPainelLista() {
+  if (!lpPAberto) return;
+  lpPAberto = false; lpP = null;
+  $("lp-veu").hidden = true; $("lp-folha").hidden = true;
+  const html = document.documentElement; html.classList.remove("trava"); html.style.paddingRight = "";
+  $("lp-folha-corpo").textContent = ""; $("lp-folha-pe").textContent = "";
+  if (lpPAbridor && lpPAbridor.isConnected && lpPAbridor.focus) lpPAbridor.focus({ preventScroll: true });
+}
+const regraDoPainel = () => {
+  const { id, nome, classe, aporte, semMinhas, ...criterios } = lpP.f;
+  return { classe: lpP.f.classe, criterios, soCarteira: lpP.soCarteira };
+};
+/* Prévia: a mesma conta do servidor (materializar), com os dados desta página */
+function previaPainel() {
+  const L = linhasLp(), linhas = L.porClasse[lpP.f.classe] || [];
+  if (!linhas.length) return null;
+  const r = RF.aplicar(linhas, { ...lpP.f, semMinhas: false, aporte: 0 }, { posicoes: new Map(), patrimonio: 0 });
+  let passam = r.passam.map((l) => l.t);
+  if (lpP.soCarteira) passam = passam.filter((t) => posicaoDe(t));
+  const ex = new Set(lpP.excluidos), fx = lpP.fixos.filter((t) => !ex.has(t));
+  const resto = passam.filter((t) => !ex.has(t) && !fx.includes(t));
+  const vagas = Math.max(0, LISTA_MAX_PAPEIS - fx.length);
+  return { passam: passam.length, total: linhas.length, papeis: [...fx, ...resto.slice(0, vagas)], cortados: Math.max(0, resto.length - vagas) };
+}
+function mudouPainel(digitando) {
+  clearTimeout(tLpP);
+  if (digitando) tLpP = setTimeout(desenharPainelLista, 250); else desenharPainelLista();
+}
+function campoPapeisPainel(chave, rotulo, dica) {
+  const box = el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, rotulo, dica ? el("small", { class: "dica" }, " " + dica) : null));
+  const chips = el("div", { class: "lp-papeis" });
+  lpP[chave].forEach((t) => {
+    const b = el("button", { class: "chip", type: "button", "aria-label": `Tirar ${t} de ${rotulo.toLowerCase()}`, title: "Tirar" }, t, el("span", { "aria-hidden": "true" }, " ×"));
+    b.addEventListener("click", () => { lpP[chave] = lpP[chave].filter((x) => x !== t); mudouPainel(); const i = $("lp-p-" + chave); if (i) i.focus(); });
+    chips.append(b);
+  });
+  const idInp = "lp-p-" + chave;
+  const inp = el("input", { class: "dd-input", id: idInp, placeholder: "+ papel", autocomplete: "off", autocapitalize: "characters", spellcheck: "false", maxlength: "40", role: "combobox", "aria-expanded": "false", "aria-controls": idInp + "-sug", "aria-autocomplete": "list", "aria-label": rotulo });
+  const sug = el("ul", { class: "lst-sug", id: idInp + "-sug", role: "listbox", hidden: "" });
+  let ops = [], marc = -1;
+  const pinta = () => {
+    sug.textContent = "";
+    ops.forEach((o, n) => { const b = el("button", { type: "button", role: "option", tabindex: "-1", id: `${idInp}-op${n}`, "aria-selected": String(n === marc) }, el("b", {}, o.t), el("span", {}, o.nome)); b.addEventListener("mousedown", (e) => e.preventDefault()); b.addEventListener("click", () => add(o.t)); sug.append(el("li", {}, b)); });
+    sug.hidden = !ops.length; inp.setAttribute("aria-expanded", String(!!ops.length));
+  };
+  const add = (t) => {
+    t = String(t || "").trim().toUpperCase();
+    if (!PAPEL_OK.test(t)) { lpP.erro = "Use o código do papel, como PETR4, HGLG11 ou AAPL."; mudouPainel(); return; }
+    const outra = chave === "fixos" ? "excluidos" : "fixos";
+    lpP[outra] = lpP[outra].filter((x) => x !== t);
+    if (!lpP[chave].includes(t)) lpP[chave] = [...lpP[chave], t].slice(0, LISTA_MAX_PAPEIS);
+    lpP.erro = ""; mudouPainel(); const i = $(idInp); if (i) i.focus();
+  };
+  inp.addEventListener("input", () => { ops = sugerirPapeis(inp.value, lpP[chave]); marc = ops.length ? 0 : -1; pinta(); });
+  inp.addEventListener("blur", () => { ops = []; pinta(); });
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" && ops.length) { e.preventDefault(); marc = (marc + 1) % ops.length; pinta(); }
+    else if (e.key === "ArrowUp" && ops.length) { e.preventDefault(); marc = (marc - 1 + ops.length) % ops.length; pinta(); }
+    else if (e.key === "Enter") { e.preventDefault(); if (inp.value.trim()) add(marc >= 0 ? ops[marc].t : inp.value); }
+  });
+  box.append(chips, el("div", { class: "lp-add" }, inp, sug));
+  return box;
+}
+function desenharPainelLista() {
+  if (!lpPAberto || !lpP) return;
+  const corpo = $("lp-folha-corpo"), pe = $("lp-folha-pe");
+  const ativo = document.activeElement, foco = ativo && ativo.id && corpo.contains(ativo) ? ativo.id : null;
+  const cursor = foco && ativo.tagName === "INPUT" && ativo.type === "text" ? ativo.selectionStart : null;
+  const rolar = corpo.scrollTop;
+  $("lp-folha-titulo").textContent = lpP.editando ? "Editar lista" : "Nova lista";
+  corpo.textContent = ""; pe.textContent = "";
+  const form = el("div", { class: "rd-form" });
+  const nome = el("input", { class: "dd-input", id: "lp-p-nome", type: "text", maxlength: "40", value: lpP.nome, placeholder: "Ex.: FIIs de papel", autocomplete: "off" });
+  nome.addEventListener("input", () => { lpP.nome = nome.value; });
+  const desc = el("textarea", { class: "dd-input", id: "lp-p-desc", maxlength: "4000", placeholder: "Motivo da lista, critérios e decisões (opcional)" });
+  desc.value = lpP.descricao;
+  desc.addEventListener("input", () => { lpP.descricao = desc.value; });
+  form.append(el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: "lp-p-nome" }, "Nome"), nome),
+    el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: "lp-p-desc" }, "Descrição"), desc));
+  form.append(segRadar("Tipo", "lp-p-tipo-", [["manual", "manual"], ["regra", "por regra"]], lpP.tipo, (v) => { lpP.tipo = v; mudouPainel(); }));
+  const comRegra = lpP.tipo === "regra" || lpP.ref;
+  if (lpP.tipo === "manual") {
+    const b = el("button", { class: "chip", type: "button", id: "lp-p-ref", "aria-pressed": String(lpP.ref), title: "A regra fica só para comparar: a página mostra quem passa e quem não passa, sem mexer nos papéis" }, "comparar com uma regra");
+    b.addEventListener("click", () => { lpP.ref = !lpP.ref; mudouPainel(); });
+    form.append(el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, "Regra"), el("div", { class: "chips" }, b),
+      el("span", { class: "rd-dica" }, "Na lista manual, você põe e tira os papéis. A regra, se ligar, serve só de comparação.")));
+  } else form.append(el("p", { class: "rd-dica" }, "Os papéis saem da regra e são recalculados a cada hora e quando você abre a lista. Fixos sempre entram; excluídos nunca."));
+  if (comRegra) {
+    camposCriterios(form, lpP.f, { pre: "lp-p-", classes: RF.CLASSES_REGRA, linhas: (c) => linhasLp().porClasse[c] || [], mudou: mudouPainel, semMinhas: false,
+      trocarClasse: (c) => { lpP.f = { ...RF.novoFiltro(c, "regra", "regra"), classe: c }; mudouPainel(); } });
+    const so = el("button", { class: "chip", type: "button", id: "lp-p-so", "aria-pressed": String(lpP.soCarteira), title: temCarteira() ? "Só entram papéis que estão na sua carteira importada" : "Precisa da carteira importada" }, "só papéis que tenho");
+    so.addEventListener("click", () => { lpP.soCarteira = !lpP.soCarteira; mudouPainel(); });
+    form.append(el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, "Carteira"), el("div", { class: "chips" }, so)));
+    const pv = previaPainel();
+    const prev = el("div", { class: "lp-previa", role: "status", id: "lp-p-previa" });
+    if (!pv) prev.append(el("span", {}, "Carregando as cotações para a prévia…"));
+    else if (lpP.tipo === "regra") {
+      prev.append(el("b", {}, pv.passam === 1 ? "1 papel passa hoje" : `${pv.passam} papéis passam hoje`), el("span", {}, `de ${pv.total} ${RF.NOME_CLASSE[lpP.f.classe]} · a lista ficaria com ${nPap(pv.papeis.length)}`),
+        ...(pv.papeis.length ? [el("small", {}, pv.papeis.slice(0, 14).join(" ") + (pv.papeis.length > 14 ? " …" : ""))] : []),
+        ...(pv.cortados ? [el("small", {}, `${pv.cortados} ficariam fora pelo limite de ${LISTA_MAX_PAPEIS}`)] : []));
+    } else prev.append(el("b", {}, pv.passam === 1 ? "1 papel passa hoje" : `${pv.passam} papéis passam hoje`), el("span", {}, "A lista continua com os papéis que você escolher."));
+    form.append(prev);
+    if (lpP.tipo === "regra") form.append(campoPapeisPainel("fixos", "Fixos", "sempre entram"), campoPapeisPainel("excluidos", "Excluídos", "nunca entram"));
+  }
+  if (lpP.erro) form.append(el("p", { class: "rd-estado warn", role: "alert" }, lpP.erro));
+  corpo.append(form);
+  corpo.scrollTop = rolar;
+  const cancelar = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "lp-p-cancelar" }, "Cancelar");
+  cancelar.addEventListener("click", fecharPainelLista);
+  const salvar = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "lp-p-salvar" }, lpP.salvando ? "Salvando…" : lpP.editando ? "Salvar" : "Criar lista");
+  if (lpP.salvando) salvar.disabled = true;
+  salvar.addEventListener("click", salvarPainelLista);
+  pe.append(cancelar, salvar);
+  if (foco && $(foco) && document.activeElement !== $(foco)) { const n = $(foco); n.focus({ preventScroll: true }); if (cursor != null && n.setSelectionRange) { try { n.setSelectionRange(cursor, cursor); } catch (e) {} } }
+}
+async function salvarPainelLista() {
+  const p = lpP;
+  const nome = String(p.nome || "").replace(/\s+/g, " ").trim();
+  if (!nome) { p.erro = "Dê um nome à lista."; desenharPainelLista(); $("lp-p-nome").focus(); return; }
+  const corpo = { nome, descricao: p.descricao || "" };
+  if (p.tipo === "regra") corpo.regra = regraDoPainel();
+  else corpo.regra = p.ref ? { ...regraDoPainel(), referencia: true } : null;
+  if (p.tipo === "regra") { corpo.fixos = p.fixos; corpo.excluidos = p.excluidos; }
+  else if (p.editando) { corpo.fixos = []; corpo.excluidos = []; }
+  if (!p.editando && corpo.regra === null) delete corpo.regra;
+  p.salvando = true; p.erro = ""; desenharPainelLista();
+  try {
+    const j = p.editando ? await apiLista("PUT", encodeURIComponent(p.id), corpo) : await apiLista("POST", "", { ...corpo, papeis: [] });
+    const id = j.id || p.id;
+    const novo = { id, ...j.data };
+    listas = listas.some((x) => x.id === id) ? listas.map((x) => (x.id === id ? novo : x)) : [...listas, novo];
+    lpTodas = null; wDados.delete("listas");
+    const daLateral = !inicio && emBolsa() && !p.editando && p.tipo === "manual";
+    fecharPainelLista();
+    if (daLateral) { editandoLista = null; avisarListas(`Lista “${nome}” criada. Ponha papéis pelo campo + papel.`); renderListas(); const i = $("lst-add-" + id); if (i) i.focus(); return; }
+    if (carteiraVista === "lista:" + id) { lpDoc = j.data; lpAviso = p.editando ? "Lista salva." : ""; desenharPaginaLista(); }
+    else location.hash = "#lista/" + encodeURIComponent(id);
+  } catch (e) { if (lpP) { lpP.salvando = false; lpP.erro = e.message; desenharPainelLista(); } }
+}
+$("lp-veu").addEventListener("click", fecharPainelLista);
+$("lp-folha-fechar").addEventListener("click", fecharPainelLista);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && lpPAberto) { e.preventDefault(); fecharPainelLista(); } });
+$("lp-folha").addEventListener("keydown", (e) => {
+  if (e.key !== "Tab") return;
+  const foc = [...$("lp-folha").querySelectorAll("button:not(:disabled), input, textarea, select")].filter((x) => x.offsetParent !== null);
+  if (!foc.length) return;
+  const pri = foc[0], ult = foc[foc.length - 1];
+  if (e.shiftKey && (document.activeElement === pri || document.activeElement === $("lp-folha"))) { e.preventDefault(); ult.focus(); }
+  else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); pri.focus(); }
+});
 
 /* push: sair do Início para uma seção (ou voltar a ele pela aba) cria uma entrada no histórico, para o "voltar"
    do navegador trazer o Início de volta. Entre seções e visões o endereço é só trocado, como antes. */
