@@ -127,7 +127,7 @@ textarea{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:inheri
 
   <section class="card" id="espelho-card">
     <h2>Espelho em São Paulo</h2>
-    <p class="dica" style="margin-top:0">Cópia do que a página lê, num Durable Object em São Paulo. O D1 continua sendo a fonte; o cron copia o que mudou a cada minuto. Se o espelho falhar ou demorar mais de 2 s, a leitura vai direto ao D1. Favoritos e listas também vêm daqui; quando alguém grava, a mudança chega ao espelho logo depois do D1.</p>
+    <p class="dica" style="margin-top:0">Cópia do que a página lê, num Durable Object em São Paulo. O D1 continua sendo a fonte; o cron copia o que mudou a cada minuto. Se o espelho falhar ou demorar mais de 2 s, a leitura vai direto ao D1. Favoritos, listas e o painel do Início também vêm daqui; quando alguém grava, a mudança chega ao espelho logo depois do D1.</p>
     <div id="espelho"><p class="vazio">Carregando…</p></div>
     <div class="sonda-acoes"><button class="pri" type="button" id="espelho-sync">Sincronizar agora</button><button type="button" class="perigo" id="espelho-zerar">Zerar e recarregar</button></div>
     <p class="msg" id="msg-espelho" role="status"></p>
@@ -456,7 +456,7 @@ function pintarEspelho(r) {
   }
   if (e.porColecao && e.porColecao.length)
     h += '<details><summary>Docs por coleção</summary><table class="custo-tab"><thead><tr><th>Coleção</th><th>Docs</th></tr></thead><tbody>'
-      + e.porColecao.map((x) => `<tr><td>${esc(x.collection === "favs/*" ? "favs (todas as pessoas)" : x.collection === "listas/*" ? "listas (todas as pessoas)" : x.collection)}</td><td>${fmt(x.n)}</td></tr>`).join("") + "</tbody></table></details>";
+      + e.porColecao.map((x) => `<tr><td>${esc(x.collection === "favs/*" ? "favs (todas as pessoas)" : x.collection === "listas/*" ? "listas (todas as pessoas)" : x.collection === "prefs/*" ? "painel do Início (todas as pessoas)" : x.collection)}</td><td>${fmt(x.n)}</td></tr>`).join("") + "</tbody></table></details>";
   $("espelho").innerHTML = h;
 }
 async function carregarEspelho() {

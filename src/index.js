@@ -4,9 +4,10 @@ import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
 import { cronEua } from "./eua.js";
 import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
 import { adminCustos } from "./custos.js";
-import { secoesDe, secaoDe, libera, adminGrupos, adminMembro, guardarSecoes } from "./grupos.js";
+import { secoesDe, secaoDe, libera, adminGrupos, adminMembro, guardarSecoes, SECOES } from "./grupos.js";
 import { cronSonda, adminSonda } from "./sonda.js";
 import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1, gravarNoEspelho, removerDoEspelho } from "./espelho.js";
+import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
 export { Espelho } from "./espelho.js";
@@ -307,6 +308,64 @@ export async function listas(request, env, quem, idLista) {
   return json({ erro: "metodo" }, 405);
 }
 
+// Painel inicial (aba Início): ordem, tamanho e o que aparece, um doc por pessoa em prefs/<email>, id "painel".
+// Mesmo caminho dos favoritos: leitura pelo espelho (D1 de reserva), gravação no D1 e write-through no espelho.
+// Catálogo, padrão e validação em src/painel.js.
+async function prefsPainel(request, env, quem) {
+  const col = "prefs/" + quem.email;
+  const secoes = quem.secoes ?? null;
+  if (request.method === "GET") {
+    const linhas = await lerLinhas(env, "SELECT id, data FROM docs WHERE collection = ? AND id = ?", [col, "painel"], "prefs");
+    let salvo = null;
+    try { salvo = linhas[0] ? JSON.parse(linhas[0].data) : null; } catch { salvo = null; }
+    return json(respostaPainel(salvo, secoes));
+  }
+  if (request.method === "PUT") {
+    const corpo = await request.text();
+    if (corpo.length > 4000) return json({ erro: "grande" }, 413);
+    let b;
+    try { b = JSON.parse(corpo); } catch { return json({ erro: "json" }, 400); }
+    const v = validarPainel(b, secoes);
+    if (v.erro) return json({ erro: v.erro }, 400);
+    const doc = { widgets: v.widgets, atualizado: agoraIso() };
+    const data = JSON.stringify(doc);
+    await env.DB.prepare(
+      "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, 'painel', ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
+    ).bind(col, data, doc.atualizado).run();
+    gravarNoEspelho(env, [{ collection: col, id: "painel", data, coletado: "", atualizado: doc.atualizado }]);
+    return json({ ok: true, ...respostaPainel(doc, secoes) });
+  }
+  return json({ erro: "metodo" }, 405);
+}
+
+// Widget "Hoje no Lookout": notícias que entraram nas últimas 24 h e a última rodada de cada seção liberada.
+// Uma ida só ao banco: os docs meta/status* e a contagem por collection, juntos num UNION ALL. A consulta começa
+// por "SELECT id, data FROM docs", que é o que o espelho aceita (só leitura na tabela docs); nas linhas da
+// contagem, "id" é a collection e "data" o número. O corte anda de 10 em 10 min para a resposta caber no cache.
+const ITENS_DA_SECAO = (s) => (s === "tech" ? "items" : "items-" + s);
+const STATUS_DA_SECAO = (s) => (s === "tech" ? "status" : "status-" + s);
+async function painelHoje(env, quem, request) {
+  const secs = SECOES.filter((s) => libera(quem.secoes ?? null, s));
+  const corte = new Date(Math.floor(Date.now() / 600_000) * 600_000 - 86_400_000).toISOString();
+  if (!secs.length) return json({ corte, secoes: [] });
+  const marcas = (n, de) => Array.from({ length: n }, (_, k) => "?" + (de + k)).join(",");
+  const sql = `SELECT id, data FROM docs WHERE collection = 'meta' AND id IN (${marcas(secs.length, 1)})`
+    + ` UNION ALL SELECT collection AS id, count(*) AS data FROM docs WHERE collection IN (${marcas(secs.length, secs.length + 1)}) AND coletado >= ?${2 * secs.length + 1} GROUP BY collection`;
+  const args = [...secs.map(STATUS_DA_SECAO), ...secs.map(ITENS_DA_SECAO), corte];
+  return comCache("hoje|" + secs.join(",") + "|" + corte, async () => {
+    const linhas = await lerLinhas(env, sql, args, "hoje");
+    const por = new Map(linhas.map((r) => [r.id, r.data]));
+    return {
+      corte,
+      secoes: secs.map((s) => {
+        let st = {};
+        try { st = JSON.parse(por.get(STATUS_DA_SECAO(s)) || "{}") || {}; } catch {}
+        return { secao: s, n: Number(por.get(ITENS_DA_SECAO(s)) || 0), ultimaRodada: st.ultimaRodada || null, novosNaUltima: st.novosNaUltima ?? null };
+      }),
+    };
+  }, request);
+}
+
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Rendimento das fontes nos últimos 10 dias (o tempo que os candidatos ficam no banco)
@@ -342,12 +401,11 @@ async function adminUsuarios(request, env, email) {
     return json({ ok: true });
   }
   if (request.method === "DELETE" && email) {
-    const cols = ["favs/" + email.toLowerCase(), "listas/" + email.toLowerCase()];
+    const cols = ["favs/", "listas/", "prefs/"].map((p) => p + email.toLowerCase());
     // As chaves saem antes do DELETE para o espelho apagar as mesmas linhas logo depois
-    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?)").bind(...cols).all();
+    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?, ?)").bind(...cols).all();
     await env.DB.prepare("DELETE FROM usuarios WHERE email = ?").bind(email.toLowerCase()).run();
-    await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind(cols[0]).run();
-    await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind(cols[1]).run();
+    for (const c of cols) await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind(c).run();
     removerDoEspelho(env, chaves);
     try { await env.DB.prepare("DELETE FROM usuario_grupo WHERE email = ?").bind(email.toLowerCase()).run(); } catch (e) {}
     return json({ ok: true });
@@ -357,7 +415,7 @@ async function adminUsuarios(request, env, email) {
 
 // Caminho com "%" malformado não derruba o Worker: vira null e a rota responde 400.
 const decodificar = (s) => { try { return decodeURIComponent(s); } catch { return null; } };
-// Gravações com corpo JSON (listas e admin) só aceitam application/json: formulário de outro site não consegue mandar.
+// Gravações com corpo JSON (listas, painel e admin) só aceitam application/json: formulário de outro site não consegue mandar.
 const corpoJson = (request) => (request.method !== "POST" && request.method !== "PUT") || (request.headers.get("content-type") || "").toLowerCase().includes("application/json");
 
 function servirAsset(request, env, caminho) {
@@ -387,7 +445,7 @@ export default {
       return pagina("Só por convite", `<h1>Este espaço é só para convidados</h1><p>Você entrou como <strong>${esc(quem.email)}</strong>, que ainda não está na lista.</p><p>Se recebeu um convite em outro e-mail, <a href="/cdn-cgi/access/logout">saia</a> e entre com ele.</p>`, 403);
     }
 
-    if (p === "/api/me") return json({ email: quem.email, nome: quem.nome, admin: quem.admin, secoes: quem.secoes ?? null });
+    if (p === "/api/me") return json({ email: quem.email, nome: quem.nome, admin: quem.admin, secoes: quem.secoes ?? null, widgets: catalogoDe(quem.secoes ?? null).map((w) => w.id) });
     if (p === "/api/q" && request.method === "GET") return consultar(url, env, quem, request);
     if (p === "/api/doc" && request.method === "GET") return lerDoc(url, env, quem, request);
     if (p === "/api/mercado/atualizar" && request.method === "POST") {
@@ -398,6 +456,11 @@ export default {
     }
     if (p === "/api/favs" || p.startsWith("/api/favs/"))
       return favoritos(request, env, quem, p.length > 10 ? decodeURIComponent(p.slice(10)) : "");
+    if (p === "/api/prefs/painel") {
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      return prefsPainel(request, env, quem);
+    }
+    if (p === "/api/painel/hoje" && request.method === "GET") return painelHoje(env, quem, request);
     if (p === "/api/listas" || p.startsWith("/api/listas/")) {
       const idLista = p.length > 12 ? decodificar(p.slice(12)) : "";
       if (idLista === null) return json({ erro: "id" }, 400);

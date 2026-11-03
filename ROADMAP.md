@@ -26,7 +26,8 @@
 - [ ] Fontes novas de Investimentos a partir do que a sonda aprovar
 - [x] Mandato, gestão, prazo, administrador, início e público-alvo dos FIIs, do informe mensal da CVM: chips e "Sobre o fundo" no diálogo, filtro Mandato na Bolsa e coluna na tabela a partir de 1200 px (03/11). No informe de 2026 o mandato veio vazio; aparece quando a CVM mandar ou pelo ano anterior
 - [ ] Próximo nos FIIs: vacância e imóveis, a partir do informe trimestral da CVM
-- [ ] Site abrir direto na Bolsa (decisão do Ralph)
+- [x] ~~Site abrir direto na Bolsa~~: substituído pelo painel inicial (03/11)
+- [x] Início: painel de widgets configurável (resumos de cada seção, mercado, pregão, FIIs, EUA, listas, favoritos e "Hoje no Lookout"), com ordem, largura e o que aparece salvos na conta em `prefs/<email>`, arrastar e soltar no desktop e o site abrindo nele (03/11)
 - [ ] Busca com IA só quando o acervo de Tech passar de 3 mil itens ou a busca atual deixar de dar conta
 
 ## Próximo: Negócios e Investimentos

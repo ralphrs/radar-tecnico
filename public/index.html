@@ -451,7 +451,6 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 #listas-centro .bloco > h3 { font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; text-transform: none; color: var(--foreground); }
 #lat-blocos { display: flex; flex-direction: column; gap: var(--space-6); }
 #lat-listas:empty, #lat-dest:empty, #lat-hoje:empty, #listas-centro:empty { display: none; }
-.uma-secao #radares-barra, .uma-secao #radares-nav { display: none; }
 .cot-pe { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
 /* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
 .lista.cards { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 10px; }
@@ -588,15 +587,141 @@ footer b { color: var(--foreground); font-weight: 500; }
 @media (min-width: 1440px) {
   .wrap { grid-template-columns: 240px minmax(0, 720px) 288px; column-gap: var(--space-8); }
 }
+
+/* Início: painel de widgets. Sem colunas laterais; a barra de abas fica no topo do centro em qualquer largura
+   e o resto da página (feed, Bolsa, filtros, rodapé) sai de cena enquanto o Início está aberto. */
+a.marca { color: inherit; text-decoration: none; border-radius: var(--radius-md); }
+html.no-inicio .nav-temas, html.no-inicio .lateral, html.no-inicio .centro > :not(#inicio):not(#barra), html.no-inicio header .status { display: none !important; }
+html.no-inicio .barra-linha { display: none; }
+html.no-inicio .conta-btn { margin-left: auto; }
+@media (min-width: 900px) {
+  html.no-inicio .wrap { grid-template-columns: minmax(0, 1fr); grid-template-areas: "topo" "centro"; }
+  html.no-inicio .barra { display: block; position: static; margin: 0; padding: 0; border: 0; background: none; }
+  html.no-inicio .barra-radares { height: auto; }
+  html.no-inicio .barra-radares .radares { width: auto; display: inline-flex; max-width: 100%; }
+  html.no-inicio .barra-radares .radares button { flex: none; padding-inline: 16px; }
+}
+.inicio { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.ini-cab { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
+.ini-cab h2 { margin: 0; font: 600 24px/1.2 var(--font-display); letter-spacing: -0.02em; }
+.ini-sub { margin: 4px 0 0; font: 400 12.5px/1.45 var(--font-mono); color: var(--muted-foreground); }
+.ini-sub::first-letter { text-transform: uppercase; }
+.ini-aviso { margin: 0; font-size: 12.5px; color: var(--warn); }
+.ini-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start; }
+@media (min-width: 700px) { .wdg[data-tam="2"] { grid-column: span 2; } }
+@media (max-width: 699px) { .ini-cab h2 { font-size: 20px; } .ini-grade { gap: 12px; } }
+.wdg { container-type: inline-size; position: relative; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-sm); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.wdg-cab { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.wdg-cab h3 { margin: 0; flex: 1; min-width: 0; font: 600 15px/1.3 var(--font-display); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wdg-cab h3 a { color: var(--foreground); text-decoration: none; border-radius: 3px; }
+.wdg-cab h3 a:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.wdg-cab small { flex: none; max-width: 55%; font: 400 11.5px/16px var(--font-mono); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wdg-cab .rk-quando { font-size: 11.5px; }
+.wdg-alca { display: none; flex: none; align-self: center; width: 18px; height: 18px; margin-right: -4px; color: var(--muted-foreground); cursor: grab; opacity: 0; transition: opacity 120ms; }
+.wdg-alca svg { width: 18px; height: 18px; display: block; }
+@media (pointer: fine) and (min-width: 900px) {
+  .wdg-alca { display: block; }
+  .wdg:hover .wdg-alca, .wdg:focus-within .wdg-alca, .pers-aberto .wdg-alca { opacity: 1; }
+}
+.wdg.arrastando { opacity: .45; }
+.wdg.cai-antes::before, .wdg.cai-depois::after { content: ""; position: absolute; top: 8px; bottom: 8px; width: 3px; border-radius: 2px; background: var(--primary); pointer-events: none; }
+.wdg.cai-antes::before { left: -10px; }
+.wdg.cai-depois::after { right: -10px; }
+.wdg-pe { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--border); font: 400 11.5px/16px var(--font-mono); color: var(--muted-foreground); }
+.wdg-pe a { margin-left: auto; font: 500 12.5px/18px var(--font-sans); color: var(--primary); text-decoration: none; border-radius: 3px; }
+.wdg-pe a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.wdg-vazio { margin: 0; padding: 6px 0 4px; font-size: 13px; color: var(--muted-foreground); }
+.wdg-vazio .dd-btn--link { font-size: 13px; }
+.esq { display: block; height: 11px; margin: 7px 0; border-radius: 4px; background: color-mix(in srgb, var(--foreground) 8%, transparent); }
+@media (prefers-reduced-motion: no-preference) { .esq { animation: esq 1.4s ease-in-out infinite; } @keyframes esq { 50% { opacity: .45; } } }
+.wdg-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.wdg-lista li { padding-block: 7px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wdg-lista li:first-child { border-top: 0; padding-top: 0; }
+.wdg-lista a { font: 600 13.5px/1.35 var(--font-sans); color: var(--foreground); text-decoration: none; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wdg-lista a:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.wdg-lista p { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wdg-lista .n { font: 400 11px/16px var(--font-mono); color: var(--muted-foreground); display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; min-width: 0; }
+.wdg-lista .n b { font-weight: 500; color: var(--primary); }
+/* Mercado: grade de 2 colunas, a grade inteira leva a Investimentos */
+.wdg-merc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; color: inherit; text-decoration: none; border-radius: var(--radius-md); }
+.wdg-mc { display: flex; flex-direction: column; gap: 1px; padding: 6px 0; border-top: 1px solid var(--border); min-width: 0; }
+.wdg-mc:nth-child(-n+2) { border-top: 0; padding-top: 0; }
+.wdg-mn { font-size: 11.5px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wdg-mn .bandeira { margin-right: 4px; }
+.wdg-mv { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font: 600 14px/1.3 var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 0; }
+.wdg-mv small { font: 400 11px var(--font-sans); color: var(--muted-foreground); margin-left: 3px; }
+.wdg-mv .d { font: 500 12px var(--font-mono); }
+.wdg-mv .d.sobe, .wdg-idx .sobe { color: var(--ok); } .wdg-mv .d.desce, .wdg-idx .desce { color: var(--err); } .wdg-mv .d.igual { color: var(--muted-foreground); }
+.wdg-merc:hover .wdg-mn { color: var(--foreground); }
+/* Taxas (Selic, CDI, IPCA) sem variação do dia: numa linha só, embaixo das cotações */
+.wdg-taxas { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2px 16px; padding-top: 6px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--muted-foreground); }
+.wdg-taxas b { font: 600 13px var(--font-sans); color: var(--foreground); font-variant-numeric: tabular-nums; margin-left: 4px; }
+/* Mini-listas do pregão, dos FIIs e dos EUA: empilham quando o card é estreito (container query) */
+.wdg-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px 18px; }
+@container (min-width: 560px) { .wdg-cols.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container (min-width: 380px) { .wdg-cols.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.wdg-rk { min-width: 0; }
+.wdg-rk h4 { margin: 0; padding-bottom: 4px; font: 600 11px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wdg-rk ol { list-style: none; margin: 0; padding: 0; }
+.wdg-rk li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--border); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.wdg-rk li.so2 { grid-template-columns: minmax(0, 1fr) auto; }
+.wdg-rk .cot-papel { justify-self: start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+.wdg-rk .rk-vazio { border-top: 0; }
+.wdg-idx { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; color: inherit; text-decoration: none; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.wdg-idx > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.wdg-idx span { font-size: 11.5px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wdg-idx b { font: 600 14px/1.3 var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wdg-idx i { font: normal 500 12px var(--font-mono); }
+/* Minhas listas, compactas */
+.wdg-lst + .wdg-lst { padding-top: 8px; border-top: 1px solid var(--border); }
+.wdg-lst h4 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 2px; font: 600 13px/1.3 var(--font-sans); min-width: 0; }
+.wdg-lst h4 span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wdg-lst h4 small { flex: none; font: 400 11px var(--font-mono); color: var(--muted-foreground); }
+.wdg-lst .wdg-rk li:first-child { border-top: 0; }
+.wdg-lst .mais { display: block; margin: 2px 0 0; font: 400 11px var(--font-mono); color: var(--muted-foreground); }
+/* Hoje no Lookout: uma linha por seção com barrinha proporcional */
+.wdg-hoje { list-style: none; margin: 0; padding: 0; }
+.wdg-hoje a { display: grid; grid-template-columns: minmax(84px, 7.5em) minmax(0, 1fr) 3ch; align-items: center; gap: 10px; padding: 6px 4px; margin-inline: -4px; border-radius: var(--radius-md); color: var(--foreground); text-decoration: none; font-size: 13px; }
+.wdg-hoje a:hover { background: var(--accent); }
+.wdg-hoje a:hover .nome { color: var(--primary); }
+.wdg-hoje .nome { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wdg-hoje .k { text-align: right; font: 500 12.5px var(--font-mono); font-variant-numeric: tabular-nums; }
+.wdg-barra { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--primary) 12%, transparent); overflow: hidden; }
+.wdg-barra span { display: block; height: 100%; min-width: 2px; border-radius: 4px; background: linear-gradient(90deg, var(--brand-start), var(--brand-end)); }
+.wdg-barra span.zero { min-width: 0; }
+/* Personalizar: painel lateral no desktop, folha de baixo no celular */
+.pers-veu { position: fixed; inset: 0; z-index: 40; background: var(--overlay); }
+.pers { position: fixed; z-index: 41; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); display: flex; flex-direction: column; background: var(--card); color: var(--foreground); border-left: 1px solid var(--border); box-shadow: var(--shadow-md); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pers:focus { outline: none; }
+@media (max-width: 699px) { .pers { left: 0; top: auto; width: auto; max-height: min(88dvh, 760px); border-left: 0; border-top: 1px solid var(--border); border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding-top: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .pers:not([hidden]) { animation: entra 180ms ease-out; } .pers-veu:not([hidden]) { animation: aparece 180ms ease-out; }
+  @keyframes entra { from { transform: translateX(24px); opacity: 0; } }
+  @media (max-width: 699px) { @keyframes entra { from { transform: translateY(24px); opacity: 0; } } }
+}
+.pers .painel-corpo { gap: 10px; padding-block: 12px; }
+.pers-dica { margin: 0; font-size: 13px; color: var(--muted-foreground); }
+.pers-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.pers-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border); }
+.pers-item:first-child { border-top: 0; }
+.pers-item label { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 32px; cursor: pointer; font: 500 13.5px/1.3 var(--font-sans); }
+.pers-item label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pers-item input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--primary); }
+.pers-item.oculto label { color: var(--muted-foreground); }
+.pers-setas { display: inline-flex; gap: 2px; }
+.pers-setas .dd-btn--icon { width: 28px; height: 28px; font-size: 11px; }
+.pers-item .seg button { height: 24px; padding: 0 9px; font-size: 12px; }
+.pers-item .seg button:disabled { opacity: .35; }
+.pers .painel-pe .dd-btn { height: 40px; }
 </style>
 
 <div class="wrap">
   <header>
     <div class="topo">
-      <div class="marca">
+      <a class="marca" href="#inicio" id="marca" title="Ir para o Início">
         <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lk-farol" x1="6" y1="4" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset="0.4" stop-color="#7C3AED"/><stop offset="1" stop-color="#4F8FF7"/></linearGradient></defs><path fill="url(#lk-farol)" d="M6 32 A26 26 0 0 1 58 32 L40.5 22 A8.5 8.5 0 0 0 23.5 22 Z M26 29 L28 30 L22 58 A28 28 0 0 1 10 50 Z M38 29 L54 50 A28 28 0 0 1 42 58 L36 30 Z"/><circle class="lk-olho" cx="32" cy="22" r="4"/></svg>
         <h1>Radar Técnico</h1>
-      </div>
+      </a>
       <button class="conta-btn alvo" type="button" id="conta" aria-haspopup="menu" aria-expanded="false" aria-controls="conta-menu" aria-label="Conta" title="Conta"><span class="conta-av" id="conta-av" aria-hidden="true"></span></button>
     </div>
     <p class="status" id="status"><span class="pulse"></span>Conectando ao feed…</p>
@@ -668,6 +793,17 @@ footer b { color: var(--foreground); font-weight: 500; }
     </div>
   </div>
 
+  <section class="inicio" id="inicio" aria-labelledby="ini-titulo" hidden>
+    <div class="ini-cab">
+      <div>
+        <h2 id="ini-titulo">Olá</h2>
+        <p class="ini-sub"><span id="ini-data"></span><span id="ini-atual"></span></p>
+      </div>
+      <button class="dd-btn dd-btn--outline alvo" type="button" id="personalizar" aria-haspopup="dialog" aria-expanded="false" aria-controls="pers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Personalizar</button>
+    </div>
+    <p class="ini-aviso" id="ini-aviso" role="status" hidden></p>
+    <div class="ini-grade" id="ini-grade"></div>
+  </section>
   <div class="seg visoes" id="visoes" role="group" aria-label="Visão de Investimentos" hidden>
     <button type="button" id="visao-bolsa" aria-pressed="true">Bolsa</button>
     <button type="button" id="visao-eua" aria-pressed="false">EUA</button>
@@ -715,6 +851,22 @@ footer b { color: var(--foreground); font-weight: 500; }
   <button class="conta-item" type="button" role="menuitem" tabindex="-1" id="aparencia" data-fica></button>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/admin" id="conta-admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Administração</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sair</a>
+</div>
+
+<div class="pers-veu" id="pers-veu" hidden></div>
+<div class="pers" id="pers" role="dialog" aria-modal="true" aria-labelledby="pers-titulo" tabindex="-1" hidden>
+  <div class="painel-topo">
+    <h2 id="pers-titulo">Personalizar o Início</h2>
+    <button class="dd-btn dd-btn--ghost alvo" type="button" id="pers-fechar">Fechar</button>
+  </div>
+  <div class="painel-corpo">
+    <p class="pers-dica" id="pers-dica">Marque o que aparece, mude a ordem com as setas e escolha a largura de cada card. A grade muda na hora e fica salva na sua conta quando você fecha.</p>
+    <ul class="pers-lista" id="pers-lista" aria-describedby="pers-dica"></ul>
+  </div>
+  <div class="painel-pe">
+    <button class="dd-btn dd-btn--outline" type="button" id="pers-restaurar">Restaurar padrão</button>
+    <button class="dd-btn dd-btn--primary" type="button" id="pers-ok">Pronto</button>
+  </div>
 </div>
 
 <script>
@@ -1046,11 +1198,16 @@ const passaEscopo = (i) => escopo === "todos" || !R().escopo || escopoDe(i) === 
 try { ordenacao = localStorage.getItem("radar-ordem") || "data"; } catch (e) {}
 if (!ORDENS.some((o) => o.id === ordenacao)) ordenacao = "data";
 let radar = "tech", carregado = false;
+/* Início (painel de widgets) aberto. radar continua apontando para a última seção, mas nada dela é assinado. */
+let inicio = false, pedirSoFav = false;
+/* Documentos de meta lidos nesta página (mercado, b3, eua), com a hora: o Início e Investimentos usam a mesma cópia */
+const memMeta = new Map(), lendoMeta = new Map();
+const META_FRESCO_MS = 120000;
 try {
   soRel = localStorage.getItem("radar-relevantes") === "1";
   favs = JSON.parse(localStorage.getItem("radar-favoritos") || "{}") || {};
 } catch (e) {}
-/* Radar aberto: o hash da URL (#politica, #esportes) vence o que ficou salvo neste navegador.
+/* Radar aberto pelo hash da URL (#tech, #politica, #esportes). Sem hash, com #inicio ou com um hash desconhecido, abre o Início.
    Investimentos tem três visões: #investimentos (ou #investimentos/bolsa) abre a Bolsa; #investimentos/eua, o mercado americano;
    #investimentos/noticias, o feed. */
 const partesDoHash = () => (location.hash || "").replace(/^#/, "").split("/");
@@ -1060,14 +1217,14 @@ const visaoDoHash = () => { const v = partesDoHash()[1]; return VISOES.includes(
 let visao = "bolsa";
 {
   const h = radarDoHash();
-  let salvo = null; try { salvo = localStorage.getItem("radar-atual"); } catch (e) {}
-  radar = h || (h === "" && RADARES[salvo] ? salvo : "tech");
+  inicio = !h;
+  radar = h || "tech";
   if (h === "investimentos") visao = visaoDoHash();
 }
 const R = () => RADARES[radar];
 /* Bolsa e EUA têm o mesmo esqueleto (pregão, tabela, filtros, listas): emBolsa vale para as duas; emEua só para a americana */
-const emBolsa = () => !!R().mercado && (visao === "bolsa" || visao === "eua");
-const emEua = () => !!R().mercado && visao === "eua";
+const emBolsa = () => !inicio && !!R().mercado && (visao === "bolsa" || visao === "eua");
+const emEua = () => !inicio && !!R().mercado && visao === "eua";
 /* Liga TEMAS, TIPOS, mapas e filtros salvos ao radar aberto */
 function aplicarRadar() {
   const r = R();
@@ -1182,23 +1339,43 @@ function renderStatus() {
 const URGENTE_MS = 24 * 3600 * 1000;
 const urgentes = () => itens.filter((i) => i.urgente === true && i.coletado && Date.now() - new Date(i.coletado) <= URGENTE_MS);
 /* Painel de mercado: lê meta/mercado e permite pedir uma atualização (no máximo uma a cada 5 minutos) */
-/* Lê um documento de meta para o mercado. Devolve undefined quando a leitura falhou (fica o que já estava). */
-async function lerMeta(id) {
-  try { const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id }), { credentials: "same-origin" }); const j = await r.json(); return j.existe ? j.data : null; } catch (e) { return undefined; }
+/* Lê um documento de meta para o mercado. Devolve undefined quando a leitura falhou (fica o que já estava).
+   Sem "fresco", uma cópia lida há menos de 2 min serve (o Início e Investimentos não pedem o mesmo doc duas vezes);
+   os ciclos de atualização pedem "fresco". Duas leituras do mesmo doc ao mesmo tempo viram uma. */
+function lerMeta(id, fresco) {
+  const m = memMeta.get(id);
+  if (!fresco && m && Date.now() - m.em < META_FRESCO_MS) return Promise.resolve(m.dados);
+  if (lendoMeta.has(id)) return lendoMeta.get(id);
+  const p = (async () => {
+    try {
+      const r = await fetch("/api/doc?" + new URLSearchParams({ c: "meta", id }), { credentials: "same-origin" });
+      if (!r.ok) return undefined;
+      const j = await r.json();
+      const dados = j.existe ? j.data : null;
+      const velho = memMeta.get(id);
+      /* mesmo "atualizado": devolve o objeto que já estava, para quem compara por identidade não redesenhar */
+      const fica = velho && velho.dados && dados && velho.dados.atualizado && velho.dados.atualizado === dados.atualizado ? velho.dados : dados;
+      memMeta.set(id, { dados: fica, em: Date.now() });
+      return fica;
+    } catch (e) { return undefined; }
+    finally { lendoMeta.delete(id); }
+  })();
+  lendoMeta.set(id, p);
+  return p;
 }
 /* Mesmo documento de antes (mesmo "atualizado"): não troca o objeto nem redesenha. As listas e caches comparam o objeto. */
 const mesmoMeta = (velho, novo) => novo === undefined || (velho === novo) || (!!velho && !!novo && !!velho.atualizado && velho.atualizado === novo.atualizado);
-async function lerB3() {
+async function lerB3(fresco) {
   if (!R().mercado) return;
-  const novo = await lerMeta("b3");
+  const novo = await lerMeta("b3", fresco);
   if (!R().mercado || (b3Lido && mesmoMeta(b3, novo))) return;
   b3Lido = true; if (novo !== undefined) b3 = novo;
   renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas();
 }
 /* Cotações dos EUA (meta/eua): ações do S&P 100, ETFs e índices, gravadas pelo cron a cada 30 min no pregão de Nova York */
-async function lerEua() {
+async function lerEua(fresco) {
   if (!R().mercado) return;
-  const novo = await lerMeta("eua");
+  const novo = await lerMeta("eua", fresco);
   if (!R().mercado || (euaLido && mesmoMeta(eua, novo))) return;
   euaLido = true; if (novo !== undefined) eua = novo;
   renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas(); if (emEua()) renderHoje();
@@ -1471,7 +1648,7 @@ if (MQ_LARGA.addEventListener) MQ_LARGA.addEventListener("change", aoMudarLarga)
 const aoMudarNav = () => { renderRankings(); renderCotacoes(); };
 if (MQ_NAV.addEventListener) MQ_NAV.addEventListener("change", aoMudarNav); else MQ_NAV.addListener(aoMudarNav);
 function aplicarVisao() {
-  const inv = !!R().mercado, bolsa = emBolsa(), html = document.documentElement;
+  const inv = !inicio && !!R().mercado, bolsa = emBolsa(), html = document.documentElement;
   html.classList.toggle("inv-bolsa", bolsa);
   html.classList.toggle("inv-eua", emEua());
   html.classList.toggle("inv-noticias", inv && !bolsa);
@@ -2069,9 +2246,9 @@ function abrirAtivo(x, aba = cotAba) {
   d.append(links);
   if (!d.open) d.showModal();
 }
-async function lerMercado() {
+async function lerMercado(fresco) {
   if (!R().mercado) return;
-  const novo = await lerMeta("mercado");
+  const novo = await lerMeta("mercado", fresco);
   /* a resposta do "Atualizar agora" traz "aguarde": a leitura seguinte sempre substitui, para liberar o botão */
   if (!R().mercado || (mercadoLido && !(painelMercado && painelMercado.aguarde) && mesmoMeta(painelMercado, novo))) return;
   mercadoLido = true; if (novo !== undefined) painelMercado = novo;
@@ -2081,13 +2258,14 @@ async function atualizarMercado() {
   if (pedindoMercado) return;
   pedindoMercado = true; renderMercado();
   try { const r = await fetch("/api/mercado/atualizar", { method: "POST", credentials: "same-origin" }); if (r.ok) painelMercado = await r.json(); } catch (e) {}
-  lerB3(); lerEua();
+  memMeta.delete("mercado"); if (painelMercado) memMeta.set("mercado", { dados: painelMercado, em: Date.now() });
+  lerB3(true); lerEua(true);
   pedindoMercado = false; renderMercado();
 }
 const fmtNum = (v, casas) => Number(v).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
 function renderMercado() {
   const box = $("mercado"), pe = $("mercado-pe");
-  if (!R().mercado) { box.hidden = true; pe.hidden = true; return; }
+  if (!R().mercado || inicio) { box.hidden = true; pe.hidden = true; return; }
   box.hidden = false; pe.hidden = false; pe.textContent = "";
   const p = painelMercado;
   const itensM = (p && p.itens) || [];
@@ -2140,14 +2318,17 @@ function renderUrgente() {
 function renderRadares() {
   [["radares-barra", "aba-"], ["radares-nav", "navaba-"]].forEach(([id, pre]) => {
     const s = $(id); s.textContent = "";
+    const ini = el("button", { type: "button", id: pre + "inicio", "aria-pressed": String(inicio) }, "Início");
+    ini.addEventListener("click", () => irInicio());
+    s.append(ini);
     radaresVisiveis().forEach((r) => {
-      const b = el("button", { type: "button", id: pre + r, "aria-pressed": String(radar === r) }, RADARES[r].aba);
+      const b = el("button", { type: "button", id: pre + r, "aria-pressed": String(!inicio && radar === r) }, RADARES[r].aba);
       b.addEventListener("click", () => trocarRadar(r));
       s.append(b);
     });
   });
   /* no celular a barra de abas rola: deixa a aba aberta à vista */
-  const ativa = $("aba-" + radar), rolo = $("radares-barra");
+  const ativa = $("aba-" + (inicio ? "inicio" : radar)), rolo = $("radares-barra");
   if (ativa && rolo.scrollWidth > rolo.clientWidth) rolo.scrollLeft = Math.max(0, ativa.offsetLeft - (rolo.clientWidth - ativa.offsetWidth) / 2);
 }
 
@@ -2694,6 +2875,9 @@ function renderPregao() {
   renderRankings(); renderCotacoes(); renderNavBolsa();
 }
 function render() {
+  aplicarModo();
+  /* no Início só a barra de abas e o card de favoritos dependem do estado geral */
+  if (inicio) { aplicarVisao(); renderRadares(); if (painelMontado) carregarWidget("favoritos"); return; }
   clearTimeout(tBusca); tBusca = 0;
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
@@ -3096,21 +3280,535 @@ function ligarRadar() {
   desligar.push(db.vigiar(ciclo));
   if (r.mercado) carregarListas();
 }
-function escreverHash() {
-  const alvo = radar === "tech" ? "" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
+/* ---------- Início: painel de widgets ----------
+   Cada widget lê só o resumo da seção dele (uma chamada por widget, todas em paralelo, pelas mesmas leituras da página:
+   /api/q, /api/doc com a cópia em memória de lerMeta, /api/listas, os favoritos já assinados e /api/painel/hoje).
+   A grade (ordem, tamanho, o que aparece) fica na conta, em /api/prefs/painel, com cópia em localStorage para a primeira
+   pintura. Atualiza a cada 2 min só o que está na tela, e ao voltar para a aba. */
+const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
+/* O mesmo catálogo de src/painel.js; serve até a resposta do servidor chegar (ela vem já filtrada pelas seções da pessoa) */
+const CATALOGO_LOCAL = [
+  { id: "hoje", titulo: "Hoje no Lookout", tamanho: 1, secao: null },
+  { id: "mercado", titulo: "Mercado", tamanho: 1, secao: "investimentos" },
+  { id: "pregao", titulo: "Pregão", tamanho: 2, secao: "investimentos" },
+  { id: "fiis", titulo: "FIIs", tamanho: 1, secao: "investimentos" },
+  { id: "eua", titulo: "EUA", tamanho: 1, secao: "investimentos" },
+  { id: "listas", titulo: "Minhas listas", tamanho: 1, secao: "investimentos" },
+  { id: "favoritos", titulo: "Favoritos", tamanho: 1, secao: null },
+  ...ORDEM_RADARES.map((s) => ({ id: "destaques-" + s, titulo: "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  ...ORDEM_RADARES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+];
+const PADRAO_LOCAL = ["hoje", "mercado", "destaques-tech", "destaques-negocios", "destaques-investimentos", "destaques-politica", "pregao", "eua", "listas", "favoritos", "destaques-esportes", "ultimas-tech"];
+let painelCat = null, painelW = null, painelSalvoTxt = null, painelMontado = false, prefsPedidas = false, meuNome = "";
+try {
+  const s = JSON.parse(localStorage.getItem("radar-painel") || "null");
+  if (s && Array.isArray(s.widgets)) painelW = s.widgets.filter((w) => w && typeof w.id === "string").map((w) => ({ id: w.id, tamanho: w.tamanho === 2 ? 2 : 1 }));
+  if (s && Array.isArray(s.catalogo)) painelCat = s.catalogo.filter((w) => w && typeof w.id === "string" && typeof w.titulo === "string");
+} catch (e) {}
+const catalogo = () => (painelCat || CATALOGO_LOCAL).filter((w) => !w.secao || !secoesLiberadas || secoesLiberadas.includes(w.secao));
+const defDe = (id) => catalogo().find((w) => w.id === id);
+const padraoLocal = () => PADRAO_LOCAL.map(defDe).filter(Boolean).map((w) => ({ id: w.id, tamanho: w.tamanho }));
+const widgetsAtuais = () => (painelW || padraoLocal()).filter((w) => defDe(w.id));
+function guardarPainelLocal() { try { localStorage.setItem("radar-painel", JSON.stringify({ widgets: painelW, catalogo: painelCat })); } catch (e) {} }
+
+/* Para onde leva o título (e o "Ver tudo") de cada widget */
+function destinoDe(id) {
+  if (id === "destaques-investimentos" || id === "ultimas-investimentos") return "#investimentos/noticias";
+  if (id.startsWith("destaques-")) return "#" + id.slice(10);
+  if (id.startsWith("ultimas-")) return "#" + id.slice(8);
+  if (id === "eua") return "#investimentos/eua";
+  if (id === "mercado" || id === "pregao" || id === "fiis" || id === "listas") return "#investimentos";
+  if (id === "favoritos") { const f = favoritosRecentes()[0]; return "#" + (f ? radarDoFav(f._id) : radaresVisiveis()[0] || "tech"); }
+  return null;
+}
+const favoritosRecentes = () => Object.entries(favs).map(([id, f]) => ({ ...f, _id: id }))
+  .filter((f) => radaresVisiveis().includes(radarDoFav(f._id)))
+  .sort((a, b) => String(b.favoritadoEm || "").localeCompare(String(a.favoritadoEm || "")));
+
+/* ---- leitura dos dados de cada widget. Cada leitor devolve { d, marca } (marca igual = não redesenha) ou undefined se falhou. ---- */
+const wDados = new Map();
+const dbDoPainel = async () => dbRef || (await window.claude?.use?.("db"));
+async function lerFeedResumo(c, ordem, n) {
+  const db = await dbDoPainel(); if (!db) return undefined;
+  let q = db.collection(c); if (ordem) q = q.orderBy(ordem, "desc");
+  const s = await q.limit(n).get();
+  return { d: s.docs.map((x) => ({ ...x.data(), _id: idItem(c, x.id) })), marca: s._txt };
+}
+/* b3 e eua lidos aqui viram as variáveis da página: listaCvm, cotDe e abrirAtivo trabalham em cima delas */
+async function lerB3Painel(fresco) { const d = await lerMeta("b3", fresco); if (d !== undefined && !emBolsa()) b3 = d; return d; }
+async function lerEuaPainel(fresco) { const d = await lerMeta("eua", fresco); if (d !== undefined && !emBolsa()) eua = d; return d; }
+const marcaDe = (...ds) => ds.map((d) => (d && d.atualizado) || (d === null ? "-" : "?")).join("|");
+function leitor(id) {
+  if (id.startsWith("destaques-")) { const r = RADARES[id.slice(10)]; return async () => { const x = await lerFeedResumo(r.destaques, "data", 1); return x && { d: x.d[0] || null, marca: x.marca }; }; }
+  if (id.startsWith("ultimas-")) { const r = RADARES[id.slice(8)]; return () => lerFeedResumo(r.items, "", 5); }
+  if (id === "mercado") return async (f) => { const d = await lerMeta("mercado", f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
+  if (id === "pregao") return async (f) => { const d = await lerB3Painel(f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
+  if (id === "eua") return async (f) => { const d = await lerEuaPainel(f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
+  if (id === "fiis") return async (f) => { const [d] = await Promise.all([lerB3Painel(f), lerFii()]); return d === undefined ? undefined : { d, marca: marcaDe(d) + "|" + (fiiCvm && fiiCvm.ref) }; };
+  if (id === "listas") return async (f) => {
+    const [j, d1, d2] = await Promise.all([apiListas("GET"), lerB3Painel(f), lerEuaPainel(f)]);
+    const ls = (j.docs || []).map((x) => ({ id: x.id, ...x.data }));
+    return { d: ls, marca: JSON.stringify(ls) + marcaDe(d1, d2) };
+  };
+  if (id === "favoritos") return async () => { const l = favoritosRecentes(); return { d: l, marca: JSON.stringify(l.slice(0, 5)) + l.length }; };
+  if (id === "hoje") return async () => {
+    const r = await fetch("/api/painel/hoje", { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } });
+    if (!r.ok) return undefined;
+    const txt = await r.text();
+    return { d: JSON.parse(txt), marca: txt };
+  };
+  return null;
+}
+async function carregarWidget(id, fresco) {
+  const ler = leitor(id); if (!ler) return;
+  const atual = wDados.get(id);
+  if (atual && atual.lendo) return;
+  wDados.set(id, Object.assign({ estado: "carregando" }, atual, { lendo: true }));
+  let r;
+  try { r = await ler(fresco); } catch (e) { r = undefined; }
+  if (r) wDados.set(id, { estado: "ok", d: r.d, marca: r.marca, em: Date.now() });
+  else wDados.set(id, atual && atual.estado === "ok" ? Object.assign({}, atual, { lendo: false, em: Date.now() }) : { estado: "erro", em: Date.now() });
+  const novo = wDados.get(id);
+  if (!r || !atual || atual.estado !== "ok" || atual.marca !== novo.marca) pintarWidget(id);
+  atualizarCabInicio();
+}
+
+/* ---- desenho ---- */
+const pctVar = (v) => (v == null ? "–" : (v > 0 ? "+" : "") + fmtNum(v, 2) + "%");
+const clsVar = (v) => (v > 0 ? "sobe" : v < 0 ? "desce" : "");
+const linkNoticia = (i) => el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo || i.url);
+const vazioW = (txt) => el("p", { class: "wdg-vazio" }, txt || "Nada por aqui ainda.");
+const ALCA = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+function diaCurto(ymd) {
+  if (!ymd) return "";
+  const hoje = new Date(), d = new Date(String(ymd).slice(0, 10) + "T12:00:00");
+  if (isNaN(d)) return "";
+  const ontem = new Date(hoje - 86400000);
+  if (d.toDateString() === hoje.toDateString()) return "hoje";
+  if (d.toDateString() === ontem.toDateString()) return "ontem";
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+function esqueleto(linhas = 5) {
+  const f = document.createDocumentFragment();
+  for (let k = 0; k < linhas; k++) f.append(el("span", { class: "esq", style: `width:${[92, 70, 84, 58, 76, 66][k % 6]}%`, "aria-hidden": "true" }));
+  return el("div", { role: "status", "aria-label": "Carregando" }, f);
+}
+/* Uma mini-lista de papéis: papel (abre o diálogo), preço e valor; so2 tira o preço */
+function miniLista(titulo, lista, valor, cls, aba, so2) {
+  const ol = el("ol", {});
+  lista.forEach((x) => {
+    const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: x.nome || x.t }, papelEl(x.t, x));
+    b.addEventListener("click", () => abrirAtivo(x, aba));
+    ol.append(el("li", { class: so2 ? "so2" : "" }, b, so2 ? null : el("span", { class: "rk-preco" }, fmtPreco(x)), el("span", { class: "rk-val " + (cls ? cls(x) : "") }, valor(x))));
+  });
+  if (!lista.length) ol.append(el("li", { class: "rk-vazio" }, "Sem dados ainda"));
+  return el("section", { class: "wdg-rk" }, el("h4", {}, titulo), ol);
+}
+const corpos = {
+  destaques(d) {
+    const l = d && Array.isArray(d.itens) ? d.itens.filter((x) => x && x.url).slice(0, 3) : [];
+    if (!l.length) return [vazioW()];
+    return [el("ul", { class: "wdg-lista" }, ...l.map((i) => el("li", {}, linkNoticia(i), i.porque || i.resumo ? el("p", { title: i.porque || i.resumo }, i.porque || i.resumo) : null)))];
+  },
+  ultimas(l) {
+    if (!l || !l.length) return [vazioW()];
+    return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5).map((i) => el("li", {}, linkNoticia(i), el("div", { class: "n" }, fonteEl(i), el("span", {}, fmtRel(chave(i)))))))];
+  },
+  mercado(p) {
+    const l = (p && p.itens) || [];
+    if (!l.length) return [vazioW()];
+    const a = el("a", { class: "wdg-merc", href: "#investimentos", title: "Abrir Investimentos" });
+    const taxa = (i) => typeof i.variacao !== "number" && /^%/.test(String(i.unidade || ""));
+    const taxas = l.filter(taxa);
+    l.filter((i) => !taxa(i)).forEach((i) => {
+      const v = i.unidade === "R$" ? "R$ " + fmtNum(i.valor, i.casas) : fmtNum(i.valor, i.casas);
+      const d = typeof i.variacao === "number" ? el("span", { class: "d " + (i.variacao > 0 ? "sobe" : i.variacao < 0 ? "desce" : "igual") }, (i.variacao > 0 ? "▲ " : i.variacao < 0 ? "▼ " : "") + fmtNum(Math.abs(i.variacao), 2) + "%") : null;
+      a.append(el("div", { class: "wdg-mc" }, el("span", { class: "wdg-mn" }, i.pais ? emojiPais(i.pais) : null, i.nome),
+        el("span", { class: "wdg-mv" }, el("span", {}, v, i.unidade && i.unidade !== "R$" ? el("small", {}, i.unidade) : null), d)));
+    });
+    if (taxas.length) a.append(el("div", { class: "wdg-taxas" }, ...taxas.map((i) => el("span", { title: i.nome + " · " + (i.fonte || "") }, i.nome, el("b", {}, fmtNum(i.valor, i.casas) + (i.unidade === "%" ? "%" : " " + i.unidade))))));
+    return [a];
+  },
+  pregao() {
+    if (!b3) return [vazioW()];
+    const l = listaCvm("acoes");
+    const corVar = (x) => clsVar(x.var);
+    return [el("div", { class: "wdg-cols c3" },
+      miniLista("Maiores altas", l.filter((x) => x.var > 0).sort((a, b) => b.var - a.var).slice(0, 5), (x) => pctVar(x.var), corVar, "acoes"),
+      miniLista("Maiores baixas", l.filter((x) => x.var < 0).sort((a, b) => a.var - b.var).slice(0, 5), (x) => pctVar(x.var), corVar, "acoes"),
+      miniLista("Mais negociadas", l.filter((x) => x.liq != null).sort((a, b) => b.liq - a.liq).slice(0, 5), (x) => "R$ " + fmtVol(x.liq), null, "acoes"))];
+  },
+  fiis() {
+    if (!b3) return [vazioW()];
+    if (!fiiCvm || !fiiCvm.fundos || !Object.keys(fiiCvm.fundos).length) return [vazioW("Os dados da CVM ainda não chegaram.")];
+    const liquidos = listaCvm("fiis").filter((x) => (x.liq || 0) >= LIQ_MIN_FII);
+    return [el("div", { class: "wdg-cols c2" },
+      miniLista("Maior DY", liquidos.filter((x) => x.dy != null && !x.dyAnual).sort((a, b) => b.dy - a.dy).slice(0, 4), (x) => fmtNum(x.dy, 2) + "%", null, "fiis", true),
+      miniLista("Mais descontados", liquidos.filter((x) => x.pvp != null && x.pvp > 0.2).sort((a, b) => a.pvp - b.pvp).slice(0, 4), (x) => fmtNum(x.pvp, 2), null, "fiis", true))];
+  },
+  eua(e) {
+    if (!e) return [vazioW()];
+    const out = [];
+    const idx = Array.isArray(e.indices) ? e.indices.slice(0, 3) : [];
+    if (idx.length) out.push(el("a", { class: "wdg-idx", href: "#investimentos/eua", title: "Abrir a visão EUA" }, ...idx.map((x) => el("div", {},
+      el("span", {}, x.nome || x.t), el("b", {}, x.preco == null ? "–" : fmtNum(x.preco, 0)), el("i", { class: clsVar(x.var) }, pctVar(x.var))))));
+    const l = listaCvm("usacoes");
+    const corVar = (x) => clsVar(x.var);
+    out.push(el("div", { class: "wdg-cols c2" },
+      miniLista("Maiores altas", l.filter((x) => x.var > 0).sort((a, b) => b.var - a.var).slice(0, 4), (x) => pctVar(x.var), corVar, "usacoes", true),
+      miniLista("Maiores baixas", l.filter((x) => x.var < 0).sort((a, b) => a.var - b.var).slice(0, 4), (x) => pctVar(x.var), corVar, "usacoes", true)));
+    return out;
+  },
+  listas(ls) {
+    if (!ls || !ls.length) return [vazioW("Nada por aqui ainda. As listas que você criar na Bolsa aparecem aqui.")];
+    const MAX = 4;
+    return ls.map((l) => {
+      const ol = el("ol", {});
+      l.papeis.slice(0, MAX).forEach((t) => {
+        const c = cotDe(t), x = c && c[0];
+        const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x && x.nome) || t }, papelEl(t, x));
+        b.addEventListener("click", () => abrirPapel(t));
+        ol.append(el("li", {}, b, el("span", { class: "rk-preco" }, x && x.preco != null ? fmtPreco(x) : "–"), el("span", { class: "rk-val " + clsVar(x && x.var) }, x && x.var != null ? pctVar(x.var) : "–")));
+      });
+      if (!l.papeis.length) ol.append(el("li", { class: "rk-vazio" }, "Lista vazia"));
+      return el("div", { class: "wdg-lst" }, el("h4", {}, el("span", {}, l.nome), el("small", {}, l.papeis.length === 1 ? "1 papel" : l.papeis.length + " papéis")),
+        el("div", { class: "wdg-rk" }, ol), l.papeis.length > MAX ? el("span", { class: "mais" }, `+${l.papeis.length - MAX} na Bolsa`) : null);
+    });
+  },
+  favoritos(l) {
+    if (!l || !l.length) return [vazioW("Nada por aqui ainda. Toque no coração ao lado de uma notícia para guardar.")];
+    return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5).map((i) => el("li", {}, linkNoticia(i), el("div", { class: "n" }, el("b", {}, RADARES[radarDoFav(i._id)].aba), fonteEl(i)))))];
+  },
+  hoje(j) {
+    const l = (j && j.secoes) || [];
+    if (!l.length) return [vazioW()];
+    const max = Math.max(1, ...l.map((x) => x.n));
+    return [el("ul", { class: "wdg-hoje" }, ...l.map((x) => el("li", {}, el("a", { href: "#" + x.secao, title: `${x.n} ${x.n === 1 ? "notícia nova" : "notícias novas"} em ${RADARES[x.secao].titulo} nas últimas 24 h` },
+      el("span", { class: "nome" }, NOME_SECAO[x.secao]), el("span", { class: "wdg-barra", "aria-hidden": "true" }, el("span", { class: x.n ? "" : "zero", style: `width:${(x.n / max) * 100}%` })), el("span", { class: "k" }, String(x.n))))))];
+  },
+};
+const tipoDoWidget = (id) => (id.startsWith("destaques-") ? "destaques" : id.startsWith("ultimas-") ? "ultimas" : id);
+/* Subtítulo (canto direito do cabeçalho) e rodapé, conforme o widget e os dados */
+function subtituloDe(id, x) {
+  const d = x && x.estado === "ok" ? x.d : null;
+  const t = tipoDoWidget(id);
+  if (t === "destaques") return d ? diaCurto(d.data) : "";
+  if (t === "mercado" || t === "pregao" || t === "fiis") {
+    if (t === "fiis" && fiiCvm && fiiCvm.ref) return "informe de " + fmtMes(fiiCvm.ref);
+    return d && d.atualizado ? "atualizado " + fmtRel(d.atualizado) : "";
+  }
+  if (t === "eua") return d ? horarioEua() : "";
+  if (t === "hoje") return "últimas 24 h";
+  if (t === "favoritos") return d && d.length ? (d.length === 1 ? "1 guardado" : d.length + " guardados") : "";
+  return "";
+}
+function rodapeDe(id, x) {
+  const t = tipoDoWidget(id), destino = destinoDe(id);
+  let txt = "";
+  if (t === "hoje" && x && x.estado === "ok") {
+    const ult = ((x.d && x.d.secoes) || []).reduce((m, s) => (s.ultimaRodada && s.ultimaRodada > m ? s.ultimaRodada : m), "");
+    txt = ult ? "última coleta " + fmtData(ult) : "nenhuma coleta ainda";
+  }
+  const pe = el("div", { class: "wdg-pe" }, txt ? el("span", {}, txt) : null);
+  if (destino) {
+    const a = el("a", { href: destino }, t === "listas" ? "Editar →" : "Ver tudo →");
+    ligarDestino(a, id);
+    pe.append(a);
+  }
+  return pe;
+}
+/* Antes de seguir o link: o card Favoritos abre a seção já filtrando favoritos; o de FIIs abre a Bolsa na classe FIIs */
+function ligarDestino(a, id) {
+  a.addEventListener("click", () => {
+    if (id === "favoritos") pedirSoFav = true;
+    if (id === "fiis") { cotAbaBr = cotAba = "fiis"; try { localStorage.setItem("radar-cot-aba", "fiis"); } catch (e) {} }
+    if (id === "pregao") { cotAbaBr = cotAba = "acoes"; try { localStorage.setItem("radar-cot-aba", "acoes"); } catch (e) {} }
+  });
+}
+const cardDe = (id) => $("ini-grade").querySelector(`.wdg[data-id="${id}"]`);
+function pintarWidget(id) {
+  const card = cardDe(id); if (!card) return;
+  const def = defDe(id); if (!def) return;
+  const x = wDados.get(id);
+  const destino = destinoDe(id);
+  const titulo = destino ? el("a", { href: destino }, def.titulo) : el("span", {}, def.titulo);
+  if (destino) ligarDestino(titulo, id);
+  const alca = el("span", { class: "wdg-alca", draggable: "true", title: "Arraste para mudar a ordem", html: ALCA });
+  const sub = subtituloDe(id, x);
+  const cab = el("div", { class: "wdg-cab" }, el("h3", { id: "wdg-t-" + id }, titulo), sub ? (typeof sub === "string" ? el("small", { title: sub }, sub) : sub) : null, alca);
+  let corpo;
+  if (!x || (x.estado === "carregando" && !x.d)) corpo = [esqueleto(tipoDoWidget(id) === "hoje" ? 5 : 6)];
+  else if (x.estado === "erro") {
+    const b = el("button", { class: "dd-btn dd-btn--link", type: "button" }, "Tentar de novo");
+    b.addEventListener("click", () => { wDados.delete(id); pintarWidget(id); carregarWidget(id, true); });
+    corpo = [el("p", { class: "wdg-vazio" }, "Não deu para carregar agora. ", b)];
+  } else corpo = corpos[tipoDoWidget(id)](x.d);
+  card.textContent = "";
+  card.append(cab, el("div", { class: "wdg-corpo" }, ...corpo), rodapeDe(id, x));
+}
+/* Na tela agora (IntersectionObserver): só esses entram na atualização automática */
+const naTela = new Set();
+const olhoPainel = "IntersectionObserver" in window ? new IntersectionObserver((ents) => {
+  ents.forEach((e) => { if (e.isIntersecting) naTela.add(e.target.dataset.id); else naTela.delete(e.target.dataset.id); });
+}) : null;
+function montarGrade() {
+  const g = $("ini-grade");
+  /* ao voltar de outra seção, aplicarRadar zerou b3 e eua: os cards de mercado usam a mesma cópia em memória */
+  if (!emBolsa()) {
+    const mb = memMeta.get("b3"), me = memMeta.get("eua");
+    if (!b3 && mb && mb.dados) b3 = mb.dados;
+    if (!eua && me && me.dados) eua = me.dados;
+  }
+  if (olhoPainel) olhoPainel.disconnect();
+  naTela.clear();
+  g.textContent = "";
+  painelMontado = true;
+  const ws = widgetsAtuais();
+  if (!ws.length) { g.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum card no Início"), "Use Personalizar para escolher o que aparece aqui.")); return; }
+  ws.forEach((w) => {
+    const card = el("article", { class: "wdg", "data-id": w.id, "data-tam": String(w.tamanho), "aria-labelledby": "wdg-t-" + w.id });
+    g.append(card);
+    pintarWidget(w.id);
+    if (olhoPainel) olhoPainel.observe(card);
+    const x = wDados.get(w.id);
+    if (!x || (x.estado !== "carregando" && Date.now() - (x.em || 0) > META_FRESCO_MS) || (x.estado === "erro")) carregarWidget(w.id);
+  });
+}
+/* A cada 2 min, os que estão na tela; ao voltar para a aba, os da tela com mais de 1 min */
+function atualizarNaTela(idade) {
+  if (!inicio || document.hidden) return;
+  const ids = olhoPainel ? [...naTela] : widgetsAtuais().map((w) => w.id);
+  ids.forEach((id) => { const x = wDados.get(id); if (!x || Date.now() - (x.em || 0) >= idade) carregarWidget(id, true); });
+}
+setInterval(() => atualizarNaTela(110000), 120000);
+document.addEventListener("visibilitychange", () => atualizarNaTela(60000));
+window.addEventListener("focus", () => atualizarNaTela(60000));
+
+/* Cabeçalho: saudação com o primeiro nome, data por extenso e "atualizado há X" do dado mais novo da grade */
+function maisRecenteDoPainel() {
+  let m = "";
+  const ver = (v) => { if (typeof v === "string" && v > m && Date.parse(v) <= Date.now() + 60000) m = v; };
+  wDados.forEach((x, id) => {
+    if (x.estado !== "ok" || !x.d) return;
+    const t = tipoDoWidget(id);
+    if (t === "hoje") (x.d.secoes || []).forEach((s) => ver(s.ultimaRodada));
+    else if (t === "mercado" || t === "pregao" || t === "eua" || t === "fiis") ver(x.d.atualizado);
+    else if (t === "destaques") ver(x.d.atualizado);
+    else if (t === "ultimas") x.d.forEach((i) => ver(i.coletado));
+  });
+  return m;
+}
+function atualizarCabInicio() {
+  if (!inicio) return;
+  const h = new Date().getHours();
+  const ola = h < 5 ? "Boa noite" : h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+  const primeiro = meuNome && !meuNome.includes("@") ? meuNome.split(/\s+/)[0] : "";
+  $("ini-titulo").textContent = primeiro ? `${ola}, ${primeiro}` : ola;
+  $("ini-data").textContent = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  const ult = maisRecenteDoPainel();
+  $("ini-atual").textContent = ult ? " · atualizado " + fmtRel(ult) : "";
+  $("ini-atual").title = ult ? "Dado mais recente do painel: " + fmtData(ult) : "";
+}
+window.lookoutEu.then((me) => { meuNome = String((me && me.nome) || "").trim(); atualizarCabInicio(); }, () => {});
+
+/* Grade guardada na conta. A resposta do servidor manda: troca a cópia local e redesenha (se o painel de personalizar não estiver aberto). */
+async function carregarPrefs() {
+  try {
+    const r = await fetch("/api/prefs/painel", { credentials: "same-origin", cache: "no-store", headers: { "X-Requested-With": "XMLHttpRequest" } });
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!Array.isArray(j.widgets) || !Array.isArray(j.catalogo)) return;
+    painelCat = j.catalogo; painelSalvoTxt = JSON.stringify(j.widgets);
+    if (persAberto) return;
+    const mudou = JSON.stringify(widgetsAtuais()) !== painelSalvoTxt;
+    painelW = j.widgets; guardarPainelLocal();
+    if (inicio && mudou) montarGrade();
+  } catch (e) {}
+}
+function avisoPainel(txt) { const a = $("ini-aviso"); a.textContent = txt || ""; a.hidden = !txt; }
+async function salvarPainel() {
+  const w = widgetsAtuais();
+  painelW = w; guardarPainelLocal();
+  const txt = JSON.stringify(w);
+  if (txt === painelSalvoTxt) return;
+  try {
+    const r = await fetch("/api/prefs/painel", { method: "PUT", credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({ widgets: w }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.erro || "http " + r.status);
+    painelSalvoTxt = JSON.stringify(j.widgets || w);
+    avisoPainel("");
+  } catch (e) { avisoPainel("Não deu para salvar o painel na sua conta agora. Ele fica guardado neste navegador e vai de novo na próxima mudança."); }
+}
+let tSalvar = 0;
+const salvarDepois = () => { clearTimeout(tSalvar); tSalvar = setTimeout(salvarPainel, 700); };
+
+function entrarInicio() {
+  aplicarModo();
+  montarGrade();
+  atualizarCabInicio();
+  if (!prefsPedidas) { prefsPedidas = true; carregarPrefs(); }
+}
+function irInicio(porHash) {
+  if (inicio) { if (!porHash) escreverHash(); return; }
+  fecharPainel();
+  /* sai da seção: as assinaturas dela param (e respostas atrasadas são ignoradas pela geração) */
+  desligar.forEach((f) => { try { if (typeof f === "function") f(); } catch (e) {} });
+  desligar = []; geracao++;
+  inicio = true;
+  if (!porHash) escreverHash(true);
+  render();
+  entrarInicio();
+  window.scrollTo({ top: 0 });
+}
+function aplicarModo() {
+  document.documentElement.classList.toggle("no-inicio", inicio);
+  $("inicio").hidden = !inicio;
+  const h1 = document.querySelector("h1");
+  if (inicio) { document.title = "Início · Lookout"; h1.textContent = "Lookout"; }
+  else { document.title = R().titulo + " · Lookout"; h1.textContent = R().titulo; }
+}
+$("marca").addEventListener("click", (e) => { if (inicio) { e.preventDefault(); window.scrollTo({ top: 0 }); } });
+
+/* ---- Personalizar: lista de todos os widgets disponíveis, com mostrar, ordem e largura. Aplica na hora; grava ao fechar. ---- */
+let persAberto = false, persLista = [], persAbridor = null;
+function montarPersLista() {
+  const ws = widgetsAtuais(), ja = new Set(ws.map((w) => w.id));
+  persLista = [...ws.map((w) => ({ ...w, mostrar: true })), ...catalogo().filter((w) => !ja.has(w.id)).map((w) => ({ id: w.id, tamanho: w.tamanho, mostrar: false }))];
+}
+function aplicarPers(foco) {
+  painelW = persLista.filter((w) => w.mostrar).map(({ id, tamanho }) => ({ id, tamanho }));
+  montarGrade(); renderPers(foco);
+}
+function renderPers(foco) {
+  const ul = $("pers-lista"); ul.textContent = "";
+  persLista.forEach((w, n) => {
+    const def = defDe(w.id); if (!def) return;
+    const chk = el("input", { type: "checkbox", id: "pers-chk-" + w.id });
+    chk.checked = w.mostrar;
+    chk.addEventListener("change", () => { w.mostrar = chk.checked; aplicarPers("pers-chk-" + w.id); });
+    const mover = (d) => { const k = n + d; if (k < 0 || k >= persLista.length) return; [persLista[n], persLista[k]] = [persLista[k], persLista[n]]; aplicarPers("pers-" + (d < 0 ? "cima" : "baixo") + "-" + w.id); };
+    const cima = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon alvo", type: "button", id: "pers-cima-" + w.id, "aria-label": "Subir " + def.titulo, title: "Subir" }, "▲");
+    const baixo = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon alvo", type: "button", id: "pers-baixo-" + w.id, "aria-label": "Descer " + def.titulo, title: "Descer" }, "▼");
+    if (n === 0) cima.disabled = true;
+    if (n === persLista.length - 1) baixo.disabled = true;
+    cima.addEventListener("click", () => mover(-1));
+    baixo.addEventListener("click", () => mover(1));
+    const tam = el("div", { class: "seg", role: "group", "aria-label": "Largura de " + def.titulo });
+    [1, 2].forEach((t) => {
+      const b = el("button", { type: "button", id: `pers-tam${t}-${w.id}`, "aria-pressed": String(w.tamanho === t), title: t === 1 ? "Uma coluna" : "Duas colunas (a partir de 700 px)", "aria-label": t === 1 ? "Uma coluna" : "Duas colunas" }, t === 1 ? "1" : "2");
+      if (!w.mostrar) b.disabled = true;
+      b.addEventListener("click", () => { if (w.tamanho !== t) { w.tamanho = t; aplicarPers(`pers-tam${t}-${w.id}`); } });
+      tam.append(b);
+    });
+    ul.append(el("li", { class: "pers-item" + (w.mostrar ? "" : " oculto") },
+      el("label", { for: "pers-chk-" + w.id }, chk, el("span", {}, def.titulo)), tam, el("span", { class: "pers-setas" }, cima, baixo)));
+  });
+  if (foco && $(foco)) { const f = $(foco); (f.disabled ? $("pers-lista").querySelector("button:not(:disabled), input") : f).focus({ preventScroll: false }); }
+}
+function abrirPers() {
+  if (persAberto) return;
+  persAberto = true; persAbridor = document.activeElement;
+  montarPersLista(); renderPers();
+  const html = document.documentElement, sb = window.innerWidth - html.clientWidth;
+  if (sb > 0) html.style.paddingRight = sb + "px";
+  html.classList.add("trava", "pers-aberto");
+  $("pers-veu").hidden = false; $("pers").hidden = false;
+  $("personalizar").setAttribute("aria-expanded", "true");
+  $("pers").focus({ preventScroll: true });
+}
+function fecharPers() {
+  if (!persAberto) return;
+  persAberto = false;
+  $("pers-veu").hidden = true; $("pers").hidden = true;
+  const html = document.documentElement;
+  html.classList.remove("trava", "pers-aberto"); html.style.paddingRight = "";
+  $("personalizar").setAttribute("aria-expanded", "false");
+  if (persAbridor && persAbridor.isConnected && persAbridor.focus) persAbridor.focus({ preventScroll: true });
+  clearTimeout(tSalvar); salvarPainel();
+}
+$("personalizar").addEventListener("click", abrirPers);
+$("pers-fechar").addEventListener("click", fecharPers);
+$("pers-ok").addEventListener("click", fecharPers);
+$("pers-veu").addEventListener("click", fecharPers);
+$("pers-restaurar").addEventListener("click", () => {
+  const p = padraoLocal(), ja = new Set(p.map((w) => w.id));
+  persLista = [...p.map((w) => ({ ...w, mostrar: true })), ...catalogo().filter((w) => !ja.has(w.id)).map((w) => ({ id: w.id, tamanho: w.tamanho, mostrar: false }))];
+  aplicarPers("pers-restaurar");
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && persAberto) { e.preventDefault(); fecharPers(); } });
+$("pers").addEventListener("keydown", (e) => {
+  if (e.key !== "Tab") return;
+  const foc = [...$("pers").querySelectorAll("button:not(:disabled), input")].filter((x) => x.offsetParent !== null);
+  if (!foc.length) return;
+  const pri = foc[0], ult = foc[foc.length - 1];
+  if (e.shiftKey && (document.activeElement === pri || document.activeElement === $("pers"))) { e.preventDefault(); ult.focus(); }
+  else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); pri.focus(); }
+});
+
+/* ---- Arrastar e soltar entre os cards (desktop): pela alça do cabeçalho, com a marca de onde vai cair ---- */
+let arrastado = null, alvoSolta = null;
+function limparMarcas() { $("ini-grade").querySelectorAll(".cai-antes, .cai-depois").forEach((c) => c.classList.remove("cai-antes", "cai-depois")); }
+$("ini-grade").addEventListener("dragstart", (e) => {
+  const alca = e.target.closest && e.target.closest(".wdg-alca"); if (!alca) return;
+  const card = alca.closest(".wdg");
+  arrastado = card.dataset.id; alvoSolta = null;
+  e.dataTransfer.effectAllowed = "move";
+  try { e.dataTransfer.setData("text/plain", arrastado); } catch (er) {}
+  try { e.dataTransfer.setDragImage(card, 24, 20); } catch (er) {}
+  requestAnimationFrame(() => card.classList.add("arrastando"));
+});
+$("ini-grade").addEventListener("dragover", (e) => {
+  if (!arrastado) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = "move";
+  const card = e.target.closest && e.target.closest(".wdg");
+  if (!card || card.dataset.id === arrastado) return;
+  const r = card.getBoundingClientRect();
+  const antes = e.clientX < r.left + r.width / 2;
+  if (alvoSolta && alvoSolta.id === card.dataset.id && alvoSolta.antes === antes) return;
+  limparMarcas();
+  card.classList.add(antes ? "cai-antes" : "cai-depois");
+  alvoSolta = { id: card.dataset.id, antes };
+});
+$("ini-grade").addEventListener("drop", (e) => {
+  if (!arrastado) return;
+  e.preventDefault();
+  const ws = widgetsAtuais(), de = ws.findIndex((w) => w.id === arrastado);
+  if (alvoSolta && de >= 0) {
+    const [w] = ws.splice(de, 1);
+    let k = ws.findIndex((x) => x.id === alvoSolta.id);
+    if (k >= 0) { if (!alvoSolta.antes) k++; ws.splice(k, 0, w); painelW = ws; }
+    else ws.splice(de, 0, w);
+  }
+  arrastado = null; alvoSolta = null;
+  montarGrade();
+  if (persAberto) { montarPersLista(); renderPers(); } else salvarDepois();
+});
+$("ini-grade").addEventListener("dragend", () => {
+  const c = arrastado && cardDe(arrastado); if (c) c.classList.remove("arrastando");
+  arrastado = null; alvoSolta = null; limparMarcas();
+});
+
+/* push: sair do Início para uma seção (ou voltar a ele pela aba) cria uma entrada no histórico, para o "voltar"
+   do navegador trazer o Início de volta. Entre seções e visões o endereço é só trocado, como antes. */
+function escreverHash(push) {
+  const alvo = inicio ? "#inicio" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
   if ((location.hash || "") === alvo) return;
-  try { history.replaceState(null, "", location.pathname + location.search + alvo); }
+  try { history[push ? "pushState" : "replaceState"](null, "", location.pathname + location.search + alvo); }
   catch (e) { try { location.hash = alvo; } catch (e2) {} }
 }
 function trocarRadar(id, porHash) {
-  if (!RADARES[id] || id === radar || !radaresVisiveis().includes(id)) return;
+  if (!RADARES[id] || !radaresVisiveis().includes(id) || (!inicio && id === radar)) return;
+  const doInicio = inicio;
+  if (doInicio) { fecharPers(); inicio = false; }
   fecharPainel();
   radar = id;
   /* Investimentos abre sempre na Bolsa, a não ser que o endereço peça os EUA ou as notícias */
   visao = porHash && RADARES[id].mercado ? visaoDoHash() : "bolsa";
   try { localStorage.setItem("radar-atual", id); } catch (e) {}
-  if (!porHash) escreverHash();
+  if (!porHash) escreverHash(doInicio);
   aplicarRadar();
+  /* veio do card Favoritos do Início: abre a seção já filtrando os favoritos */
+  if (pedirSoFav) { soFav = true; pedirSoFav = false; }
   resumoAberto.clear();
   listas = []; listasCarregadas = false; listasErro = ""; editandoLista = null; papeisMemo.clear();
   renderDestaques();
@@ -3120,8 +3818,9 @@ function trocarRadar(id, porHash) {
   window.scrollTo({ top: 0 });
 }
 window.addEventListener("hashchange", () => {
-  const h = radarDoHash() || "tech";
-  if (h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); return; }
+  const h = radarDoHash();
+  if (!h) { irInicio(true); if (location.hash !== "#inicio") escreverHash(); return; }
+  if (!inicio && h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); return; }
   /* seção não liberada: o endereço volta para o radar aberto em vez de ficar apontando para outro */
   if (!radaresVisiveis().includes(h)) { escreverHash(); return; }
   trocarRadar(h, true);
@@ -3129,6 +3828,7 @@ window.addEventListener("hashchange", () => {
 escreverHash();
 render();
 renderListas();
+if (inicio) entrarInicio();
 
 (async () => {
   const db = await window.claude?.use?.("db");
@@ -3137,18 +3837,27 @@ renderListas();
   /* o feed do radar salvo começa a descer já, em paralelo com /api/me (window.lookoutEu, a mesma chamada do menu da
      conta); as seções são conferidas quando a resposta chega, e o servidor recusa com 403 a seção não liberada */
   const pMe = window.lookoutEu.catch(() => ({}));
-  ligarRadar();
+  /* no Início nenhuma seção é assinada: os widgets leem só o resumo de cada uma */
+  if (!inicio) ligarRadar();
   ligarFavoritosNaConta(db);
   const me = (await pMe) || {};
   if (Array.isArray(me.secoes)) secoesLiberadas = me.secoes;
+  meuNome = String(me.nome || "").trim();
   const vis = radaresVisiveis();
   if (!vis.length) {
     desligar.forEach((f) => { try { if (typeof f === "function") f(); } catch (e) {} }); desligar = []; geracao++;
     carregado = true; renderRadares();
-    $("feed").textContent = ""; $("feed").append(el("p", { class: "nota" }, "Nenhuma seção foi liberada para você ainda. Fale com quem te convidou."));
+    const aviso = () => el("p", { class: "nota" }, "Nenhuma seção foi liberada para você ainda. Fale com quem te convidou.");
+    $("feed").textContent = ""; $("feed").append(aviso());
+    if (inicio) { $("ini-grade").textContent = ""; $("ini-grade").append(aviso()); }
     $("status").textContent = ""; return;
   }
-  if (!vis.includes(radar)) {
+  if (inicio) {
+    /* a seção guardada por trás do Início precisa ser uma das liberadas; o painel refaz a lista com as seções certas */
+    if (!vis.includes(radar)) { radar = vis[0]; visao = "bolsa"; aplicarRadar(); }
+    renderRadares(); montarGrade(); atualizarCabInicio();
+  }
+  else if (!vis.includes(radar)) {
     radar = vis[0]; visao = "bolsa";
     try { localStorage.setItem("radar-atual", radar); } catch (e) {}
     /* o primeiro render pode ter sido de Investimentos: refaz destaques e listas para não sobrar nada dele */
@@ -3156,8 +3865,8 @@ renderListas();
     ligarRadar();
   }
   else renderRadares();
-  if (vis.length === 1) document.documentElement.classList.add("uma-secao");
   setInterval(() => {
+    if (inicio) { atualizarCabInicio(); return; }
     renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral();
     /* só os textos de "há X min" do mercado: a fita e a tabela ficam como estão */
     if (R().mercado && !document.hidden) {
@@ -3169,7 +3878,7 @@ renderListas();
   /* Mercado: a cada 2 min com a B3 ou Nova York em pregão (e um pouco depois, pelo fechamento); fora disso, a cada 15 min */
   const ciclarMercado = () => {
     const abertos = pregaoB3Aberto() || pregaoEuaAberto() || pregaoEuaAberto(new Date(Date.now() - 20 * 60000));
-    setTimeout(() => { if (R().mercado && !document.hidden) { lerMercado(); lerB3(); lerEua(); } ciclarMercado(); }, abertos ? 120000 : 900000);
+    setTimeout(() => { if (R().mercado && !inicio && !document.hidden) { lerMercado(true); lerB3(true); lerEua(true); } ciclarMercado(); }, abertos ? 120000 : 900000);
   };
   ciclarMercado();
 })();

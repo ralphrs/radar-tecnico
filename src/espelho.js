@@ -6,13 +6,13 @@
 // as mudanças para cá a cada minuto. Se o espelho falhar, demorar ou ainda estiver vazio, a leitura vai ao D1.
 //
 // O que fica aqui:
-// - docs: as collections que a página lê (itens, destaques e meta), _sistema, e favs/<email> e listas/<email>;
+// - docs: as collections que a página lê (itens, destaques e meta), _sistema, e favs/<email>, listas/<email> e prefs/<email>;
 // - usuarios, grupos e usuario_grupo, inteiras, para conferir convite e seções;
 // - estado: última sincronia, duração, linhas, erro, as últimas medições de tempo, a trava da sincronia,
 //   as sincronias puladas e os fallbacks para o D1 do dia.
 // O resto do D1 (candidatos, feeds_estado, sombra-*) não vem para cá.
 //
-// favs/ e listas/ são gravados pela própria pessoa. A gravação vai ao D1 (com await) e, logo depois, a mesma linha
+// favs/, listas/ e prefs/ (o painel do Início) são gravados pela própria pessoa. A gravação vai ao D1 (com await) e, logo depois, a mesma linha
 // vai para cá por write-through (gravarNoEspelho / removerDoEspelho, em ctx.waitUntil), para a leitura seguinte já
 // mostrar a mudança sem esperar o cron. Como o D1 grava antes do write-through (await), o espelho nunca recebe
 // uma linha que o D1 ainda não tem. Sobra uma janela curta: o cron leu a lista do D1 um instante antes da gravação
@@ -39,7 +39,7 @@ const AMOSTRA_LOG = 20;       // leitura que deu certo no espelho: loga 1 em cad
 // Collections por pessoa que também vêm para o espelho. No D1 a busca é por faixa da chave primária
 // (collection >= 'favs/' AND collection < 'favs0', '0' é o caractere seguinte a '/'), que usa o índice;
 // um LIKE 'favs/%' varreria a tabela inteira a cada minuto.
-const PREFIXOS_PESSOAIS = ["favs/", "listas/"];
+const PREFIXOS_PESSOAIS = ["favs/", "listas/", "prefs/"];
 const faixa = (p) => [p, p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1)];
 
 // Marca de versão de cada linha, calculada igual dos dois lados. Só o `atualizado` não basta: quem grava
@@ -191,7 +191,7 @@ export class Espelho extends DurableObject {
     const porColecao = this.sql.exec("SELECT collection, count(*) AS n FROM docs GROUP BY collection ORDER BY n DESC").toArray();
     const pessoas = this.sql.exec("SELECT (SELECT count(*) FROM usuarios) AS usuarios, (SELECT count(*) FROM grupos) AS grupos").one();
     delete e.assinatura_pessoas;
-    // favs/<email> e listas/<email> aparecem somados, sem o e-mail de ninguém no admin
+    // favs/<email>, listas/<email> e prefs/<email> aparecem somados, sem o e-mail de ninguém no admin
     const agrupado = new Map();
     for (const r of porColecao) {
       const c = PREFIXOS_PESSOAIS.find((p) => r.collection.startsWith(p));
@@ -302,7 +302,7 @@ export async function doEspelho(env, rotulo, chamar) {
   }
 }
 
-// Write-through de favs/ e listas/: chamado depois que o D1 gravou. Nunca lança; erro só vai para o log.
+// Write-through de favs/, listas/ e prefs/: chamado depois que o D1 gravou. Nunca lança; erro só vai para o log.
 export function gravarNoEspelho(env, docs) {
   if (!env.ESPELHO || !docs.length) return;
   const p = stubEspelho(env).aplicar(docs).catch((e) => console.error("espelho write-through", String(e && e.message || e)));

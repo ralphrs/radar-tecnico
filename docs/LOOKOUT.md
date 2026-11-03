@@ -2,7 +2,7 @@
 
 Feed pessoal de notícias do Ralph, aberto só para convidados. Um Worker da Cloudflare (`news`, código em `src/`) serve a página, a API e o admin, e guarda tudo num banco D1 (`lookout`). As leituras da página saem de um espelho do D1 em São Paulo (veja "Banco e espelho"). O login é pelo Cloudflare Access; o Worker confere o token em cada requisição e, sem configuração, não deixa ninguém entrar.
 
-Abas: Tech, Negócios, Investimentos, Notícias e Política, Esportes. Investimentos tem duas visões, Bolsa (a principal) e Notícias.
+Abas: Início, Tech, Negócios, Investimentos, Notícias e Política, Esportes. O site abre no Início (painel de widgets, veja abaixo). Investimentos tem três visões: Bolsa (a principal), EUA e Notícias.
 
 ## Como as notícias entram
 
@@ -30,7 +30,7 @@ Tabela `docs(collection, id, data)` para quase tudo:
 
 - Itens: `items` (Tech), `items-negocios`, `items-investimentos`, `items-politica`, `items-esportes`. Destaques no mesmo padrão (`destaques`, `destaques-negocios`...).
 - Teste do Tech: `sombra-items`, `sombra-destaques`, fora do site.
-- Por pessoa: `favs/<email>` e `listas/<email>`.
+- Por pessoa: `favs/<email>`, `listas/<email>` e `prefs/<email>` (o painel do Início, doc `painel`).
 - `meta`: `status`, `status-negocios`, `status-investimentos`, `status-politica`, `status-esportes`, `status-sombra` (última rodada de cada curadoria), `mercado`, `b3`, `fii`, `fii-resumo`, `fii-cvm-ant`.
 - `_sistema`: `seed`, `limpeza`, `b3-erro`, `cvm-etapa`, `cvm-erro`, `sonda-feeds`.
 
@@ -41,8 +41,8 @@ Outras tabelas: `candidatos`, `feeds_estado` (saúde de cada feed), `usuarios`, 
 O D1 fica no leste dos EUA e não existe D1 na América do Sul. Antes o Worker rodava com Smart Placement perto do banco, e quem abria a página no Brasil fazia a viagem longa em toda requisição. Agora o Worker roda na borda, perto de quem acessa, e as leituras saem de um espelho em São Paulo: um Durable Object com SQLite (`Espelho`, em `src/espelho.js`, uma instância só, criada com `locationHint: "sam"`).
 
 - **Fonte da verdade continua o D1.** Coletas, crons de mercado, admin e curadorias gravam só nele, do mesmo jeito de antes. O espelho é só leitura.
-- **O que vai para o espelho:** as collections de itens e destaques, `meta`, `_sistema`, `favs/<email>` e `listas/<email>`, mais cópias inteiras de `usuarios`, `grupos` e `usuario_grupo`. No admin, favoritos e listas aparecem somados, sem o e-mail de ninguém.
-- **Favoritos e listas:** a leitura sai do espelho como o resto (D1 de reserva). A gravação vai ao D1 com `await` e, só depois que deu certo, a mesma linha vai ao espelho em `ctx.waitUntil` (write-through), para a pessoa ver a mudança na leitura seguinte sem esperar o cron. Apagar faz o mesmo com `remover`, inclusive quando o admin exclui um convidado. Se o write-through falhar, só vai para o log; a comparação do minuto seguinte conserta. Na sincronia, o D1 é lido por faixa da chave (`collection >= 'favs/' AND collection < 'favs0'`), que usa o índice; um `LIKE` varreria a tabela.
+- **O que vai para o espelho:** as collections de itens e destaques, `meta`, `_sistema`, `favs/<email>`, `listas/<email>` e `prefs/<email>`, mais cópias inteiras de `usuarios`, `grupos` e `usuario_grupo`. No admin, favoritos, listas e painéis aparecem somados, sem o e-mail de ninguém.
+- **Favoritos, listas e painel do Início:** a leitura sai do espelho como o resto (D1 de reserva). A gravação vai ao D1 com `await` e, só depois que deu certo, a mesma linha vai ao espelho em `ctx.waitUntil` (write-through), para a pessoa ver a mudança na leitura seguinte sem esperar o cron. Apagar faz o mesmo com `remover`, inclusive quando o admin exclui um convidado. Se o write-through falhar, só vai para o log; a comparação do minuto seguinte conserta. Na sincronia, o D1 é lido por faixa da chave (`collection >= 'favs/' AND collection < 'favs0'`), que usa o índice; um `LIKE` varreria a tabela.
 - **Corrida com o write-through:** como o D1 grava antes, o espelho nunca recebe uma linha que o D1 não tem. Sobra o caso do cron ter lido a lista do D1 um instante antes da gravação e comparar depois do write-through: o doc novo pareceria sobrando. Para isso o `comparar` recebe a hora da leitura (com 2 s de folga) e não apaga o que foi atualizado depois dela.
 - **Sincronia:** no fim de cada cron (a cada minuto), o Worker lê do D1 a chave e uma marca de cada doc (`atualizado`, `coletado` e o tamanho do texto), compara com o espelho e copia só o que mudou, em lotes de 90. O que sumiu do D1 sai do espelho. Também sincroniza logo depois do botão "Atualizar agora" do mercado e, só a parte de pessoas, depois de qualquer mudança em convidados, grupos ou membros no admin.
 - **Trava de segurança:** se o D1 devolver a lista vazia, ou se a sincronia fosse apagar mais da metade do espelho (com 20 docs ou mais), ela para e grava o erro. O espelho fica como estava e segue servindo.
@@ -72,9 +72,44 @@ Campos de cada fundo em `meta/fii` (nomes curtos para o doc não inchar): `n` no
 
 Na página, o diálogo de um FII mostra chips de mandato, gestão, segmento e prazo e o bloco "Sobre o fundo" (administrador, início em "mar/2019", público-alvo, prazo, CNPJ e link do site). Na Bolsa, com FIIs, o filtro Mandato fica abaixo de Segmento, com contagem e várias escolhas, e vale para o Pregão e a tabela; fica salvo em `radar-bolsa-filtros` junto com os outros. Enquanto nenhum fundo tiver mandato, o grupo mostra só um aviso e um filtro salvo antes não esconde nada. A tabela ganha a coluna Mandato a partir de 1200 px; abaixo disso o mandato fica no diálogo. Como os outros filtros da coluna esquerda, o de Mandato só existe a partir de 900 px.
 
+## Início (painel de widgets)
+
+Primeira aba (`#inicio`). Sem hash, com `#inicio` ou com um hash desconhecido, o site abre aqui; as outras abas usam `#tech`, `#negocios`, `#investimentos` (com `/eua` e `/noticias`), `#politica` e `#esportes`. Sair do Início para uma seção cria uma entrada no histórico, então o "voltar" do navegador traz o Início de volta; o logotipo também leva ao Início. Enquanto o Início está aberto, nenhuma seção fica assinada: não há polling do feed, do status nem do mercado de fundo.
+
+Layout: sem colunas laterais, a barra de abas fica no topo do centro em qualquer largura. Cabeçalho com saudação (primeiro nome de `/api/me`), data por extenso e "atualizado há X" do dado mais novo da grade, mais o botão Personalizar. A grade é `repeat(auto-fill, minmax(min(100%, 320px), 1fr))` com `gap: 16px` e `align-items: start` (3 colunas em 1440 px, 2 em 1000 px, 1 no celular); widget de tamanho 2 ocupa duas colunas a partir de 700 px. Cada card tem título que leva à seção, subtítulo, corpo compacto, rodapé "Ver tudo →", esqueleto enquanto carrega e "Nada por aqui ainda." quando vem vazio.
+
+Catálogo (`WIDGETS` em `src/painel.js`, o servidor valida contra ele; a página tem uma cópia para a primeira pintura):
+
+| Id | Título | Tamanho | Fonte | Mostra | Leva a |
+|---|---|---|---|---|---|
+| `hoje` | Hoje no Lookout | 1 | `/api/painel/hoje` | notícias novas nas últimas 24 h por seção, em barras, e a última coleta | cada linha, a sua seção |
+| `mercado` | Mercado | 1 | `meta/mercado` | cotações do letreiro em 2 colunas; Selic, CDI e IPCA numa linha embaixo | `#investimentos` |
+| `pregao` | Pregão | 2 | `meta/b3` | maiores altas, baixas e mais negociadas (ações, 5 cada); papel abre o diálogo | `#investimentos` (classe Ações) |
+| `fiis` | FIIs | 1 | `meta/b3` + `meta/fii-resumo` | maior DY (líquidos) e mais descontados, 4 cada | `#investimentos` (classe FIIs) |
+| `eua` | EUA | 1 | `meta/eua` | S&P 500, Nasdaq e Dow; 4 maiores altas e 4 baixas | `#investimentos/eua` |
+| `listas` | Minhas listas | 1 | `/api/listas` | cada lista com até 4 papéis, preço e variação; "Editar" leva à Bolsa | `#investimentos` |
+| `favoritos` | Favoritos | 1 | `/api/favs` (a assinatura que a página já tem) | os 5 mais recentes, com a seção | seção do mais recente, já filtrando favoritos |
+| `destaques-<secao>` | Destaques · Tech (etc.) | 1 | `/api/q?c=<destaques>&order=data&dir=desc&limit=1` | até 3 destaques do dia, título e 1 linha | a seção (Investimentos: `#investimentos/noticias`) |
+| `ultimas-<secao>` | Últimas · Tech (etc.) | 1 | `/api/q?c=<items>&limit=5` | 5 mais recentes, fonte e "há X" | a seção (Investimentos: `#investimentos/noticias`) |
+
+Seções: tech, negocios, investimentos, politica, esportes (na tela, Notícias é a aba de política). Widget de seção não liberada para a pessoa não aparece na grade, na lista de personalizar, no `/api/me` nem na rota. Padrão para quem nunca personalizou: hoje, mercado, destaques-tech, destaques-negocios, destaques-investimentos, destaques-politica, pregao, eua, listas, favoritos, destaques-esportes, ultimas-tech.
+
+Rota `/api/prefs/painel`:
+
+- `GET`: `{ widgets, padrao, atualizado, catalogo }`. `widgets` é a grade salva, filtrada pelas seções de hoje (ou o padrão, com `padrao: true`); `catalogo` traz `id`, `titulo`, `tamanho` e `secao` do que a pessoa pode usar.
+- `PUT` (só `application/json`, até 4 KB): `{ widgets: [{ id, tamanho }] }`. Recusa com 400 id fora do catálogo, widget de seção não liberada, tamanho diferente de 1 ou 2, id repetido e mais de 40 itens.
+- Doc em `prefs/<email>`, id `painel`: `{ widgets: [{ id, tamanho: 1|2 }], atualizado }`. A ordem do array é a ordem da grade; o que não está nele fica oculto. Gravação no D1 e write-through no espelho, como favoritos e listas; leitura pelo espelho. Excluir um convidado no admin apaga `prefs/<email>` junto. A limpeza da coleta não toca em `prefs/`.
+- A página guarda uma cópia em `localStorage` (`radar-painel`) para a primeira pintura; a resposta do servidor manda.
+
+Rota `/api/painel/hoje`: `{ corte, secoes: [{ secao, n, ultimaRodada, novosNaUltima }] }`, só das seções liberadas. Uma consulta só (os `meta/status*` e a contagem por collection com `coletado >= corte`, num `UNION ALL` que começa por `SELECT id, data FROM docs`, o formato que o espelho aceita). O corte anda de 10 em 10 min para a resposta ficar no cache de memória e de borda, com ETag como o resto.
+
+Personalizar: painel lateral no desktop e folha de baixo no celular, com todos os widgets disponíveis (mostrar, setas para a ordem, largura 1 ou 2 e "Restaurar padrão"). A grade muda na hora e o `PUT` sai ao fechar. No desktop (ponteiro fino, 900 px ou mais) dá para arrastar pela alça do cabeçalho de cada card e soltar antes ou depois de outro; uma barra roxa mostra onde vai cair, e a ordem é gravada logo depois.
+
+Dados: cada widget faz no máximo uma leitura, todas em paralelo, pelas mesmas rotas da página (cache de memória e de borda, ETag). Os `meta/*` (mercado, b3, eua) ficam numa cópia em memória por 2 min, usada pelo Início e por Investimentos, nos dois sentidos; os ciclos de atualização pedem o doc de novo. A cada 2 min o Início atualiza só os cards que estão na tela (IntersectionObserver), e ao voltar para a aba atualiza os da tela com mais de 1 min.
+
 ## API
 
-`/api/me`, `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas`, `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
+`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas`, `/api/prefs/painel`, `/api/painel/hoje`, `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
 
 Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`) e recarga manual da CVM (`POST /api/admin/cvm`). Sem grupos criados, todo convidado vê tudo.
 
@@ -86,7 +121,7 @@ Ficam no painel da Cloudflare (Workers & Pages → `news` → Variables and Secr
 
 - Nunca `DROP`.
 - `UPDATE` e `DELETE` só com lista explícita de ids.
-- Coletores e curadoria não tocam em `favs/` nem em `listas/`.
+- Coletores e curadoria não tocam em `favs/`, `listas/` nem `prefs/`.
 - O prompt de cada tarefa só roda os comandos que ele mesmo lista.
 
 ## Custos
