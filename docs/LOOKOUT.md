@@ -32,7 +32,8 @@ Tabela `docs(collection, id, data)` para quase tudo:
 - Teste do Tech: `sombra-items`, `sombra-destaques`, fora do site.
 - Por pessoa: `favs/<email>`, `listas/<email>` e `prefs/<email>` (o painel do Início, doc `painel`).
 - `meta`: `status`, `status-negocios`, `status-investimentos`, `status-politica`, `status-esportes`, `status-sombra` (última rodada de cada curadoria), `mercado`, `b3`, `fii`, `fii-resumo`, `fii-cvm-ant`.
-- `_sistema`: `seed`, `limpeza`, `b3-erro`, `cvm-etapa`, `cvm-erro`, `sonda-feeds`.
+- `hist`: ficha de cada papel aberto (`US:NVDA`, `BR:PETR4`, `BR:NVDC34`), veja "Ficha do papel".
+- `_sistema`: `seed`, `limpeza`, `b3-erro`, `cvm-etapa`, `cvm-erro`, `sonda-feeds`, `papel-contagem`, `sonda-brapi-quote`.
 
 Outras tabelas: `candidatos`, `feeds_estado` (saúde de cada feed), `usuarios`, `grupos`, `usuario_grupo`. Esquema em `schema.sql`.
 
@@ -41,7 +42,7 @@ Outras tabelas: `candidatos`, `feeds_estado` (saúde de cada feed), `usuarios`, 
 O D1 fica no leste dos EUA e não existe D1 na América do Sul. Antes o Worker rodava com Smart Placement perto do banco, e quem abria a página no Brasil fazia a viagem longa em toda requisição. Agora o Worker roda na borda, perto de quem acessa, e as leituras saem de um espelho em São Paulo: um Durable Object com SQLite (`Espelho`, em `src/espelho.js`, uma instância só, criada com `locationHint: "sam"`).
 
 - **Fonte da verdade continua o D1.** Coletas, crons de mercado, admin e curadorias gravam só nele, do mesmo jeito de antes. O espelho é só leitura.
-- **O que vai para o espelho:** as collections de itens e destaques, `meta`, `_sistema`, `favs/<email>`, `listas/<email>` e `prefs/<email>`, mais cópias inteiras de `usuarios`, `grupos` e `usuario_grupo`. No admin, favoritos, listas e painéis aparecem somados, sem o e-mail de ninguém.
+- **O que vai para o espelho:** as collections de itens e destaques, `meta`, `hist`, `_sistema`, `favs/<email>`, `listas/<email>` e `prefs/<email>`, mais cópias inteiras de `usuarios`, `grupos` e `usuario_grupo`. No admin, favoritos, listas e painéis aparecem somados, sem o e-mail de ninguém.
 - **Favoritos, listas e painel do Início:** a leitura sai do espelho como o resto (D1 de reserva). A gravação vai ao D1 com `await` e, só depois que deu certo, a mesma linha vai ao espelho em `ctx.waitUntil` (write-through), para a pessoa ver a mudança na leitura seguinte sem esperar o cron. Apagar faz o mesmo com `remover`, inclusive quando o admin exclui um convidado. Se o write-through falhar, só vai para o log; a comparação do minuto seguinte conserta. Na sincronia, o D1 é lido por faixa da chave (`collection >= 'favs/' AND collection < 'favs0'`), que usa o índice; um `LIKE` varreria a tabela.
 - **Corrida com o write-through:** como o D1 grava antes, o espelho nunca recebe uma linha que o D1 não tem. Sobra o caso do cron ter lido a lista do D1 um instante antes da gravação e comparar depois do write-through: o doc novo pareceria sobrando. Para isso o `comparar` recebe a hora da leitura (com 2 s de folga) e não apaga o que foi atualizado depois dela.
 - **Sincronia:** no fim de cada cron (a cada minuto), o Worker lê do D1 a chave e uma marca de cada doc (`atualizado`, `coletado` e o tamanho do texto), compara com o espelho e copia só o que mudou, em lotes de 90. O que sumiu do D1 sai do espelho. Também sincroniza logo depois do botão "Atualizar agora" do mercado e, só a parte de pessoas, depois de qualquer mudança em convidados, grupos ou membros no admin.
@@ -56,6 +57,37 @@ O D1 fica no leste dos EUA e não existe D1 na América do Sul. Antes o Worker r
 - **Logs das leituras:** cada `console.log` vira um evento de observabilidade, e a cota é de 20 mi por mês. Por isso a leitura que deu certo no espelho é amostrada: sai 1 em cada 20 por isolate, como `{"leitura": "espelho", "rotulo", "ms", "amostra": 20}`. Quando a leitura cai no D1 sai sempre, com o motivo em `fallback` (`timeout`, `erro` ou `vazio`). Esses fallbacks também são somados no isolate e mandados ao DO no máximo a cada 10 s; o card do espelho mostra a contagem de hoje por motivo e o total de ontem (janela simples por dia, em UTC). É aproximado: se o isolate morrer antes de mandar, a contagem dele se perde. Com `ESPELHO_ATIVO=0` a leitura no D1 é o caminho normal e entra na mesma amostragem.
 
 Custo: o DO entra no Workers Paid com cota própria, não somada à do D1. Linhas lidas e gravadas têm os mesmos valores do D1 (25 bi e 50 mi por mês incluídos). Além disso conta requisições (1 mi por mês incluído; cada chamada RPC é uma) e duração enquanto está ativo (400 mil GB-s por mês). A sincronia faz duas chamadas por minuto quando nada mudou, umas 90 mil por mês; o resto são leituras da página que não estavam em cache. Com o `CF_API_TOKEN`, o card Custos do admin mostra as requisições do DO no mês (`durableObjectsInvocationsAdaptiveGroups`, projetadas para o mês inteiro, contra 1 mi), o armazenamento (`durableObjectsStorageGroups`, contra 5 GB, da conta toda) e o excedente em US$, já somado ao custo estimado. Sem o token aparece "sem token".
+
+## Ficha do papel
+
+Ações da B3, BDRs e ações dos EUA abrem uma ficha no diálogo do papel (`abrirAtivo`, maior e com rolagem interna): preço grande com a variação do dia, pregão aberto ou fechado com a hora do dado, faixas do dia e de 52 semanas, gráfico de 1 ano com 1M · 3M · 1A, estatísticas em quatro blocos (pregão, retorno, tamanho, múltiplos e dividendos), "Sobre a empresa", a listagem cruzada (BDR e papel americano) e as notícias do feed. FIIs e ETFs ficam como eram e ganham só as faixas e o gráfico. Nada de sinal técnico, preço-alvo, preço justo nem média móvel: só fato e número.
+
+Dados (`src/papel.js`), um doc por papel em `hist`, id `US:NVDA` ou `BR:PETR4`:
+
+| O quê | Fonte | Precisa de token |
+|---|---|---|
+| Preço, fechamento anterior, abertura, faixa do dia e de 52 semanas, volume, volume médio de 3 meses, variação em 1 mês, 3 meses, no ano e em 1 ano, série diária de 1 ano, nome e bolsa | Yahoo Finance, gráfico v8 (`range=1y&interval=1d`), query2 e depois query1, mesmo fetch de `src/eua.js`; na B3 o símbolo leva `.SA` | não |
+| Setor da B3 e valor de mercado da B3 | a lista da brapi que já está em `meta/b3` | não |
+| Setor e indústria dos EUA | mapa `SETOR_US` em `src/eua.js` (S&P 100 e ETFs) | não |
+| LPA, P/L, valor de mercado e dividendos de 12 meses (com o yield) na B3 | brapi, `/api/quote/<PAPEL>?fundamental=true&dividends=true` | `BRAPI_TOKEN` |
+| P/L, LPA, P/VP, beta, valor de mercado, ações em circulação, yield, dividendo, indústria, site e próximo balanço nos EUA | Finnhub, `/stock/metric`, `/stock/profile2` e `/calendar/earnings` | `FINNHUB_TOKEN` |
+
+Os dois tokens são secrets do Worker (`BRAPI_TOKEN` e `FINNHUB_TOKEN`). Sem eles a ficha funciona e mostra "–" no que falta; o admin vê no `title` do "–" qual token falta. Quando o secret aparece, a próxima busca já usa, sem deploy. A primeira resposta da brapi fica resumida em `_sistema/sonda-brapi-quote`, para conferir os nomes dos campos (P/VP só entra se vier `priceToBook` ou `bookValuePerShare`).
+
+Rota `GET /api/papel?id=US:NVDA` (seção Investimentos; id `^(US|BR):[A-Z0-9.\-]{1,10}$`):
+
+- Lê `hist` pelo espelho, com o D1 de reserva. Com menos de 24 h, responde na hora e marca `ultimaAbertura` (no máximo a cada 6 h).
+- Sem doc ou vencido: busca nas fontes, grava no D1 (`INSERT ... ON CONFLICT DO UPDATE`) e manda a linha ao espelho por write-through. Responde em até 10 s; se passar disso ou a fonte falhar, devolve o que havia (mesmo velho, com `velho: true` e `erro`) ou `{ existe: false, erro }`.
+- Trava contra repetição: a busca em andamento de cada id fica num `Map` do isolate, e quem abre a mesma ficha ao mesmo tempo espera a mesma busca.
+- Limite: 30 buscas novas por hora por e-mail (contador em memória do isolate); depois disso responde só o que já existe.
+- `cruzado` na resposta: o outro lado da listagem (mapa `BDR_DE_US` em `src/bdr.js`, montado com os BDRs de `meta/b3`; o que não é óbvio ficou de fora, como PLTR). A página só mostra a linha "Na B3" ou "Nos EUA" se o outro papel estiver em `meta/b3` ou `meta/eua`.
+- `tokens` só vai para o admin.
+
+Cron: no minuto 23 de cada hora, renova até 30 `hist` vencidos que alguém abriu nos últimos 7 dias, em lotes de 10 com 400 ms entre eles; um 429 do Yahoo para a rodada. A limpeza do minuto 7 apaga, por lista de ids, os `hist` sem abertura há mais de 30 dias. As buscas do dia (página e cron) ficam em `_sistema/papel-contagem` e aparecem no card Custos do admin, junto com o total de fichas.
+
+Na página, a resposta fica 10 min em memória. A ficha abre na hora com a cotação da lista e um esqueleto nos blocos; quando a resposta chega, redesenha mantendo a rolagem. Se a cotação da lista (30 min) for mais nova que a ficha (até 24 h), preço, variação, dia e os retornos usam a da lista. O gráfico é SVG próprio (linha, área e grade), com eixos, cursor e ponto em HTML por cima; mouse, toque e setas do teclado mostram data e valor. O período escolhido fica em `radar-ficha-periodo`.
+
+Para testar local: `wrangler dev --local --var DEV_FETCH_FALSO:1` troca as fontes por uma série sintética (só vale junto com `DEV_EMAIL`), com 600 ms de atraso e a contagem de chamadas em `_dev.chamadas` na resposta.
 
 ## FIIs
 
@@ -109,19 +141,19 @@ Dados: cada widget faz no máximo uma leitura, todas em paralelo, pelas mesmas r
 
 ## API
 
-`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas`, `/api/prefs/painel`, `/api/painel/hoje`, `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
+`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas`, `/api/prefs/painel`, `/api/painel/hoje`, `/api/papel`, `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
 
 Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`) e recarga manual da CVM (`POST /api/admin/cvm`). Sem grupos criados, todo convidado vê tudo.
 
 ## Segredos
 
-Ficam no painel da Cloudflare (Workers & Pages → `news` → Variables and Secrets), nunca no repositório: `ADMIN_EMAIL`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `BRAPI_TOKEN`, `CF_API_TOKEN` e `CF_ACCOUNT_ID` (estes dois para o card de custos). O `wrangler.jsonc` usa `keep_vars: true`, então deploy não apaga nada. Para rodar local, `DEV_EMAIL` vai no `.dev.vars`, que o git ignora.
+Ficam no painel da Cloudflare (Workers & Pages → `news` → Variables and Secrets), nunca no repositório: `ADMIN_EMAIL`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `BRAPI_TOKEN`, `FINNHUB_TOKEN` (cotações e ficha dos EUA), `CF_API_TOKEN` e `CF_ACCOUNT_ID` (estes dois para o card de custos). O `wrangler.jsonc` usa `keep_vars: true`, então deploy não apaga nada. Para rodar local, `DEV_EMAIL` vai no `.dev.vars`, que o git ignora.
 
 ## Regras para agentes
 
 - Nunca `DROP`.
 - `UPDATE` e `DELETE` só com lista explícita de ids.
-- Coletores e curadoria não tocam em `favs/`, `listas/` nem `prefs/`.
+- Coletores e curadoria não tocam em `favs/`, `listas/` nem `prefs/`. `hist` só é gravado pela rota `/api/papel` e pelo cron dele.
 - O prompt de cada tarefa só roda os comandos que ele mesmo lista.
 
 ## Custos

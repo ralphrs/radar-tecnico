@@ -43,6 +43,43 @@ export const ETFS = {
   GLD: "SPDR Gold (ouro)", SLV: "iShares Silver (prata)", XLF: "Financial Select Sector", XLK: "Technology Select Sector",
   XLE: "Energy Select Sector", ARKK: "ARK Innovation",
 };
+// Setor e indústria de cada papel do universo, em pt-BR curto, para a ficha funcionar sem o token da Finnhub.
+// Escrito à mão pelo que é sabido de cada empresa; com o token, a indústria da Finnhub tem preferência.
+const S = (setor, industria) => [setor, industria];
+const TEC = "Tecnologia", FIN = "Financeiro", SAU = "Saúde", CON = "Consumo", IND = "Indústria", ENE = "Energia", COM = "Comunicação", UTI = "Utilidade pública";
+export const SETOR_US = {
+  AAPL: S(TEC, "Hardware e eletrônicos"), ABBV: S(SAU, "Farmacêutica"), ABT: S(SAU, "Equipamentos médicos"), ACN: S(TEC, "Serviços de TI"),
+  ADBE: S(TEC, "Software"), AIG: S(FIN, "Seguros"), AMD: S(TEC, "Semicondutores"), AMGN: S(SAU, "Biotecnologia"),
+  AMT: S("Imobiliário", "Torres de telecomunicação"), AMZN: S(CON, "Varejo online e nuvem"), AVGO: S(TEC, "Semicondutores"), AXP: S(FIN, "Cartões e pagamentos"),
+  BA: S(IND, "Aeroespacial"), BAC: S(FIN, "Bancos"), BK: S(FIN, "Custódia e gestão de ativos"), BKNG: S(CON, "Viagens online"),
+  BLK: S(FIN, "Gestão de ativos"), BMY: S(SAU, "Farmacêutica"), "BRK.B": S(FIN, "Holding e seguros"), C: S(FIN, "Bancos"),
+  CAT: S(IND, "Máquinas pesadas"), CHTR: S(COM, "TV a cabo e internet"), CL: S(CON, "Higiene e limpeza"), CMCSA: S(COM, "TV a cabo, internet e mídia"),
+  COF: S(FIN, "Bancos e cartões"), COP: S(ENE, "Petróleo e gás"), COST: S(CON, "Varejo atacadista"), CRM: S(TEC, "Software"),
+  CSCO: S(TEC, "Equipamentos de rede"), CVS: S(SAU, "Farmácias e planos de saúde"), CVX: S(ENE, "Petróleo e gás"), DE: S(IND, "Máquinas agrícolas"),
+  DHR: S(SAU, "Equipamentos de laboratório"), DIS: S(COM, "Entretenimento"), DUK: S(UTI, "Energia elétrica"), EMR: S(IND, "Automação industrial"),
+  F: S(CON, "Montadoras"), FDX: S(IND, "Logística e entregas"), GD: S(IND, "Defesa"), GE: S(IND, "Aeroespacial"),
+  GILD: S(SAU, "Biotecnologia"), GM: S(CON, "Montadoras"), GOOG: S(COM, "Internet e publicidade"), GOOGL: S(COM, "Internet e publicidade"),
+  GS: S(FIN, "Banco de investimento"), HD: S(CON, "Varejo de construção"), HON: S(IND, "Conglomerado industrial"), IBM: S(TEC, "Serviços de TI"),
+  INTC: S(TEC, "Semicondutores"), INTU: S(TEC, "Software"), ISRG: S(SAU, "Equipamentos médicos"), JNJ: S(SAU, "Farmacêutica"),
+  JPM: S(FIN, "Bancos"), KO: S(CON, "Bebidas"), LIN: S("Materiais", "Gases industriais"), LLY: S(SAU, "Farmacêutica"),
+  LMT: S(IND, "Defesa"), LOW: S(CON, "Varejo de construção"), MA: S(FIN, "Cartões e pagamentos"), MCD: S(CON, "Restaurantes"),
+  MDLZ: S(CON, "Alimentos"), MDT: S(SAU, "Equipamentos médicos"), MET: S(FIN, "Seguros"), META: S(COM, "Redes sociais e publicidade"),
+  MMM: S(IND, "Conglomerado industrial"), MO: S(CON, "Tabaco"), MRK: S(SAU, "Farmacêutica"), MS: S(FIN, "Banco de investimento"),
+  MSFT: S(TEC, "Software e nuvem"), NEE: S(UTI, "Energia elétrica"), NFLX: S(COM, "Streaming"), NKE: S(CON, "Vestuário e calçados"),
+  NOW: S(TEC, "Software"), NVDA: S(TEC, "Semicondutores"), ORCL: S(TEC, "Software e nuvem"), PEP: S(CON, "Bebidas e alimentos"),
+  PFE: S(SAU, "Farmacêutica"), PG: S(CON, "Higiene e limpeza"), PLTR: S(TEC, "Software"), PM: S(CON, "Tabaco"),
+  PYPL: S(FIN, "Pagamentos"), QCOM: S(TEC, "Semicondutores"), RTX: S(IND, "Aeroespacial e defesa"), SBUX: S(CON, "Restaurantes"),
+  SCHW: S(FIN, "Corretora"), SO: S(UTI, "Energia elétrica"), SPG: S("Imobiliário", "Shopping centers"), T: S(COM, "Telecomunicações"),
+  TGT: S(CON, "Varejo"), TMO: S(SAU, "Equipamentos de laboratório"), TMUS: S(COM, "Telecomunicações"), TSLA: S(CON, "Montadoras"),
+  TXN: S(TEC, "Semicondutores"), UBER: S(IND, "Transporte por aplicativo"), UNH: S(SAU, "Planos de saúde"), UNP: S(IND, "Ferrovias"),
+  UPS: S(IND, "Logística e entregas"), USB: S(FIN, "Bancos"), V: S(FIN, "Cartões e pagamentos"), VZ: S(COM, "Telecomunicações"),
+  WFC: S(FIN, "Bancos"), WMT: S(CON, "Varejo"), XOM: S(ENE, "Petróleo e gás"),
+  SPY: S("ETF", "Índice S&P 500"), QQQ: S("ETF", "Índice Nasdaq-100"), VOO: S("ETF", "Índice S&P 500"), IVV: S("ETF", "Índice S&P 500"),
+  VTI: S("ETF", "Bolsa americana inteira"), DIA: S("ETF", "Índice Dow Jones"), IWM: S("ETF", "Índice Russell 2000"), TLT: S("ETF", "Títulos do Tesouro americano"),
+  GLD: S("ETF", "Ouro"), SLV: S("ETF", "Prata"), XLF: S("ETF", "Setor financeiro"), XLK: S("ETF", "Setor de tecnologia"),
+  XLE: S("ETF", "Setor de energia"), ARKK: S("ETF", "Gestão ativa, inovação"),
+};
+
 // [símbolo, id no letreiro, nome]
 export const INDICES = [["^GSPC", "spx", "S&P 500"], ["^IXIC", "nasdaq", "Nasdaq"], ["^DJI", "dow", "Dow Jones"]];
 
@@ -55,13 +92,13 @@ const PAUSA = 400;
 const FINNHUB_POR_VEZ = 50;
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
-class Limite extends Error { constructor(m) { super(m); this.limite = true; } }
+export class Limite extends Error { constructor(m) { super(m); this.limite = true; } }
 
 const num = (v) => (v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) ? Number(v) : null);
 const arred = (v, c = 4) => (v === null ? null : Math.round(v * 10 ** c) / 10 ** c);
 const ehIndice = (s) => s.startsWith("^");
 // Yahoo escreve classe de ação com hífen (BRK-B); a Finnhub e o resto do site, com ponto.
-const simboloYahoo = (s) => s.replace(".", "-");
+export const simboloYahoo = (s) => s.replace(".", "-");
 
 // Data (AAAA-MM-DD) e minutos do dia em Nova York, com horário de verão.
 const FMT_NY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -98,7 +135,7 @@ export function lerChart(j) {
   };
 }
 
-async function buscar(url, headers) {
+export async function buscar(url, headers) {
   return fetch(url, { headers: { "user-agent": UA, accept: "application/json", ...headers }, signal: AbortSignal.timeout(TIMEOUT) });
 }
 

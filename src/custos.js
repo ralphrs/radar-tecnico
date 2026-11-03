@@ -102,8 +102,22 @@ async function local(env) {
   return { colecoes: tam.results, candidatos: cand, rodadasMes: rod.results };
 }
 
+// Fichas de papel (src/papel.js): quantas existem e as buscas novas de hoje (página e cron), de _sistema/papel-contagem.
+async function papel(env) {
+  const [n, c] = await Promise.all([
+    env.DB.prepare("SELECT count(*) AS n FROM docs WHERE collection = 'hist'").first(),
+    env.DB.prepare("SELECT data FROM docs WHERE collection = '_sistema' AND id = 'papel-contagem'").first(),
+  ]);
+  let cont = {};
+  try { cont = c ? JSON.parse(c.data) : {}; } catch {}
+  const hoje = new Date().toISOString().slice(0, 10);
+  const doDia = cont.dia === hoje ? cont : { buscas: 0, cron: 0 };
+  return { hist: n?.n || 0, buscasHoje: doDia.buscas || 0, cronHoje: doDia.cron || 0, tokens: { brapi: !!env.BRAPI_TOKEN, finnhub: !!env.FINNHUB_TOKEN } };
+}
+
 export async function adminCustos(env) {
   const out = { planos: PLANOS, local: await local(env), configurado: !!env.CF_API_TOKEN, gerado: new Date().toISOString() };
+  try { out.papel = await papel(env); } catch (e) { out.papel = { erro: String(e.message || e) }; }
   if (env.CF_API_TOKEN) { try { out.cloudflare = await cloudflare(env); } catch (e) { out.erroCloudflare = String(e.message || e); } }
   return out;
 }

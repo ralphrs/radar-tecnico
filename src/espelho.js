@@ -6,7 +6,7 @@
 // as mudanças para cá a cada minuto. Se o espelho falhar, demorar ou ainda estiver vazio, a leitura vai ao D1.
 //
 // O que fica aqui:
-// - docs: as collections que a página lê (itens, destaques e meta), _sistema, e favs/<email>, listas/<email> e prefs/<email>;
+// - docs: as collections que a página lê (itens, destaques, meta e hist), _sistema, e favs/<email>, listas/<email> e prefs/<email>;
 // - usuarios, grupos e usuario_grupo, inteiras, para conferir convite e seções;
 // - estado: última sincronia, duração, linhas, erro, as últimas medições de tempo, a trava da sincronia,
 //   as sincronias puladas e os fallbacks para o D1 do dia.
@@ -26,6 +26,7 @@ import { calcularSecoes } from "./grupos.js";
 export const COLECOES_ESPELHO = [
   "items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes",
   "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos", "meta", "_sistema",
+  "hist", // fichas de papel (src/papel.js): gravadas sob demanda no D1, com write-through para cá
 ];
 
 const LOTE = 90;              // ids por consulta ao D1, como na limpeza (coleta.js)

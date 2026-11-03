@@ -194,7 +194,7 @@ function quando(iso) {
 
 function textoConvite(u) {
   const oi = u.nome ? "Oi, " + u.nome.split(" ")[0] + "!" : "Oi!";
-  return `${oi} Te liberei no Lookout, o radar de notícias que eu uso para acompanhar tech, política e futebol. É só entrar em ${site} e fazer login com o Google ou pedir um código no e-mail ${u.email}.`;
+  return `${oi} Te liberei no Lookout, o radar de notícias que eu uso para acompanhar tech, política e futebol. É só entrar em ${site}/convite e fazer login com o Google ou pedir um código no e-mail ${u.email}.`;
 }
 
 async function api(caminho, opt) {
@@ -403,6 +403,8 @@ async function carregarCustos() {
       + kpi("Rodadas de curadoria no mês", fmt(rodadas), "rodam na sua assinatura do Claude, sem cobrança à parte")
       + kpi("Cotações e CVM", "US$ 0", "brapi sem token, BCB e CVM são gratuitos")
       + (cf ? "" : kpi("Espelho (Durable Object)", "sem token", "requisições e armazenamento do DO vêm da mesma API"))
+      + (c.papel && !c.papel.erro ? kpi("Fichas de papel", fmt(c.papel.hist), fmt(c.papel.buscasHoje) + " buscas novas hoje pela página, " + fmt(c.papel.cronHoje) + " renovadas pelo cron"
+          + (c.papel.tokens.finnhub ? "" : " · sem FINNHUB_TOKEN") + (c.papel.tokens.brapi ? "" : " · sem BRAPI_TOKEN")) : "")
       + "</div>";
     h += '<details><summary>Rodadas por aba e espaço por coleção</summary><table class="custo-tab"><thead><tr><th>Aba</th><th>Rodadas no mês</th><th>Itens</th></tr></thead><tbody>'
       + L.rodadasMes.map((x) => `<tr><td>${esc(NOMEC[x.collection] || x.collection)}</td><td>${x.rodadas}</td><td>${x.itens}</td></tr>`).join("")

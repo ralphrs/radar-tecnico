@@ -18,6 +18,7 @@ const SECAO_DA_COLECAO = {
   "items-investimentos": "investimentos", "destaques-investimentos": "investimentos",
   "items-politica": "politica", "destaques-politica": "politica",
   "items-esportes": "esportes", "destaques-esportes": "esportes",
+  hist: "investimentos",
 };
 const SECAO_DO_META = {
   status: "tech", "status-negocios": "negocios", "status-investimentos": "investimentos", "status-politica": "politica", "status-esportes": "esportes",

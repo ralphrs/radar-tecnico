@@ -345,6 +345,67 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .ativo-sobre dd.sem-dado { color: var(--muted-foreground); }
 .ativo-sobre-pe { margin: 8px 0 0; font-size: 14px; }
 .ativo-dlg .nota { font-size: 12.5px; color: var(--muted-foreground); margin-top: 16px; }
+/* Ficha do papel (ações, BDRs e ações dos EUA): diálogo maior, com rolagem interna */
+.ativo-dlg.ficha { width: min(920px, calc(100vw - 24px)); }
+.ficha-topo { margin-top: 14px; }
+.ficha-preco { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.ficha-preco b { font: 700 32px/1.1 var(--font-sans); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.ficha-preco span { font: 600 16px/1.2 var(--font-sans); font-variant-numeric: tabular-nums; }
+.ficha-preco .sobe, .ficha-prepos .sobe, .ficha-varper.sobe, .ficha-estat dd.sobe, .ficha-lst .sobe { color: var(--ok); }
+.ficha-preco .desce, .ficha-prepos .desce, .ficha-varper.desce, .ficha-estat dd.desce, .ficha-lst .desce { color: var(--err); }
+.ficha-pregao, .ficha-prepos { margin: 4px 0 0; font-size: 13px; color: var(--muted-foreground); }
+.ficha-prepos b { color: var(--foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ficha-faixas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; margin-top: 16px; }
+.faixa { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; align-items: center; gap: 4px 10px; min-width: 0; }
+.faixa-rot { grid-column: 1 / -1; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.faixa-min, .faixa-max { font: 500 12.5px var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.faixa-barra { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--foreground) 12%, transparent); }
+.faixa-barra i { position: absolute; top: 50%; width: 4px; height: 16px; border-radius: 2px; background: var(--primary); transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--background, var(--card)); }
+.ficha-graf-topo { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin: 20px 0 8px; }
+.ficha-graf-topo h3 { margin: 0; }
+.ficha-varper { font: 600 13px var(--font-sans); font-variant-numeric: tabular-nums; }
+.ficha-per { margin-left: auto; }
+.ficha-graf { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; }
+.g-plot { position: relative; height: 200px; touch-action: pan-y; cursor: crosshair; border-radius: 4px; }
+.g-plot:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; }
+.g-plot.g-sobe { color: var(--ok); } .g-plot.g-desce { color: var(--err); }
+.g-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+.g-plot .g-linha { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.g-plot .g-area { fill: currentColor; fill-opacity: .08; stroke: none; }
+.g-plot .g-grade { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
+.g-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--muted-foreground); transform: translateX(-50%); pointer-events: none; }
+.g-ponto { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 2px var(--background, var(--card)); transform: translate(-50%, -50%); pointer-events: none; }
+.g-y { position: relative; min-width: 72px; }
+.g-y span { position: absolute; left: 0; transform: translateY(-50%); font: 500 11.5px var(--font-mono); color: var(--muted-foreground); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.g-x { grid-column: 1; display: flex; justify-content: space-between; margin-top: 6px; font: 500 11.5px var(--font-mono); color: var(--muted-foreground); }
+.ficha-dica { position: absolute; top: -4px; z-index: 1; transform: translate(-50%, -100%); padding: 3px 8px; border-radius: 6px; background: var(--foreground); color: var(--background, var(--card)); font: 500 12px var(--font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
+.ficha-estat { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px; }
+.ficha-bloco h4 { margin: 0 0 2px; font: 600 11.5px/1.4 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.ficha-bloco dl { margin: 0; }
+.ficha-bloco dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.ficha-bloco dt { font-size: 13.5px; color: var(--muted-foreground); }
+.ficha-bloco dd { margin: 0; font: 600 14px var(--font-sans); font-variant-numeric: tabular-nums; text-align: right; }
+.ficha-bloco dd.sem-dado { color: var(--muted-foreground); font-weight: 400; }
+.ficha-desc { margin: 10px 0 0; font-size: 14px; line-height: 1.55; }
+.ficha-lst { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; min-height: var(--toque); padding: 6px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--foreground); font: 500 14px var(--font-sans); font-variant-numeric: tabular-nums; cursor: pointer; text-align: left; }
+.ficha-lst:hover { border-color: var(--primary); }
+.ficha-lst:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ficha-lst-rot { color: var(--muted-foreground); }
+.ficha-lst .papel-cod { font-family: var(--font-mono); font-weight: 600; }
+.ficha-esq { margin-top: 16px; }
+.ficha-esq-faixas { max-width: 50%; }
+.ficha-esq .esq.ficha-esq-graf { height: 180px; margin: 20px 0; border-radius: 8px; }
+.ficha-esq-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px; }
+.ficha-esq-bloco .esq { height: 14px; margin: 12px 0; }
+.ficha-aviso { padding: 10px 12px; border: 1px dashed var(--border); border-radius: 8px; }
+@media (max-width: 639px) {
+  .ficha-preco b { font-size: 28px; }
+  .ficha-faixas, .ficha-estat, .ficha-esq-grade { grid-template-columns: 1fr; }
+  .ficha-esq-faixas { max-width: none; }
+  .ficha-per { margin-left: 0; }
+  .g-plot { height: 160px; }
+  .ficha-esq .esq.ficha-esq-graf { height: 150px; }
+}
 @media (max-width: 639px) { .ativo-dlg > * { margin-left: 16px; margin-right: 16px; } }
 .rankings { display: flex; flex-direction: column; gap: var(--space-3); }
 .rk-quando { font: 400 12px var(--font-mono); color: var(--muted-foreground); }
@@ -2149,16 +2210,311 @@ function sobreFundo(f, prazo) {
   if (site) sec.append(el("p", { class: "ativo-sobre-pe" }, el("a", { href: site, target: "_blank", rel: "noopener noreferrer" }, "Site do fundo")));
   return sec;
 }
-/* Detalhe de um papel, num diálogo: indicadores, histórico mensal (FIIs) e notícias do feed que citam o papel */
-function abrirAtivo(x, aba = cotAba) {
+/* ---------- Ficha do papel (/api/papel, src/papel.js): faixas, gráfico de 1 ano, estatísticas, perfil e listagem cruzada.
+   Ações da B3, BDRs e ações dos EUA ganham a ficha inteira; FIIs e ETFs ficam como eram e ganham faixas e gráfico quando o
+   dado chega. A resposta fica 10 min na memória da página; o servidor guarda 24 h. ---------- */
+const FICHA_COMPLETA = new Set(["acoes", "bdrs", "usacoes"]);
+const FICHA_MEM_MS = 10 * 60000;
+const fichaMem = new Map(); /* id -> { r, em } ou { p } enquanto busca */
+const idFicha = (x, aba) => (x.us || ABAS_EUA.has(aba) ? "US:" : "BR:") + x.t;
+const fichaPronta = (id) => { const m = fichaMem.get(id); return m && m.r && Date.now() - m.em < FICHA_MEM_MS ? m.r : null; };
+function lerFicha(id) {
+  const m = fichaMem.get(id);
+  if (fichaPronta(id)) return Promise.resolve(m.r);
+  if (m && m.p) return m.p;
+  const p = (async () => {
+    try {
+      const r = await fetch("/api/papel?" + new URLSearchParams({ id }), { credentials: "same-origin" });
+      if (!r.ok) { fichaMem.delete(id); return { existe: false, erro: "HTTP " + r.status }; }
+      const j = await r.json();
+      /* resposta velha ou com erro não fica guardada: a próxima abertura tenta de novo */
+      if (j.existe && !j.velho && !j.erro) fichaMem.set(id, { r: j, em: Date.now() }); else fichaMem.delete(id);
+      return j;
+    } catch (e) { fichaMem.delete(id); return { existe: false, erro: "rede" }; }
+  })();
+  fichaMem.set(id, { p });
+  return p;
+}
+/* Setores da lista da brapi (meta/b3) vêm em inglês; os dos EUA já vêm em português do servidor */
+const SETOR_PT = { "Commercial Services": "Serviços comerciais", Communications: "Comunicações", "Consumer Durables": "Bens duráveis", "Consumer Non-Durables": "Bens de consumo",
+  "Consumer Services": "Serviços ao consumidor", "Distribution Services": "Distribuição", "Electronic Technology": "Tecnologia eletrônica", "Energy Minerals": "Petróleo e gás",
+  Finance: "Financeiro", "Health Services": "Serviços de saúde", "Health Technology": "Saúde", "Industrial Services": "Serviços industriais", "Non-Energy Minerals": "Mineração e siderurgia",
+  "Process Industries": "Indústria de base", "Producer Manufacturing": "Bens industriais", "Retail Trade": "Varejo", "Technology Services": "Serviços de tecnologia",
+  Transportation: "Transporte", Utilities: "Utilidade pública", Miscellaneous: "Diversos" };
+const setorPt = (s) => SETOR_PT[s] || s || "";
+const BOLSA_PT = { NMS: "Nasdaq", NGM: "Nasdaq", NCM: "Nasdaq", NASDAQ: "Nasdaq", NYQ: "NYSE", NYSE: "NYSE", PCX: "NYSE Arca", ASE: "NYSE American", BTS: "Cboe", SAO: "B3" };
+const bolsaPt = (b) => BOLSA_PT[String(b || "").toUpperCase()] || b || "";
+const simDe = (moeda) => (moeda === "USD" ? "US$ " : moeda === "BRL" || !moeda ? "R$ " : moeda + " ");
+/* Grandes números em pt-BR: "5,52 tri", "45,30 bi", "134,7 mi", "12,4 mil" */
+function fmtGrandeF(v) {
+  const a = Math.abs(v);
+  return a >= 1e12 ? fmtNum(v / 1e12, 2) + " tri" : a >= 1e9 ? fmtNum(v / 1e9, 2) + " bi" : a >= 1e6 ? fmtNum(v / 1e6, 1) + " mi" : a >= 1e4 ? fmtNum(v / 1e3, 1) + " mil" : fmtNum(v, 0);
+}
+const fmtPct1 = (v) => (v == null ? "–" : (v > 0 ? "+" : "") + fmtNum(v, 1) + "%");
+const corDe = (v) => (v > 0 ? "sobe" : v < 0 ? "desce" : "");
+const fusoDe = (us) => (us ? "America/New_York" : "America/Sao_Paulo");
+const diaLocal = (iso, us) => { try { return new Date(iso).toLocaleDateString("en-CA", { timeZone: fusoDe(us) }); } catch (e) { return String(iso || "").slice(0, 10); } };
+const ddmm = (dia) => (/^\d{4}-\d{2}-\d{2}$/.test(dia) ? dia.slice(8, 10) + "/" + dia.slice(5, 7) : "");
+/* Pregão da B3 na ficha: 10h às 17h de São Paulo, dias úteis (sem contar feriados) */
+const FMT_SP = (() => { try { return new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }); } catch (e) { return null; } })();
+function pregaoB3Ficha(d = new Date()) {
+  if (!FMT_SP) return pregaoB3Aberto(d);
+  const p = Object.fromEntries(FMT_SP.formatToParts(d).map((x) => [x.type, x.value]));
+  const dia = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(p.weekday), min = Number(p.hour) * 60 + Number(p.minute);
+  return dia >= 1 && dia <= 5 && min >= 600 && min <= 1020;
+}
+/* "Pregão aberto · dado das 15:08" (ou "de sex., 31/10 17:07" quando não é de hoje), na hora de quem lê */
+function linhaPregao(us, quando) {
+  const aberto = us ? pregaoEuaAberto() : pregaoB3Ficha();
+  let txt = "";
+  if (quando) {
+    const d = new Date(quando);
+    const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    txt = d.toDateString() === new Date().toDateString() ? " · dado das " + hora : " · dado de " + d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + " " + hora;
+  }
+  return el("p", { class: "ficha-pregao", title: us ? "Pregão regular em Nova York: 9h30 às 16h, de segunda a sexta" : "Pregão da B3: 10h às 17h, de segunda a sexta" },
+    el("span", { class: "rk-estado " + (aberto ? "aberto" : "fechado") }, aberto ? "Pregão aberto" : "Pregão fechado"), txt);
+}
+/* Junta o doc hist (até 24 h) com a cotação da lista (30 min): o que for mais novo vale para preço, variação e o dia.
+   A faixa do dia guarda o preço da mesma fonte, para o marcador não cair fora da barra. */
+function juntarFicha(h, x, us) {
+  const f = { ...h, fechamentos: Array.isArray(h.fechamentos) ? h.fechamentos.slice() : [] };
+  const diaHist = h.quando ? diaLocal(h.quando, us) : "";
+  f.faixaDia = { min: h.minDia, max: h.maxDia, preco: h.preco, dia: diaHist };
+  const quandoLista = us ? x.quando : b3 && b3.atualizado;
+  if (x.preco != null && quandoLista && (!h.quando || quandoLista > h.quando)) {
+    const dia = diaLocal(quandoLista, us);
+    f.preco = x.preco; f.var = x.var != null ? x.var : f.var; f.quando = quandoLista;
+    if (x.vol != null) f.vol = x.vol;
+    if (us) {
+      if (x.ant != null) f.prevClose = x.ant;
+      f.abertura = x.abre ?? (dia === diaHist ? f.abertura : null);
+      if (x.max != null && x.min != null) f.faixaDia = { min: x.min, max: x.max, preco: x.preco, dia };
+    } else if (dia !== diaHist) {
+      /* outro pregão: o fechamento anterior sai da série e a abertura de antes deixa de valer */
+      const antes = f.fechamentos.filter((p) => p[0] < dia);
+      if (antes.length) f.prevClose = antes[antes.length - 1][1];
+      f.abertura = null;
+    }
+    const ult = f.fechamentos[f.fechamentos.length - 1];
+    if (ult && ult[0] === dia) f.fechamentos[f.fechamentos.length - 1] = [dia, x.preco];
+    else if (!ult || ult[0] < dia) f.fechamentos.push([dia, x.preco]);
+    /* retornos refeitos com o preço novo, pela mesma regra do servidor (último pregão até a data) */
+    const ate = (data) => { let b = null; for (const p of f.fechamentos) { if (p[0] <= data) b = p[1]; else break; } return b; };
+    const menos = (m) => { const d = new Date(dia + "T12:00:00Z"); d.setUTCMonth(d.getUTCMonth() - m); return d.toISOString().slice(0, 10); };
+    const ret = (b) => (b ? Math.round((x.preco / b - 1) * 10000) / 100 : null);
+    f.varAno = ret(ate(String(Number(dia.slice(0, 4)) - 1) + "-12-31")) ?? f.varAno;
+    const b1a = ate(menos(12)) ?? (h.var1a != null && f.fechamentos.length ? f.fechamentos[0][1] : null);
+    f.var1a = ret(b1a) ?? f.var1a;
+  }
+  return f;
+}
+/* Barra fina com o marcador do preço atual entre a mínima e a máxima */
+function faixaEl(rot, min, max, atual, fmt) {
+  if (min == null || max == null || !(max >= min)) return null;
+  const pos = max > min && atual != null ? Math.min(100, Math.max(0, ((atual - min) / (max - min)) * 100)) : 50;
+  return el("div", { class: "faixa" },
+    el("span", { class: "faixa-rot" }, rot),
+    el("span", { class: "faixa-min" }, fmt(min)),
+    el("span", { class: "faixa-barra", role: "img", "aria-label": `${rot}: mínima ${fmt(min)}, máxima ${fmt(max)}` + (atual != null ? `, atual ${fmt(atual)}` : "") }, el("i", { style: `left:${pos.toFixed(1)}%` })),
+    el("span", { class: "faixa-max" }, fmt(max)));
+}
+function faixasFicha(h, fmtP) {
+  const hoje = diaLocal(new Date().toISOString(), h.mercado === "US");
+  const fd = h.faixaDia || {};
+  const rotDia = fd.dia && fd.dia !== hoje ? "Dia " + ddmm(fd.dia) : "Dia";
+  const a = faixaEl(rotDia, fd.min, fd.max, fd.preco, fmtP), b = faixaEl("52 semanas", h.min52, h.max52, h.preco, fmtP);
+  return a || b ? el("div", { class: "ficha-faixas" }, a, b) : null;
+}
+/* Gráfico de linha dos fechamentos. Recorte por período sem nova chamada. Tudo que entra no SVG passa por escHtml. */
+const PERIODOS = [["1M", 1], ["3M", 3], ["1A", 12]];
+function recorteSerie(serie, meses) {
+  if (!serie.length) return [];
+  const d = new Date(serie[serie.length - 1][0] + "T12:00:00Z");
+  d.setUTCMonth(d.getUTCMonth() - meses);
+  const ini = d.toISOString().slice(0, 10);
+  const k = serie.findIndex((p) => p[0] > ini);
+  return k < 0 ? serie.slice(-1) : serie.slice(Math.max(0, k - 1)); /* o último pregão antes do início é a base */
+}
+const diaEixo = (dia, longo) => { const [a, m, d] = dia.split("-"); return longo ? MESES_CURTOS[Number(m) - 1] + "/" + a.slice(2) : Number(d) + " " + MESES_CURTOS[Number(m) - 1]; };
+const diaExtenso = (dia) => { const [a, m, d] = dia.split("-"); return Number(d) + " " + MESES_CURTOS[Number(m) - 1] + " " + a; };
+/* Linha e área num SVG esticado (preserveAspectRatio="none", traço que não escala); eixos, cursor e ponto em HTML por cima,
+   para o texto ficar do mesmo tamanho em qualquer largura. */
+const GF = { W: 1000, H: 200, pt: 8, pb: 8 };
+function escalaFicha(pts) {
+  const vals = pts.map((p) => p[1]);
+  let min = Math.min(...vals), max = Math.max(...vals);
+  if (max === min) { max += Math.abs(max) * 0.01 || 1; min -= Math.abs(min) * 0.01 || 1; }
+  const n = pts.length;
+  return { min, max, X: (i) => (n > 1 ? (i * GF.W) / (n - 1) : GF.W / 2), Y: (v) => GF.pt + ((max - v) / (max - min)) * (GF.H - GF.pt - GF.pb) };
+}
+function svgFicha(pts, fmtP, longo) {
+  const n = pts.length, { min, max, X, Y } = escalaFicha(pts);
+  const linha = pts.map((p, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(p[1]).toFixed(1)).join("");
+  const area = linha + `L${X(n - 1).toFixed(1)} ${GF.H}L0 ${GF.H}Z`;
+  const cls = pts[n - 1][1] >= pts[0][1] ? "sobe" : "desce";
+  const marcas = n > 1 ? [...new Set([0, Math.round((n - 1) / 3), Math.round((2 * (n - 1)) / 3), n - 1])] : [0];
+  const rot = `Fechamentos de ${diaExtenso(pts[0][0])} a ${diaExtenso(pts[n - 1][0])}, entre ${fmtP(min)} e ${fmtP(max)}`;
+  const pc = (y) => ((y / GF.H) * 100).toFixed(2) + "%";
+  return `<div class="g-plot g-${cls}" tabindex="0" role="img" aria-label="${escHtml(rot)}">` +
+    `<svg viewBox="0 0 ${GF.W} ${GF.H}" preserveAspectRatio="none" aria-hidden="true">` +
+    `<line class="g-grade" x1="0" x2="${GF.W}" y1="${Y(max).toFixed(1)}" y2="${Y(max).toFixed(1)}"/><line class="g-grade" x1="0" x2="${GF.W}" y1="${Y(min).toFixed(1)}" y2="${Y(min).toFixed(1)}"/>` +
+    `<path class="g-area" d="${area}"/><path class="g-linha" d="${linha}"/></svg>` +
+    `<span class="g-cursor" hidden></span><span class="g-ponto" hidden></span></div>` +
+    `<div class="g-y" aria-hidden="true"><span style="top:${pc(Y(max))}">${escHtml(fmtP(max))}</span><span style="top:${pc(Y(min))}">${escHtml(fmtP(min))}</span></div>` +
+    `<div class="g-x" aria-hidden="true">${marcas.map((i) => `<span>${escHtml(diaEixo(pts[i][0], longo))}</span>`).join("")}</div>`;
+}
+/* Seção do gráfico: seletor 1M · 3M · 1A, variação do período ao lado e cursor com data e valor (mouse, toque ou setas) */
+function graficoFicha(h, fmtP) {
+  const serie = (h.fechamentos || []).filter((p) => Array.isArray(p) && /^\d{4}-\d{2}-\d{2}$/.test(p[0]) && Number.isFinite(p[1]));
+  if (serie.length < 2) return null;
+  let per = "1A";
+  try { const s = localStorage.getItem("radar-ficha-periodo"); if (PERIODOS.some((p) => p[0] === s)) per = s; } catch (e) {}
+  const seg = el("div", { class: "seg ficha-per", role: "group", "aria-label": "Período do gráfico" });
+  const varEl = el("span", { class: "ficha-varper" });
+  const caixa = el("div", { class: "ficha-graf" });
+  const desenhar = () => {
+    const meses = PERIODOS.find((p) => p[0] === per)[1];
+    const pts = recorteSerie(serie, meses);
+    const v = pts.length > 1 && pts[0][1] ? (pts[pts.length - 1][1] / pts[0][1] - 1) * 100 : null;
+    varEl.className = "ficha-varper " + corDe(v);
+    varEl.textContent = v == null ? "" : fmtPct1(v) + (per === "1A" ? " em 1 ano" : per === "3M" ? " em 3 meses" : " em 1 mês");
+    seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.per === per)));
+    caixa.innerHTML = svgFicha(pts, fmtP, meses > 3);
+    const dica = el("div", { class: "ficha-dica", hidden: "" });
+    const plot = caixa.querySelector(".g-plot"), cur = plot.querySelector(".g-cursor"), pt = plot.querySelector(".g-ponto");
+    plot.append(dica);
+    const n = pts.length, { X, Y } = escalaFicha(pts);
+    let atual = -1;
+    const mostrar = (i) => {
+      atual = Math.max(0, Math.min(n - 1, i));
+      const x = (X(atual) / GF.W) * 100, y = (Y(pts[atual][1]) / GF.H) * 100;
+      cur.style.left = x + "%"; pt.style.left = x + "%"; pt.style.top = y + "%";
+      cur.hidden = false; pt.hidden = false;
+      dica.textContent = diaExtenso(pts[atual][0]) + " · " + fmtP(pts[atual][1]);
+      dica.hidden = false;
+      const w = plot.clientWidth, px = (x / 100) * w, meia = dica.offsetWidth / 2 || 60;
+      dica.style.left = Math.min(Math.max(px, meia), w - meia) + "px";
+    };
+    const esconder = () => { cur.hidden = true; pt.hidden = true; dica.hidden = true; atual = -1; };
+    plot.addEventListener("pointermove", (e) => { const r = plot.getBoundingClientRect(); mostrar(Math.round(((e.clientX - r.left) / r.width) * (n - 1))); });
+    plot.addEventListener("pointerdown", (e) => { const r = plot.getBoundingClientRect(); mostrar(Math.round(((e.clientX - r.left) / r.width) * (n - 1))); });
+    plot.addEventListener("pointerleave", esconder);
+    plot.addEventListener("blur", esconder);
+    plot.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); mostrar((atual < 0 ? n - 1 : atual) + (e.key === "ArrowLeft" ? -1 : 1)); }
+      else if (e.key === "Home") { e.preventDefault(); mostrar(0); } else if (e.key === "End") { e.preventDefault(); mostrar(n - 1); }
+    });
+  };
+  PERIODOS.forEach(([p]) => {
+    const b = el("button", { type: "button", "data-per": p, "aria-pressed": String(p === per) }, p);
+    b.addEventListener("click", () => { per = p; try { localStorage.setItem("radar-ficha-periodo", p); } catch (e) {} desenhar(); });
+    seg.append(b);
+  });
+  const sec = el("section", { class: "ativo-sec ficha-sec-graf" }, el("div", { class: "ficha-graf-topo" }, el("h3", {}, "Cotação"), varEl, seg), caixa);
+  desenhar();
+  return sec;
+}
+/* Campos que, sem o token, não vêm. Só o admin vê o motivo no title do "–". */
+const SO_FINNHUB = new Set(["cap", "acoesCirc", "lpa", "pl", "pvp", "dividendo12m", "dy", "beta", "funcionarios", "site", "descricao", "proximoBalanco"]);
+const SO_BRAPI = new Set(["lpa", "pl", "pvp", "dividendo12m", "dy"]);
+function estatFicha(h, r, fmtP) {
+  const sim = simDe(h.moeda), us = h.mercado === "US";
+  const motivo = (k) => {
+    const t = r && r.tokens;
+    if (!t) return "";
+    if (us && !t.finnhub && SO_FINNHUB.has(k)) return "Precisa do token do Finnhub";
+    if (!us && !t.brapi && SO_BRAPI.has(k)) return "Precisa do token da brapi";
+    return "";
+  };
+  const F = {
+    preco: (v) => fmtP(v), grande: (v) => fmtGrandeF(v), pct: (v) => fmtPct1(v), moedaGrande: (v) => sim + fmtGrandeF(v),
+    mult: (v) => fmtNum(v, 2), yield: (v) => fmtNum(v, Math.abs(v) < 1 ? 2 : 1) + "%",
+  };
+  const blocos = [
+    ["Pregão", [["Fechamento anterior", "prevClose", "preco"], ["Abertura", "abertura", "preco"], ["Volume", "vol", "grande"], ["Volume médio (3m)", "volMedio3m", "grande"]]],
+    ["Retorno", [["Variação no ano", "varAno", "pct"], ["Variação em 1 ano", "var1a", "pct"]]],
+    ["Tamanho", [["Valor de mercado", "cap", "moedaGrande"], ["Ações em circulação", "acoesCirc", "grande"]]],
+    ["Múltiplos e dividendos", [["LPA", "lpa", "preco"], ["P/L", "pl", "mult"], ["P/VP", "pvp", "mult"], ["Dividendo 12m", "dividendo12m", "preco"], ["Dividend yield", "dy", "yield"], ["Beta", "beta", "mult"]]],
+  ];
+  const grade = el("div", { class: "ficha-estat" });
+  for (const [titulo, linhas] of blocos) {
+    const dl = el("dl", {});
+    for (const [rot, k, fmt] of linhas) {
+      const v = h[k];
+      const tem = v != null && v !== "" && Number.isFinite(Number(v));
+      const dd = tem ? el("dd", { class: fmt === "pct" ? corDe(v) : "" }, F[fmt](v)) : el("dd", { class: "sem-dado", title: motivo(k) }, "–");
+      dl.append(el("div", {}, el("dt", {}, rot), dd));
+    }
+    grade.append(el("div", { class: "ficha-bloco" }, el("h4", {}, titulo), dl));
+  }
+  return el("section", { class: "ativo-sec" }, el("h3", {}, "Estatísticas"), grade);
+}
+const fmtDataLonga = (dia) => { const [a, m, d] = dia.split("-"); return d + "/" + m + "/" + a; };
+function sobreEmpresa(h) {
+  const itensS = [["Setor", setorPt(h.setor)], ["Indústria", h.industria], ["Bolsa", bolsaPt(h.bolsa)], ["Funcionários", h.funcionarios ? fmtNum(h.funcionarios, 0) : ""],
+    ["Próximo balanço", /^\d{4}-\d{2}-\d{2}$/.test(h.proximoBalanco || "") ? fmtDataLonga(h.proximoBalanco) : ""]].filter((i) => i[1]);
+  const site = siteSeguro(h.site);
+  if (!itensS.length && !site && !h.descricao) return null;
+  const sec = el("section", { class: "ativo-sec" }, el("h3", {}, "Sobre a empresa"));
+  if (itensS.length) sec.append(el("dl", { class: "ativo-sobre" }, ...itensS.map(([r, v]) => el("div", {}, el("dt", {}, r), el("dd", {}, v)))));
+  if (h.descricao) sec.append(el("p", { class: "ficha-desc" }, h.descricao));
+  if (site) sec.append(el("p", { class: "ativo-sobre-pe" }, el("a", { href: site, target: "_blank", rel: "noopener noreferrer" }, site.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))));
+  return sec;
+}
+/* "Na B3: NVDC34 R$ 18,40 (+2,9%)" na ficha de um papel dos EUA, "Nos EUA: NVDA US$ 201,30" na de um BDR. Só quando o outro papel
+   está nas cotações (meta/b3 ou meta/eua). Clicar troca a ficha. */
+async function listagemFicha(r) {
+  if (!r || !r.cruzado) return null;
+  const [m, t] = r.cruzado.split(":");
+  const doc = m === "BR" ? b3 || (await lerMeta("b3")) : eua || (await lerMeta("eua"));
+  if (!doc) return null;
+  let linha = null, aba = "";
+  if (m === "BR") { linha = (doc.bdrs || []).find((x) => x.t === t); aba = "bdrs"; }
+  else {
+    linha = (doc.acoes || []).find((x) => x.t === t); aba = "usacoes";
+    if (!linha) { linha = (doc.etfs || []).find((x) => x.t === t); aba = "usetfs"; }
+    if (linha) linha = { ...linha, us: true, liq: linha.liq ?? (linha.vol != null && linha.preco != null ? linha.vol * linha.preco : null) };
+  }
+  if (!linha) return null;
+  if (m === "BR") linha = comCvm(linha);
+  const b = el("button", { type: "button", class: "ficha-lst", "aria-haspopup": "dialog", title: "Abrir a ficha de " + t },
+    el("span", { class: "ficha-lst-rot" }, m === "BR" ? "Na B3" : "Nos EUA"), papelEl(t, linha), el("span", {}, fmtPreco(linha)),
+    linha.var != null ? el("span", { class: corDe(linha.var) }, "(" + fmtPct1(linha.var) + ")") : null);
+  b.addEventListener("click", () => abrirAtivo(linha, aba));
+  return el("section", { class: "ativo-sec" }, el("h3", {}, "Outras listagens"), b);
+}
+function esqueletoFicha() {
+  const bloco = (n) => el("div", { class: "ficha-esq-bloco" }, ...Array.from({ length: n }, () => el("span", { class: "esq" })));
+  return el("div", { class: "ficha-esq", "aria-busy": "true", "aria-label": "Carregando dados detalhados" },
+    el("div", { class: "ficha-esq-faixas" }, bloco(2)), el("span", { class: "esq ficha-esq-graf" }), el("div", { class: "ficha-esq-grade" }, bloco(4), bloco(4)));
+}
+/* Detalhe de um papel, num diálogo: ficha (cotação, faixas, gráfico de 1 ano, estatísticas, perfil), indicadores e histórico
+   mensal (FIIs) e notícias do feed que citam o papel. `ficha`: { carregando } ou { r } (resposta da /api/papel); sem ele,
+   abre na hora com a cotação da lista e redesenha quando a resposta chega. */
+function abrirAtivo(x, aba = cotAba, ficha) {
   let d = $("ativo-dlg");
   if (!d) {
     d = el("dialog", { id: "ativo-dlg", class: "ativo-dlg", "aria-labelledby": "ativo-titulo" });
     d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
     document.body.append(d);
   }
+  /* redesenho da mesma ficha (a resposta chegou): mantém a rolagem e o foco dentro do diálogo */
+  const mesma = d.open && d.dataset.papel === x.t;
+  const rolou = mesma ? d.scrollTop : 0, focoDentro = mesma && d.contains(document.activeElement);
   d.textContent = "";
   d.dataset.papel = x.t;
+  const us = !!x.us || ABAS_EUA.has(aba), bdr = aba === "bdrs";
+  const fid = idFicha(x, aba), completa = FICHA_COMPLETA.has(aba) && !x.f;
+  if (ficha === undefined) {
+    const pronta = fichaPronta(fid);
+    ficha = pronta ? { r: pronta } : { carregando: true };
+    if (!pronta) lerFicha(fid).then((r) => { const dd = $("ativo-dlg"); if (dd && dd.open && dd.dataset.ficha === fid) abrirAtivo(x, aba, { r }); });
+  }
+  d.dataset.ficha = fid;
+  d.classList.toggle("ficha", completa);
+  const resp = ficha.r || null;
+  const h = resp && resp.existe && resp.data && Array.isArray(resp.data.fechamentos) ? juntarFicha(resp.data, x, us) : null;
   /* FII vindo do resumo: o diálogo abre já e ganha o histórico quando o meta/fii chegar */
   let esperandoHist = false;
   if (x.f && !x.f.h) {
@@ -2173,34 +2529,72 @@ function abrirAtivo(x, aba = cotAba) {
   const fechar = el("button", { type: "button", class: "dd-btn dd-btn--ghost dd-btn--icon ativo-fechar", "aria-label": "Fechar" }, "✕");
   fechar.addEventListener("click", () => d.close());
   const chips = el("div", { class: "ativo-chips" });
-  const us = !!x.us || ABAS_EUA.has(aba), bdr = aba === "bdrs";
-  const tipo = aba === "usetfs" ? "ETF nos EUA" : us ? "Ação nos EUA" : bdr ? "BDR" : aba === "fiis" ? "Fundo imobiliário" : aba === "etfs" ? "ETF" : "Ação";
+  const tipo = aba === "usetfs" ? "ETF nos EUA" : us ? "Ação nos EUA" : bdr ? "BDR" : aba === "fiis" ? "Fundo imobiliário" : aba === "etfs" ? "ETF" : "Ação na B3";
   /* FII: tipo, mandato, gestão, segmento e prazo, nessa ordem; o que não veio da CVM não vira chip */
   const prazo = f && prazoTexto(f.pz);
-  [tipo, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), f && f.s && segNome(f.s), prazo && prazo.chip, !f && !bdr && x.setor].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
+  [tipo, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), f && f.s && segNome(f.s), prazo && prazo.chip].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
   if (bdr && x.pais) chips.append(el("span", { class: "chip" }, emojiPais(x.pais), "Empresa de " + ((nomesPais && nomesPais.of(x.pais)) || x.pais)));
+  const setor = !f && setorPt(x.setor || (completa && h && h.setor));
+  if (setor && setor !== "ETF") chips.append(el("span", { class: "chip" }, setor));
+  const nome = f && f.n ? nomeBonito(f.n) : x.nome || (h && (h.nomeCurto || h.nome)) || "";
   d.append(el("div", { class: "ativo-cab" },
-    el("div", {}, el("h2", { id: "ativo-titulo" }, papelEl(x.t, us ? { ...x, us: true } : x)), el("p", { title: (f && f.n) || x.nome || "" }, f && f.n ? nomeBonito(f.n) : x.nome), chips), fechar));
-  const k = (rot, val, sub, cls) => el("div", { class: "ativo-kpi" }, el("small", {}, rot), el("b", { class: cls || "" }, val), sub ? el("span", {}, sub) : null);
-  const grade = el("div", { class: "ativo-grade" },
-    k("Cotação", fmtPreco(x), x.preco == null ? (us ? "sem cotação aqui" : "fora dos mais negociados") : x.var == null ? "" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "% no dia", x.var > 0 ? "sobe" : x.var < 0 ? "desce" : ""),
-    k("Liquidez diária", x.liq == null ? "–" : simMoeda(x) + fmtVol(x.liq), x.vol ? fmtVol(x.vol) + (us && aba !== "usetfs" ? " ações negociadas" : bdr ? " BDRs negociados" : " cotas negociadas") : ""));
-  if (us && x.preco != null) {
-    grade.append(
-      k("Abertura", fmtPreco(x, x.abre), "hoje"),
-      k("Máxima do dia", fmtPreco(x, x.max), ""),
-      k("Mínima do dia", fmtPreco(x, x.min), ""),
-      k("Fechamento anterior", fmtPreco(x, x.ant), "base da variação"));
-  } else if (f) {
-    grade.append(
-      k("DY 12 meses", x.dy == null ? "–" : fmtNum(x.dy, 2) + "%", x.dyAnual ? "anualizado, menos de 12 informes" : "rendimentos dos últimos 12 informes ÷ cotação"),
-      k("Último rendimento", fmtRs(x.rend), "por cota, estimado (" + fmtMes(f.ref) + ")"),
-      k("P/VP", x.pvp == null ? "–" : fmtNum(x.pvp, 2), x.pvp == null ? "" : x.pvp < 1 ? "cota abaixo do patrimônio" : "cota acima do patrimônio"),
-      k("Valor patrimonial", fmtRs(f.vp), "por cota"),
-      k("Patrimônio líquido", f.pl ? "R$ " + fmtVol(f.pl) : "–", ""),
-      k("Cotistas", f.cot == null ? "–" : fmtNum(f.cot, 0), f.cotas ? fmtVol(f.cotas) + " cotas emitidas" : ""));
-  } else if (x.cap) grade.append(k("Valor de mercado", "R$ " + fmtVol(x.cap), ""));
-  d.append(grade);
+    el("div", {}, el("h2", { id: "ativo-titulo" }, papelEl(x.t, us ? { ...x, us: true } : x)), el("p", { title: (f && f.n) || nome }, nome), chips), fechar));
+  const sim = h ? simDe(h.moeda) : simMoeda(us ? { us: true } : x);
+  const fmtP = (v) => (v == null ? "–" : sim + fmtNum(v, 2));
+  if (completa) {
+    /* Cabeçalho da ficha: preço grande, variação do dia em valor e em %, estado do pregão e, nos EUA, pré e pós quando vierem */
+    const preco = h ? h.preco : x.preco, vr = h ? h.var : x.var, ant = h ? h.prevClose : x.ant;
+    const dif = preco != null && ant ? preco - ant : null;
+    const quando = h ? h.quando : us ? x.quando : x.preco != null && b3 ? b3.atualizado : "";
+    const topo = el("div", { class: "ficha-topo" },
+      el("div", { class: "ficha-preco" }, el("b", {}, fmtP(preco)),
+        vr != null ? el("span", { class: corDe(vr) }, (vr > 0 ? "+" : "") + fmtNum(vr, 2) + "%" + (dif != null ? " (" + (dif > 0 ? "+" : dif < 0 ? "−" : "") + fmtNum(Math.abs(dif), 2) + ")" : "")) : null),
+      linhaPregao(us, quando));
+    for (const [k, rot] of [["pre", "Pré-abertura"], ["pos", "Pós-mercado"]]) {
+      const pp = us && h && h[k];
+      if (pp && pp.preco != null) topo.append(el("p", { class: "ficha-prepos" }, rot + ": ", el("b", {}, fmtP(pp.preco)), pp.var != null ? el("span", { class: corDe(pp.var) }, " " + fmtPct1(pp.var)) : null));
+    }
+    d.append(topo);
+  } else {
+    const k = (rot, val, sub, cls) => el("div", { class: "ativo-kpi" }, el("small", {}, rot), el("b", { class: cls || "" }, val), sub ? el("span", {}, sub) : null);
+    const grade = el("div", { class: "ativo-grade" },
+      k("Cotação", fmtPreco(x), x.preco == null ? (us ? "sem cotação aqui" : "fora dos mais negociados") : x.var == null ? "" : (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "% no dia", x.var > 0 ? "sobe" : x.var < 0 ? "desce" : ""),
+      k("Liquidez diária", x.liq == null ? "–" : simMoeda(x) + fmtVol(x.liq), x.vol ? fmtVol(x.vol) + (us && aba !== "usetfs" ? " ações negociadas" : bdr ? " BDRs negociados" : " cotas negociadas") : ""));
+    if (us && x.preco != null) {
+      grade.append(
+        k("Abertura", fmtPreco(x, x.abre), "hoje"),
+        k("Máxima do dia", fmtPreco(x, x.max), ""),
+        k("Mínima do dia", fmtPreco(x, x.min), ""),
+        k("Fechamento anterior", fmtPreco(x, x.ant), "base da variação"));
+    } else if (f) {
+      grade.append(
+        k("DY 12 meses", x.dy == null ? "–" : fmtNum(x.dy, 2) + "%", x.dyAnual ? "anualizado, menos de 12 informes" : "rendimentos dos últimos 12 informes ÷ cotação"),
+        k("Último rendimento", fmtRs(x.rend), "por cota, estimado (" + fmtMes(f.ref) + ")"),
+        k("P/VP", x.pvp == null ? "–" : fmtNum(x.pvp, 2), x.pvp == null ? "" : x.pvp < 1 ? "cota abaixo do patrimônio" : "cota acima do patrimônio"),
+        k("Valor patrimonial", fmtRs(f.vp), "por cota"),
+        k("Patrimônio líquido", f.pl ? "R$ " + fmtVol(f.pl) : "–", ""),
+        k("Cotistas", f.cot == null ? "–" : fmtNum(f.cot, 0), f.cotas ? fmtVol(f.cotas) + " cotas emitidas" : ""));
+    } else if (x.cap) grade.append(k("Valor de mercado", "R$ " + fmtVol(x.cap), ""));
+    d.append(grade);
+  }
+  /* Faixas e gráfico (todas as classes, quando o dado existe); o resto da ficha só em ações, BDRs e ações dos EUA */
+  if (h) {
+    const fx = faixasFicha(h, fmtP), gr = graficoFicha(h, fmtP);
+    if (fx) d.append(fx);
+    if (gr) d.append(gr);
+    if (completa) {
+      d.append(estatFicha(h, resp, fmtP));
+      const sobre = sobreEmpresa(h);
+      if (sobre) d.append(sobre);
+      const slotLst = el("div", { class: "ficha-slot-lst" });
+      d.append(slotLst);
+      listagemFicha(resp).then((s) => { if (s && slotLst.isConnected) slotLst.replaceWith(s); }).catch(() => {});
+    }
+    if (resp.velho) d.append(el("p", { class: "nota ficha-aviso" }, "Dados detalhados de " + fmtData(resp.data.atualizado) + ". " + (resp.erro || "")));
+  } else if (completa) {
+    if (ficha.carregando) d.append(esqueletoFicha());
+    else d.append(el("p", { class: "nota ficha-aviso", role: "status" }, "Dados detalhados indisponíveis agora."));
+  }
   /* Sobre o fundo logo abaixo dos indicadores; com o resumo ainda sem o histórico, espera o meta/fii (traz administrador e o resto) */
   if (f && !esperandoHist) d.append(sobreFundo(f, prazo));
   if (f && f.h && f.h.length) {
@@ -2226,6 +2620,7 @@ function abrirAtivo(x, aba = cotAba) {
     d.append(el("section", { class: "ativo-sec" }, el("h3", {}, "No feed"), ul));
   }
   const links = el("p", { class: "ativo-links" });
+  const linkYahoo = () => el("a", { href: "https://finance.yahoo.com/quote/" + encodeURIComponent(us ? x.t.replace(".", "-") : x.t + ".SA"), target: "_blank", rel: "noopener" }, "Yahoo Finance");
   if (f) {
     links.append(el("a", { href: "https://www.fundsexplorer.com.br/funds/" + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Funds Explorer"), " · ",
       el("a", { href: "https://investidor10.com.br/fiis/" + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"), " · ",
@@ -2233,18 +2628,30 @@ function abrirAtivo(x, aba = cotAba) {
     d.append(el("p", { class: "nota" }, `Cotistas, patrimônio, VP, DY, mandato e administrador vêm do informe mensal entregue à CVM (último: ${fmtMes(f.ref)}); o rendimento por cota é estimado a partir do DY do mês sobre o patrimônio. Confira o valor exato no aviso aos cotistas.`));
   } else if (us) {
     const yahoo = x.t.replace(".", "-");
-    links.append(el("a", { href: "https://finance.yahoo.com/quote/" + encodeURIComponent(yahoo), target: "_blank", rel: "noopener" }, "Yahoo Finance"));
+    links.append(linkYahoo());
     if (aba !== "usetfs") links.append(" · ", el("a", { href: "https://investidor10.com.br/stocks/" + yahoo.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"));
-    d.append(el("p", { class: "nota" }, `Cotação em dólar, com atraso, fonte ${(eua && eua.fonte) || "Yahoo Finance"}` + (x.quando ? ` (dado de ${fmtData(x.quando)})` : "") + ". A variação compara com o fechamento do pregão anterior em Nova York."));
+    if (!completa) d.append(el("p", { class: "nota" }, `Cotação em dólar, com atraso, fonte ${(eua && eua.fonte) || "Yahoo Finance"}` + (x.quando ? ` (dado de ${fmtData(x.quando)})` : "") + ". A variação compara com o fechamento do pregão anterior em Nova York."));
   } else if (bdr) {
-    links.append(el("a", { href: "https://investidor10.com.br/bdrs/" + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"), " · ",
+    links.append(linkYahoo(), " · ", el("a", { href: "https://investidor10.com.br/bdrs/" + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"), " · ",
       el("a", { href: "https://statusinvest.com.br/bdrs/" + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"));
   } else {
+    if (completa) links.append(linkYahoo(), " · ");
     links.append(el("a", { href: "https://statusinvest.com.br/" + (aba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Status Invest"), " · ",
       el("a", { href: "https://investidor10.com.br/" + (aba === "etfs" ? "etfs/" : "acoes/") + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"));
   }
+  if (completa) {
+    /* Rodapé com as fontes que de fato entraram nesta ficha */
+    const fontes = h && Array.isArray(h.fontes) && h.fontes.length ? h.fontes.slice() : [];
+    if (!fontes.length) fontes.push(us ? (eua && eua.fonte) || "Yahoo Finance" : "brapi");
+    if (!us && !fontes.includes("brapi")) fontes.push("brapi (cotação da lista)");
+    d.append(el("p", { class: "nota" }, "Fontes: " + fontes.join(", ") + ". Dados com atraso" + (h ? ", ficha de " + fmtData(resp.data.atualizado) : "") + (us ? ", em dólar" : "") + ". Nada aqui é recomendação."));
+  }
   d.append(links);
   if (!d.open) d.showModal();
+  else {
+    if (rolou) d.scrollTop = rolou;
+    if (focoDentro) fechar.focus({ preventScroll: true });
+  }
 }
 async function lerMercado(fresco) {
   if (!R().mercado) return;

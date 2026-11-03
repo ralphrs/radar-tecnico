@@ -8,13 +8,16 @@ import { secoesDe, secaoDe, libera, adminGrupos, adminMembro, guardarSecoes, SEC
 import { cronSonda, adminSonda } from "./sonda.js";
 import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1, gravarNoEspelho, removerDoEspelho } from "./espelho.js";
 import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
+import { rotaPapel, cronPapel, ID_OK as PAPEL_ID_OK } from "./papel.js";
+import { BDR_DE_US, US_DE_BDR } from "./bdr.js";
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
 export { Espelho } from "./espelho.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
 const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos"]);
-const DOCS = new Set([...LISTAS, "meta"]);
+// hist: fichas de papel (src/papel.js), um doc por papel ("US:NVDA", "BR:PETR4"); a página lê pela /api/papel.
+const DOCS = new Set([...LISTAS, "meta", "hist"]);
 const CAMPOS_ORDEM = new Set(["coletado", "data", "publicado"]);
 const OPS = new Set(["<", "<=", ">", ">="]);
 
@@ -23,9 +26,9 @@ const json = (dados, status = 200) =>
 
 const agoraIso = () => new Date().toISOString();
 
-function pagina(titulo, corpo, status) {
+function pagina(titulo, corpo, status, extraHead = "") {
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${titulo} · Lookout</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>
+<title>${titulo} · Lookout</title><link rel="icon" href="/favicon.svg" type="image/svg+xml">${extraHead}<style>
 :root{color-scheme:light dark;--bg:#f7f7f8;--fg:#18181b;--mut:#6b6b76;--card:#fff;--line:#e4e4e7;--pri:#5b4bdb}
 @media (prefers-color-scheme:dark){:root{--bg:#111114;--fg:#ececf1;--mut:#9a9aa6;--card:#1b1b20;--line:#2c2c33;--pri:#9d92ff}}
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px;box-sizing:border-box}
@@ -366,6 +369,22 @@ async function painelHoje(env, quem, request) {
   }, request);
 }
 
+// Ficha do papel: lê `hist` pelo espelho (D1 de reserva) e, se faltar ou tiver mais de 24 h, busca nas fontes,
+// grava no D1 e empurra ao espelho. Regras e fontes em src/papel.js. Sem cache de borda: a resposta muda com o token
+// (o admin vê quais secrets faltam) e o próprio `hist` já é o cache de 24 h.
+async function fichaPapel(url, env, quem) {
+  if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
+  const id = String(url.searchParams.get("id") || "").toUpperCase();
+  if (!PAPEL_ID_OK.test(id)) return json({ erro: "id" }, 400);
+  const ler = async (i) => { const r = await lerLinha(env, "hist", i); return r ? JSON.parse(r.data) : null; };
+  const r = await rotaPapel(env, quem, id, { ler, gravarNoEspelho });
+  // Listagem cruzada (BDR <-> EUA): a página só mostra se o outro papel estiver em meta/b3 ou meta/eua
+  const [m, t] = id.split(":");
+  const outro = m === "US" ? BDR_DE_US[t] && "BR:" + BDR_DE_US[t] : US_DE_BDR[t] && "US:" + US_DE_BDR[t];
+  if (outro) r.cruzado = outro;
+  return json(r);
+}
+
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Rendimento das fontes nos últimos 10 dias (o tempo que os candidatos ficam no banco)
@@ -432,6 +451,18 @@ export default {
 
     if (p.startsWith("/seed/")) return new Response("Não encontrado", { status: 404 });
 
+    // Página do convite, pública: é o que o WhatsApp e o e-mail visitam para montar a prévia com o logotipo.
+    // Não tem dado nenhum, só o cartão e o botão de entrar. O Access precisa de uma política Bypass em /convite*.
+    if (p === "/convite" || p === "/convite.png") {
+      if (p === "/convite.png") return env.ASSETS.fetch(request);
+      const base = url.origin;
+      const og = `<meta property="og:type" content="website"><meta property="og:site_name" content="Lookout"><meta property="og:title" content="Lookout">` +
+        `<meta property="og:description" content="Radar pessoal de notícias: tech, negócios, investimentos, política e esportes, atualizado o dia todo. Só para convidados."><meta property="og:url" content="${base}/convite">` +
+        `<meta property="og:image" content="${base}/convite.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image">`;
+      const r = pagina("Convite", `<h1>Você foi convidado para o Lookout</h1><p>Radar pessoal de notícias: tech, negócios, investimentos, política e esportes, atualizado o dia todo.</p><p>Entre com o Google ou peça um código no e-mail que recebeu o convite.</p><p><a href="/" style="display:inline-block;margin-top:8px;padding:10px 16px;border-radius:8px;background:var(--pri);color:#fff;text-decoration:none;font-weight:600">Entrar no Lookout</a></p>`, 200, og);
+      return new Response(r.body, { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=3600" } });
+    }
+
     // Arquivos estáticos (ícones, imagens) só precisam do login. A lista de convidados é conferida
     // na página principal, no /admin e na API, que é onde estão os dados.
     const estatico = p !== "/" && p !== "/index.html" && !p.startsWith("/api/") && !p.startsWith("/admin");
@@ -461,6 +492,7 @@ export default {
       return prefsPainel(request, env, quem);
     }
     if (p === "/api/painel/hoje" && request.method === "GET") return painelHoje(env, quem, request);
+    if (p === "/api/papel" && request.method === "GET") return fichaPapel(url, env, quem);
     if (p === "/api/listas" || p.startsWith("/api/listas/")) {
       const idLista = p.length > 12 ? decodificar(p.slice(12)) : "";
       if (idLista === null) return json({ erro: "id" }, 400);
@@ -507,6 +539,7 @@ export default {
     try { await cronEua(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("eua", e); }
     try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
     try { await cronSonda(env); } catch (e) { console.error("sonda", e); }
+    try { const r = await cronPapel(env, evento.scheduledTime || Date.now()); if (r && r.candidatos) console.log("papel", JSON.stringify(r)); } catch (e) { console.error("papel", e); }
     if (minuto === 7) {
       // Índice que a coleta precisa (barato: só confere o catálogo). Fica aqui para valer mesmo onde o schema.sql não foi reaplicado.
       try { await env.DB.prepare("CREATE INDEX IF NOT EXISTS docs_url ON docs (json_extract(data, '$.url'))").run(); } catch (e) { console.error("indice", e); }

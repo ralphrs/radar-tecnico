@@ -2,6 +2,7 @@
 // A tarefa de curadoria (Claude) só lê os candidatos novos, escolhe, resume e grava os itens.
 // Aqui também fica a limpeza por idade, que antes era feita pelas tarefas.
 import { FEEDS } from "./feeds.js";
+import { histParaApagar } from "./papel.js";
 
 const INTERVALO_MIN = 90;      // cada feed é lido no máximo a cada 90 minutos
 const FEEDS_POR_MINUTO = 6;    // o cron roda de minuto em minuto
@@ -196,7 +197,7 @@ function vencido(radar, item, coletado, t) {
   return t - ref > dias * DIA;
 }
 
-// Só mexe nas collections de itens e destaques e em candidatos: favs/, listas/ e prefs/ (de cada pessoa) ficam de fora.
+// Só mexe nas collections de itens e destaques, em hist (fichas de papel) e em candidatos: favs/, listas/ e prefs/ (de cada pessoa) ficam de fora.
 export async function limpar(env) {
   const t = Date.now();
   const relatorio = {};
@@ -217,6 +218,15 @@ export async function limpar(env) {
     const r = await env.DB.prepare("DELETE FROM docs WHERE collection = ? AND substr(id, 2) < ?").bind(c, corte).run();
     relatorio[c] = r.meta?.changes ?? 0;
   }
+  // Fichas de papel (hist) que ninguém abre há mais de 30 dias: DELETE por lista de ids, em lotes de 90
+  try {
+    const hist = await histParaApagar(env);
+    for (let k = 0; k < hist.length; k += 90) {
+      const parte = hist.slice(k, k + 90);
+      await env.DB.prepare(`DELETE FROM docs WHERE collection = 'hist' AND id IN (${parte.map((_, j) => `?${j + 1}`).join(",")})`).bind(...parte).run();
+    }
+    relatorio.hist = hist.length;
+  } catch (e) { relatorio.hist = "erro: " + String(e.message || e).slice(0, 100); }
   const r = await env.DB.prepare("DELETE FROM candidatos WHERE visto < ?").bind(new Date(t - 10 * DIA).toISOString()).run();
   relatorio.candidatos = r.meta?.changes ?? 0;
   await env.DB.prepare(

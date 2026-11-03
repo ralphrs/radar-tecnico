@@ -50,6 +50,8 @@ Investimentos
 - [x] Detalhe do papel, com gráfico e link para o Investidor10 (01/11)
 - [x] Duas visões: Bolsa (principal) e Notícias, com letreiro de índices fixo (01/11)
 - [x] Listas de acompanhamento por pessoa, bem simples: nome da lista e tickers (sem quantidade nem preço médio), para espelhar o que cada um tem na própria instituição (01/11)
+- [x] Ficha do papel para ações da B3, BDRs e ações dos EUA: faixas do dia e de 52 semanas, gráfico de 1 ano (1M · 3M · 1A), estatísticas, perfil, listagem cruzada BDR e EUA, cache de 24 h em `hist` e renovação no cron do que foi aberto na semana (03/11)
+- [ ] Ficha com os fundamentos completos: falta o Ralph colar o `FINNHUB_TOKEN` (EUA) e o `BRAPI_TOKEN` (B3); conferir na `_sistema/sonda-brapi-quote` os campos que a brapi mandou de verdade
 - [ ] Token da brapi como secret do Worker (o Ralph cria a conta e cola no painel); hoje só o Ibovespa depende dele
 
 ## Depois: React com SSR
