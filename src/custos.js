@@ -7,12 +7,21 @@
 // Sem o token, mostramos só o que dá para medir daqui: tamanho aproximado dos dados e rodadas de curadoria.
 //
 // Os limites e preços abaixo são os publicados pela Cloudflare (Workers e D1, out/2026). Se mudarem, ajuste aqui.
+//
+// Espelho em São Paulo (Durable Object com SQLite, src/espelho.js): as linhas lidas e gravadas nele têm os mesmos
+// valores do D1 (25 bi lidas e 50 mi gravadas por mês incluídas), mas numa cota separada, não somada à do D1.
+// Além delas o DO cobra requisições (cada chamada RPC conta uma) e duração enquanto está ativo, em pago.espelho.
+// O card de custos ainda não consulta o uso do DO na API de analytics; por ora é só referência.
 
 export const PLANOS = {
   gratis: { workersReqDia: 100_000, d1LidasDia: 5_000_000, d1GravadasDia: 100_000, d1Bytes: 5e9 },
   pago: {
     mensal: 5, workersReqMes: 10_000_000, porMilhaoReq: 0.3,
     d1LidasMes: 25e9, porMilhaoLidas: 0.001, d1GravadasMes: 50e6, porMilhaoGravadas: 1, d1Bytes: 5e9, porGBMes: 0.75,
+    espelho: {
+      reqMes: 1e6, porMilhaoReq: 0.15, duracaoGBsMes: 400_000, porMilhaoGBs: 12.5,
+      lidasMes: 25e9, porMilhaoLidas: 0.001, gravadasMes: 50e6, porMilhaoGravadas: 1, bytes: 5e9, porGBMes: 0.2,
+    },
   },
 };
 

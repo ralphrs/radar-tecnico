@@ -16,8 +16,15 @@
   "triggers": { "crons": ["* * * * *"] },
   // ADMIN_EMAIL, ACCESS_TEAM_DOMAIN e ACCESS_AUD ficam nas variáveis do painel do Cloudflare (não no repositório).
   "keep_vars": true,
-  // Roda o Worker perto do banco D1 (leste dos EUA): cada requisição faz consultas ao banco,
-  // e é mais rápido fazer uma viagem longa do usuário até o Worker do que várias até o banco.
-  "placement": { "mode": "smart" },
+  // Sem Smart Placement: o Worker roda na borda, perto de quem acessa, e lê do espelho em São Paulo
+  // (Durable Object abaixo, src/espelho.js). O D1, no leste dos EUA, só entra nas gravações e quando o espelho falha.
+  //
+  // ESPELHO_ATIVO = "0" manda todas as leituras de volta ao D1. Dá para trocar no painel (Variables and Secrets)
+  // sem deploy; o próximo deploy volta ao valor daqui.
+  "vars": { "ESPELHO_ATIVO": "1" },
+  "durable_objects": {
+    "bindings": [{ "name": "ESPELHO", "class_name": "Espelho" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Espelho"] }],
   "observability": { "enabled": true }
 }

@@ -15,6 +15,7 @@
 - [x] Sonda de feeds no admin: cola as URLs, o cron testa 4 por minuto com o mesmo parser da coleta (01/11)
 - [x] Índice na URL dos itens: a coleta varria a tabela inteira a cada feed e estourou o limite diário de leituras do D1 (01/11)
 - [x] Cache de borda de 3 min nas leituras da API, para poupar o D1 (01/11)
+- [x] Espelho de leitura em São Paulo: Durable Object com SQLite copia do D1 o que a página lê, a cada minuto; Worker sem Smart Placement, D1 só nas gravações e no fallback (02/11)
 - [ ] Tech com curadoria nova em teste lado a lado; trocar depois da comparação (relatório em docs/relatorios/tech-sombra-2026-11-01.md)
 - [x] Notícias e Política (antes Política) e Esportes no modelo novo, só no D1 (Sonnet 3x/dia); filtro Nacional/Internacional
 - [x] Abas Negócios e Investimentos, já no modelo novo (plano abaixo)

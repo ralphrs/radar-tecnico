@@ -125,6 +125,14 @@ textarea{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:inheri
     <div id="custos"><p class="vazio">Carregando…</p></div>
   </section>
 
+  <section class="card" id="espelho-card">
+    <h2>Espelho em São Paulo</h2>
+    <p class="dica" style="margin-top:0">Cópia do que a página lê, num Durable Object em São Paulo. O D1 continua sendo a fonte; o cron copia o que mudou a cada minuto. Se o espelho falhar ou demorar mais de 2 s, a leitura vai direto ao D1.</p>
+    <div id="espelho"><p class="vazio">Carregando…</p></div>
+    <div class="sonda-acoes"><button class="pri" type="button" id="espelho-sync">Sincronizar agora</button><button type="button" class="perigo" id="espelho-zerar">Zerar e recarregar</button></div>
+    <p class="msg" id="msg-espelho" role="status"></p>
+  </section>
+
   <section class="card">
     <h2>Convidar alguém</h2>
     <form id="form">
@@ -392,6 +400,68 @@ async function carregarCustos() {
   } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
 }
 carregarCustos();
+
+/* Espelho em São Paulo */
+function avisoE(t, tipo) { const m = $("msg-espelho"); m.textContent = t; m.className = "msg " + (tipo || ""); }
+function haQuanto(iso) {
+  if (!iso) return "nunca";
+  const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+  if (s < 10) return "agora";
+  if (s < 60) return "há " + s + " s";
+  if (s < 3600) return "há " + Math.round(s / 60) + " min";
+  if (s < 86400) return "há " + Math.round(s / 3600) + " h";
+  return "há " + Math.round(s / 86400) + " dias";
+}
+const ms = (v) => (v == null ? "–" : fmt(v) + " ms");
+function pintarEspelho(r) {
+  const e = r.estado || {};
+  let h = "";
+  if (!r.ativo) h += '<p class="msg err">Desligado pela variável ESPELHO_ATIVO: todas as leituras estão indo ao D1.</p>';
+  else if (!e.pronto) h += '<p class="dica">Ainda não terminou a primeira carga. Enquanto isso as leituras vão ao D1.</p>';
+  h += '<div class="custo-topo">'
+    + kpi("Última sincronia", haQuanto(e.ultima_sincronia), e.ultima_sincronia ? dataCurta(e.ultima_sincronia) : "a primeira carga não terminou")
+    + kpi("Duração", ms(e.duracao_ms), e.ultima_tentativa ? "última tentativa " + haQuanto(e.ultima_tentativa) : "")
+    + kpi("Docs no espelho", fmt(e.docs), fmt(e.linhas || 0) + " linhas conferidas no D1" + (e.pendentes ? " · " + fmt(e.pendentes) + " na fila" : ""))
+    + kpi("Convidados e grupos", fmt(e.usuarios) + " / " + fmt(e.grupos), "cópia das tabelas do D1")
+    + "</div>";
+  if (e.erro) h += `<p class="msg err">Último erro: ${esc(e.erro)}</p>`;
+  const med = e.medicoes || [];
+  if (med.length) {
+    h += '<table class="custo-tab" style="white-space:nowrap"><thead><tr><th>Medição (20 itens de Tech)</th><th>Espelho</th><th>D1</th><th>Onde rodou</th></tr></thead><tbody>'
+      + med.map((m) => `<tr><td>${dataCurta(m.quando)}</td><td>${ms(m.espelho)}</td><td>${ms(m.d1)}</td><td>${esc(m.colo || "–")}</td></tr>`).join("")
+      + "</tbody></table>";
+    h += '<p class="dica">Cada vez que esta página abre, o Worker que atendeu você faz a mesma consulta nos dois bancos e guarda o tempo. As duas últimas ficam aqui.</p>';
+  }
+  if (e.porColecao && e.porColecao.length)
+    h += '<details><summary>Docs por coleção</summary><table class="custo-tab"><thead><tr><th>Coleção</th><th>Docs</th></tr></thead><tbody>'
+      + e.porColecao.map((x) => `<tr><td>${esc(x.collection)}</td><td>${fmt(x.n)}</td></tr>`).join("") + "</tbody></table></details>";
+  $("espelho").innerHTML = h;
+}
+async function carregarEspelho() {
+  try { pintarEspelho(await api("/api/admin/espelho")); }
+  catch (err) { $("espelho").innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
+}
+async function sincronizarEspelho(zerar) {
+  const bts = [$("espelho-sync"), $("espelho-zerar")];
+  bts.forEach((b) => (b.disabled = true));
+  avisoE(zerar ? "Esvaziando e recarregando…" : "Sincronizando…");
+  try {
+    const r = await api("/api/admin/espelho", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(zerar ? { zerar: true } : {}) });
+    pintarEspelho(r);
+    const s = r.sincronia || {};
+    if (!r.ok) avisoE("Não terminou: " + (s.erro || "erro desconhecido"), "err");
+    else avisoE(`Pronto em ${ms(s.duracao_ms)}: ${fmt(s.aplicados)} copiados, ${fmt(s.removidos)} removidos` + (s.pendentes ? `, ${fmt(s.pendentes)} ficaram para a próxima rodada.` : "."), "ok");
+  } catch (err) { avisoE(err.message, "err"); }
+  bts.forEach((b) => (b.disabled = false));
+}
+$("espelho-sync").addEventListener("click", () => sincronizarEspelho(false));
+$("espelho-zerar").addEventListener("click", (ev) => {
+  const bt = ev.currentTarget;
+  if (bt.dataset.conf !== "1") { bt.dataset.conf = "1"; bt.textContent = "Confirmar"; setTimeout(() => { bt.dataset.conf = ""; bt.textContent = "Zerar e recarregar"; }, 4000); return; }
+  bt.dataset.conf = ""; bt.textContent = "Zerar e recarregar";
+  sincronizarEspelho(true);
+});
+carregarEspelho();
 
 function avisoS(t, tipo) { const m = $("msg-sonda"); m.textContent = t; m.className = "msg " + (tipo || ""); }
 function dataCurta(iso) {

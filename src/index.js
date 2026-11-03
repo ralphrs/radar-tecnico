@@ -4,8 +4,12 @@ import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
 import { cronEua } from "./eua.js";
 import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
 import { adminCustos } from "./custos.js";
-import { secoesDe, secaoDe, libera, adminGrupos, adminMembro } from "./grupos.js";
+import { secoesDe, secaoDe, libera, adminGrupos, adminMembro, guardarSecoes } from "./grupos.js";
 import { cronSonda, adminSonda } from "./sonda.js";
+import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho } from "./espelho.js";
+
+// O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
+export { Espelho } from "./espelho.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
 const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos"]);
@@ -34,13 +38,25 @@ h1{font-size:20px;margin:0 0 8px}p{color:var(--mut);margin:8px 0}a{color:var(--p
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 // Lista de convidados guardada na memória do Worker por 60 s, para não ir ao banco a cada requisição.
-// Quem é removido da lista perde o acesso em no máximo 1 minuto.
+// Quem é removido da lista perde o acesso em no máximo 1 minuto (mais o tempo da sincronia do espelho,
+// que o admin dispara na hora ao remover alguém).
+// A leitura vai primeiro ao espelho, que já devolve as seções da pessoa; sem espelho, ao D1 como antes.
 const convidados = new Map();
 const CONVITE_TTL = 60_000;
 async function buscarConvidado(env, email) {
   const c = convidados.get(email);
   if (c && Date.now() - c.em < CONVITE_TTL) return c.u;
-  const u = await env.DB.prepare("SELECT email, nome, ultimo_acesso FROM usuarios WHERE email = ?").bind(email).first();
+  let u;
+  const e = await convidadoNoEspelho(env, email);
+  if (e) {
+    u = e.usuario;
+    guardarSecoes(email, e.secoes);
+  } else {
+    const t0 = Date.now();
+    u = await env.DB.prepare("SELECT email, nome, ultimo_acesso FROM usuarios WHERE email = ?").bind(email).first();
+    console.log(JSON.stringify({ leitura: "d1", rotulo: "convidado", ms: Date.now() - t0 }));
+  }
+  if (convidados.size > 500) convidados.clear();
   convidados.set(email, { u, em: Date.now() });
   // marca o último acesso no máximo uma vez por hora, fora do caminho da resposta
   const umaHora = new Date(Date.now() - 3600_000).toISOString();
@@ -122,6 +138,25 @@ function linhaParaDoc(r) {
   return { id: r.id, data: JSON.parse(r.data) };
 }
 
+// Leitura de lista e de documento: espelho em São Paulo primeiro, D1 se ele não responder.
+// Os dois lados logam o tempo ({ leitura, rotulo, ms }) para comparar nos logs do Worker.
+async function lerLinhas(env, sql, args) {
+  const e = await doEspelho(env, "lista", (s) => s.consultar(sql, args));
+  if (e) return e.linhas;
+  const t0 = Date.now();
+  const { results } = await env.DB.prepare(sql).bind(...args).all();
+  console.log(JSON.stringify({ leitura: "d1", rotulo: "lista", ms: Date.now() - t0 }));
+  return results;
+}
+async function lerLinha(env, c, id) {
+  const e = await doEspelho(env, "doc", (s) => s.doc(c, id));
+  if (e) return e.linha;
+  const t0 = Date.now();
+  const r = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = ?").bind(c, id).first();
+  console.log(JSON.stringify({ leitura: "d1", rotulo: "doc", ms: Date.now() - t0 }));
+  return r;
+}
+
 async function consultar(url, env, quem, request) {
   const c = url.searchParams.get("c");
   if (!LISTAS.has(c)) return json({ erro: "collection" }, 400);
@@ -143,7 +178,7 @@ async function consultar(url, env, quem, request) {
   sql += ` ORDER BY ${campoOrdem} ${dir} LIMIT ?`;
   args.push(limite);
   return comCache(sql + "|" + args.join("|"), async () => {
-    const { results } = await env.DB.prepare(sql).bind(...args).all();
+    const results = await lerLinhas(env, sql, args);
     return { docs: results.map(linhaParaDoc) };
   }, request);
 }
@@ -155,7 +190,7 @@ async function lerDoc(url, env, quem, request) {
   // Convidado só lê documentos de meta conhecidos e das seções liberadas; o admin lê qualquer um.
   if (!quem.admin && !libera(quem.secoes, secaoDe(c, id))) return json({ erro: "secao" }, 403);
   return comCache("doc|" + c + "|" + id, async () => {
-    const r = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = ?").bind(c, id).first();
+    const r = await lerLinha(env, c, id);
     return r ? { existe: true, ...linhaParaDoc(r) } : { existe: false, id };
   }, request);
 }
@@ -342,7 +377,9 @@ export default {
     if (p === "/api/doc" && request.method === "GET") return lerDoc(url, env, quem, request);
     if (p === "/api/mercado/atualizar" && request.method === "POST") {
       if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
-      return json(await pedirAtualizacao(env));
+      const painel = await pedirAtualizacao(env);
+      if (!painel.aguarde) ctx.waitUntil(sincronizarEspelho(env));
+      return json(painel);
     }
     if (p === "/api/favs" || p.startsWith("/api/favs/"))
       return favoritos(request, env, quem, p.length > 10 ? decodeURIComponent(p.slice(10)) : "");
@@ -359,12 +396,15 @@ export default {
       const resto = (n) => decodificar(p.slice(n));
       if ((p.startsWith("/api/admin/usuarios/") && resto(20) === null) || (p.startsWith("/api/admin/grupos/") && resto(18) === null) || (p.startsWith("/api/admin/membros/") && resto(19) === null))
         return json({ erro: "id" }, 400);
-      if (p === "/api/admin/usuarios") return adminUsuarios(request, env, "");
-      if (p.startsWith("/api/admin/usuarios/")) return adminUsuarios(request, env, resto(20));
+      // Mudança em convidados, grupos ou membros vai para o espelho logo depois da resposta, sem esperar o cron.
+      const comPessoas = (r) => { if (request.method !== "GET") ctx.waitUntil(r.catch(() => {}).then(() => sincronizarEspelho(env, { soPessoas: true }))); return r; };
+      if (p === "/api/admin/usuarios") return comPessoas(adminUsuarios(request, env, ""));
+      if (p.startsWith("/api/admin/usuarios/")) return comPessoas(adminUsuarios(request, env, resto(20)));
       if (p === "/api/admin/fontes") return adminFontes(env);
-      if (p === "/api/admin/grupos") return adminGrupos(request, env, "");
-      if (p.startsWith("/api/admin/grupos/")) return adminGrupos(request, env, resto(18));
-      if (p.startsWith("/api/admin/membros/")) return adminMembro(request, env, resto(19));
+      if (p === "/api/admin/grupos") return comPessoas(adminGrupos(request, env, ""));
+      if (p.startsWith("/api/admin/grupos/")) return comPessoas(adminGrupos(request, env, resto(18)));
+      if (p.startsWith("/api/admin/membros/")) return comPessoas(adminMembro(request, env, resto(19)));
+      if (p === "/api/admin/espelho") return adminEspelho(request, env);
       if (p === "/api/admin/custos") return json(await adminCustos(env));
       if (p === "/api/admin/sonda") return adminSonda(request, env);
       if (p === "/api/admin/cvm" && request.method === "POST") {
@@ -380,6 +420,7 @@ export default {
   },
 
   // A cada minuto: importa o histórico (enquanto houver), lê alguns feeds RSS e, uma vez por hora, apaga o que venceu.
+  // Por último copia para o espelho de São Paulo o que mudou no D1.
   async scheduled(evento, env) {
     const minuto = new Date(evento.scheduledTime || Date.now()).getUTCMinutes();
     try { await coletar(env); } catch (e) { console.error("coleta", e); }
@@ -393,7 +434,8 @@ export default {
       try { await env.DB.prepare("CREATE INDEX IF NOT EXISTS docs_url ON docs (json_extract(data, '$.url'))").run(); } catch (e) { console.error("indice", e); }
       try { console.log("limpeza", JSON.stringify(await limpar(env))); } catch (e) { console.error("limpeza", e); }
     }
-    await importarHistorico(env);
+    try { await importarHistorico(env); } catch (e) { console.error("historico", e); }
+    await sincronizarEspelho(env);
   },
 };
 

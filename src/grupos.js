@@ -1,3 +1,5 @@
+import { convidadoNoEspelho } from "./espelho.js";
+
 // Seções por grupo. O admin cria grupos (Família, Trabalho...) com as seções que cada um vê, e põe
 // cada convidado em um ou mais grupos. A pessoa vê a soma das seções dos seus grupos.
 //
@@ -33,31 +35,46 @@ const cache = new Map();
 const TTL = 60_000;
 export const limparCacheGrupos = () => cache.clear();
 
+// A regra das seções, sem banco: recebe todos os grupos ({ id, secoes, padrao }) e os ids dos grupos da pessoa.
+// Usada aqui (leitura no D1) e no espelho de São Paulo (src/espelho.js), para as duas pontas darem o mesmo resultado.
+export function calcularSecoes(grupos, meusIds) {
+  if (!grupos.length) return null;
+  const ids = new Set(meusIds);
+  let valem = grupos.filter((g) => ids.has(g.id));
+  if (!valem.length) valem = grupos.filter((g) => g.padrao);
+  if (!valem.length) return null;
+  const u = new Set();
+  for (const g of valem) for (const x of JSON.parse(g.secoes || "[]")) if (SECOES.includes(x)) u.add(x);
+  return SECOES.filter((x) => u.has(x));
+}
+
+function guardar(email, s) {
+  if (cache.size > 500) cache.clear();
+  cache.set(email, { s, em: Date.now() });
+}
+// O index.js já recebe as seções junto com o convidado quando lê do espelho; guarda aqui para não perguntar de novo.
+export const guardarSecoes = guardar;
+
 // Devolve a lista de seções liberadas, ou null quando a pessoa vê tudo.
+// Primeiro o espelho; se ele não responder (desligado, vazio, lento), o D1 como antes.
 export async function secoesDe(env, email, admin) {
   if (admin) return null;
   const c = cache.get(email);
   if (c && Date.now() - c.em < TTL) return c.s;
+  const doEspelho = await convidadoNoEspelho(env, email);
+  if (doEspelho) { guardar(email, doEspelho.secoes); return doEspelho.secoes; }
   let s = null;
   try {
     const { results: grupos } = await env.DB.prepare("SELECT id, secoes, padrao FROM grupos").all();
     if (grupos.length) {
       const { results: meus } = await env.DB.prepare("SELECT grupo FROM usuario_grupo WHERE email = ?").bind(email).all();
-      const ids = new Set(meus.map((m) => m.grupo));
-      let valem = grupos.filter((g) => ids.has(g.id));
-      if (!valem.length) valem = grupos.filter((g) => g.padrao);
-      if (valem.length) {
-        const u = new Set();
-        for (const g of valem) for (const x of JSON.parse(g.secoes || "[]")) if (SECOES.includes(x)) u.add(x);
-        s = SECOES.filter((x) => u.has(x));
-      }
+      s = calcularSecoes(grupos, meus.map((m) => m.grupo));
     }
   } catch (e) {
     // Tabela ainda não criada: comportamento antigo.
     s = null;
   }
-  if (cache.size > 500) cache.clear();
-  cache.set(email, { s, em: Date.now() });
+  guardar(email, s);
   return s;
 }
 
