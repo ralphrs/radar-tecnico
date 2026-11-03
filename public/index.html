@@ -305,6 +305,10 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .cot-tab td:nth-child(2) { max-width: 260px; overflow: hidden; text-overflow: ellipsis; color: var(--muted-foreground); }
 .cot-tab .sobe { color: var(--ok); } .cot-tab .desce { color: var(--err); }
 @media (max-width: 639px) { .cot-tab .so-largo, .cot-tab .th-moeda { display: none; } }
+/* Coluna só para tela de 1200 px ou mais (Mandato dos FIIs); abaixo disso o dado fica no diálogo do papel */
+@media (max-width: 1199px) { .cot-tab .so-xl { display: none; } }
+.cot-tab td.so-xl { text-align: left; color: var(--muted-foreground); }
+.cot-tab th.so-xl { text-align: left; }
 .cot-papel { all: unset; cursor: pointer; font: 600 13px var(--font-mono); color: var(--primary, inherit); text-underline-offset: 3px; }
 .cot-papel:hover, .cot-papel:focus-visible { text-decoration: underline; }
 .cot-papel:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
@@ -334,6 +338,12 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .ativo-news { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .ativo-news small { color: var(--muted-foreground); }
 .ativo-links { padding-bottom: 18px; font-size: 14px; }
+.ativo-sobre { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 16px; margin: 0; }
+.ativo-sobre > div { min-width: 0; }
+.ativo-sobre dt { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.ativo-sobre dd { margin: 2px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+.ativo-sobre dd.sem-dado { color: var(--muted-foreground); }
+.ativo-sobre-pe { margin: 8px 0 0; font-size: 14px; }
 .ativo-dlg .nota { font-size: 12.5px; color: var(--muted-foreground); margin-top: 16px; }
 @media (max-width: 639px) { .ativo-dlg > * { margin-left: 16px; margin-right: 16px; } }
 .rankings { display: flex; flex-direction: column; gap: var(--space-3); }
@@ -395,6 +405,7 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .nav-bolsa { display: flex; flex-direction: column; gap: 10px; }
 .nav-bolsa .chips { padding-inline: 6px; gap: 6px; }
 .nav-bolsa .chip { height: 30px; padding: 0 10px; font-size: 12.5px; }
+.nav-bolsa .nav-lista > .nota { margin: 0; padding: 3px 10px; font-size: 12.5px; line-height: 1.45; color: var(--muted-foreground); }
 .nav-bolsa .nav-item .ic { font: 500 11px/14px var(--font-mono); color: var(--muted-foreground); }
 /* Carrossel de destaques no trilho direito (visão Bolsa) */
 #lat-dest .trilho { grid-auto-columns: 100%; }
@@ -1228,7 +1239,7 @@ function comCvm(x) {
   /* resumo (sem histórico): r12 já é a soma dos 12 meses (ou a média x 12) e m12 quantos meses entraram */
   if (!f.h) {
     const dy = f.m12 && f.r12 != null && x.preco ? (f.r12 / x.preco) * 100 : null;
-    return { ...x, liq, f, rend: f.rend ?? null, dy, dyAnual: f.m12 > 0 && f.m12 < 12, pvp: f.vp && x.preco ? x.preco / f.vp : null, cot: f.cot ?? null, rends: null };
+    return { ...x, liq, f, man: f.m || "", rend: f.rend ?? null, dy, dyAnual: f.m12 > 0 && f.m12 < 12, pvp: f.vp && x.preco ? x.preco / f.vp : null, cot: f.cot ?? null, rends: null };
   }
   const rends = (f.h || []).map((h) => (h[1] != null && h[2] != null ? (h[1] / 100) * h[2] : null));
   const ult = rends.length ? rends[rends.length - 1] : null;
@@ -1236,7 +1247,7 @@ function comCvm(x) {
   const soma = ult12.reduce((a, b) => a + b, 0);
   // Com menos de 12 informes, anualiza pela média dos meses que existem (marcado com * na tabela).
   const dy = ult12.length && x.preco ? ((ult12.length >= 12 ? soma : (soma / ult12.length) * 12) / x.preco) * 100 : null;
-  return { ...x, liq, f, rend: ult, dy, dyAnual: ult12.length > 0 && ult12.length < 12, pvp: f.vp && x.preco ? x.preco / f.vp : null, cot: f.cot ?? null, rends };
+  return { ...x, liq, f, man: f.m || "", rend: ult, dy, dyAnual: ult12.length > 0 && ult12.length < 12, pvp: f.vp && x.preco ? x.preco / f.vp : null, cot: f.cot ?? null, rends };
 }
 /* comCvm para uma classe inteira, guardado até b3, eua ou fiiCvm mudarem. Quem usa não pode alterar a lista (só filter/slice).
    As classes dos EUA (usacoes, usetfs) vêm de meta/eua, com us: true, e não passam pela CVM. */
@@ -1280,12 +1291,14 @@ function trocarCotAba(id) {
 const COT_COLUNAS = {
   acoes: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["cap", "Valor de mercado", "so-largo"]],
   etfs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""]],
-  fiis: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["dy", "DY 12m", ""], ["rend", "Últ. rend.", ""], ["pvp", "P/VP", ""], ["liq", "Liquidez", ""], ["cot", "Cotistas", "so-largo"]],
+  fiis: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["dy", "DY 12m", ""], ["rend", "Últ. rend.", ""], ["pvp", "P/VP", ""], ["liq", "Liquidez", ""], ["cot", "Cotistas", "so-largo"], ["man", "Mandato", "so-xl"]],
   bdrs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço", ""], ["var", "Dia", ""], ["liq", "Liquidez", ""], ["pais", "País", "col-pais so-largo"]],
   usacoes: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço (US$)", ""], ["var", "Dia", ""], ["liq", "Liquidez (US$)", ""]],
   usetfs: [["t", "Papel", ""], ["nome", "Nome", "so-largo"], ["preco", "Preço (US$)", ""], ["var", "Dia", ""], ["liq", "Liquidez (US$)", ""]],
 };
-const COL_TEXTO = new Set(["t", "nome", "pais"]);
+const COL_TEXTO = new Set(["t", "nome", "pais", "man"]);
+/* Na tabela o mandato longo encurta; o nome inteiro fica no title e no diálogo */
+const MAN_CURTO = { "Desenvolvimento para Renda": "Desenv. renda", "Desenvolvimento para Venda": "Desenv. venda" };
 function celula(c, x) {
   if (c === "t") { const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog" }, papelEl(x.t, x)); b.addEventListener("click", () => abrirAtivo(x)); return el("td", {}, el("span", { class: "cot-papel-box" }, b, pontoNoticia(x.t))); }
   if (c === "nome") return el("td", { title: x.nome, class: "so-largo" }, x.nome);
@@ -1299,6 +1312,7 @@ function celula(c, x) {
   if (c === "rend") return el("td", {}, x.rend == null ? "–" : fmtRs(x.rend));
   if (c === "pvp") return el("td", {}, x.pvp == null ? "–" : fmtNum(x.pvp, 2));
   if (c === "cot") return el("td", { class: "so-largo" }, x.cot == null ? "–" : fmtNum(x.cot, 0));
+  if (c === "man") return el("td", { class: "so-xl", title: x.man || "" }, MAN_CURTO[x.man] || x.man || "–");
   return el("td", {}, "–");
 }
 function renderCotacoes() {
@@ -1445,7 +1459,7 @@ function renderRankings() {
   box.append(el("div", { class: "rk-grade", "data-n": String(cards.length) }, ...cards.map(card)));
   let nota = us ? "Variação em relação ao fechamento do pregão anterior em Nova York. Preços em dólar, com atraso." : "Variação em relação ao fechamento do pregão anterior.";
   if (cotAba === "bdrs") nota += " BDRs são negociados na B3, em reais; a bandeira mostra o país da empresa.";
-  if (cotAba === "fiis") nota += " Líquidos são os fundos com mais de R$ 1 mi negociados por dia; abaixo disso DY e P/VP distorcem." + (fiiCvm && fiiCvm.ref ? " Informe da CVM de " + fmtMes(fiiCvm.ref) + "." : "");
+  if (cotAba === "fiis") nota += " Líquidos são os fundos com mais de R$ 1 mi negociados por dia; abaixo disso DY e P/VP distorcem." + (fiiCvm && fiiCvm.ref ? " Informe da CVM de " + fmtMes(fiiCvm.ref) + "." : "") + " Mandato, gestão e administrador vêm do informe mensal da CVM.";
   box.append(el("p", { class: "nota" }, nota));
 }
 /* Visões de Investimentos. Bolsa: pregão, tabela, filtros de papel à esquerda e listas, destaques e notícias do dia à direita.
@@ -1580,10 +1594,12 @@ function cotDe(t) {
 }
 
 /* Filtros da Bolsa (coluna esquerda): valem para as listas do Pregão e para a tabela */
-let bolsaF = { seg: [], liq: false, noticia: false };
+const FILTROS_VAZIOS = () => ({ seg: [], man: [], liq: false, noticia: false });
+let bolsaF = FILTROS_VAZIOS();
 try {
   const b = JSON.parse(localStorage.getItem("radar-bolsa-filtros") || "null");
-  if (b && typeof b === "object") bolsaF = { seg: Array.isArray(b.seg) ? b.seg.filter((x) => typeof x === "string").slice(0, 40) : [], liq: !!b.liq, noticia: !!b.noticia };
+  const textos = (v) => (Array.isArray(v) ? v.filter((x) => typeof x === "string").slice(0, 40) : []);
+  if (b && typeof b === "object") bolsaF = { seg: textos(b.seg), man: textos(b.man), liq: !!b.liq, noticia: !!b.noticia };
 } catch (e) {}
 const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
 /* Segmento como vem da CVM ("Titulos e Val. Mob.", "LOGISTICA") vira um nome legível */
@@ -1601,14 +1617,27 @@ function segNome(s) {
   segMemo.set(bruto, nome);
   return nome;
 }
+/* Mandato do FII como vem do servidor (já em rótulo curto: "Papel", "Renda"...). O filtro só vale quando
+   o informe trouxe mandato para algum fundo; senão um filtro salvo antes esconderia todos os FIIs. */
+const SEM_MANDATO = "Sem mandato";
+const manNome = (x) => (x.f && x.f.m) || SEM_MANDATO;
+let temMandatoMemo = { cvm: null, v: false };
+function temMandato() {
+  if (temMandatoMemo.cvm !== fiiCvm) temMandatoMemo = { cvm: fiiCvm, v: !!(fiiCvm && fiiCvm.fundos && Object.values(fiiCvm.fundos).some((f) => f.m)) };
+  return temMandatoMemo.v;
+}
 /* Sem a coluna esquerda (abaixo de 900 px) os filtros não aparecem, então não valem */
-const filtrosBolsaAtivos = () => MQ_NAV.matches && (bolsaF.liq || bolsaF.noticia || (cotAba === "fiis" && bolsaF.seg.length > 0 && !!fiiCvm));
+const filtrosBolsaAtivos = () => MQ_NAV.matches && (bolsaF.liq || bolsaF.noticia || (cotAba === "fiis" && !!fiiCvm && (bolsaF.seg.length > 0 || (bolsaF.man.length > 0 && temMandato()))));
 const LIQ_MIN_EUA = 1e7; // US$ 10 mi por dia
-function passaBolsa(x, aba = cotAba, ignorarSeg = false) {
+/* ignorar: "seg" ou "man", para contar um grupo de filtro sem ele mesmo (as contagens respeitam o outro grupo) */
+function passaBolsa(x, aba = cotAba, ignorar = "") {
   if (!MQ_NAV.matches) return true;
   if (bolsaF.liq && (x.liq || 0) < (x.us ? LIQ_MIN_EUA : LIQ_MIN_FII)) return false;
   if (bolsaF.noticia && !papeisComNoticia().has(x.t)) return false;
-  if (!ignorarSeg && aba === "fiis" && fiiCvm && bolsaF.seg.length && !bolsaF.seg.includes(segNome(x.f && x.f.s))) return false;
+  if (aba === "fiis" && fiiCvm) {
+    if (ignorar !== "seg" && bolsaF.seg.length && !bolsaF.seg.includes(segNome(x.f && x.f.s))) return false;
+    if (ignorar !== "man" && bolsaF.man.length && temMandato() && !bolsaF.man.includes(manNome(x))) return false;
+  }
   return true;
 }
 function mudouBolsa() {
@@ -1618,7 +1647,7 @@ function mudouBolsa() {
   renderRankings(); renderCotacoes(); renderNavBolsa();
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
-const idSeg = (s) => "navseg-" + semAcento(s).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+const idSeg = (s, pre = "navseg-") => pre + semAcento(s).toLowerCase().replace(/[^a-z0-9]+/g, "-");
 function renderNavBolsa() {
   const box = $("bolsa-filtros"); box.textContent = "";
   if (!emBolsa()) return;
@@ -1636,7 +1665,7 @@ function renderNavBolsa() {
     const seg = el("div", { class: "nav-lista", role: "group", "aria-label": "Segmento" });
     if (!fiiCvm) seg.append(el("p", { class: "nota" }, "Carregando os segmentos…"));
     else {
-      const base = listaCvm("fiis").filter((x) => passaBolsa(x, "fiis", true));
+      const base = listaCvm("fiis").filter((x) => passaBolsa(x, "fiis", "seg"));
       const cont = {};
       base.forEach((x) => { const s = segNome(x.f && x.f.s); cont[s] = (cont[s] || 0) + 1; });
       bolsaF.seg.forEach((s) => { if (!(s in cont)) cont[s] = 0; });
@@ -1650,6 +1679,26 @@ function renderNavBolsa() {
       nomes.forEach((s) => seg.append(item(idSeg(s), s, cont[s], bolsaF.seg.includes(s), escolher(s))));
     }
     box.append(grupo("Segmento", "vários", seg));
+
+    /* Mandato: mesma mecânica do Segmento, com os valores que existem e a contagem */
+    const man = el("div", { class: "nav-lista", role: "group", "aria-label": "Mandato" });
+    if (!fiiCvm) man.append(el("p", { class: "nota" }, "Carregando os mandatos…"));
+    else if (!temMandato()) man.append(el("p", { class: "nota" }, "O último informe da CVM veio sem o mandato dos fundos."));
+    else {
+      const base = listaCvm("fiis").filter((x) => passaBolsa(x, "fiis", "man"));
+      const cont = {};
+      base.forEach((x) => { const m = manNome(x); cont[m] = (cont[m] || 0) + 1; });
+      bolsaF.man.forEach((m) => { if (!(m in cont)) cont[m] = 0; });
+      const nomes = Object.keys(cont).sort((a, b) => (a === SEM_MANDATO) - (b === SEM_MANDATO) || cont[b] - cont[a] || a.localeCompare(b, "pt-BR"));
+      const escolher = (m) => () => {
+        if (m === null) bolsaF.man = [];
+        else bolsaF.man = bolsaF.man.includes(m) ? bolsaF.man.filter((x) => x !== m) : [...bolsaF.man, m];
+        mudouBolsa();
+      };
+      man.append(item("navman-todos", "Todos os mandatos", base.length, !bolsaF.man.length, escolher(null)));
+      nomes.forEach((m) => man.append(item(idSeg(m, "navman-"), m, cont[m], bolsaF.man.includes(m), escolher(m))));
+    }
+    box.append(grupo("Mandato", fiiCvm && temMandato() ? "vários" : "", man));
   }
 
   const chip = (id, texto, on, dica, acao) => { const b = el("button", { class: "chip", type: "button", id, "aria-pressed": String(on), title: dica }, texto); b.addEventListener("click", acao); return b; };
@@ -1658,7 +1707,7 @@ function renderNavBolsa() {
     chip("bolsa-noticia", "Só com notícia", bolsaF.noticia, "Só papéis citados em notícias que entraram no feed nas últimas 72 h", () => { bolsaF.noticia = !bolsaF.noticia; mudouBolsa(); }))));
   if (filtrosBolsaAtivos()) {
     const limpar = el("button", { class: "dd-btn dd-btn--link nav-limpar", type: "button", id: "bolsa-limpar" }, "Limpar filtros");
-    limpar.addEventListener("click", () => { bolsaF = { seg: [], liq: false, noticia: false }; mudouBolsa(); const t = $("navcls-" + cotAba); if (t) t.focus({ preventScroll: true }); });
+    limpar.addEventListener("click", () => { bolsaF = FILTROS_VAZIOS(); mudouBolsa(); const t = $("navcls-" + cotAba); if (t) t.focus({ preventScroll: true }); });
     box.append(limpar);
   }
 }
@@ -1884,6 +1933,45 @@ function nomeBonito(n) {
 }
 /* O gráfico do diálogo é montado como texto: o que vem do banco passa por aqui antes do innerHTML */
 const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+/* Prazo do FII como vem do servidor ("Indeterminado", "Determinado (até 2030-12-31)", "Determinado") */
+function prazoTexto(pz) {
+  if (!pz) return null;
+  const m = /^Determinado \(até (\d{4})-(\d{2})-(\d{2})\)$/.exec(pz);
+  if (m) return { chip: "Prazo até " + MESES_CURTOS[Number(m[2]) - 1] + "/" + m[1], longo: "Determinado, até " + m[3] + "/" + m[2] + "/" + m[1] };
+  if (pz === "Indeterminado") return { chip: "Prazo indeterminado", longo: "Indeterminado" };
+  if (pz === "Determinado") return { chip: "Prazo determinado", longo: "Determinado, sem data no informe" };
+  return { chip: "Prazo: " + pz.toLowerCase(), longo: pz };
+}
+const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+/* "2019-03-15" vira "mar/2019" */
+const mesAno = (iso) => { const m = /^(\d{4})-(\d{2})/.exec(iso || ""); return m ? MESES_CURTOS[Number(m[2]) - 1] + "/" + m[1] : ""; };
+/* Administrador como vem da CVM (".BANCO DAYCOVAL S/A", "VÓRTX DTVM LTDA") com caixa de nome próprio; siglas ficam */
+const SIGLAS_ADM = new Set(["DTVM", "CTVM", "CCTVM", "CCVM", "BTG", "BRL", "XP", "BB", "BRB", "QI", "RJI", "ID", "MAF", "BEM", "CEF", "S/A", "S.A.", "S.A", "SA", "LTDA", "LTDA.", "BR-CAPITAL", "BMG"]);
+function nomeAdm(n) {
+  const s = String(n || "").replace(/^[^\p{L}\p{N}]+/u, "").replace(/\s+/g, " ").trim();
+  if (!s || s !== s.toUpperCase()) return s;
+  return s.split(" ").map((w, i) => {
+    if (SIGLAS_ADM.has(w) || /^([A-Z]\.)+[A-Z]?\.?$/.test(w)) return w.replace(/^LTDA\.?$/, "Ltda.");
+    const b = w.toLowerCase();
+    if (i > 0 && ["de", "da", "do", "das", "dos", "e", "em"].includes(b)) return b;
+    return b.charAt(0).toUpperCase() + b.slice(1);
+  }).join(" ");
+}
+const siteSeguro = (u) => (/^https?:\/\/[^\s"<>]+$/i.test(String(u || "")) ? u : "");
+/* Bloco "Sobre o fundo" do diálogo: administrador, início, público-alvo, prazo e site, do informe da CVM */
+function sobreFundo(f, prazo) {
+  const item = (rot, val) => el("div", {}, el("dt", {}, rot), val ? el("dd", {}, val) : el("dd", { class: "sem-dado" }, "não informado"));
+  const dl = el("dl", { class: "ativo-sobre" },
+    item("Administrador", nomeAdm(f.adm || f.a)),
+    item("Início", mesAno(f.ini)),
+    item("Público-alvo", f.pub || ""),
+    item("Prazo de duração", prazo ? prazo.longo : ""),
+    item("CNPJ", f.c || ""));
+  const sec = el("section", { class: "ativo-sec" }, el("h3", {}, "Sobre o fundo"), dl);
+  const site = siteSeguro(f.site);
+  if (site) sec.append(el("p", { class: "ativo-sobre-pe" }, el("a", { href: site, target: "_blank", rel: "noopener noreferrer" }, "Site do fundo")));
+  return sec;
+}
 /* Detalhe de um papel, num diálogo: indicadores, histórico mensal (FIIs) e notícias do feed que citam o papel */
 function abrirAtivo(x, aba = cotAba) {
   let d = $("ativo-dlg");
@@ -1910,7 +1998,9 @@ function abrirAtivo(x, aba = cotAba) {
   const chips = el("div", { class: "ativo-chips" });
   const us = !!x.us || ABAS_EUA.has(aba), bdr = aba === "bdrs";
   const tipo = aba === "usetfs" ? "ETF nos EUA" : us ? "Ação nos EUA" : bdr ? "BDR" : aba === "fiis" ? "Fundo imobiliário" : aba === "etfs" ? "ETF" : "Ação";
-  [tipo, f && f.s, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), !f && !bdr && x.setor].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
+  /* FII: tipo, mandato, gestão, segmento e prazo, nessa ordem; o que não veio da CVM não vira chip */
+  const prazo = f && prazoTexto(f.pz);
+  [tipo, f && f.m, f && f.g && "Gestão " + f.g.toLowerCase(), f && f.s && segNome(f.s), prazo && prazo.chip, !f && !bdr && x.setor].filter(Boolean).forEach((c) => chips.append(el("span", { class: "chip" }, c)));
   if (bdr && x.pais) chips.append(el("span", { class: "chip" }, emojiPais(x.pais), "Empresa de " + ((nomesPais && nomesPais.of(x.pais)) || x.pais)));
   d.append(el("div", { class: "ativo-cab" },
     el("div", {}, el("h2", { id: "ativo-titulo" }, papelEl(x.t, us ? { ...x, us: true } : x)), el("p", { title: (f && f.n) || x.nome || "" }, f && f.n ? nomeBonito(f.n) : x.nome), chips), fechar));
@@ -1934,6 +2024,8 @@ function abrirAtivo(x, aba = cotAba) {
       k("Cotistas", f.cot == null ? "–" : fmtNum(f.cot, 0), f.cotas ? fmtVol(f.cotas) + " cotas emitidas" : ""));
   } else if (x.cap) grade.append(k("Valor de mercado", "R$ " + fmtVol(x.cap), ""));
   d.append(grade);
+  /* Sobre o fundo logo abaixo dos indicadores; com o resumo ainda sem o histórico, espera o meta/fii (traz administrador e o resto) */
+  if (f && !esperandoHist) d.append(sobreFundo(f, prazo));
   if (f && f.h && f.h.length) {
     const rends = x.rends || [];
     const max = Math.max(...rends.filter((v) => v != null), 0.0001);
@@ -1961,7 +2053,7 @@ function abrirAtivo(x, aba = cotAba) {
     links.append(el("a", { href: "https://www.fundsexplorer.com.br/funds/" + x.t.toLowerCase(), target: "_blank", rel: "noopener" }, "Funds Explorer"), " · ",
       el("a", { href: "https://investidor10.com.br/fiis/" + x.t.toLowerCase() + "/", target: "_blank", rel: "noopener" }, "Investidor10"), " · ",
       el("a", { href: "https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo=" + String(f.c || "").replace(/\D/g, ""), target: "_blank", rel: "noopener" }, "Documentos no FNET (B3)"));
-    d.append(el("p", { class: "nota" }, `Administrador: ${f.a || "–"} · CNPJ ${f.c || "–"}. Cotistas, patrimônio, VP e DY vêm do informe mensal entregue à CVM (último: ${fmtMes(f.ref)}); o rendimento por cota é estimado a partir do DY do mês sobre o patrimônio. Confira o valor exato no aviso aos cotistas.`));
+    d.append(el("p", { class: "nota" }, `Cotistas, patrimônio, VP, DY, mandato e administrador vêm do informe mensal entregue à CVM (último: ${fmtMes(f.ref)}); o rendimento por cota é estimado a partir do DY do mês sobre o patrimônio. Confira o valor exato no aviso aos cotistas.`));
   } else if (us) {
     const yahoo = x.t.replace(".", "-");
     links.append(el("a", { href: "https://finance.yahoo.com/quote/" + encodeURIComponent(yahoo), target: "_blank", rel: "noopener" }, "Yahoo Finance"));

@@ -127,7 +127,7 @@ textarea{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:inheri
 
   <section class="card" id="espelho-card">
     <h2>Espelho em São Paulo</h2>
-    <p class="dica" style="margin-top:0">Cópia do que a página lê, num Durable Object em São Paulo. O D1 continua sendo a fonte; o cron copia o que mudou a cada minuto. Se o espelho falhar ou demorar mais de 2 s, a leitura vai direto ao D1.</p>
+    <p class="dica" style="margin-top:0">Cópia do que a página lê, num Durable Object em São Paulo. O D1 continua sendo a fonte; o cron copia o que mudou a cada minuto. Se o espelho falhar ou demorar mais de 2 s, a leitura vai direto ao D1. Favoritos e listas também vêm daqui; quando alguém grava, a mudança chega ao espelho logo depois do D1.</p>
     <div id="espelho"><p class="vazio">Carregando…</p></div>
     <div class="sonda-acoes"><button class="pri" type="button" id="espelho-sync">Sincronizar agora</button><button type="button" class="perigo" id="espelho-zerar">Zerar e recarregar</button></div>
     <p class="msg" id="msg-espelho" role="status"></p>
@@ -356,11 +356,16 @@ async function carregarCustos() {
       const req = porDia(cf.workers, "req"), lidas = porDia(cf.d1, "lidas"), grav = porDia(cf.d1, "gravadas");
       const proj = (m) => (soma(m) / Math.max(1, dias)) * diasMes;
       const tam = cf.d1Tamanho || 0;
+      /* Espelho (Durable Object): requisições do mês contra 1 mi incluído e armazenamento contra 5 GB */
+      const E = P.pago.espelho, esp = cf.espelho;
+      const espReq = esp ? porDia(esp.req, "req") : null;
+      const espExtra = esp ? Math.max(0, proj(espReq) - E.reqMes) / 1e6 * E.porMilhaoReq + Math.max(0, (esp.bytes || 0) - E.bytes) / 1e9 * E.porGBMes : 0;
       // Plano pago: US$ 5 fixos + o que passar do incluído, projetado para o mês inteiro.
       const extra = Math.max(0, proj(req) - P.pago.workersReqMes) / 1e6 * P.pago.porMilhaoReq
         + Math.max(0, proj(lidas) - P.pago.d1LidasMes) / 1e6 * P.pago.porMilhaoLidas
         + Math.max(0, proj(grav) - P.pago.d1GravadasMes) / 1e6 * P.pago.porMilhaoGravadas
-        + Math.max(0, tam - P.pago.d1Bytes) / 1e9 * P.pago.porGBMes;
+        + Math.max(0, tam - P.pago.d1Bytes) / 1e9 * P.pago.porGBMes
+        + espExtra;
       // Conta no Workers Paid desde 01/11/2026: US$ 5 fixos por mês mais o que passar do incluído (projetado para o mês).
       h += '<div class="custo-topo">'
         + kpi("Custo estimado do mês", usd(P.pago.mensal + extra), extra > 0.005 ? "US$ 5 do plano + " + usd(extra) + " de excedente" : "só os US$ 5 do Workers Paid")
@@ -370,6 +375,14 @@ async function carregarCustos() {
         + kpi("Tamanho do banco", fmtBytes(tam), "de " + fmtBytes(P.pago.d1Bytes) + " incluídos", tam / P.pago.d1Bytes)
         + kpi("Pico diário de leituras", fmtGrande(pico(lidas)), "no grátis o limite era " + fmtGrande(P.gratis.d1LidasDia) + " por dia", pico(lidas) / P.gratis.d1LidasDia)
         + "</div>";
+      if (esp) {
+        const pr = proj(espReq), b = esp.bytes || 0;
+        h += '<div class="custo-topo">'
+          + kpi("Espelho (Durable Object), requisições", fmtGrande(pr), "projeção · " + fmtGrande(E.reqMes) + " incluídas" + (esp.porScript ? "" : " · total da conta"), pr / E.reqMes)
+          + kpi("Espelho, armazenamento", fmtBytes(b), "de " + fmtBytes(E.bytes) + " incluídos · conta toda", b / E.bytes)
+          + kpi("Espelho, excedente", espExtra > 0.005 ? usd(espExtra) : "US$ 0", espExtra > 0.005 ? "já somado ao custo do mês" : "dentro do incluído no plano")
+          + "</div>";
+      } else h += '<div class="custo-topo">' + kpi("Espelho (Durable Object)", "–", "a consulta à API não voltou; veja o aviso abaixo") + "</div>";
       const diasL = Object.keys({ ...req, ...lidas }).sort().reverse().slice(0, 10);
       h += '<details><summary>Dia a dia (últimos 10)</summary><table class="custo-tab"><thead><tr><th>Dia</th><th>Requisições</th><th>Linhas lidas</th><th>Linhas gravadas</th></tr></thead><tbody>'
         + diasL.map((d) => `<tr><td>${d.slice(8, 10)}/${d.slice(5, 7)}</td><td>${fmtGrande(req[d] || 0)}</td><td>${fmtGrande(lidas[d] || 0)}</td><td>${fmtGrande(grav[d] || 0)}</td></tr>`).join("")
@@ -389,6 +402,7 @@ async function carregarCustos() {
       + kpi("Dados guardados", fmtBytes(totDocs), fmt(L.colecoes.reduce((s, x) => s + x.n, 0) + L.candidatos.n) + " registros, sem índices")
       + kpi("Rodadas de curadoria no mês", fmt(rodadas), "rodam na sua assinatura do Claude, sem cobrança à parte")
       + kpi("Cotações e CVM", "US$ 0", "brapi sem token, BCB e CVM são gratuitos")
+      + (cf ? "" : kpi("Espelho (Durable Object)", "sem token", "requisições e armazenamento do DO vêm da mesma API"))
       + "</div>";
     h += '<details><summary>Rodadas por aba e espaço por coleção</summary><table class="custo-tab"><thead><tr><th>Aba</th><th>Rodadas no mês</th><th>Itens</th></tr></thead><tbody>'
       + L.rodadasMes.map((x) => `<tr><td>${esc(NOMEC[x.collection] || x.collection)}</td><td>${x.rodadas}</td><td>${x.itens}</td></tr>`).join("")
@@ -413,8 +427,14 @@ function haQuanto(iso) {
   return "há " + Math.round(s / 86400) + " dias";
 }
 const ms = (v) => (v == null ? "–" : fmt(v) + " ms");
+const MOTIVOS_FB = { timeout: "passou de 2 s", erro: "erro", vazio: "espelho vazio" };
+const somaFb = (d) => (d ? Object.values(d.motivos || {}).reduce((a, b) => a + b, 0) : 0);
+const fbTexto = (m) => Object.entries(m || {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => fmt(n) + " " + (MOTIVOS_FB[k] || k)).join(", ");
 function pintarEspelho(r) {
   const e = r.estado || {};
+  const hoje = new Date().toISOString().slice(0, 10);
+  const fb = (e.fallbacks || []).filter((d) => d.dia === hoje);
+  const fbHoje = somaFb(fb[0]), fbOntem = somaFb((e.fallbacks || []).find((d) => d.dia !== hoje));
   let h = "";
   if (!r.ativo) h += '<p class="msg err">Desligado pela variável ESPELHO_ATIVO: todas as leituras estão indo ao D1.</p>';
   else if (!e.pronto) h += '<p class="dica">Ainda não terminou a primeira carga. Enquanto isso as leituras vão ao D1.</p>';
@@ -423,18 +443,20 @@ function pintarEspelho(r) {
     + kpi("Duração", ms(e.duracao_ms), e.ultima_tentativa ? "última tentativa " + haQuanto(e.ultima_tentativa) : "")
     + kpi("Docs no espelho", fmt(e.docs), fmt(e.linhas || 0) + " linhas conferidas no D1" + (e.pendentes ? " · " + fmt(e.pendentes) + " na fila" : ""))
     + kpi("Convidados e grupos", fmt(e.usuarios) + " / " + fmt(e.grupos), "cópia das tabelas do D1")
+    + kpi("Leituras que foram ao D1", fmt(fbHoje), fbHoje ? "hoje: " + fbTexto(fb[0] && fb[0].motivos) : "hoje" + (fbOntem ? " · ontem " + fmt(fbOntem) : ""))
+    + kpi("Sincronias puladas", fmt((e.pulada && e.pulada.n) || 0), e.pulada && e.pulada.ultima ? "outra estava em andamento · última " + haQuanto(e.pulada.ultima) : "nenhuma até agora" + (e.ocupado ? " · uma rodando agora" : ""))
     + "</div>";
   if (e.erro) h += `<p class="msg err">Último erro: ${esc(e.erro)}</p>`;
   const med = e.medicoes || [];
   if (med.length) {
-    h += '<table class="custo-tab" style="white-space:nowrap"><thead><tr><th>Medição (20 itens de Tech)</th><th>Espelho</th><th>D1</th><th>Onde rodou</th></tr></thead><tbody>'
+    h += '<div style="overflow-x:auto"><table class="custo-tab" style="white-space:nowrap"><thead><tr><th>Medição (20 itens de Tech)</th><th>Espelho</th><th>D1</th><th>Onde rodou</th></tr></thead><tbody>'
       + med.map((m) => `<tr><td>${dataCurta(m.quando)}</td><td>${ms(m.espelho)}</td><td>${ms(m.d1)}</td><td>${esc(m.colo || "–")}</td></tr>`).join("")
-      + "</tbody></table>";
+      + "</tbody></table></div>";
     h += '<p class="dica">Cada vez que esta página abre, o Worker que atendeu você faz a mesma consulta nos dois bancos e guarda o tempo. As duas últimas ficam aqui.</p>';
   }
   if (e.porColecao && e.porColecao.length)
     h += '<details><summary>Docs por coleção</summary><table class="custo-tab"><thead><tr><th>Coleção</th><th>Docs</th></tr></thead><tbody>'
-      + e.porColecao.map((x) => `<tr><td>${esc(x.collection)}</td><td>${fmt(x.n)}</td></tr>`).join("") + "</tbody></table></details>";
+      + e.porColecao.map((x) => `<tr><td>${esc(x.collection === "favs/*" ? "favs (todas as pessoas)" : x.collection === "listas/*" ? "listas (todas as pessoas)" : x.collection)}</td><td>${fmt(x.n)}</td></tr>`).join("") + "</tbody></table></details>";
   $("espelho").innerHTML = h;
 }
 async function carregarEspelho() {
@@ -450,6 +472,7 @@ async function sincronizarEspelho(zerar) {
     pintarEspelho(r);
     const s = r.sincronia || {};
     if (!r.ok) avisoE("Não terminou: " + (s.erro || "erro desconhecido"), "err");
+    else if (s.pulada) avisoE("Já havia uma sincronia em andamento (provavelmente a do cron). Esta foi pulada; o resultado aparece em instantes.", "");
     else avisoE(`Pronto em ${ms(s.duracao_ms)}: ${fmt(s.aplicados)} copiados, ${fmt(s.removidos)} removidos` + (s.pendentes ? `, ${fmt(s.pendentes)} ficaram para a próxima rodada.` : "."), "ok");
   } catch (err) { avisoE(err.message, "err"); }
   bts.forEach((b) => (b.disabled = false));

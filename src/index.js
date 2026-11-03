@@ -6,7 +6,7 @@ import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
 import { adminCustos } from "./custos.js";
 import { secoesDe, secaoDe, libera, adminGrupos, adminMembro, guardarSecoes } from "./grupos.js";
 import { cronSonda, adminSonda } from "./sonda.js";
-import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho } from "./espelho.js";
+import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1, gravarNoEspelho, removerDoEspelho } from "./espelho.js";
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
 export { Espelho } from "./espelho.js";
@@ -54,7 +54,7 @@ async function buscarConvidado(env, email) {
   } else {
     const t0 = Date.now();
     u = await env.DB.prepare("SELECT email, nome, ultimo_acesso FROM usuarios WHERE email = ?").bind(email).first();
-    console.log(JSON.stringify({ leitura: "d1", rotulo: "convidado", ms: Date.now() - t0 }));
+    logD1(env, "convidado", Date.now() - t0);
   }
   if (convidados.size > 500) convidados.clear();
   convidados.set(email, { u, em: Date.now() });
@@ -139,13 +139,13 @@ function linhaParaDoc(r) {
 }
 
 // Leitura de lista e de documento: espelho em São Paulo primeiro, D1 se ele não responder.
-// Os dois lados logam o tempo ({ leitura, rotulo, ms }) para comparar nos logs do Worker.
-async function lerLinhas(env, sql, args) {
-  const e = await doEspelho(env, "lista", (s) => s.consultar(sql, args));
+// Log { leitura, rotulo, ms } amostrado (1 em 20) quando dá certo no espelho e sempre quando cai no D1 (src/espelho.js).
+async function lerLinhas(env, sql, args, rotulo = "lista") {
+  const e = await doEspelho(env, rotulo, (s) => s.consultar(sql, args));
   if (e) return e.linhas;
   const t0 = Date.now();
   const { results } = await env.DB.prepare(sql).bind(...args).all();
-  console.log(JSON.stringify({ leitura: "d1", rotulo: "lista", ms: Date.now() - t0 }));
+  logD1(env, rotulo, Date.now() - t0);
   return results;
 }
 async function lerLinha(env, c, id) {
@@ -153,7 +153,7 @@ async function lerLinha(env, c, id) {
   if (e) return e.linha;
   const t0 = Date.now();
   const r = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = ?").bind(c, id).first();
-  console.log(JSON.stringify({ leitura: "d1", rotulo: "doc", ms: Date.now() - t0 }));
+  logD1(env, "doc", Date.now() - t0);
   return r;
 }
 
@@ -175,7 +175,9 @@ async function consultar(url, env, quem, request) {
     sql += ` AND ${wf === "coletado" ? "coletado" : `json_extract(data, '$.${wf}')`} ${wo} ?`;
     args.push(url.searchParams.get("wv") || "");
   }
-  sql += ` ORDER BY ${campoOrdem} ${dir} LIMIT ?`;
+  // Desempate fixo (coletado e id): sem ele, itens com o mesmo valor no campo da ordem podiam vir em ordem diferente
+  // do D1 e do espelho, e a paginação por "mais antigos" pulava ou repetia item. Mesmo SQL nos dois lados.
+  sql += ordem === "coletado" ? ` ORDER BY coletado ${dir}, id DESC LIMIT ?` : ` ORDER BY ${campoOrdem} ${dir}, coletado DESC, id DESC LIMIT ?`;
   args.push(limite);
   return comCache(sql + "|" + args.join("|"), async () => {
     const results = await lerLinhas(env, sql, args);
@@ -195,10 +197,12 @@ async function lerDoc(url, env, quem, request) {
   }, request);
 }
 
+// Favoritos e listas: leitura pelo espelho (D1 de reserva); gravação no D1 e, depois que ela deu certo,
+// write-through no espelho fora do caminho da resposta.
 async function favoritos(request, env, quem, idFav) {
   const col = "favs/" + quem.email;
   if (request.method === "GET" && !idFav) {
-    const { results } = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? ORDER BY atualizado DESC LIMIT 2000").bind(col).all();
+    const results = await lerLinhas(env, "SELECT id, data FROM docs WHERE collection = ? ORDER BY atualizado DESC LIMIT 2000", [col], "favs");
     return json({ docs: results.map(linhaParaDoc) });
   }
   if (!idFav || idFav.length > 200) return json({ erro: "id" }, 400);
@@ -207,13 +211,16 @@ async function favoritos(request, env, quem, idFav) {
     if (corpo.length > 20000) return json({ erro: "grande" }, 413);
     let dados;
     try { dados = JSON.parse(corpo); } catch { return json({ erro: "json" }, 400); }
+    const data = JSON.stringify(dados), atualizado = agoraIso();
     await env.DB.prepare(
       "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, ?, ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
-    ).bind(col, idFav, JSON.stringify(dados), agoraIso()).run();
+    ).bind(col, idFav, data, atualizado).run();
+    gravarNoEspelho(env, [{ collection: col, id: idFav, data, coletado: "", atualizado }]);
     return json({ ok: true });
   }
   if (request.method === "DELETE") {
     await env.DB.prepare("DELETE FROM docs WHERE collection = ? AND id = ?").bind(col, idFav).run();
+    removerDoEspelho(env, [{ collection: col, id: idFav }]);
     return json({ ok: true });
   }
   return json({ erro: "metodo" }, 405);
@@ -249,7 +256,7 @@ export async function listas(request, env, quem, idLista) {
   if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
   const col = "listas/" + quem.email;
   if (request.method === "GET" && !idLista) {
-    const { results } = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? ORDER BY json_extract(data, '$.criado') LIMIT ?").bind(col, LISTAS_MAX).all();
+    const results = await lerLinhas(env, "SELECT id, data FROM docs WHERE collection = ? ORDER BY json_extract(data, '$.criado') LIMIT ?", [col, LISTAS_MAX], "listas");
     return json({ docs: results.map(linhaParaDoc) });
   }
   const lerCorpo = async () => {
@@ -257,10 +264,13 @@ export async function listas(request, env, quem, idLista) {
     if (corpo.length > 8000) return { erro: "grande", status: 413 };
     try { return validarLista(JSON.parse(corpo)); } catch { return { erro: "json" }; }
   };
-  const gravar = (id, doc) =>
-    env.DB.prepare(
+  const gravar = async (id, doc) => {
+    const data = JSON.stringify(doc);
+    await env.DB.prepare(
       "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, ?, ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
-    ).bind(col, id, JSON.stringify(doc), doc.atualizado).run();
+    ).bind(col, id, data, doc.atualizado).run();
+    gravarNoEspelho(env, [{ collection: col, id, data, coletado: "", atualizado: doc.atualizado }]);
+  };
   if (request.method === "POST" && !idLista) {
     const v = await lerCorpo();
     if (v.erro) return json({ erro: v.erro }, v.status || 400);
@@ -291,6 +301,7 @@ export async function listas(request, env, quem, idLista) {
   }
   if (request.method === "DELETE") {
     await env.DB.prepare("DELETE FROM docs WHERE collection = ? AND id = ?").bind(col, idLista).run();
+    removerDoEspelho(env, [{ collection: col, id: idLista }]);
     return json({ ok: true });
   }
   return json({ erro: "metodo" }, 405);
@@ -331,9 +342,13 @@ async function adminUsuarios(request, env, email) {
     return json({ ok: true });
   }
   if (request.method === "DELETE" && email) {
+    const cols = ["favs/" + email.toLowerCase(), "listas/" + email.toLowerCase()];
+    // As chaves saem antes do DELETE para o espelho apagar as mesmas linhas logo depois
+    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?)").bind(...cols).all();
     await env.DB.prepare("DELETE FROM usuarios WHERE email = ?").bind(email.toLowerCase()).run();
-    await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind("favs/" + email.toLowerCase()).run();
-    await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind("listas/" + email.toLowerCase()).run();
+    await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind(cols[0]).run();
+    await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind(cols[1]).run();
+    removerDoEspelho(env, chaves);
     try { await env.DB.prepare("DELETE FROM usuario_grupo WHERE email = ?").bind(email.toLowerCase()).run(); } catch (e) {}
     return json({ ok: true });
   }

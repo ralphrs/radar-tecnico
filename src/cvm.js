@@ -73,6 +73,85 @@ function csv(txt, pedir) {
 const n = (v) => { if (v === "" || v == null) return null; const x = Number(String(v).replace(",", ".")); return Number.isFinite(x) ? x : null; };
 const tem = (...partes) => (c) => partes.every((p) => c.toLowerCase().includes(p));
 
+// ---------- cadastro do fundo: mandato, gestão, prazo, início, público-alvo, site ----------
+// A CVM manda textos livres e com variação de grafia entre anos ("Títulos e Valores Mobiliários", "TITULOS E VAL. MOB.").
+// Viram rótulos curtos; o que não estiver no mapa sai em Title Case, do jeito que veio.
+const chave = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\s+/g, " ").trim();
+const MINUSC = new Set(["de", "da", "do", "das", "dos", "e", "em", "para", "a", "o"]);
+const titulo = (v) => String(v || "").replace(/\s+/g, " ").trim().toLowerCase()
+  .split(" ").map((w, i) => (i > 0 && MINUSC.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(" ");
+const MANDATOS = {
+  "RENDA": "Renda",
+  "TITULOS E VALORES MOBILIARIOS": "Papel", "TITULOS E VAL. MOB.": "Papel", "TITULOS E VAL MOB": "Papel", "TVM": "Papel",
+  "HIBRIDO": "Híbrido",
+  "DESENVOLVIMENTO PARA RENDA": "Desenvolvimento para Renda",
+  "DESENVOLVIMENTO PARA VENDA": "Desenvolvimento para Venda",
+};
+export function normMandato(v) {
+  const k = chave(v);
+  if (!k) return "";
+  if (MANDATOS[k]) return MANDATOS[k];
+  if (/^TITULOS\b/.test(k)) return "Papel";
+  if (/^DESENV.*RENDA/.test(k)) return "Desenvolvimento para Renda";
+  if (/^DESENV.*VENDA/.test(k)) return "Desenvolvimento para Venda";
+  return titulo(v);
+}
+// No informe de 2026 a gestão vem como "Ativa" ou "Definida". Gestão definida é a que segue a carteira fixada no
+// regulamento, sem o gestor escolher ativos: é a passiva.
+export function normGestao(v) {
+  const k = chave(v);
+  if (!k) return "";
+  if (k === "ATIVA") return "Ativa";
+  if (k === "PASSIVA" || k === "DEFINIDA") return "Passiva";
+  return titulo(v);
+}
+// Data como vem da CVM (AAAA-MM-DD ou DD/MM/AAAA) vira AAAA-MM-DD; o resto vira "".
+export function dataIso(v) {
+  const t = String(v || "").trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(t);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+}
+export function normPrazo(pz, data) {
+  const k = chave(pz), d = dataIso(data);
+  if (k.startsWith("INDETERMINADO")) return "Indeterminado";
+  if (k.startsWith("DETERMINADO") || (!k && d)) return d ? `Determinado (até ${d})` : "Determinado";
+  return k ? titulo(pz) : "";
+}
+const PUBLICOS = {
+  "INVESTIDORES EM GERAL": "Investidores em geral", "GERAL": "Investidores em geral",
+  "INVESTIDORES QUALIFICADOS": "Investidores qualificados", "QUALIFICADO": "Investidores qualificados",
+  "INVESTIDORES PROFISSIONAIS": "Investidores profissionais", "PROFISSIONAL": "Investidores profissionais",
+};
+export function normPublico(v) {
+  const k = chave(v);
+  if (!k) return "";
+  if (PUBLICOS[k]) return PUBLICOS[k];
+  const t = String(v).replace(/\s+/g, " ").trim();
+  return t === t.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t;
+}
+const siteOk = (v) => { const t = String(v || "").trim(); return /^https?:\/\/[^\s"<>]+$/i.test(t) && t.length <= 200 ? t : ""; };
+
+// Cadastro curto de um fundo a partir de uma linha do CSV geral. m e g sempre presentes (como antes, "" quando faltam);
+// os campos novos só entram quando vieram, para não inchar o meta/fii.
+export function cadastroDe(g) {
+  const out = { n: g.nome, s: g.seg, m: normMandato(g.mandato), g: normGestao(g.gestao), a: g.adm, c: g.cnpj };
+  const pz = normPrazo(g.pz, g.dpz), ini = dataIso(g.ini), pub = normPublico(g.pub), site = siteOk(g.site);
+  if (pz) out.pz = pz;
+  if (ini) out.ini = ini;
+  if (pub) out.pub = pub;
+  if (site) out.site = site;
+  return out;
+}
+// Campos do cadastro que podem faltar no informe mais recente e ser completados com um anterior.
+const COMPLETAR = ["m", "g", "a", "pz", "ini", "pub", "site"];
+export function completar(novo, velho) {
+  if (!velho) return novo;
+  for (const k of COMPLETAR) if (!novo[k] && velho[k]) novo[k] = velho[k];
+  return novo;
+}
+
 // Guarda o cabeçalho do CSV geral do último ano lido, para o admin conferir os nomes das colunas (ex.: mandato).
 let cabecalhoGeral = "";
 async function lerAno(ano) {
@@ -82,19 +161,30 @@ async function lerAno(ano) {
   if (!eGeral || !eComp) throw new Error("zip de " + ano + " sem geral ou complemento: " + ents.map((e) => e.nome).join(", "));
   const txtGeral = texto(await lerEntrada(buf, eGeral));
   cabecalhoGeral = txtGeral.split(/\r?\n/, 1)[0].replace(/^\uFEFF/, "").slice(0, 600);
+  return lerCsvs(txtGeral, texto(await lerEntrada(buf, eComp)));
+}
+
+// Separado do download para o teste em Node rodar com linhas de exemplo.
+export function lerCsvs(txtGeral, txtComp) {
   const geral = csv(txtGeral, {
     cnpj: tem("cnpj"), ref: tem("data_referencia"), nome: (c) => /^nome_fundo/i.test(c), isin: tem("isin"),
     seg: tem("segmento"), mandato: tem("mandato"), gestao: tem("tipo_gestao"), adm: (c) => /^nome_administrador/i.test(c),
+    pz: (c) => /^prazo_duracao$/i.test(c), dpz: (c) => /^data_prazo_duracao$/i.test(c), ini: (c) => /^data_funcionamento$/i.test(c),
+    pub: (c) => /^publico_alvo$/i.test(c), site: (c) => /^site$/i.test(c),
   });
   // Papel a partir do ISIN; só entram fundos com cota negociada (ISIN de FII: BR + 4 letras + CTF).
+  // O cadastro é o do informe mais recente do ano; campo vazio nele é completado pelo informe anterior que tiver.
   const papelDe = {}, cad = {};
   for (const g of geral) {
     const m = /^BR([A-Z]{4})CTF/.exec(g.isin || "");
     if (!m) continue;
     papelDe[g.cnpj] = m[1] + "11";
-    if (!cad[g.cnpj] || g.ref > cad[g.cnpj].ref) cad[g.cnpj] = g;
+    const novo = { ref: g.ref, c: cadastroDe(g) }, atual = cad[g.cnpj];
+    if (!atual) cad[g.cnpj] = novo;
+    else if (g.ref > atual.ref) cad[g.cnpj] = { ref: g.ref, c: completar(novo.c, atual.c) };
+    else completar(atual.c, novo.c);
   }
-  const comp = csv(texto(await lerEntrada(buf, eComp)), {
+  const comp = csv(txtComp, {
     cnpj: tem("cnpj"), ref: tem("data_referencia"), cot: tem("total_numero_cotistas"), pl: tem("patrimonio_liquido"),
     cotas: tem("cotas_emitidas"), vp: tem("valor_patrimonial_cota"), dy: tem("dividend_yield"), rent: tem("rentabilidade_efetiva"),
   });
@@ -106,7 +196,7 @@ async function lerAno(ano) {
     (hist[t] = hist[t] || {})[c.ref.slice(0, 7)] = [c.ref.slice(0, 7), n(c.dy), n(c.vp), n(c.cot), n(c.rent), n(c.pl), n(c.cotas)];
   }
   const cadastro = {};
-  for (const [cnpj, g] of Object.entries(cad)) cadastro[papelDe[cnpj]] = { n: g.nome, s: g.seg, m: g.mandato, g: g.gestao, a: g.adm, c: cnpj };
+  for (const [cnpj, g] of Object.entries(cad)) cadastro[papelDe[cnpj]] = g.c;
   return { hist, cadastro };
 }
 
@@ -146,14 +236,24 @@ export function resumoFii(fundos) {
     const soma = ult12.reduce((a, b) => a + b, 0);
     const r12 = ult12.length ? (ult12.length >= 12 ? soma : (soma / ult12.length) * 12) : null;
     out[t] = { n: f.n, s: f.s, ref: f.ref, vp: f.vp, cot: f.cot ?? null, rend: r6(ult), r12: r6(r12), m12: ult12.length };
+    // mandato e gestão entram nos filtros da lista; só quando vieram
+    if (f.m) out[t].m = f.m;
+    if (f.g) out[t].g = f.g;
   }
   return out;
 }
 
 export async function etapaAnoAnterior(env) {
   const ano = new Date().getUTCFullYear() - 1;
-  const { hist } = await lerAno(ano);
-  await gravar(env, "fii-cvm-ant", { ano, hist });
+  const { hist, cadastro } = await lerAno(ano);
+  // cad: só os campos que completam o cadastro do ano corrente quando o informe novo vier sem eles
+  const cad = {};
+  for (const [t, c] of Object.entries(cadastro)) {
+    const o = {};
+    for (const k of ["m", "g", "pz", "ini", "pub", "site"]) if (c[k]) o[k] = c[k];
+    if (Object.keys(o).length) cad[t] = o;
+  }
+  await gravar(env, "fii-cvm-ant", { ano, hist, cad });
   return Object.keys(hist).length;
 }
 
@@ -162,6 +262,7 @@ export async function etapaAnoCorrente(env) {
   const { hist, cadastro } = await lerAno(ano);
   const ant = await ler(env, "fii-cvm-ant");
   const histAnt = ant && ant.ano === ano - 1 ? ant.hist : {};
+  const cadAnt = ant && ant.ano === ano - 1 && ant.cad ? ant.cad : {};
   const fAtual = emPercentual(hist), fAnt = emPercentual(histAnt);
   const fundos = {};
   let refMax = "";
@@ -174,7 +275,7 @@ export async function etapaAnoCorrente(env) {
     const u = meses[meses.length - 1];
     if (u[0] > refMax) refMax = u[0];
     // h: [mês, DY do mês em %, VP da cota, cotistas, rentabilidade efetiva do mês, PL, cotas emitidas]
-    fundos[t] = { ...cad, ref: u[0], vp: u[2], cot: u[3], pl: u[5], cotas: u[6], h: meses.map((m) => m.slice(0, 5)) };
+    fundos[t] = { ...completar({ ...cad }, cadAnt[t]), ref: u[0], vp: u[2], cot: u[3], pl: u[5], cotas: u[6], h: meses.map((m) => m.slice(0, 5)) };
   }
   const atualizado = new Date().toISOString(), fonte = "CVM, informe mensal de FII";
   await gravar(env, "fii", { atualizado, ref: refMax, fonte, fundos });

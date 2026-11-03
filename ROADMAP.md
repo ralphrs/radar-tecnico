@@ -16,6 +16,7 @@
 - [x] Índice na URL dos itens: a coleta varria a tabela inteira a cada feed e estourou o limite diário de leituras do D1 (01/11)
 - [x] Cache de borda de 3 min nas leituras da API, para poupar o D1 (01/11)
 - [x] Espelho de leitura em São Paulo: Durable Object com SQLite copia do D1 o que a página lê, a cada minuto; Worker sem Smart Placement, D1 só nas gravações e no fallback (02/11)
+- [x] Espelho, acabamento: favoritos e listas lidos do espelho com write-through na gravação, uma sincronia de cada vez (trava de 60 s), desempate fixo na ordem do /api/q, log de leitura amostrado (1 em 20) com os fallbacks contados no card, custo do DO no card Custos (03/11)
 - [ ] Tech com curadoria nova em teste lado a lado; trocar depois da comparação (relatório em docs/relatorios/tech-sombra-2026-11-01.md)
 - [x] Notícias e Política (antes Política) e Esportes no modelo novo, só no D1 (Sonnet 3x/dia); filtro Nacional/Internacional
 - [x] Abas Negócios e Investimentos, já no modelo novo (plano abaixo)
@@ -23,8 +24,8 @@
 ## Próximos passos
 - [ ] Decidir a troca da curadoria Tech com base no relatório de 01/11. Critérios: pelo menos um fato concreto por resumo, fontes brasileiras perto do que a atual traz, e custo por rodada medido (hoje a atual não grava buscas)
 - [ ] Fontes novas de Investimentos a partir do que a sonda aprovar
-- [ ] Mandato dos FIIs: confirmar o nome da coluna no CSV da CVM (o cabeçalho fica registrado no admin) antes de mostrar
-- [ ] Vacância e imóveis dos FIIs a partir do informe trimestral da CVM
+- [x] Mandato, gestão, prazo, administrador, início e público-alvo dos FIIs, do informe mensal da CVM: chips e "Sobre o fundo" no diálogo, filtro Mandato na Bolsa e coluna na tabela a partir de 1200 px (03/11). No informe de 2026 o mandato veio vazio; aparece quando a CVM mandar ou pelo ano anterior
+- [ ] Próximo nos FIIs: vacância e imóveis, a partir do informe trimestral da CVM
 - [ ] Site abrir direto na Bolsa (decisão do Ralph)
 - [ ] Busca com IA só quando o acervo de Tech passar de 3 mil itens ou a busca atual deixar de dar conta
 

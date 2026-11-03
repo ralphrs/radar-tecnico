@@ -11,7 +11,9 @@
 // Espelho em São Paulo (Durable Object com SQLite, src/espelho.js): as linhas lidas e gravadas nele têm os mesmos
 // valores do D1 (25 bi lidas e 50 mi gravadas por mês incluídas), mas numa cota separada, não somada à do D1.
 // Além delas o DO cobra requisições (cada chamada RPC conta uma) e duração enquanto está ativo, em pago.espelho.
-// O card de custos ainda não consulta o uso do DO na API de analytics; por ora é só referência.
+// Com o token, o card mostra as requisições do mês (durableObjectsInvocationsAdaptiveGroups) e o armazenamento
+// (durableObjectsStorageGroups). As requisições saem filtradas pelo script "news" quando a API aceita a dimensão
+// scriptName; se recusar, vem o total da conta (hoje o espelho é o único DO). O armazenamento é o da conta toda.
 
 export const PLANOS = {
   gratis: { workersReqDia: 100_000, d1LidasDia: 5_000_000, d1GravadasDia: 100_000, d1Bytes: 5e9 },
@@ -62,6 +64,21 @@ async function cloudflare(env) {
       const a = await gql(env, conta, `query($conta: String!, $ini: Date!, $fim: Date!) { viewer { accounts(filter: { accountTag: $conta }) {
         d1AnalyticsAdaptiveGroups(limit: 2000, filter: { date_geq: $ini, date_leq: $fim }) { sum { readQueries writeQueries rowsRead rowsWritten } dimensions { date databaseId } } } } }`, { ini, fim });
       return (a.d1AnalyticsAdaptiveGroups || []).map((x) => ({ dia: x.dimensions.date, db: x.dimensions.databaseId, lidas: x.sum.rowsRead, gravadas: x.sum.rowsWritten, consultas: x.sum.readQueries + x.sum.writeQueries }));
+    }),
+    tenta("espelho", async () => {
+      const q = (comScript) => gql(env, conta, `query($conta: String!, $ini: Date!, $fim: Date!) { viewer { accounts(filter: { accountTag: $conta }) {
+        durableObjectsInvocationsAdaptiveGroups(limit: 2000, filter: { date_geq: $ini, date_leq: $fim }) { sum { requests } dimensions { date${comScript ? " scriptName" : ""} } } } } }`, { ini, fim });
+      let a, porScript = true;
+      try { a = await q(true); } catch (e) { a = await q(false); porScript = false; }
+      const linhas = (a.durableObjectsInvocationsAdaptiveGroups || []).filter((x) => !porScript || !x.dimensions.scriptName || x.dimensions.scriptName === (env.WORKER_NOME || "news"));
+      const s = await gql(env, conta, `query($conta: String!, $ini: Date!, $fim: Date!) { viewer { accounts(filter: { accountTag: $conta }) {
+        durableObjectsStorageGroups(limit: 100, filter: { date_geq: $ini, date_leq: $fim }, orderBy: [date_DESC]) { max { storedBytes } dimensions { date } } } } }`, { ini, fim });
+      const st = s.durableObjectsStorageGroups || [];
+      return {
+        req: linhas.map((x) => ({ dia: x.dimensions.date, req: x.sum.requests })),
+        bytes: st.length ? st[0].max.storedBytes : 0,
+        porScript,
+      };
     }),
     tenta("d1Tamanho", async () => {
       const a = await gql(env, conta, `query($conta: String!, $ini: Date!, $fim: Date!) { viewer { accounts(filter: { accountTag: $conta }) {

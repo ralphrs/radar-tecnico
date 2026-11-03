@@ -6,10 +6,19 @@
 // as mudanças para cá a cada minuto. Se o espelho falhar, demorar ou ainda estiver vazio, a leitura vai ao D1.
 //
 // O que fica aqui:
-// - docs: as collections que a página lê (itens, destaques e meta) e _sistema;
+// - docs: as collections que a página lê (itens, destaques e meta), _sistema, e favs/<email> e listas/<email>;
 // - usuarios, grupos e usuario_grupo, inteiras, para conferir convite e seções;
-// - estado: última sincronia, duração, linhas, erro e as últimas medições de tempo.
-// favs/, listas/ e o resto do D1 não vêm para cá.
+// - estado: última sincronia, duração, linhas, erro, as últimas medições de tempo, a trava da sincronia,
+//   as sincronias puladas e os fallbacks para o D1 do dia.
+// O resto do D1 (candidatos, feeds_estado, sombra-*) não vem para cá.
+//
+// favs/ e listas/ são gravados pela própria pessoa. A gravação vai ao D1 (com await) e, logo depois, a mesma linha
+// vai para cá por write-through (gravarNoEspelho / removerDoEspelho, em ctx.waitUntil), para a leitura seguinte já
+// mostrar a mudança sem esperar o cron. Como o D1 grava antes do write-through (await), o espelho nunca recebe
+// uma linha que o D1 ainda não tem. Sobra uma janela curta: o cron leu a lista do D1 um instante antes da gravação
+// e compara depois do write-through; o doc novo pareceria "sobrando" e seria apagado até o minuto seguinte.
+// Para isso o comparar recebe a hora da leitura e não remove o que foi atualizado depois dela.
+// Se o write-through falhar, só loga; a comparação do minuto seguinte conserta.
 
 import { DurableObject } from "cloudflare:workers";
 import { calcularSecoes } from "./grupos.js";
@@ -24,6 +33,14 @@ const LOTES_POR_IDA = 8;      // consultas por batch do D1
 const ORCAMENTO_MS = 25_000;  // a carga para aqui e continua na próxima rodada
 const TIMEOUT_MS = 2_000;     // leitura no espelho que passar disso vai ao D1
 const MINIMO_PARA_TRAVA = 20; // abaixo disso a trava dos 50% não vale (senão um espelho quase vazio nunca encolhe)
+const TRAVA_MS = 60_000;      // uma sincronia iniciada há menos que isso, sem concluir, barra a seguinte
+const AMOSTRA_LOG = 20;       // leitura que deu certo no espelho: loga 1 em cada 20
+
+// Collections por pessoa que também vêm para o espelho. No D1 a busca é por faixa da chave primária
+// (collection >= 'favs/' AND collection < 'favs0', '0' é o caractere seguinte a '/'), que usa o índice;
+// um LIKE 'favs/%' varreria a tabela inteira a cada minuto.
+const PREFIXOS_PESSOAIS = ["favs/", "listas/"];
+const faixa = (p) => [p, p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1)];
 
 // Marca de versão de cada linha, calculada igual dos dois lados. Só o `atualizado` não basta: quem grava
 // com ON CONFLICT DO UPDATE sem mexer nele (meta/status das curadorias, por exemplo) passaria despercebido.
@@ -39,6 +56,11 @@ export class Espelho extends DurableObject {
       CREATE INDEX IF NOT EXISTS docs_col_coletado ON docs (collection, coletado DESC);
       CREATE INDEX IF NOT EXISTS docs_col_data ON docs (collection, json_extract(data, '$.data'));
       CREATE INDEX IF NOT EXISTS docs_col_publicado ON docs (collection, json_extract(data, '$.publicado'));
+      -- Desempate fixo do /api/q (ORDER BY <campo> <dir>, coletado DESC, id DESC): com estes, a ordenação inteira
+      -- sai do índice quando a direção é DESC; em ASC o índice serve a primeira coluna e só os empates vão para ordenar.
+      CREATE INDEX IF NOT EXISTS docs_col_coletado_id ON docs (collection, coletado, id);
+      CREATE INDEX IF NOT EXISTS docs_col_data_des ON docs (collection, json_extract(data, '$.data'), coletado, id);
+      CREATE INDEX IF NOT EXISTS docs_col_publicado_des ON docs (collection, json_extract(data, '$.publicado'), coletado, id);
       CREATE TABLE IF NOT EXISTS usuarios (email TEXT PRIMARY KEY, nome TEXT NOT NULL DEFAULT '', ultimo_acesso TEXT NOT NULL DEFAULT '');
       CREATE TABLE IF NOT EXISTS grupos (id TEXT PRIMARY KEY, nome TEXT NOT NULL, secoes TEXT NOT NULL DEFAULT '[]', padrao INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS usuario_grupo (email TEXT NOT NULL, grupo TEXT NOT NULL, PRIMARY KEY (email, grupo));
@@ -90,9 +112,25 @@ export class Espelho extends DurableObject {
   // ---------- sincronia (chamada só pelo sincronizarEspelho, abaixo) ----------
 
   // lista: [[collection, id, marca], ...] vinda do D1.
-  comparar(lista) {
-    const meu = new Map();
-    for (const r of this.sql.exec(`SELECT collection, id, ${MARCA_SQL} AS marca FROM docs`)) meu.set(r.collection + "\u0000" + r.id, r.marca);
+  // Também é a trava: se outra sincronia começou há menos de 60 s e não chamou concluir, devolve { ocupado: true }
+  // e conta a pulada. O DO atende uma chamada de cada vez e aqui não há await, então conferir e marcar é atômico.
+  // A vez devolvida volta no concluir, que só solta a trava se for a mesma.
+  comparar(lista, lidoEm = "") {
+    const e = this.lerEstado();
+    const agora = Date.now();
+    if (e.sincronia_em && e.sincronia_em.desde && agora - e.sincronia_em.desde < TRAVA_MS) {
+      const p = e.pulada || { n: 0 };
+      this.gravarEstado({ pulada: { n: (p.n || 0) + 1, ultima: new Date(agora).toISOString() } });
+      return { ocupado: true };
+    }
+    const vez = agora.toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+    this.gravarEstado({ sincronia_em: { desde: agora, vez } });
+    const meu = new Map(), recentes = new Set();
+    for (const r of this.sql.exec(`SELECT collection, id, atualizado, ${MARCA_SQL} AS marca FROM docs`)) {
+      const k = r.collection + "\u0000" + r.id;
+      meu.set(k, r.marca);
+      if (lidoEm && r.atualizado > lidoEm) recentes.add(k);
+    }
     const total = meu.size;
     const faltam = [];
     for (const [c, id, marca] of lista) {
@@ -100,8 +138,9 @@ export class Espelho extends DurableObject {
       if (meu.get(k) !== marca) faltam.push({ collection: c, id });
       meu.delete(k);
     }
+    for (const k of recentes) meu.delete(k); // gravado por write-through depois da leitura do D1: fica
     const sobram = [...meu.keys()].map((k) => { const [collection, id] = k.split("\u0000"); return { collection, id }; });
-    return { faltam, sobram, total };
+    return { faltam, sobram, total, vez };
   }
 
   aplicar(docs) {
@@ -127,9 +166,10 @@ export class Espelho extends DurableObject {
 
   // Troca usuarios, grupos e usuario_grupo pelas cópias do D1 e grava o estado, numa ida só.
   // Se as tabelas não mudaram desde a última vez (mesma assinatura), não reescreve nada.
-  concluir({ tabelas, assinatura, estado }) {
+  concluir({ tabelas, assinatura, estado, vez }) {
     let trocou = false;
     this.ctx.storage.transactionSync(() => {
+      if (vez) { const s = this.lerEstado().sincronia_em; if (s && s.vez === vez) this.gravarEstado({ sincronia_em: null }); }
       if (tabelas && assinatura !== this.lerEstado().assinatura_pessoas) {
         this.sql.exec("DELETE FROM usuarios");
         this.sql.exec("DELETE FROM grupos");
@@ -151,7 +191,39 @@ export class Espelho extends DurableObject {
     const porColecao = this.sql.exec("SELECT collection, count(*) AS n FROM docs GROUP BY collection ORDER BY n DESC").toArray();
     const pessoas = this.sql.exec("SELECT (SELECT count(*) FROM usuarios) AS usuarios, (SELECT count(*) FROM grupos) AS grupos").one();
     delete e.assinatura_pessoas;
-    return { ...e, pronto: !!e.ultima_sincronia, docs: n, porColecao, ...pessoas };
+    // favs/<email> e listas/<email> aparecem somados, sem o e-mail de ninguém no admin
+    const agrupado = new Map();
+    for (const r of porColecao) {
+      const c = PREFIXOS_PESSOAIS.find((p) => r.collection.startsWith(p));
+      const k = c ? c + "*" : r.collection;
+      agrupado.set(k, (agrupado.get(k) || 0) + r.n);
+    }
+    const ocupado = !!(e.sincronia_em && e.sincronia_em.desde && Date.now() - e.sincronia_em.desde < TRAVA_MS);
+    delete e.sincronia_em;
+    return { ...e, ocupado, fallbacks: this.fallbacksRecentes(e.fallbacks), pronto: !!e.ultima_sincronia, docs: n,
+      porColecao: [...agrupado].map(([collection, n]) => ({ collection, n })).sort((a, b) => b.n - a.n), ...pessoas };
+  }
+
+  // Leituras que foram ao D1 porque o espelho falhou, demorou ou estava vazio. Janela simples por dia (UTC):
+  // guarda o dia de hoje e o anterior, cada um com a contagem por motivo.
+  registrarFallbacks(contagem) {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const f = this.lerEstado().fallbacks || {};
+    let dias = Array.isArray(f.dias) ? f.dias : [];
+    if (!dias.length || dias[0].dia !== hoje) dias = [{ dia: hoje, motivos: {} }, ...dias].slice(0, 2);
+    for (const [motivo, n] of Object.entries(contagem || {})) {
+      if (!Number.isFinite(n) || n <= 0) continue;
+      const m = String(motivo).slice(0, 20);
+      dias[0].motivos[m] = (dias[0].motivos[m] || 0) + n;
+    }
+    this.gravarEstado({ fallbacks: { dias } });
+    return true;
+  }
+  fallbacksRecentes(f) {
+    const dias = (f && Array.isArray(f.dias) ? f.dias : []);
+    const hoje = new Date().toISOString().slice(0, 10);
+    const ontem = new Date(Date.now() - 86400_000).toISOString().slice(0, 10);
+    return dias.filter((d) => d.dia === hoje || d.dia === ontem);
   }
 
   // Guarda as duas últimas medições de tempo feitas pelo admin (espelho contra D1).
@@ -177,26 +249,69 @@ export function stubEspelho(env) {
 
 export const espelhoLigado = (env) => !!env.ESPELHO && String(env.ESPELHO_ATIVO ?? "1") !== "0";
 
+// Log das leituras. Cada console.log vira um evento de observabilidade (cota de 20 mi por mês), então a leitura
+// que deu certo no espelho é amostrada: 1 em cada 20 por isolate, com "amostra": 20 no evento. Quando a leitura
+// cai no D1 por falha, timeout ou espelho vazio, loga sempre, com o motivo.
+let leituras = 0;
+export const amostrar = () => (++leituras % AMOSTRA_LOG === 0);
+
+// Fallbacks somados no isolate e mandados ao DO no máximo a cada 10 s (em waitUntil), para o card do admin.
+// Se o isolate morrer antes, a contagem dele se perde; é uma janela aproximada, de propósito barata.
+const fallbacksPendentes = {};
+let fallbacksEnviadoEm = 0;
+function contarFallback(env, motivo) {
+  fallbacksPendentes[motivo] = (fallbacksPendentes[motivo] || 0) + 1;
+  if (Date.now() - fallbacksEnviadoEm < 10_000) return;
+  fallbacksEnviadoEm = Date.now();
+  const envio = { ...fallbacksPendentes };
+  for (const k of Object.keys(fallbacksPendentes)) delete fallbacksPendentes[k];
+  const p = stubEspelho(env).registrarFallbacks(envio).catch(() => {});
+  if (env.ctx) env.ctx.waitUntil(p);
+}
+
+// Loga a leitura feita no D1. Com o espelho ligado ela é sempre um fallback (o motivo já saiu no log do doEspelho)
+// e loga sempre; com ESPELHO_ATIVO=0 é o caminho normal e entra na amostragem.
+export function logD1(env, rotulo, ms) {
+  if (espelhoLigado(env)) console.log(JSON.stringify({ leitura: "d1", rotulo, ms }));
+  else if (amostrar()) console.log(JSON.stringify({ leitura: "d1", rotulo, ms, amostra: AMOSTRA_LOG }));
+}
+
 // Chama o espelho com limite de 2 s. Devolve o resultado, ou null quando é para ler do D1 (desligado, vazio,
-// lento ou com erro). Loga o tempo para comparar com o D1.
+// lento ou com erro).
 export async function doEspelho(env, rotulo, chamar) {
   if (!espelhoLigado(env)) return null;
   const t0 = Date.now();
-  let timer;
+  let timer, estourou = false;
+  const caiu = (motivo, extra) => {
+    console.log(JSON.stringify({ leitura: "espelho", rotulo, ms: Date.now() - t0, fallback: motivo, ...extra }));
+    try { contarFallback(env, motivo); } catch (e) {}
+    return null;
+  };
   try {
     const r = await Promise.race([
       chamar(stubEspelho(env)),
-      new Promise((_, rej) => { timer = setTimeout(() => rej(new Error("passou de " + TIMEOUT_MS + " ms")), TIMEOUT_MS); }),
+      new Promise((_, rej) => { timer = setTimeout(() => { estourou = true; rej(new Error("passou de " + TIMEOUT_MS + " ms")); }, TIMEOUT_MS); }),
     ]);
-    if (!r || !r.pronto) { console.log(JSON.stringify({ leitura: "espelho", rotulo, ms: Date.now() - t0, pronto: false })); return null; }
-    console.log(JSON.stringify({ leitura: "espelho", rotulo, ms: Date.now() - t0 }));
+    if (!r || !r.pronto) return caiu("vazio");
+    if (amostrar()) console.log(JSON.stringify({ leitura: "espelho", rotulo, ms: Date.now() - t0, amostra: AMOSTRA_LOG }));
     return r;
   } catch (e) {
-    console.error(JSON.stringify({ leitura: "espelho", rotulo, ms: Date.now() - t0, erro: String(e && e.message || e) }));
-    return null;
+    return caiu(estourou ? "timeout" : "erro", estourou ? {} : { erro: String(e && e.message || e).slice(0, 200) });
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Write-through de favs/ e listas/: chamado depois que o D1 gravou. Nunca lança; erro só vai para o log.
+export function gravarNoEspelho(env, docs) {
+  if (!env.ESPELHO || !docs.length) return;
+  const p = stubEspelho(env).aplicar(docs).catch((e) => console.error("espelho write-through", String(e && e.message || e)));
+  if (env.ctx) env.ctx.waitUntil(p);
+}
+export function removerDoEspelho(env, chaves) {
+  if (!env.ESPELHO || !chaves.length) return;
+  const p = stubEspelho(env).remover(chaves).catch((e) => console.error("espelho write-through", String(e && e.message || e)));
+  if (env.ctx) env.ctx.waitUntil(p);
 }
 
 // Convidado e seções de uma vez. null quando é para ler do D1.
@@ -233,10 +348,19 @@ export async function sincronizarEspelho(env, { soPessoas = false } = {}) {
   try {
     if (!soPessoas) {
       // 1. O que o D1 tem, só chave e marca
+      const lidoEm = new Date(Date.now() - 2000).toISOString(); // 2 s de folga para relógios de isolates diferentes
       const marcas = COLECOES_ESPELHO.map((_, k) => `?${k + 1}`).join(",");
-      const { results } = await env.DB.prepare(`SELECT collection, id, ${MARCA_SQL} AS marca FROM docs WHERE collection IN (${marcas})`).bind(...COLECOES_ESPELHO).all();
+      const faixas = PREFIXOS_PESSOAIS.map(faixa);
+      const n = COLECOES_ESPELHO.length;
+      const porFaixa = faixas.map((_, k) => `(collection >= ?${n + 2 * k + 1} AND collection < ?${n + 2 * k + 2})`).join(" OR ");
+      const { results } = await env.DB.prepare(`SELECT collection, id, ${MARCA_SQL} AS marca FROM docs WHERE collection IN (${marcas}) OR ${porFaixa}`)
+        .bind(...COLECOES_ESPELHO, ...faixas.flat()).all();
       if (!results.length) throw new Error("o D1 devolveu a lista vazia; nada foi apagado");
-      const { faltam, sobram, total } = await stub.comparar(results.map((r) => [r.collection, r.id, r.marca]));
+      const cmp = await stub.comparar(results.map((r) => [r.collection, r.id, r.marca]), lidoEm);
+      // Outra sincronia (cron ou botão do admin) está no meio: sai em silêncio, o DO já contou a pulada.
+      if (cmp.ocupado) return { ...res, pulada: true, duracao_ms: Date.now() - t0 };
+      const { faltam, sobram, total } = cmp;
+      res.vez = cmp.vez;
       if (total >= MINIMO_PARA_TRAVA && sobram.length > total / 2)
         throw new Error(`a sincronia apagaria ${sobram.length} de ${total} docs do espelho; parei por segurança`);
 
@@ -274,15 +398,17 @@ export async function sincronizarEspelho(env, { soPessoas = false } = {}) {
       Object.assign(estado, { linhas: res.linhas, pendentes: res.pendentes, ultimos: { aplicados: res.aplicados, removidos: res.removidos } });
       if (!res.pendentes && pessoas) estado.ultima_sincronia = agora;
     }
-    const c = await stub.concluir({ tabelas: pessoas?.tabelas, assinatura: pessoas?.assinatura, estado });
+    const c = await stub.concluir({ tabelas: pessoas?.tabelas, assinatura: pessoas?.assinatura, estado, vez: res.vez });
     res.pessoas = c.trocou;
     res.duracao_ms = estado.duracao_ms;
+    delete res.vez;
     if (!soPessoas && (res.aplicados || res.removidos || res.pendentes)) console.log("espelho", JSON.stringify(res));
     return res;
   } catch (e) {
     const erro = String(e && e.message || e).slice(0, 300);
     console.error("espelho", erro);
-    try { await stub.concluir({ estado: { erro, ultima_tentativa: new Date().toISOString(), duracao_ms: Date.now() - t0 } }); } catch (e2) {}
+    try { await stub.concluir({ estado: { erro, ultima_tentativa: new Date().toISOString(), duracao_ms: Date.now() - t0 }, vez: res.vez }); } catch (e2) {}
+    delete res.vez;
     return { ...res, ok: false, erro };
   }
 }
@@ -302,7 +428,7 @@ export async function adminEspelho(request, env) {
     return resposta({ ok: r.ok, sincronia: r, estado: await stub.estado(), ativo: espelhoLigado(env) });
   }
   if (request.method !== "GET") return resposta({ erro: "metodo" }, 405);
-  const sql = "SELECT id, data FROM docs WHERE collection = ? ORDER BY coletado DESC LIMIT ?";
+  const sql = "SELECT id, data FROM docs WHERE collection = ? ORDER BY coletado DESC, id DESC LIMIT ?";
   const args = ["items", 20];
   const medir = async (fn) => { const t = Date.now(); try { await fn(); return Date.now() - t; } catch (e) { return null; } };
   const espelhoMs = await medir(() => stub.consultar(sql, args));
