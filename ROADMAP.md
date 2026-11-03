@@ -69,3 +69,15 @@ Investimentos
 ## Depois
 - [ ] Domínio próprio
 - [ ] Marcar como lido, esconder fonte, atalhos de teclado
+
+## Pedidos de 03/11 (ainda não feitos)
+Tabelas e sidebars (próximo pacote):
+- [ ] Ordenar sem perder a rolagem horizontal; paginação (25/50/100) no lugar de "Ver todos"; filtro por coluna (texto e faixa numérica, com chips); ordenação por várias colunas (Shift+clique, prioridade no cabeçalho); estado salvo por tabela
+- [ ] Sidebars recolhíveis por um ícone na própria sidebar, estado salvo por pessoa
+- [ ] Bolsa: separar FIIs, FI-Infra e Fiagro pelo `sub` da brapi (IRIF11 é FI-Infra e não tem informe de FII na CVM); proventos deles via ficha (Yahoo) marcados "via Yahoo"
+
+Listas (rodada seguinte):
+- [ ] Listas por regra: na criação, um layout de regras sobre os dados que já existem (P/VP, DY, liquidez, cotistas, segmento, mandato, classe, carteira...); a lista se realimenta a cada atualização e guarda histórico de quem entrou e saiu, com data e motivo
+- [ ] Comparações com a carteira importada, para cada papel que tu tem: preço atual × preço médio, resultado em R$ e %, quanto falta para empatar, DY sobre custo × DY atual, posição contra os parâmetros da regra
+- [ ] Sugestões: o Lookout pode sugerir papéis que passam na regra e ajustes na regra (sempre como fato e conta, nunca como recomendação)
+- [ ] Lista de listas: tela própria (também pelo menu do perfil) com todas as listas, ligar/desligar sem excluir (lista desligada some da Bolsa e do Início, mas fica guardada), ordem e contagem
