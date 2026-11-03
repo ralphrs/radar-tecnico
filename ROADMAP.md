@@ -30,7 +30,8 @@
 - [x] Início: painel de widgets configurável (resumos de cada seção, mercado, pregão, FIIs, EUA, listas, favoritos e "Hoje no Lookout"), com ordem, largura e o que aparece salvos na conta em `prefs/<email>`, arrastar e soltar no desktop e o site abrindo nele (03/11)
 - [x] Minha carteira: importação dos extratos da B3 no navegador, posições, preço médio, proventos, meta com projeção, rentabilidade por cotas, IR para conferir, widgets "seu" no Início, tudo cifrado com `CARTEIRA_KEY` em `carteira/<email>` (03/11)
 - [ ] Carteira: comparação com IFIX, CDI e Ibovespa (falta guardar a série histórica dos índices), datas com e de pagamento dos rendimentos, Tesouro e renda fixa, lista de bens e direitos para a declaração, exportar CSV
-- [ ] Radar de dividendos pelo filtro da pessoa e o bloco "onde o aporte rende mais" na Meta
+- [x] Radar de dividendos (visão Radar de Investimentos): filtros salvos por pessoa, quem passa hoje com avisos e "Na meta", carteira contra o filtro, Leitura do dia gerada no Worker por templates às 7h40, widgets Meu radar, Leitura do dia e Carteira contra o filtro, e o bloco "onde o aporte rende mais" na Meta (03/11)
+- [ ] Radar: "anos seguidos pagando" (brapi) e "anos seguidos aumentando" (Finnhub) pedem guardar o histórico de dividendos por ano nas fichas; P/L e DY das ações dependem de a ficha ter sido aberta (vale buscar as do universo no cron quando os tokens entrarem); data com e de pagamento na Leitura do dia quando houver fonte
 - [ ] Busca com IA só quando o acervo de Tech passar de 3 mil itens ou a busca atual deixar de dar conta
 
 ## Próximo: Negócios e Investimentos

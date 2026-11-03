@@ -11,6 +11,10 @@ import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
 import { rotaPapel, cronPapel, ID_OK as PAPEL_ID_OK } from "./papel.js";
 import { BDR_DE_US, US_DE_BDR } from "./bdr.js";
 import { rotaCarteira, limparCacheCarteira } from "./carteira.js";
+import { rotaLeitura, cronLeitura, lerFundamentos } from "./leitura.js";
+// Radar de dividendos: o mesmo arquivo que a página carrega (critérios, avisos e validação dos filtros salvos)
+import "../public/radar-filtro.js";
+const RF = globalThis.RadarFiltro;
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
 export { Espelho } from "./espelho.js";
@@ -342,6 +346,43 @@ async function prefsPainel(request, env, quem) {
   return json({ erro: "metodo" }, 405);
 }
 
+// Radar de dividendos (visão Radar de Investimentos): filtros salvos de cada pessoa em prefs/<email>, id "radar",
+// { filtros: [...], padrao, atualizado }. Mesmo caminho do painel; validação e padrão de fábrica em public/radar-filtro.js.
+async function prefsRadar(request, env, quem) {
+  if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
+  const col = "prefs/" + quem.email;
+  if (request.method === "GET") {
+    const linhas = await lerLinhas(env, "SELECT id, data FROM docs WHERE collection = ? AND id = ?", [col, "radar"], "prefs");
+    let salvo = null;
+    try { salvo = linhas[0] ? JSON.parse(linhas[0].data) : null; } catch { salvo = null; }
+    return json(RF.respostaPrefs(salvo));
+  }
+  if (request.method === "PUT") {
+    const corpo = await request.text();
+    if (corpo.length > 12000) return json({ erro: "grande" }, 413);
+    let b;
+    try { b = JSON.parse(corpo); } catch { return json({ erro: "json" }, 400); }
+    const v = RF.validarPrefs(b);
+    if (v.erro) return json({ erro: v.erro }, 400);
+    const doc = { filtros: v.filtros, padrao: v.padrao, atualizado: agoraIso() };
+    const data = JSON.stringify(doc);
+    await env.DB.prepare(
+      "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, 'radar', ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
+    ).bind(col, data, doc.atualizado).run();
+    gravarNoEspelho(env, [{ collection: col, id: "radar", data, coletado: "", atualizado: doc.atualizado }]);
+    return json({ ok: true, ...RF.respostaPrefs(doc) });
+  }
+  return json({ erro: "metodo" }, 405);
+}
+
+// Múltiplos (P/L, P/VP, DY, dividendo 12m, variação em 1 ano) das fichas de papel já guardadas em `hist`, compactos,
+// para o Radar filtrar ações da B3 e dos EUA. Igual para todo mundo: cache de 30 s no isolate e 3 min na borda.
+async function fundamentos(env, quem, request) {
+  if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
+  const janela = Math.floor(Date.now() / 600_000);
+  return comCache("fundamentos|" + janela, () => lerFundamentos(env), request);
+}
+
 // Widget "Hoje no Lookout": notícias que entraram nas últimas 24 h e a última rodada de cada seção liberada.
 // Uma ida só ao banco: os docs meta/status* e a contagem por collection, juntos num UNION ALL. A consulta começa
 // por "SELECT id, data FROM docs", que é o que o espelho aceita (só leitura na tabela docs); nas linhas da
@@ -421,10 +462,10 @@ async function adminUsuarios(request, env, email) {
     return json({ ok: true });
   }
   if (request.method === "DELETE" && email) {
-    // carteira/<email>: os três docs cifrados da Minha carteira saem junto (sem abrir)
-    const cols = ["favs/", "listas/", "prefs/", "carteira/"].map((p) => p + email.toLowerCase());
+    // carteira/<email>: os três docs cifrados da Minha carteira saem junto (sem abrir); leitura/<email>, a Leitura do dia
+    const cols = ["favs/", "listas/", "prefs/", "carteira/", "leitura/"].map((p) => p + email.toLowerCase());
     // As chaves saem antes do DELETE para o espelho apagar as mesmas linhas logo depois
-    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?, ?, ?)").bind(...cols).all();
+    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?, ?, ?, ?)").bind(...cols).all();
     await env.DB.prepare("DELETE FROM usuarios WHERE email = ?").bind(email.toLowerCase()).run();
     for (const c of cols) await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind(c).run();
     removerDoEspelho(env, chaves);
@@ -495,6 +536,17 @@ export default {
       return prefsPainel(request, env, quem);
     }
     if (p === "/api/painel/hoje" && request.method === "GET") return painelHoje(env, quem, request);
+    if (p === "/api/prefs/radar") {
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      return prefsRadar(request, env, quem);
+    }
+    if (p === "/api/radar/fundamentos" && request.method === "GET") return fundamentos(env, quem, request);
+    // Leitura do dia (src/leitura.js): pessoal, cifrada, sem cache
+    if (p === "/api/leitura" || p === "/api/leitura/gerar") {
+      if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      return rotaLeitura(request, env, quem, p === "/api/leitura" ? "" : "gerar", { lerLinhas, lerLinha, gravarNoEspelho });
+    }
     if (p === "/api/papel" && request.method === "GET") return fichaPapel(url, env, quem);
     if (p === "/api/listas" || p.startsWith("/api/listas/")) {
       const idLista = p.length > 12 ? decodificar(p.slice(12)) : "";
@@ -552,6 +604,12 @@ export default {
     try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
     try { await cronSonda(env); } catch (e) { console.error("sonda", e); }
     try { const r = await cronPapel(env, evento.scheduledTime || Date.now()); if (r && r.candidatos) console.log("papel", JSON.stringify(r)); } catch (e) { console.error("papel", e); }
+    // Leitura do dia: 10h40 a 10h49 UTC (7h40 em São Paulo), depois do informe da CVM das 10h17
+    try {
+      const podeVer = async (email) => { const admin = email === String(env.ADMIN_EMAIL || "").trim().toLowerCase(); if (!admin && !(await env.DB.prepare("SELECT 1 FROM usuarios WHERE email = ?").bind(email).first())) return false; return libera(await secoesDe(env, email, admin), "investimentos"); };
+      const r = await cronLeitura(env, evento.scheduledTime || Date.now(), { lerLinhas, lerLinha, gravarNoEspelho }, podeVer);
+      if (r && (r.geradas || r.erros)) console.log("leitura", JSON.stringify(r));
+    } catch (e) { console.error("leitura", String((e && e.message) || e).slice(0, 120)); }
     if (minuto === 7) {
       // Índice que a coleta precisa (barato: só confere o catálogo). Fica aqui para valer mesmo onde o schema.sql não foi reaplicado.
       try { await env.DB.prepare("CREATE INDEX IF NOT EXISTS docs_url ON docs (json_extract(data, '$.url'))").run(); } catch (e) { console.error("indice", e); }

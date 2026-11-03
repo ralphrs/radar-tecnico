@@ -953,6 +953,102 @@ html.no-inicio .conta-btn { margin-left: auto; }
   .ct-ferr label { flex: 1 1 100%; }
   .ct-quem { flex: 1 1 100%; order: 5; }
 }
+/* Radar de dividendos (#investimentos/radar): filtros na coluna esquerda (folha de baixo no celular), tabela de quem
+   passa e os cards da Leitura do dia e da carteira contra o filtro. Sem trilho direito: a tabela usa a largura dele. */
+html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
+@media (max-width: 899px) { html.inv-radar .mercado { top: var(--cab-h, 0px); } html.inv-radar .barra { position: static; } html.inv-radar .barra-linha { display: none; } }
+@media (min-width: 1200px) {
+  html.inv-radar .wrap { grid-template-columns: 260px minmax(0, 1fr); grid-template-areas: "topo topo" "nav centro"; max-width: 1360px; }
+  html.inv-radar .lateral { display: none; }
+}
+.rd { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.nav-radar { display: flex; flex-direction: column; gap: 14px; }
+.rd-form { display: flex; flex-direction: column; gap: 14px; }
+.rd-form .rotulo { padding-inline: 0; margin-bottom: 6px; display: block; }
+.rd-form .nav-radar-tit { display: flex; align-items: center; gap: 8px; }
+.rd-campo { display: flex; flex-direction: column; min-width: 0; }
+.rd-campo .dd-input { height: var(--control-h-sm); }
+.rd-campo .campo { display: flex; align-items: center; gap: 8px; }
+.rd-campo .campo span { font-size: 12.5px; color: var(--muted-foreground); white-space: nowrap; }
+.rd-campo select.dd-input { width: 100%; padding-right: 8px; }
+.rd-form .seg { flex-wrap: wrap; max-width: 100%; }
+.rd-form .seg button { height: 26px; padding: 0 10px; font-size: 12.5px; }
+.rd-form .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rd-form .chip { height: 28px; padding: 0 10px; font-size: 12.5px; }
+.rd-form .chip .k { font-size: 10.5px; }
+.rd-acoes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rd-acoes .dd-btn { height: var(--control-h-sm); }
+.rd-mais { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; font-size: 13px; }
+.rd-mais .dd-btn--link { font-size: 13px; }
+.rd-estado { margin: 0; font-size: 12.5px; color: var(--muted-foreground); min-height: 18px; }
+.rd-estado.warn { color: var(--warn); }
+.rd-dica { margin: 0; font-size: 12px; line-height: 1.45; color: var(--muted-foreground); }
+.rd-cab { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; }
+.rd-cab h2 { margin: 0; font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; }
+.rd-cab .ct-sub { font: 400 12.5px/16px var(--font-mono); color: var(--muted-foreground); }
+.rd-cab .ct-esp { flex: 1 1 auto; }
+.rd-aporte { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted-foreground); }
+.rd-aporte .dd-input { width: 110px; height: var(--control-h-sm); font-family: var(--font-mono); }
+.rd-filtrobar { display: none; }
+.rd-tab { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.rd-tab th { text-align: right; font: 600 11px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .04em; color: var(--muted-foreground); padding: 8px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.rd-tab th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.rd-tab th button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
+.rd-tab th[aria-sort="ascending"] button::after { content: "▲"; font-size: 9px; }
+.rd-tab th[aria-sort="descending"] button::after { content: "▼"; font-size: 9px; }
+.rd-tab td { padding: 8px 8px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; font-family: var(--font-mono); font-size: 13px; }
+.rd-tab tr:last-child td { border-bottom: 0; }
+.rd-tab th:first-child, .rd-tab td:first-child { text-align: left; position: sticky; left: 0; background: var(--card); z-index: 1; }
+.rd-tab td:first-child { font-family: var(--font-sans); }
+.rd-tab td.av, .rd-tab th.av { text-align: left; white-space: normal; min-width: 230px; }
+.rd-tab td.av .ct-tag { margin: 1px 4px 1px 0; font-size: 11px; line-height: 15px; padding: 0 6px; }
+.rd-tab td.av .ct-tag + .ct-tag { margin-left: 0; }
+.rd-tab .seg-t { margin-left: 6px; font: 400 12px var(--font-sans); color: var(--muted-foreground); }
+.rd-tab .sobe { color: var(--ok); } .rd-tab .desce { color: var(--err); }
+.rd-tab .rd-meta { color: var(--ok); }
+.rd-pe { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--muted-foreground); }
+.rd-pe b { color: var(--foreground); font-weight: 600; }
+.rd-barra-falhas { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted-foreground); }
+.rd-barra-falhas b { font: 500 12.5px var(--font-mono); color: var(--foreground); }
+.rd-baixo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.rd-baixo.um { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1099px) { .rd-baixo { grid-template-columns: minmax(0, 1fr); } }
+.rd-leitura { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rd-leitura li { font-size: 14px; line-height: 1.5; padding-left: 14px; position: relative; }
+.rd-leitura li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--primary) 55%, transparent); }
+.rd-leitura .cot-papel { font-size: 13px; }
+.rd-fecho { font: 500 12px/16px var(--font-mono); color: var(--muted-foreground); }
+.rd-pe-card { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--border); }
+.rd-pe-card .dd-btn { height: var(--control-h-sm); }
+.rd-contra .ct-linhas > div > span:last-child { color: var(--muted-foreground); font-size: 13px; text-align: right; }
+.rd-big { font: 500 26px/1.1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.rd-big small { font: 400 13px var(--font-sans); color: var(--muted-foreground); margin-left: 8px; }
+/* widgets do Início */
+.wdg-rd.ct-linhas > div { font-size: 13px; }
+.wdg-rd.ct-linhas .ct-tag { font-size: 10.5px; line-height: 14px; padding: 0 6px; margin-left: 4px; }
+.wdg-rd.ct-linhas .ct-mono { font-size: 12px; color: var(--muted-foreground); }
+.wdg-leitura { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.45; }
+.wdg-leitura .cot-papel { font-size: 12.5px; }
+.wdg-fecho { font: 400 11.5px/16px var(--font-mono); color: var(--muted-foreground); }
+/* Meta: onde o aporte rende mais */
+.mt-rd .ct-linhas > div > span:last-child { color: var(--ok); }
+@media (max-width: 899px) {
+  .rd-filtrobar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); }
+  .rd-filtrobar > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .rd-filtrobar b { font: 600 14px/1.3 var(--font-sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rd-filtrobar span { font: 400 12px/16px var(--font-mono); color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rd-filtrobar .dd-btn { flex: none; height: var(--control-h-sm); }
+}
+@media (max-width: 699px) {
+  .rd { gap: 14px; }
+  .rd-cab .rd-aporte { flex: 1 1 100%; }
+  .rd-cab .rd-aporte .dd-input { flex: 1; width: auto; }
+  .rd-tab th, .rd-tab td { padding: 7px 6px; }
+  .rd-tab .seg-t { display: none; }
+  .rd-aporte { white-space: nowrap; }
+}
+.rd-folha .painel-corpo { padding-block: 14px; }
+.rd-folha .rd-form .dd-input { height: 40px; font-size: 16px; }
 </style>
 
 <div class="wrap">
@@ -980,6 +1076,7 @@ html.no-inicio .conta-btn { margin-left: auto; }
     </div>
     <button class="dd-btn dd-btn--link nav-limpar" type="button" id="nav-limpar" hidden>Limpar filtros</button>
     <div class="nav-bolsa" id="bolsa-filtros" hidden></div>
+    <div class="nav-radar" id="radar-filtros" hidden></div>
   </nav>
 
   <div class="centro">
@@ -1048,12 +1145,14 @@ html.no-inicio .conta-btn { margin-left: auto; }
   <div class="seg visoes" id="visoes" role="group" aria-label="Visão de Investimentos" hidden>
     <button type="button" id="visao-bolsa" aria-pressed="true">Bolsa</button>
     <button type="button" id="visao-eua" aria-pressed="false">EUA</button>
+    <button type="button" id="visao-radar" aria-pressed="false">Radar</button>
     <button type="button" id="visao-noticias" aria-pressed="false">Notícias</button>
   </div>
   <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
   <div class="mercado-pe" id="mercado-pe" hidden></div>
   <section class="rankings" id="rankings" aria-label="Destaques do pregão" hidden></section>
   <section class="cotacoes" id="cotacoes" aria-label="Cotações da B3" hidden></section>
+  <section class="rd" id="radar" aria-label="Radar de dividendos" hidden></section>
   <div id="listas-centro"></div>
 
   <div class="feed-topo" role="toolbar" aria-label="Ordem e exibição do feed">
@@ -1098,6 +1197,15 @@ html.no-inicio .conta-btn { margin-left: auto; }
   <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sair</a>
 </div>
 
+<div class="pers-veu" id="rd-veu" hidden></div>
+<div class="pers rd-folha" id="rd-folha" role="dialog" aria-modal="true" aria-labelledby="rd-folha-titulo" tabindex="-1" hidden>
+  <div class="painel-topo">
+    <h2 id="rd-folha-titulo">Meu radar</h2>
+    <button class="dd-btn dd-btn--ghost alvo" type="button" id="rd-folha-fechar">Fechar</button>
+  </div>
+  <div class="painel-corpo" id="rd-folha-corpo"></div>
+  <div class="painel-pe" id="rd-folha-pe"></div>
+</div>
 <div class="pers-veu" id="pers-veu" hidden></div>
 <div class="pers" id="pers" role="dialog" aria-modal="true" aria-labelledby="pers-titulo" tabindex="-1" hidden>
   <div class="painel-topo">
@@ -1114,6 +1222,7 @@ html.no-inicio .conta-btn { margin-left: auto; }
   </div>
 </div>
 
+<script src="/radar-filtro.js"></script>
 <script>
 /* Lookout: adaptador que imita o banco do artifact (window.claude.use) usando a API do Worker.
    Leituras viram GET em /api/q e /api/doc; "onSnapshot" vira consulta a cada 2 minutos e quando a aba volta ao foco.
@@ -1457,7 +1566,7 @@ try {
    #investimentos/noticias, o feed. */
 const partesDoHash = () => (location.hash || "").replace(/^#/, "").split("/");
 const radarDoHash = () => { const h = partesDoHash()[0]; return RADARES[h] ? h : (h ? null : ""); };
-const VISOES = ["bolsa", "eua", "noticias"];
+const VISOES = ["bolsa", "eua", "radar", "noticias"];
 const visaoDoHash = () => { const v = partesDoHash()[1]; return VISOES.includes(v) ? v : "bolsa"; };
 let visao = "bolsa";
 {
@@ -1470,6 +1579,8 @@ const R = () => RADARES[radar];
 /* Bolsa e EUA têm o mesmo esqueleto (pregão, tabela, filtros, listas): emBolsa vale para as duas; emEua só para a americana */
 const emBolsa = () => !inicio && !!R().mercado && (visao === "bolsa" || visao === "eua");
 const emEua = () => !inicio && !!R().mercado && visao === "eua";
+/* Radar de dividendos (#investimentos/radar): filtros à esquerda, tabela e cards no centro; sem trilho direito */
+const emRadar = () => !inicio && !!R().mercado && visao === "radar";
 /* Liga TEMAS, TIPOS, mapas e filtros salvos ao radar aberto */
 function aplicarRadar() {
   const r = R();
@@ -1615,7 +1726,7 @@ async function lerB3(fresco) {
   const novo = await lerMeta("b3", fresco);
   if (!R().mercado || (b3Lido && mesmoMeta(b3, novo))) return;
   b3Lido = true; if (novo !== undefined) b3 = novo;
-  renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas();
+  renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas(); renderRadarVisao();
 }
 /* Cotações dos EUA (meta/eua): ações do S&P 100, ETFs e índices, gravadas pelo cron a cada 30 min no pregão de Nova York */
 async function lerEua(fresco) {
@@ -1623,7 +1734,7 @@ async function lerEua(fresco) {
   const novo = await lerMeta("eua", fresco);
   if (!R().mercado || (euaLido && mesmoMeta(eua, novo))) return;
   euaLido = true; if (novo !== undefined) eua = novo;
-  renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas(); if (emEua()) renderHoje();
+  renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas(); renderRadarVisao(); if (emEua()) renderHoje();
 }
 /* Dados dos FIIs do informe mensal da CVM. Tabela, rankings, filtros e listas usam o resumo por papel (meta/fii-resumo,
    sem histórico); o histórico (meta/fii) só desce quando um FII é aberto. Enquanto o resumo não existir no banco, cai no
@@ -1639,7 +1750,7 @@ function lerFii() {
       if (j.existe) fiiCvm = { ...j.data, resumo: true };
       else { const k = await lerDocMeta("fii"); fiiCvm = k.existe ? k.data : { fundos: {} }; if (k.existe) fiiHist = fiiCvm; }
     } catch (e) { fiiCvm = { fundos: {} }; }
-    lendoFii = null; renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas();
+    lendoFii = null; renderRankings(); renderCotacoes(); renderNavBolsa(); renderListas(); renderRadarVisao();
   })();
   return lendoFii;
 }
@@ -1896,22 +2007,27 @@ function aplicarVisao() {
   const inv = !inicio && !!R().mercado, bolsa = emBolsa(), html = document.documentElement;
   html.classList.toggle("inv-bolsa", bolsa);
   html.classList.toggle("inv-eua", emEua());
-  html.classList.toggle("inv-noticias", inv && !bolsa);
+  html.classList.toggle("inv-radar", emRadar());
+  html.classList.toggle("inv-noticias", inv && !bolsa && !emRadar());
   $("visoes").hidden = !inv;
   $("visao-bolsa").setAttribute("aria-pressed", String(inv && visao === "bolsa"));
   $("visao-eua").setAttribute("aria-pressed", String(emEua()));
-  $("visao-noticias").setAttribute("aria-pressed", String(inv && !bolsa));
+  $("visao-radar").setAttribute("aria-pressed", String(emRadar()));
+  $("visao-noticias").setAttribute("aria-pressed", String(inv && visao === "noticias"));
   $("cotacoes").setAttribute("aria-label", emEua() ? "Cotações dos EUA" : "Cotações da B3");
   /* cada visão volta para a classe que tinha da última vez */
   if (bolsa && emEua() !== ABAS_EUA.has(cotAba)) {
     cotAba = emEua() ? cotAbaEua : cotAbaBr; cotTodos = false; cotBusca = "";
     if (!COT_COLUNAS[cotAba].some((c) => c[0] === cotOrdem.campo)) cotOrdem = { campo: "liq", dir: -1 };
   }
-  document.querySelector(".feed-topo").hidden = bolsa;
-  $("feed").hidden = bolsa;
-  document.querySelector("footer").hidden = bolsa;
-  for (const id of ["busca-nav", "nav-grupo-tipos", "nav-grupo-temas"]) $(id).hidden = bolsa;
+  const semFeed = bolsa || emRadar();
+  document.querySelector(".feed-topo").hidden = semFeed;
+  $("feed").hidden = semFeed;
+  document.querySelector("footer").hidden = semFeed;
+  for (const id of ["busca-nav", "nav-grupo-tipos", "nav-grupo-temas"]) $(id).hidden = semFeed;
   $("bolsa-filtros").hidden = !bolsa;
+  $("radar-filtros").hidden = !emRadar();
+  $("radar").hidden = !emRadar();
 }
 function trocarVisao(v, porHash) {
   if (!R().mercado || !VISOES.includes(v)) return;
@@ -1924,6 +2040,7 @@ function trocarVisao(v, porHash) {
 }
 $("visao-bolsa").addEventListener("click", () => trocarVisao("bolsa"));
 $("visao-eua").addEventListener("click", () => trocarVisao("eua"));
+$("visao-radar").addEventListener("click", () => trocarVisao("radar"));
 $("visao-noticias").addEventListener("click", () => trocarVisao("noticias"));
 
 /* Carrossel automático dos destaques no trilho direito (visão Bolsa, 1200 px ou mais): troca a cada 7 s,
@@ -3472,7 +3589,7 @@ function render() {
   clearTimeout(tBusca); tBusca = 0;
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
-  aplicarVisao(); renderRadares(); renderPregao(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
+  aplicarVisao(); renderRadares(); renderPregao(); renderRadarVisao(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
   /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
@@ -3895,6 +4012,9 @@ const CATALOGO_LOCAL = [
   { id: "carteira-agenda", titulo: "Agenda da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-rentabilidade", titulo: "Rentabilidade", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-alertas", titulo: "Alertas da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "radar-meu", titulo: "Meu radar", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "leitura-dia", titulo: "Leitura do dia", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-contra-filtro", titulo: "Carteira contra o filtro", tamanho: 1, secao: "investimentos", pessoal: true },
 ];
 const PADRAO_LOCAL = ["hoje", "mercado", "destaques-tech", "destaques-negocios", "destaques-investimentos", "destaques-politica", "pregao", "eua", "listas", "favoritos", "destaques-esportes", "ultimas-tech"];
 let painelCat = null, painelW = null, painelSalvoTxt = null, painelMontado = false, prefsPedidas = false, meuNome = "";
@@ -3917,6 +4037,7 @@ function destinoDe(id) {
   if (id === "eua") return "#investimentos/eua";
   if (id === "mercado" || id === "pregao" || id === "fiis" || id === "listas") return "#investimentos";
   if (id === "carteira-meta") return "#carteira/meta";
+  if (id === "radar-meu" || id === "leitura-dia" || id === "carteira-contra-filtro") return "#investimentos/radar";
   if (id === "carteira-proventos-mes" || id === "carteira-pagamentos") return "#carteira/proventos";
   if (id.startsWith("carteira-")) return "#carteira";
   if (id === "favoritos") { const f = favoritosRecentes()[0]; return "#" + (f ? radarDoFav(f._id) : radaresVisiveis()[0] || "tech"); }
@@ -3952,6 +4073,7 @@ function leitor(id) {
     return { d: ls, marca: JSON.stringify(ls) + marcaDe(d1, d2) };
   };
   if (id === "favoritos") return async () => { const l = favoritosRecentes(); return { d: l, marca: JSON.stringify(l.slice(0, 5)) + l.length }; };
+  if (id === "radar-meu" || id === "leitura-dia" || id === "carteira-contra-filtro") return (f) => lerWidgetRadar(id, f);
   if (id.startsWith("carteira-")) return async () => {
     const j = await lerCarteira();
     if (!j || j.erro) return undefined;
@@ -4107,6 +4229,9 @@ function subtituloDe(id, x) {
   if (t === "eua") return d ? horarioEua() : "";
   if (t === "hoje") return "últimas 24 h";
   if (t === "favoritos") return d && d.length ? (d.length === 1 ? "1 guardado" : d.length + " guardados") : "";
+  if (t === "radar-meu" && d && rdPrefs) { const n = radarDoPadrao().r.passam.length; return n === 1 ? "1 passa hoje" : n + " passam hoje"; }
+  if (t === "leitura-dia" && rdLeit && rdLeit.existe) return horaH(rdLeit.geradaEm);
+  if (t === "carteira-contra-filtro" && rdPrefs) return RF.filtroPadrao(rdPrefs).nome;
   return "";
 }
 function rodapeDe(id, x) {
@@ -4118,7 +4243,8 @@ function rodapeDe(id, x) {
   }
   const pe = el("div", { class: "wdg-pe" }, txt ? el("span", {}, txt) : null);
   if (destino) {
-    const a = el("a", { href: destino }, t === "listas" ? "Editar →" : "Ver tudo →");
+    const n = t === "radar-meu" && x && x.estado === "ok" && rdPrefs ? radarDoPadrao().r.passam.length : 0;
+    const a = el("a", { href: destino }, t === "listas" ? "Editar →" : t === "carteira-meta" ? "Simular →" : t === "leitura-dia" ? "Ler tudo →" : t === "radar-meu" && n ? `Ver os ${n} →` : t === "carteira-contra-filtro" ? "Ver detalhes →" : "Ver tudo →");
     ligarDestino(a, id);
     pe.append(a);
   }
@@ -4171,7 +4297,7 @@ function montarGrade() {
   g.textContent = "";
   painelMontado = true;
   /* os da carteira só aparecem para quem importou os extratos */
-  const ws = widgetsAtuais().filter((w) => !(defDe(w.id).pessoal && cartSemDados()));
+  const ws = widgetsAtuais().filter((w) => !(defDe(w.id).pessoal && pessoalOculto(w.id)));
   if (!ws.length) { g.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum card no Início"), "Use Personalizar para escolher o que aparece aqui.")); return; }
   ws.forEach((w) => {
     const card = el("article", { class: "wdg", "data-id": w.id, "data-tam": String(w.tamanho), "aria-labelledby": "wdg-t-" + w.id });
@@ -4307,9 +4433,11 @@ function renderPers(foco) {
   let grupo = false;
   ordem.forEach(([w, n]) => {
     const def = defDe(w.id); if (!def) return;
+    /* os do radar só aparecem para quem tem carteira ou filtro salvo (e o contra o filtro, só com carteira) */
+    if (def.pessoal && !w.id.startsWith("carteira-") && pessoalOculto(w.id) && !w.mostrar) return;
     if (def.pessoal && !grupo) {
       grupo = true;
-      ul.append(el("li", { class: "pers-grupo" }, "Minha carteira", el("small", {}, semCart ? "Aparecem depois que você importar os extratos da B3 em Minha carteira." : "Só você vê. Também dá para fixar pelo alfinete de cada bloco da carteira.")));
+      ul.append(el("li", { class: "pers-grupo" }, "Minha carteira", el("small", {}, semCart ? "Aparecem depois que você importar os extratos da B3 em Minha carteira." : "Vêm da sua carteira e do seu radar. Só você vê. Também dá para fixar pelo alfinete de cada bloco da carteira.")));
     }
     const vizinho = (d) => { for (let k = n + d; k >= 0 && k < persLista.length; k += d) if (ehPessoal(persLista[k].id) === !!def.pessoal) return k; return -1; };
     const chk = el("input", { type: "checkbox", id: "pers-chk-" + w.id });
@@ -4320,7 +4448,7 @@ function renderPers(foco) {
     const baixo = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon alvo", type: "button", id: "pers-baixo-" + w.id, "aria-label": "Descer " + def.titulo, title: "Descer" }, "▼");
     if (vizinho(-1) < 0) cima.disabled = true;
     if (vizinho(1) < 0) baixo.disabled = true;
-    if (def.pessoal && semCart && !w.mostrar) chk.disabled = true;
+    if (def.pessoal && pessoalOculto(w.id) && !w.mostrar) chk.disabled = true;
     cima.addEventListener("click", () => mover(-1));
     baixo.addEventListener("click", () => mover(1));
     const tam = el("div", { class: "seg", role: "group", "aria-label": "Largura de " + def.titulo });
@@ -4339,6 +4467,8 @@ function abrirPers() {
   if (persAberto) return;
   persAberto = true; persAbridor = document.activeElement;
   montarPersLista(); renderPers();
+  /* carteira e filtros decidem quais widgets pessoais entram na lista */
+  if (!rdPrefs || !cartJ) Promise.all([lerRadarPrefs(), lerCarteira()]).then(() => { if (persAberto) renderPers(); });
   const html = document.documentElement, sb = window.innerWidth - html.clientWidth;
   if (sb > 0) html.style.paddingRight = sb + "px";
   html.classList.add("trava", "pers-aberto");
@@ -5059,6 +5189,7 @@ function desenharMeta(box, j) {
     el("p", { class: "ct-nota" }, cfg.reinvestir ? "O plano conta o aporte mais os proventos do mês reinvestidos. Atualiza a cada importação dos extratos." : "Atualiza a cada importação dos extratos."));
   dois.append(mc, mp);
   box.append(dois);
+  box.append(blocoMetaRadar(m));
 }
 function grafMeta(m) {
   const W = 1200, H = 300, x0 = 56, x1 = 1180, y0 = 262, y1 = 24;
@@ -5340,6 +5471,614 @@ corpos["carteira-alertas"] = (j) => {
   if (!l.length) return [vazioW("Nenhum alerta agora.")];
   return [el("div", { class: "ct-linhas" }, ...l.slice(0, 5).map((a) => el("div", {}, el("span", {}, ...textoAlerta(a)))))];
 };
+
+/* ---------- Radar de dividendos: #investimentos/radar ----------
+   Critérios, avisos e ordenação ficam em /radar-filtro.js, o mesmo arquivo que o Worker usa na Leitura do dia.
+   Os filtros salvos vêm de /api/prefs/radar; o cálculo roda aqui, sobre meta/b3, meta/fii-resumo, meta/eua e os
+   múltiplos das fichas já guardadas (/api/radar/fundamentos). A carteira é a mesma leitura de /api/carteira das telas
+   da carteira. As variáveis são var: render() pode chamar renderRadarVisao antes de este trecho rodar. */
+var RF = window.RadarFiltro;
+var rdPrefs = null, rdLendoPrefs = null, rdAtualId = null, rdRasc = null, rdSujo = false, rdFund = null, rdLendoFund = null;
+var rdLeit = null, rdLendoLeit = null, rdOrdemCol = null, rdTodos = false, rdTodosCart = false, rdVisto = null, rdEstado = "", rdEstadoCls = "";
+var rdFolhaAberta = false, rdFolhaModo = "filtros", rdFolhaAbridor = null, rdNovo = null, rdGerando = false, rdAvisoLeit = "", tRadar = 0, rdLinhasMemo = {};
+try { rdAtualId = localStorage.getItem("radar-rd-atual") || null; } catch (e) {}
+var XHR = { "X-Requested-With": "XMLHttpRequest" };
+var copiaF = (f) => JSON.parse(JSON.stringify(f));
+
+/* ---- dados ---- */
+function escolherAtual(manterRascunho) {
+  if (!rdPrefs) return;
+  if (manterRascunho && rdRasc && rdPrefs.filtros.some((x) => x.id === rdRasc.id)) return;
+  const f = rdPrefs.filtros.find((x) => x.id === rdAtualId) || rdPrefs.filtros.find((x) => x.id === rdPrefs.padrao) || rdPrefs.filtros[0];
+  rdAtualId = f.id; rdRasc = copiaF(f); rdSujo = false; rdOrdemCol = null;
+}
+function lerRadarPrefs(fresco) {
+  if (rdPrefs && !fresco) return Promise.resolve(rdPrefs);
+  if (rdLendoPrefs) return rdLendoPrefs;
+  rdLendoPrefs = (async () => {
+    try {
+      const r = await fetch("/api/prefs/radar", { credentials: "same-origin", cache: "no-store", headers: XHR });
+      if (r.ok) { const j = await r.json(); if (Array.isArray(j.filtros) && j.filtros.length) { rdPrefs = j; escolherAtual(rdSujo); } }
+    } catch (e) {}
+    if (!rdPrefs) { rdPrefs = { ...RF.padraoPrefs(), erro: true }; escolherAtual(); }
+    rdLendoPrefs = null;
+    return rdPrefs;
+  })();
+  return rdLendoPrefs;
+}
+function lerFundRadar() {
+  if (rdFund) return Promise.resolve(rdFund);
+  if (rdLendoFund) return rdLendoFund;
+  rdLendoFund = (async () => {
+    try { const r = await fetch("/api/radar/fundamentos", { credentials: "same-origin", headers: XHR }); rdFund = r.ok ? await r.json() : { BR: {}, US: {} }; }
+    catch (e) { rdFund = { BR: {}, US: {} }; }
+    rdLendoFund = null;
+    return rdFund;
+  })();
+  return rdLendoFund;
+}
+function lerLeitura(fresco) {
+  if (rdLeit && !fresco) return Promise.resolve(rdLeit);
+  if (rdLendoLeit) return rdLendoLeit;
+  rdLendoLeit = (async () => {
+    try {
+      const r = await fetch("/api/leitura", { credentials: "same-origin", cache: "no-store", headers: XHR });
+      if (r.status === 503) rdLeit = { desligada: true };
+      else if (r.ok) rdLeit = await r.json();
+      else if (!rdLeit) rdLeit = { erro: true };
+    } catch (e) { if (!rdLeit) rdLeit = { erro: true }; }
+    rdLendoLeit = null;
+    return rdLeit;
+  })();
+  return rdLendoLeit;
+}
+/* Fora de Investimentos (Início, Minha meta): garante b3, eua, CVM e fichas nas variáveis da página */
+async function baseRadar(fresco, classe) {
+  const t = [lerFii(), lerFundRadar()];
+  if (!emBolsa() && !emRadar()) { t.push(lerB3Painel(fresco)); if (classe === "eua") t.push(lerEuaPainel(fresco)); }
+  await Promise.all(t);
+}
+const fundosCvm = () => (fiiCvm && fiiCvm.fundos) || null;
+function linhasRadar(classe) {
+  const fund = rdFund || { BR: {}, US: {} };
+  const m = rdLinhasMemo[classe];
+  if (m && m.b3 === b3 && m.eua === eua && m.cvm === fiiCvm && m.fund === rdFund) return m.l;
+  const l = classe === "fiis" ? RF.linhasFii(b3, fundosCvm(), fund.BR) : classe === "acoes" ? RF.linhasAcoes(b3, fund.BR) : RF.linhasEua(eua, fund.US);
+  rdLinhasMemo[classe] = { b3, eua, cvm: fiiCvm, fund: rdFund, l };
+  return l;
+}
+const temCarteira = () => !!(cartJ && !cartJ.vazia && !cartJ.desligada && !cartJ.erro && Array.isArray(cartJ.posicoes) && cartJ.posicoes.length);
+const ctxRadar = () => (temCarteira() ? RF.ctxCarteira(cartJ.posicoes, cartJ.resumo.patrimonio) : { posicoes: new Map(), patrimonio: 0 });
+/* Widgets do radar: aparecem para quem tem carteira ou filtro salvo; o contra o filtro, só com carteira */
+function pessoalOculto(id) {
+  if (id === "radar-meu" || id === "leitura-dia") return cartSemDados() && !!rdPrefs && !rdPrefs.salvo;
+  return cartSemDados();
+}
+
+/* ---- formatação ---- */
+const rdNum = (v, c) => (v == null ? "–" : fmtNum(v, c));
+const rdPct = (v, c = 1) => (v == null ? "–" : fmtNum(v, c) + "%");
+const rdMil = (v) => { const a = Math.abs(v); return a >= 1e6 ? fmtNum(a / 1e6, 2) + " mi" : a >= 1e3 ? fmtNum(a / 1e3, 1) + " mil" : fmtNum(a, 0); };
+const rdVar = (v) => (v == null ? "–" : (v > 0 ? "+" : v < 0 ? MENOS : "") + rdMil(v));
+const rdMoeda = (classe) => (classe === "eua" ? "US$ " : "R$ ");
+const rdMeta = (v, classe) => (v == null ? "–" : "+" + rdMoeda(classe) + fmtNum(v, v < 10 ? 2 : 1) + "/mês");
+const horaH = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.getHours() + "h" + String(d.getMinutes()).padStart(2, "0"); };
+const diaLongo = (ymd) => { const d = new Date(String(ymd) + "T12:00:00"); return isNaN(d) ? "" : d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }); };
+const ORDEM_TXT = { cotistas: "entrada de cotistas", liq: "liquidez", dy: "DY" };
+function resumoCriterios(f) {
+  const p = [];
+  if (f.classe === "fiis") {
+    if (f.pvpMax != null) p.push("P/VP ≤ " + fmtNum(f.pvpMax, 2));
+    if (f.dyMin) p.push("DY ≥ " + fmtNum(f.dyMin, 0) + "%");
+    if (f.liqMin) p.push("liq. ≥ " + RF.fmtMi(f.liqMin));
+    if (f.regular === "12") p.push("12 de 12"); else if (f.regular === "10") p.push("10+ meses");
+  } else {
+    if (f.dyMin) p.push("DY ≥ " + fmtNum(f.dyMin, 0) + "%");
+    if (f.plMax != null) p.push("P/L ≤ " + fmtNum(f.plMax, 0));
+    if (f.pvpMax != null) p.push("P/VP ≤ " + fmtNum(f.pvpMax, 2));
+    if (f.liqMin) p.push("liq. ≥ " + RF.fmtMi(f.liqMin, f.classe === "eua"));
+  }
+  return p.join(" · ") || "sem critérios";
+}
+/* texto com os papéis citados virando botões que abrem a ficha */
+function textoComPapeis(txt, papeis) {
+  const l = (papeis || []).filter((t) => /^[A-Z0-9.]{1,8}$/.test(t));
+  if (!l.length) return [txt];
+  const re = new RegExp("\\b(" + l.map((t) => t.replace(".", "\\.")).join("|") + ")\\b", "g");
+  const out = []; let i = 0, m;
+  while ((m = re.exec(txt))) { if (m.index > i) out.push(txt.slice(i, m.index)); out.push(papelBtn(m[1])); i = m.index + m[1].length; }
+  if (i < txt.length) out.push(txt.slice(i));
+  return out;
+}
+
+/* ---- visão ---- */
+function renderRadarVisao(forcar) {
+  if (!window.RadarFiltro) return;
+  const box = $("radar");
+  if (!emRadar()) {
+    if (box.firstChild) box.textContent = "";
+    if ($("radar-filtros").firstChild) $("radar-filtros").textContent = "";
+    if (rdFolhaAberta) fecharFolhaRadar();
+    rdVisto = null;
+    return;
+  }
+  if (!rdPrefs) lerRadarPrefs().then(() => renderRadarVisao(true));
+  if (!rdFund) lerFundRadar().then(() => renderRadarVisao(true));
+  if (!fiiCvm) lerFii();
+  if (!cartJ && !cartLendo) lerCarteira().then(() => renderRadarVisao(true));
+  if (!rdLeit && !rdLendoLeit) lerLeitura().then(() => renderRadarVisao(true));
+  const k = { b3, eua, cvm: fiiCvm, fund: rdFund, prefs: rdPrefs, rasc: JSON.stringify(rdRasc), cart: cartJ && cartJ._marca, leit: rdLeit, ordem: JSON.stringify(rdOrdemCol), todos: rdTodos, todosC: rdTodosCart, nav: MQ_NAV.matches, folha: rdFolhaAberta + rdFolhaModo, est: rdEstado };
+  if (!forcar && rdVisto && Object.keys(k).every((c) => k[c] === rdVisto[c])) return;
+  rdVisto = k;
+  const ativo = document.activeElement, foco = ativo && ativo.id && (box.contains(ativo) || $("radar-filtros").contains(ativo) || $("rd-folha").contains(ativo)) ? ativo.id : null;
+  const cursor = foco && ativo.tagName === "INPUT" && ativo.type === "text" ? ativo.selectionStart : null;
+  desenharFormRadar();
+  pintarPeFolha();
+  desenharCentroRadar();
+  if (foco && $(foco) && document.activeElement !== $(foco)) {
+    const n = $(foco); n.focus({ preventScroll: true });
+    if (cursor != null && n.setSelectionRange) { try { n.setSelectionRange(cursor, cursor); } catch (e) {} }
+  }
+}
+/* Mudou o rascunho: redesenha já (botões) ou depois de 250 ms sem tecla (campos de texto) */
+function mudouRadar(digitando) {
+  rdSujo = true; rdEstado = "Alterações ainda não salvas."; rdEstadoCls = "warn"; rdTodos = false;
+  clearTimeout(tRadar);
+  if (digitando) tRadar = setTimeout(() => renderRadarVisao(true), 250); else renderRadarVisao(true);
+}
+function trocarFiltro(id) {
+  if (rdSujo && !confirm("O filtro tem alterações que não foram salvas. Trocar mesmo assim?")) { renderRadarVisao(true); return; }
+  rdAtualId = id; try { localStorage.setItem("radar-rd-atual", id); } catch (e) {}
+  escolherAtual(); rdEstado = ""; renderRadarVisao(true);
+}
+async function salvarPrefsRadar(filtros, padrao, msg) {
+  rdEstado = "Salvando…"; rdEstadoCls = ""; renderRadarVisao(true);
+  try {
+    const r = await fetch("/api/prefs/radar", { method: "PUT", credentials: "same-origin", cache: "no-store", headers: { ...XHR, "content-type": "application/json" }, body: JSON.stringify({ filtros, padrao }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.erro || "http " + r.status);
+    rdPrefs = j; rdSujo = false;
+    escolherAtual();
+    rdEstado = msg || "Filtro salvo."; rdEstadoCls = "";
+    ["radar-meu", "carteira-contra-filtro"].forEach((w) => wDados.delete(w));
+    return true;
+  } catch (e) { rdEstado = "Não deu para salvar: " + e.message; rdEstadoCls = "warn"; return false; }
+  finally { renderRadarVisao(true); }
+}
+function salvarFiltroAtual() {
+  const nome = String(rdRasc.nome || "").replace(/\s+/g, " ").trim();
+  if (!nome) { rdEstado = "Dê um nome ao filtro."; rdEstadoCls = "warn"; renderRadarVisao(true); return; }
+  rdRasc.nome = nome;
+  const ja = rdPrefs.filtros.some((x) => x.id === rdRasc.id);
+  const filtros = ja ? rdPrefs.filtros.map((x) => (x.id === rdRasc.id ? rdRasc : x)) : [...rdPrefs.filtros, rdRasc];
+  salvarPrefsRadar(filtros, rdPrefs.padrao);
+}
+
+/* Formulário (coluna esquerda no desktop, folha de baixo no celular) */
+function segRadar(rot, idPre, opcoes, atual, acao) {
+  const g = el("div", { class: "seg", role: "group", "aria-label": rot });
+  opcoes.forEach(([v, nome]) => {
+    const b = el("button", { type: "button", id: idPre + v, "aria-pressed": String(atual === v) }, nome);
+    b.addEventListener("click", () => { if (atual !== v) acao(v); });
+    g.append(b);
+  });
+  return el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, rot), g);
+}
+function campoRadar(id, rot, valor, casas, sufixo, definir, ph) {
+  const inp = el("input", { class: "dd-input", id, type: "text", inputmode: "decimal", autocomplete: "off", value: valor == null ? "" : fmtNum(valor, casas), placeholder: ph || "sem limite" });
+  inp.addEventListener("input", () => { definir(numBr(inp.value)); mudouRadar(true); });
+  return el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: id }, rot), el("div", { class: "campo" }, inp, sufixo ? el("span", {}, sufixo) : null));
+}
+function chipsRadar(rot, idPre, valores, escolhidos, alternar, dica) {
+  const box = el("div", { class: "chips", role: "group", "aria-label": rot });
+  const todos = el("button", { class: "chip", type: "button", id: idPre + "todos", "aria-pressed": String(!escolhidos.length) }, "Todos");
+  todos.addEventListener("click", () => alternar(null));
+  box.append(todos);
+  valores.forEach(([v, nome, n]) => {
+    const b = el("button", { class: "chip", type: "button", id: idSeg(v, idPre), "aria-pressed": String(escolhidos.includes(v)) }, nome, n != null ? el("span", { class: "k" }, String(n)) : null);
+    b.addEventListener("click", () => alternar(v));
+    box.append(b);
+  });
+  return el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, rot, dica ? el("small", { class: "dica" }, " " + dica) : null), box);
+}
+function desenharFormRadar() {
+  const largo = MQ_NAV.matches;
+  const alvo = largo ? $("radar-filtros") : $("rd-folha-corpo");
+  if (largo) { if (!(rdFolhaAberta && rdFolhaModo === "novo")) $("rd-folha-corpo").textContent = ""; }
+  else $("radar-filtros").textContent = "";
+  if (rdFolhaAberta && rdFolhaModo === "novo") desenharNovoFiltro();
+  if (!largo && !(rdFolhaAberta && rdFolhaModo === "filtros")) return;
+  alvo.textContent = "";
+  if (!rdPrefs || !rdRasc) { alvo.append(el("p", { class: "rd-dica" }, "Carregando seus filtros…")); return; }
+  const f = rdRasc, form = el("div", { class: "rd-form" });
+  // filtro salvo
+  const sel = el("select", { class: "dd-input", id: "rd-sel" });
+  rdPrefs.filtros.forEach((x) => { const o = el("option", { value: x.id }, x.nome + (x.id === rdPrefs.padrao ? " (padrão)" : "")); if (x.id === f.id) o.selected = true; sel.append(o); });
+  if (!rdPrefs.filtros.some((x) => x.id === f.id)) { const o = el("option", { value: f.id }, f.nome); o.selected = true; sel.append(o); }
+  sel.append(el("option", { value: "__novo" }, "Novo filtro…"));
+  sel.addEventListener("change", () => { const v = sel.value; if (v === "__novo") { sel.value = f.id; abrirFolhaRadar("novo"); return; } trocarFiltro(v); });
+  form.append(el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: "rd-sel" }, "Meu radar"), sel));
+  form.append(segRadar("Classe", "rd-cls-", RF.CLASSES.map((c) => [c, RF.NOME_CLASSE[c]]), f.classe, (c) => { rdRasc = { ...RF.novoFiltro(c, f.nome, f.id) }; rdOrdemCol = null; mudouRadar(); }));
+  if (f.classe === "fiis") {
+    form.append(
+      campoRadar("rd-pvp", "P/VP até", f.pvpMax, 2, "", (v) => { rdRasc.pvpMax = v; }),
+      campoRadar("rd-dy", "DY 12 meses mínimo", f.dyMin, 1, "%", (v) => { rdRasc.dyMin = v; }, "qualquer"),
+      campoRadar("rd-liq", "Liquidez diária mínima", f.liqMin == null ? null : f.liqMin / 1e6, 1, "R$ mi", (v) => { rdRasc.liqMin = v == null ? null : v * 1e6; }, "qualquer"),
+      segRadar("Regularidade", "rd-reg-", [["12", "12 de 12 meses"], ["10", "10+"], ["0", "qualquer"]], f.regular, (v) => { rdRasc.regular = v; mudouRadar(); }),
+      segRadar("Mais comprados por", "rd-ord-", [["cotistas", "entrada de cotistas no mês"], ["liq", "liquidez"]], f.ordem, (v) => { rdRasc.ordem = v; rdOrdemCol = null; mudouRadar(); }));
+    // segmentos e mandatos com a contagem de quem tem cotação
+    const linhas = linhasRadar("fiis"), cont = {}, contM = {};
+    linhas.forEach((l) => { if (l.seg) cont[l.seg] = (cont[l.seg] || 0) + 1; if (l.man) contM[l.man] = (contM[l.man] || 0) + 1; });
+    f.seg.forEach((s) => { if (!(s in cont)) cont[s] = 0; });
+    const alternarLista = (campo) => (v) => { rdRasc[campo] = v === null ? [] : rdRasc[campo].includes(v) ? rdRasc[campo].filter((x) => x !== v) : [...rdRasc[campo], v]; mudouRadar(); };
+    form.append(chipsRadar("Segmento", "rd-seg-", Object.keys(cont).sort((a, b) => cont[b] - cont[a] || a.localeCompare(b, "pt-BR")).map((s) => [s, segNome(s), cont[s]]), f.seg, alternarLista("seg"), "vários"));
+    if (Object.keys(contM).length) form.append(chipsRadar("Mandato", "rd-man-", Object.keys(contM).sort((a, b) => contM[b] - contM[a]).map((m) => [m, m, contM[m]]), f.man, alternarLista("man"), "vários"));
+    const chip = (id, txt, on, dica, acao) => { const b = el("button", { class: "chip", type: "button", id, "aria-pressed": String(on), title: dica }, txt); b.addEventListener("click", acao); return b; };
+    form.append(el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, "Mostrar"), el("div", { class: "chips" },
+      chip("rd-semminhas", "esconder o que já tenho", f.semMinhas, "Tira da lista os papéis que estão na sua carteira", () => { rdRasc.semMinhas = !rdRasc.semMinhas; mudouRadar(); }),
+      chip("rd-estavel", "só com rendimento estável ou subindo", f.estavel, "Último rendimento × 12 de pelo menos 90% do DY de 12 meses", () => { rdRasc.estavel = !rdRasc.estavel; mudouRadar(); }))));
+  } else {
+    const us = f.classe === "eua";
+    form.append(
+      campoRadar("rd-dy", us ? "Dividend yield mínimo" : "DY 12 meses mínimo", f.dyMin, 1, "%", (v) => { rdRasc.dyMin = v; }, "qualquer"),
+      campoRadar("rd-pl", "P/L até", f.plMax, 1, "", (v) => { rdRasc.plMax = v; }));
+    if (!us) form.append(
+      campoRadar("rd-pvp", "P/VP até", f.pvpMax, 2, "", (v) => { rdRasc.pvpMax = v; }),
+      campoRadar("rd-liq", "Liquidez diária mínima", f.liqMin == null ? null : f.liqMin / 1e6, 1, "R$ mi", (v) => { rdRasc.liqMin = v == null ? null : v * 1e6; }, "qualquer"));
+    form.append(segRadar("Ordenar por", "rd-ord-", [["dy", us ? "dividend yield" : "DY"], ["liq", "liquidez"]], f.ordem, (v) => { rdRasc.ordem = v; rdOrdemCol = null; mudouRadar(); }));
+    const cont = {};
+    linhasRadar(f.classe).forEach((l) => { if (l.setor) cont[l.setor] = (cont[l.setor] || 0) + 1; });
+    f.setor.forEach((s) => { if (!(s in cont)) cont[s] = 0; });
+    if (Object.keys(cont).length) form.append(chipsRadar("Setor", "rd-set-", Object.keys(cont).sort((a, b) => cont[b] - cont[a] || a.localeCompare(b)).map((s) => [s, s, cont[s]]), f.setor,
+      (v) => { rdRasc.setor = v === null ? [] : rdRasc.setor.includes(v) ? rdRasc.setor.filter((x) => x !== v) : [...rdRasc.setor, v]; mudouRadar(); }, "vários"));
+    const b = el("button", { class: "chip", type: "button", id: "rd-semminhas", "aria-pressed": String(f.semMinhas), title: "Tira da lista os papéis que estão na sua carteira" }, "esconder o que já tenho");
+    b.addEventListener("click", () => { rdRasc.semMinhas = !rdRasc.semMinhas; mudouRadar(); });
+    if (!us) form.append(el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, "Mostrar"), el("div", { class: "chips" }, b)));
+  }
+  // nome, salvar, limpar
+  const nome = el("input", { class: "dd-input", id: "rd-nome", type: "text", maxlength: String(RF.NOME_MAX), value: f.nome, autocomplete: "off" });
+  nome.addEventListener("input", () => { rdRasc.nome = nome.value; rdSujo = true; rdEstado = "Alterações ainda não salvas."; rdEstadoCls = "warn"; const e = $("rd-estado"); if (e) { e.textContent = rdEstado; e.className = "rd-estado warn"; } });
+  form.append(el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: "rd-nome" }, "Nome do filtro"), nome));
+  const salvar = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "rd-salvar" }, "Salvar filtro");
+  salvar.addEventListener("click", salvarFiltroAtual);
+  const limpar = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "rd-limpar", title: "Volta aos valores de partida da classe" }, "Limpar");
+  limpar.addEventListener("click", () => { rdRasc = { ...RF.novoFiltro(f.classe, f.nome, f.id) }; rdOrdemCol = null; mudouRadar(); });
+  form.append(el("div", { class: "rd-acoes" }, salvar, limpar), el("p", { class: "rd-estado" + (rdEstadoCls ? " " + rdEstadoCls : ""), id: "rd-estado", role: "status" }, rdEstado));
+  const mais = el("div", { class: "rd-mais" });
+  if (rdPrefs.filtros.some((x) => x.id === f.id)) {
+    if (f.id !== rdPrefs.padrao || !rdPrefs.salvo) {
+      const p = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "rd-padrao" }, "Usar este no Início e na Leitura do dia");
+      p.addEventListener("click", () => salvarPrefsRadar(rdPrefs.filtros.map((x) => (x.id === f.id && rdSujo ? rdRasc : x)), f.id, "Este filtro passou a valer no Início e na Leitura do dia."));
+      mais.append(p);
+    } else mais.append(el("span", { class: "rd-dica" }, "Este é o filtro do Início e da Leitura do dia."));
+    if (rdPrefs.filtros.length > 1) {
+      const x = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "rd-excluir" }, "Excluir este filtro");
+      x.addEventListener("click", () => {
+        if (!confirm(`Excluir o filtro "${f.nome}"?`)) return;
+        const resto = rdPrefs.filtros.filter((y) => y.id !== f.id);
+        rdAtualId = null; rdSujo = false;
+        salvarPrefsRadar(resto, rdPrefs.padrao === f.id ? resto[0].id : rdPrefs.padrao, "Filtro excluído.");
+      });
+      mais.append(x);
+    }
+  }
+  form.append(mais);
+  if (!rdPrefs.salvo) form.append(el("p", { class: "rd-dica" }, "Este é o filtro de partida. Ajuste os critérios e salve para guardar na sua conta; dá para ter até " + RF.MAX_FILTROS + " filtros."));
+  alvo.append(form);
+}
+
+/* Centro: quem passa, a Leitura do dia e a carteira contra o filtro */
+const COLS_RADAR = {
+  fiis: [["t", "Papel"], ["preco", "Preço"], ["pvp", "P/VP"], ["dy", "DY 12m"], ["ult12", "Último × 12"], ["cot", "Cotistas"], ["cotMes", "No mês"], ["liq", "Liq./dia"], ["naMeta", "Na meta"], ["av", "Avisos"]],
+  acoes: [["t", "Papel"], ["preco", "Preço"], ["pl", "P/L"], ["pvp", "P/VP"], ["dy", "DY 12m"], ["div12", "Dividendo 12m"], ["liq", "Liq./dia"], ["naMeta", "Na meta"], ["av", "Avisos"]],
+  eua: [["t", "Papel"], ["preco", "Preço (US$)"], ["pl", "P/L"], ["pvp", "P/VP"], ["dy", "Div. yield"], ["div12", "Dividendo 12m"], ["liq", "Liq./dia"], ["naMeta", "Na meta"], ["av", "Avisos"]],
+};
+const NOME_COL = { preco: "preço", pvp: "P/VP", dy: "DY", ult12: "último × 12", cot: "cotistas", cotMes: "entrada de cotistas", liq: "liquidez", naMeta: "renda na meta", pl: "P/L", div12: "dividendo 12m", t: "papel" };
+function celulaRadar(c, x) {
+  const us = x.classe === "eua";
+  if (c === "t") {
+    const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x.nome ? (x.classe === "fiis" ? nomeBonito(x.nome) : x.nome) + " · " : "") + "abrir a ficha" }, papelEl(x.t, x));
+    b.addEventListener("click", () => abrirPapel(x.t));
+    const sub = x.classe === "fiis" ? (x.seg ? segNome(x.seg) : "") : x.setor || "";
+    return el("td", {}, el("span", { class: "cot-papel-box" }, b, pontoNoticia(x.t)), sub ? el("span", { class: "seg-t" }, sub) : null);
+  }
+  if (c === "preco") return el("td", {}, rdNum(x.preco, 2));
+  if (c === "pvp") return el("td", {}, rdNum(x.pvp, 2));
+  if (c === "pl") return el("td", {}, rdNum(x.pl, 1));
+  if (c === "dy" || c === "ult12") return el("td", {}, rdPct(x[c]));
+  if (c === "div12") return el("td", {}, x.div12 == null ? "–" : rdMoeda(x.classe) + fmtNum(x.div12, 2));
+  if (c === "cot") return el("td", {}, x.cot == null ? "–" : rdMil(x.cot));
+  if (c === "cotMes") return el("td", { class: x.cotMes > 0 ? "sobe" : x.cotMes < 0 ? "desce" : "", title: "Cotistas no último informe da CVM contra o anterior" }, rdVar(x.cotMes));
+  if (c === "liq") return el("td", {}, x.liq == null ? "–" : fmtVol(x.liq));
+  if (c === "naMeta") return el("td", { class: x.naMeta != null ? "rd-meta" : "" }, rdMeta(x.naMeta, x.classe));
+  if (c === "av") return el("td", { class: "av" }, ...(x.avisos || []).map((a) => tagEl(a.txt, a.cls, a.dica)));
+  return el("td", {}, "–");
+}
+function desenharCentroRadar() {
+  const box = $("radar");
+  box.textContent = "";
+  const f = rdRasc;
+  if (!MQ_NAV.matches) {
+    const b = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "rd-abrir-filtros", "aria-haspopup": "dialog", "aria-controls": "rd-folha" }, "Filtros");
+    b.addEventListener("click", () => abrirFolhaRadar("filtros"));
+    box.append(el("div", { class: "rd-filtrobar" }, el("div", {}, el("b", {}, f ? f.nome + (rdSujo ? " *" : "") : "Meu radar"), el("span", {}, f ? resumoCriterios(f) : "carregando…")), b));
+  }
+  if (!f) { box.append(el("section", { class: "ct-card" }, esqueleto(6))); return; }
+  const base = f.classe === "eua" ? eua : b3;
+  const card = el("section", { class: "ct-card rd-tabela", "aria-labelledby": "rd-tit" });
+  const aporte = el("input", { class: "dd-input", id: "rd-aporte", type: "text", inputmode: "decimal", autocomplete: "off", value: f.aporte ? fmtNum(f.aporte, 0) : "" , placeholder: "1.000" });
+  aporte.addEventListener("input", () => { rdRasc.aporte = numBr(aporte.value) || 0; mudouRadar(true); });
+  const cab = el("div", { class: "rd-cab" }, el("h2", { id: "rd-tit" }, "Passam no filtro hoje"));
+  card.append(cab);
+  if (!base || (f.classe === "fiis" && !fiiCvm)) {
+    cab.append(el("span", { class: "ct-esp" }), el("label", { class: "rd-aporte", for: "rd-aporte" }, "Simular aporte de " + rdMoeda(f.classe).trim(), aporte));
+    card.append(base ? esqueleto(6) : el("p", { class: "ct-nota" }, f.classe === "eua" ? "As cotações dos EUA aparecem depois da primeira consulta." : "As cotações aparecem depois da primeira consulta."));
+    box.append(card, baixoRadar(f, []));
+    return;
+  }
+  const linhas = linhasRadar(f.classe), ctx = ctxRadar();
+  const r = RF.aplicar(linhas, f, ctx);
+  let lista = r.passam;
+  if (rdOrdemCol) {
+    const { campo, dir } = rdOrdemCol;
+    lista = lista.slice().sort((a, b) => (campo === "t" ? a.t.localeCompare(b.t) : (a[campo] ?? -Infinity) - (b[campo] ?? -Infinity)) * dir);
+  }
+  const ref = fiiCvm && fiiCvm.ref;
+  const ordemTxt = rdOrdemCol ? "ordenados por " + NOME_COL[rdOrdemCol.campo] : f.ordem === "cotistas" ? "ordenados por entrada de cotistas" + (ref ? " em " + mesNome(ref) : "") : "ordenados por " + ORDEM_TXT[f.ordem];
+  cab.append(el("span", { class: "ct-sub" }, `${lista.length} de ${r.total} ${RF.NOME_CLASSE[f.classe]} · ${ordemTxt}`), el("span", { class: "ct-esp" }),
+    el("label", { class: "rd-aporte", for: "rd-aporte" }, "Simular aporte de " + rdMoeda(f.classe).trim(), aporte));
+  const colunas = COLS_RADAR[f.classe];
+  if (lista.length) {
+    const tr = el("tr", {}, ...colunas.map(([c, nome]) => {
+      const th = el("th", { scope: "col", class: c === "av" ? "av" : "" });
+      if (c === "av") { th.textContent = nome; return th; }
+      const on = rdOrdemCol && rdOrdemCol.campo === c;
+      th.setAttribute("aria-sort", on ? (rdOrdemCol.dir > 0 ? "ascending" : "descending") : "none");
+      const b = el("button", { type: "button", id: "rd-col-" + c }, nome);
+      b.addEventListener("click", () => { rdOrdemCol = { campo: c, dir: on ? -rdOrdemCol.dir : c === "t" ? 1 : -1 }; renderRadarVisao(true); });
+      th.append(b); return th;
+    }));
+    const mostra = rdTodos ? lista : lista.slice(0, 20);
+    card.append(el("div", { class: "ct-caixa" }, el("table", { class: "rd-tab" }, el("thead", {}, tr), el("tbody", {}, ...mostra.map((x) => el("tr", {}, ...colunas.map(([c]) => celulaRadar(c, x))))))));
+    if (lista.length > 20) {
+      const m = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "rd-todos" }, rdTodos ? "Mostrar só os 20 primeiros" : `Ver todos os ${lista.length}`);
+      m.addEventListener("click", () => { rdTodos = !rdTodos; renderRadarVisao(true); });
+      card.append(el("div", {}, m));
+    }
+  } else {
+    const cont = {};
+    for (const [, fs] of r.falha) fs.forEach((x) => { cont[x.k] = (cont[x.k] || 0) + 1; });
+    const NOME_K = { pvp: "P/VP", dy: "DY", liq: "liquidez", regular: "regularidade", seg: "segmento", man: "mandato", estavel: "rendimento estável", pl: "P/L", setor: "setor", minha: "já na carteira", cvm: "sem informe da CVM", preco: "sem cotação" };
+    const top = Object.entries(cont).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    card.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum papel passa em todos os critérios hoje"), "Afrouxe um critério na coluna do filtro para ver quem chega perto."),
+      top.length ? el("div", { class: "rd-barra-falhas" }, "Quem mais barra hoje:", ...top.map(([k, n]) => el("span", {}, NOME_K[k] || k, " ", el("b", {}, String(n))))) : null);
+  }
+  const pe = [];
+  if (f.classe === "fiis") pe.push(`"Na meta" é o que ${rs(f.aporte || 0)} neste papel renderia por mês ao último rendimento. "No mês" é a variação de cotistas no informe da CVM${ref ? " de " + fmtMes(ref) : ""} contra o anterior. "Último × 12" é o último rendimento anualizado sobre o preço. Clique no papel para abrir a ficha.`);
+  else {
+    const fund = rdFund ? Object.keys(f.classe === "eua" ? rdFund.US || {} : rdFund.BR || {}).length : 0;
+    const comFicha = linhas.filter((l) => l.temFicha).length;
+    pe.push(`P/L, P/VP e DY vêm das fichas de papel guardadas no Lookout (${comFicha} de ${linhas.length} ${f.classe === "eua" ? "ações americanas" : "ações"} têm ficha${fund ? "" : " por enquanto"}). Papel sem ficha fica de fora de critério que dependa delas; abrir a ficha busca os números. "Na meta" usa a média mensal dos dividendos de 12 meses.`);
+  }
+  card.append(el("p", { class: "rd-pe" }, ...pe, " ", el("b", {}, "Nada aqui é recomendação: o filtro é seu, a escolha também.")));
+  box.append(card, baixoRadar(f, linhas));
+}
+function baixoRadar(f, linhas) {
+  const cart = temCarteira();
+  return el("div", { class: "rd-baixo" + (cart ? "" : " um") }, cardLeitura(), cart && linhas.length ? cardContra(f, linhas) : null);
+}
+function cardLeitura() {
+  const L = rdLeit;
+  const sub = L && L.existe ? `${diaLongo(L.dia)} · gerada às ${horaH(L.geradaEm)}` : "";
+  const c = cardEl("Leitura do dia", { sub, id: "rd-leitura" });
+  if (!L) { c.append(esqueleto(4)); return c; }
+  if (L.desligada) { c.append(el("p", { class: "ct-nota" }, "A Leitura do dia fica cifrada com a mesma chave da carteira, e essa chave ainda não foi configurada neste servidor.")); return c; }
+  if (L.existe && Array.isArray(L.itens)) {
+    c.append(el("ul", { class: "rd-leitura" }, ...L.itens.map((i) => el("li", {}, ...textoComPapeis(i.texto, i.papeis)))));
+    if (L.filtro && rdPrefs && L.filtro.id !== rdPrefs.padrao) c.append(el("p", { class: "ct-nota" }, `Gerada com o filtro "${L.filtro.nome}", que era o padrão naquela hora.`));
+  } else c.append(el("p", { class: "ct-nota" }, L.erro ? "Não deu para abrir a leitura agora." : "A leitura de hoje sai às 7h40. Ela junta o que mudou desde ontem no seu filtro padrão e nos papéis da sua carteira: rendimentos novos no informe da CVM, quem entrou e quem saiu do filtro, avisos e notícias que citam esses papéis."));
+  const gerar = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "rd-gerar" }, rdGerando ? "Gerando…" : "Gerar agora");
+  if (rdGerando) gerar.disabled = true;
+  gerar.addEventListener("click", gerarLeituraAgora);
+  c.append(el("div", { class: "rd-pe-card" }, el("span", { class: "rd-fecho" }, "Só fatos. Nada aqui é recomendação."), gerar));
+  if (rdAvisoLeit) c.append(el("p", { class: "ct-nota", role: "status" }, rdAvisoLeit));
+  return c;
+}
+async function gerarLeituraAgora() {
+  rdGerando = true; rdAvisoLeit = ""; renderRadarVisao(true);
+  try {
+    const r = await fetch("/api/leitura/gerar", { method: "POST", credentials: "same-origin", cache: "no-store", headers: { ...XHR, "content-type": "application/json" }, body: "{}" });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 429) rdAvisoLeit = `A leitura de hoje foi gerada há pouco. Dá para gerar de novo em ${Math.max(1, Math.ceil((j.aguarde || 60) / 60))} min.`;
+    else if (r.status === 503) rdLeit = { desligada: true };
+    else if (!r.ok) rdAvisoLeit = "Não deu para gerar agora: " + (j.erro || "http " + r.status);
+    else { rdLeit = j; ["leitura-dia", "radar-meu", "carteira-contra-filtro"].forEach((w) => wDados.delete(w)); }
+  } catch (e) { rdAvisoLeit = "Não deu para gerar agora. Tente de novo em instantes."; }
+  rdGerando = false; renderRadarVisao(true);
+}
+const NOME_CLS_CART = { fiis: "FIIs", acoes: "ações", eua: "ações dos EUA" };
+function concentracaoTxt() {
+  const r = cartJ.resumo, pat = r.patrimonio || 0;
+  if (!(pat > 0)) return "";
+  const maior = cartJ.posicoes.slice().sort((a, b) => b.valor - a.valor)[0];
+  const cls = Object.entries(r.porClasse || {}).sort((a, b) => b[1] - a[1])[0];
+  const seg = Object.entries(r.porSegmento || {}).sort((a, b) => b[1].valor - a[1].valor)[0];
+  const p = [];
+  if (maior) p.push(`${maior.t} é ${pc((maior.valor / pat) * 100)} da carteira`);
+  if (cls) p.push(`${NOME_CLASSE[cls[0]] || cls[0]} somam ${pc((cls[1] / pat) * 100)}`);
+  if (seg && seg[1].valor > 0) p.push(`o segmento ${segNome(seg[0])} é ${pc((seg[1].valor / pat) * 100)}`);
+  return p.length ? "Concentração: " + p.join("; ") + "." : "";
+}
+function cardContra(f, linhas) {
+  const c = cardEl("Sua carteira contra o filtro", { cls: "rd-contra", id: "rd-contra" });
+  const cf = RF.contraFiltro(linhas, f, ctxRadar(), cartJ.posicoes);
+  if (!cf.n) c.append(el("p", { class: "ct-nota" }, `Você não tem ${NOME_CLS_CART[f.classe]} na carteira importada${f.classe === "eua" ? " da B3" : ""}. Este filtro só olha essa classe.`));
+  else {
+    const n = cf.passam.length;
+    c.append(el("p", { class: "ct-nota" }, `${f.classe === "fiis" ? "Dos" : "Das"} ${cf.n} ${NOME_CLS_CART[f.classe]} que você tem, ${n} ${n === 1 ? "passa" : "passam"} no filtro hoje.` + (cf.naoPassam.length ? " Os que não passam, e por quê:" : "")));
+    const l = rdTodosCart ? cf.naoPassam : cf.naoPassam.slice(0, 6);
+    if (l.length) c.append(el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, papelBtn(x.t)), el("span", {}, x.motivo)))));
+    if (cf.naoPassam.length > 6) {
+      const b = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "rd-todos-cart" }, rdTodosCart ? "Mostrar menos" : `Ver os ${cf.naoPassam.length}`);
+      b.addEventListener("click", () => { rdTodosCart = !rdTodosCart; renderRadarVisao(true); });
+      c.append(el("div", {}, b));
+    }
+  }
+  if (cf.outras) c.append(el("p", { class: "ct-nota" }, `${cf.outras} ${cf.outras === 1 ? "papel" : "papéis"} de outras classes ${cf.outras === 1 ? "fica" : "ficam"} fora deste filtro.`));
+  const conc = concentracaoTxt();
+  if (conc) c.append(el("p", { class: "ct-nota" }, conc));
+  return c;
+}
+
+/* Folha (celular: filtros e novo filtro; desktop: só o novo filtro, como painel lateral) */
+function abrirFolhaRadar(modo) {
+  rdFolhaModo = modo;
+  if (modo === "novo") rdNovo = { nome: "", classe: rdRasc ? rdRasc.classe : "fiis", base: "agora", erro: "" };
+  if (!rdFolhaAberta) {
+    rdFolhaAberta = true; rdFolhaAbridor = document.activeElement;
+    const html = document.documentElement, sb = window.innerWidth - html.clientWidth;
+    if (sb > 0) html.style.paddingRight = sb + "px";
+    html.classList.add("trava");
+    $("rd-veu").hidden = false; $("rd-folha").hidden = false;
+  }
+  renderRadarVisao(true);
+  const alvo = modo === "novo" ? $("rd-novo-nome") : $("rd-sel");
+  (alvo || $("rd-folha")).focus({ preventScroll: true });
+}
+function fecharFolhaRadar() {
+  if (!rdFolhaAberta) return;
+  rdFolhaAberta = false;
+  $("rd-veu").hidden = true; $("rd-folha").hidden = true;
+  const html = document.documentElement; html.classList.remove("trava"); html.style.paddingRight = "";
+  $("rd-folha-corpo").textContent = ""; $("rd-folha-pe").textContent = "";
+  if (rdFolhaAbridor && rdFolhaAbridor.isConnected && rdFolhaAbridor.focus) rdFolhaAbridor.focus({ preventScroll: true });
+  if (emRadar()) renderRadarVisao(true);
+}
+function desenharNovoFiltro() {
+  const corpo = $("rd-folha-corpo"), pe = $("rd-folha-pe");
+  $("rd-folha-titulo").textContent = "Novo filtro";
+  corpo.textContent = ""; pe.textContent = "";
+  const n = rdNovo;
+  const nome = el("input", { class: "dd-input", id: "rd-novo-nome", type: "text", maxlength: String(RF.NOME_MAX), value: n.nome, placeholder: "Ex.: Papel (CRI) acima de 12%", autocomplete: "off" });
+  nome.addEventListener("input", () => { n.nome = nome.value; });
+  const form = el("div", { class: "rd-form" },
+    el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: "rd-novo-nome" }, "Nome"), nome, el("span", { class: "rd-dica" }, `Até ${RF.NOME_MAX} caracteres.`)),
+    segRadar("Classe", "rd-novo-cls-", RF.CLASSES.map((c) => [c, RF.NOME_CLASSE[c]]), n.classe, (c) => { n.classe = c; renderRadarVisao(true); }));
+  const mesmaClasse = rdRasc && rdRasc.classe === n.classe;
+  if (mesmaClasse) form.append(segRadar("Começar com", "rd-novo-base-", [["agora", "os critérios de agora"], ["partida", "os valores de partida"]], n.base, (v) => { n.base = v; renderRadarVisao(true); }));
+  form.append(el("p", { class: "rd-dica" }, mesmaClasse && n.base === "agora" ? `Copia os critérios de "${rdRasc.nome}" (${resumoCriterios(rdRasc)}).` : `Começa com ${resumoCriterios({ classe: n.classe, ...RF.PADRAO_CLASSE[n.classe] })}. Dá para mudar tudo depois.`));
+  if (rdPrefs && rdPrefs.filtros.length >= RF.MAX_FILTROS) form.append(el("p", { class: "rd-estado warn" }, `Você já tem ${RF.MAX_FILTROS} filtros, o máximo. Exclua um para criar outro.`));
+  if (n.erro) form.append(el("p", { class: "rd-estado warn", role: "alert" }, n.erro));
+  corpo.append(form);
+  const cancelar = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "rd-novo-cancelar" }, "Cancelar");
+  cancelar.addEventListener("click", () => { if (MQ_NAV.matches) fecharFolhaRadar(); else { rdFolhaModo = "filtros"; renderRadarVisao(true); } });
+  const criar = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "rd-novo-criar" }, "Criar filtro");
+  if (rdPrefs && rdPrefs.filtros.length >= RF.MAX_FILTROS) criar.disabled = true;
+  criar.addEventListener("click", async () => {
+    const nm = String(n.nome || "").replace(/\s+/g, " ").trim();
+    if (!nm) { n.erro = "Dê um nome ao filtro."; renderRadarVisao(true); $("rd-novo-nome").focus(); return; }
+    if (rdPrefs.filtros.some((x) => x.nome.toLowerCase() === nm.toLowerCase())) { n.erro = "Já existe um filtro com esse nome."; renderRadarVisao(true); return; }
+    const id = "f-" + Date.now().toString(36);
+    const novo = mesmaClasse && n.base === "agora" ? { ...copiaF(rdRasc), id, nome: nm } : RF.novoFiltro(n.classe, nm, id);
+    // o filtro de partida, nunca salvo, vai junto para não sumir da lista
+    const ok = await salvarPrefsRadar([...rdPrefs.filtros, novo], rdPrefs.padrao, "Filtro criado.");
+    if (ok) { rdAtualId = id; try { localStorage.setItem("radar-rd-atual", id); } catch (e) {} escolherAtual(); if (MQ_NAV.matches) fecharFolhaRadar(); else { rdFolhaModo = "filtros"; renderRadarVisao(true); } }
+  });
+  pe.append(cancelar, criar);
+}
+$("rd-veu").addEventListener("click", fecharFolhaRadar);
+$("rd-folha-fechar").addEventListener("click", fecharFolhaRadar);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && rdFolhaAberta) { e.preventDefault(); fecharFolhaRadar(); } });
+$("rd-folha").addEventListener("keydown", (e) => {
+  if (e.key !== "Tab") return;
+  const foc = [...$("rd-folha").querySelectorAll("button:not(:disabled), input, select")].filter((x) => x.offsetParent !== null);
+  if (!foc.length) return;
+  const pri = foc[0], ult = foc[foc.length - 1];
+  if (e.shiftKey && (document.activeElement === pri || document.activeElement === $("rd-folha"))) { e.preventDefault(); ult.focus(); }
+  else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); pri.focus(); }
+});
+/* No modo filtros a folha tem só o Pronto no rodapé (o Salvar fica no formulário) */
+const pintarPeFolha = () => {
+  if (!rdFolhaAberta || rdFolhaModo !== "filtros") return;
+  $("rd-folha-titulo").textContent = "Meu radar";
+  const pe = $("rd-folha-pe"); pe.textContent = "";
+  const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "rd-folha-ok" }, "Ver resultado");
+  ok.addEventListener("click", fecharFolhaRadar);
+  pe.append(ok);
+};
+const aoMudarNavRadar = () => { if (rdFolhaAberta && MQ_NAV.matches && rdFolhaModo === "filtros") fecharFolhaRadar(); renderRadarVisao(true); };
+if (MQ_NAV.addEventListener) MQ_NAV.addEventListener("change", aoMudarNavRadar); else MQ_NAV.addListener(aoMudarNavRadar);
+
+/* ---- widgets do Início: Meu radar, Leitura do dia e Carteira contra o filtro ---- */
+async function lerWidgetRadar(id, fresco) {
+  const [, cj, lt] = await Promise.all([lerRadarPrefs(), lerCarteira(), lerLeitura(fresco)]);
+  if (id !== "leitura-dia") await baseRadar(fresco, RF.filtroPadrao(rdPrefs).classe);
+  if (pessoalOculto(id)) setTimeout(() => { if (inicio && !carteiraVista) montarGrade(); }, 0);
+  return { d: { prefs: rdPrefs, cj, lt }, marca: [JSON.stringify(rdPrefs && rdPrefs.filtros), rdPrefs && rdPrefs.padrao, cj && cj._marca, lt && (lt.geradaEm || lt.dia), b3 && b3.atualizado, eua && eua.atualizado, fiiCvm && fiiCvm.ref, rdFund ? Object.keys(rdFund.BR || {}).length : -1].join("|") };
+}
+function radarDoPadrao() {
+  const f = RF.filtroPadrao(rdPrefs);
+  const linhas = linhasRadar(f.classe);
+  return { f, linhas, r: RF.aplicar(linhas, f, ctxRadar()) };
+}
+const novosHoje = (f) => new Set(rdLeit && rdLeit.existe && rdLeit.filtro && rdLeit.filtro.id === f.id && Array.isArray(rdLeit.novos) ? rdLeit.novos : []);
+corpos["radar-meu"] = () => {
+  const { f, r } = radarDoPadrao();
+  if ((f.classe === "eua" ? !eua : !b3) || (f.classe === "fiis" && !fiiCvm)) return [esqueleto(5)];
+  if (!r.passam.length) return [vazioW(`Nenhum papel passa no filtro "${f.nome}" hoje.`)];
+  const novos = novosHoje(f), ctx = ctxRadar();
+  const val = (x) => (x.classe === "fiis" ? `P/VP ${rdNum(x.pvp, 2)} · DY ${rdPct(x.dy)}` : `P/L ${rdNum(x.pl, 1)} · DY ${rdPct(x.dy)}`);
+  return [el("div", { class: "ct-linhas wdg-rd" }, ...r.passam.slice(0, 5).map((x) => el("div", {},
+    el("span", {}, papelBtn(x.t), ctx.posicoes.has(x.t) ? tagEl("tenho", "ok") : null, novos.has(x.t) ? tagEl("novo hoje") : null),
+    el("span", { class: "ct-mono" }, val(x)))))];
+};
+corpos["leitura-dia"] = () => {
+  const L = rdLeit;
+  if (!L) return [esqueleto(4)];
+  if (L.desligada) return [vazioW("A Leitura do dia precisa da chave da carteira neste servidor.")];
+  if (!L.existe || !Array.isArray(L.itens)) return [vazioW(L.erro ? "Não deu para abrir a leitura agora." : "A leitura de hoje sai às 7h40.")];
+  return [el("ul", { class: "wdg-leitura" }, ...L.itens.slice(0, 3).map((i) => el("li", {}, ...textoComPapeis(i.texto, i.papeis)))), el("span", { class: "wdg-fecho" }, "Só fatos. Nada aqui é recomendação.")];
+};
+corpos["carteira-contra-filtro"] = (d) => {
+  if (!d || !d.cj || d.cj.vazia || !temCarteira()) return [vazioW("Importe seus extratos da B3 em Minha carteira.")];
+  const { f, linhas } = radarDoPadrao();
+  if (!linhas.length) return [esqueleto(4)];
+  const cf = RF.contraFiltro(linhas, f, ctxRadar(), cartJ.posicoes);
+  const mesmo = rdLeit && rdLeit.existe && rdLeit.filtro && rdLeit.filtro.id === f.id;
+  const papeis = (l) => (l && l.length ? el("span", {}, ...l.slice(0, 4).flatMap((t, i) => (i ? [" ", papelBtn(t)] : [papelBtn(t)]))) : el("span", { class: "ct-mono" }, "nenhum"));
+  const linhasW = [];
+  if (mesmo) linhasW.push(el("div", {}, el("span", {}, "Saíram hoje"), papeis(rdLeit.saiu)), el("div", {}, el("span", {}, "Entraram hoje"), papeis(rdLeit.novos)));
+  const r = cartJ.resumo, maior = cartJ.posicoes.slice().sort((a, b) => b.valor - a.valor)[0];
+  if (maior && r.patrimonio > 0) linhasW.push(el("div", {}, el("span", {}, "Maior posição"), el("span", { class: "ct-mono" }, `${maior.t} ${pc((maior.valor / r.patrimonio) * 100)}`)));
+  return [el("div", { class: "wdg-cart" },
+    el("span", { class: "rd-big" }, String(cf.passam.length), el("small", {}, `de ${cf.n} ${NOME_CLS_CART[f.classe]} passam no seu filtro hoje`)),
+    linhasW.length ? el("div", { class: "ct-linhas" }, ...linhasW) : null)];
+};
+
+/* ---- Minha meta: onde o aporte rende mais, pelo filtro padrão ---- */
+function blocoMetaRadar(m) {
+  const c = cardEl("Onde o aporte rende mais, pelo seu filtro", { cls: "mt-rd", id: "mt-rd" });
+  const corpo = el("div", { class: "ct-col", style: "gap:10px" }, esqueleto(4));
+  c.append(corpo);
+  (async () => {
+    await lerRadarPrefs();
+    const f0 = RF.filtroPadrao(rdPrefs);
+    await Promise.all([baseRadar(false, f0.classe), lerCarteira()]);
+    if (!c.isConnected) return;
+    const { f, r } = radarDoPadrao();
+    const aporte = (m && m.cfg && m.cfg.aporte) || f.aporte || 0;
+    corpo.textContent = "";
+    const top = r.passam.map((x) => ({ ...x, naMeta: RF.naMeta(x, aporte) })).filter((x) => x.naMeta != null).sort((a, b) => b.naMeta - a.naMeta).slice(0, 4);
+    if (!aporte) corpo.append(el("p", { class: "ct-nota" }, "Escreva o aporte mensal acima para ver a conta."));
+    else if (!top.length) corpo.append(el("p", { class: "ct-nota" }, `Nenhum papel passa hoje no filtro "${f.nome}".`));
+    else {
+      corpo.append(el("p", { class: "ct-nota" }, `${rdMoeda(f.classe)}${fmtNum(aporte, 0)} ${f.classe === "fiis" ? "ao último rendimento" : "à média dos dividendos de 12 meses"}, só no que passa hoje no filtro "${f.nome}":`));
+      corpo.append(el("div", { class: "ct-linhas" }, ...top.map((x) => el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " " + (x.classe === "fiis" ? `P/VP ${rdNum(x.pvp, 2)} · DY ${rdPct(x.dy)}` : `P/L ${rdNum(x.pl, 1)} · DY ${rdPct(x.dy)}`))), el("span", { class: "ct-mono" }, rdMeta(x.naMeta, x.classe))))));
+    }
+    corpo.append(el("div", { class: "rd-pe-card" }, el("span", { class: "rd-fecho" }, "Conta aritmética, não recomendação."), el("a", { class: "ct-volta", href: "#investimentos/radar" }, "Abrir o radar")));
+  })();
+  return c;
+}
 
 /* push: sair do Início para uma seção (ou voltar a ele pela aba) cria uma entrada no histórico, para o "voltar"
    do navegador trazer o Início de volta. Entre seções e visões o endereço é só trocado, como antes. */

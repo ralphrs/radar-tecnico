@@ -236,6 +236,21 @@ export function resumoFii(fundos) {
     const soma = ult12.reduce((a, b) => a + b, 0);
     const r12 = ult12.length ? (ult12.length >= 12 ? soma : (soma / ult12.length) * 12) : null;
     out[t] = { n: f.n, s: f.s, ref: f.ref, vp: f.vp, cot: f.cot ?? null, rend: r6(ult), r12: r6(r12), m12: ult12.length };
+    // Radar de dividendos (public/radar-filtro.js): cotistas e rendimento do informe anterior (para "No mês" e a
+    // Leitura do dia), quantos dos últimos 12 meses pagaram, e o maior e a mediana desses 12 (rendimento extraordinário).
+    const h = f.h || [];
+    if (h.length >= 2) {
+      const ant = h[h.length - 2];
+      if (ant[3] != null) out[t].ca = ant[3];
+      if (rends[rends.length - 2] != null) out[t].ra = r6(rends[rends.length - 2]);
+    }
+    const doze = rends.slice(-12).filter((v) => v != null);
+    if (doze.length) {
+      out[t].pg = doze.filter((v) => v > 0).length;
+      const ord = doze.slice().sort((a, b) => a - b), meio = ord.length >> 1;
+      out[t].rmx = r6(ord[ord.length - 1]);
+      out[t].rmd = r6(ord.length % 2 ? ord[meio] : (ord[meio - 1] + ord[meio]) / 2);
+    }
     // mandato e gestão entram nos filtros da lista; só quando vieram
     if (f.m) out[t].m = f.m;
     if (f.g) out[t].g = f.g;

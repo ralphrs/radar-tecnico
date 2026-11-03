@@ -30,6 +30,11 @@ export const WIDGETS = [
   { id: "carteira-agenda", titulo: "Agenda da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-rentabilidade", titulo: "Rentabilidade", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-alertas", titulo: "Alertas da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
+  // Radar de dividendos e Leitura do dia: pessoais também. A página só oferece para quem tem carteira ou filtro salvo
+  // (carteira-contra-filtro, só para quem tem carteira).
+  { id: "radar-meu", titulo: "Meu radar", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "leitura-dia", titulo: "Leitura do dia", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-contra-filtro", titulo: "Carteira contra o filtro", tamanho: 1, secao: "investimentos", pessoal: true },
 ];
 const POR_ID = new Map(WIDGETS.map((w) => [w.id, w]));
 

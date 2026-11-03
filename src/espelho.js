@@ -7,7 +7,7 @@
 //
 // O que fica aqui:
 // - docs: as collections que a página lê (itens, destaques, meta e hist), _sistema, e favs/<email>, listas/<email>, prefs/<email>
-//   e carteira/<email> (a Minha carteira, copiada cifrada como está no D1);
+//   carteira/<email> (a Minha carteira, copiada cifrada como está no D1) e leitura/<email> (a Leitura do dia, cifrada também);
 // - usuarios, grupos e usuario_grupo, inteiras, para conferir convite e seções;
 // - estado: última sincronia, duração, linhas, erro, as últimas medições de tempo, a trava da sincronia,
 //   as sincronias puladas e os fallbacks para o D1 do dia.
@@ -41,7 +41,7 @@ const AMOSTRA_LOG = 20;       // leitura que deu certo no espelho: loga 1 em cad
 // Collections por pessoa que também vêm para o espelho. No D1 a busca é por faixa da chave primária
 // (collection >= 'favs/' AND collection < 'favs0', '0' é o caractere seguinte a '/'), que usa o índice;
 // um LIKE 'favs/%' varreria a tabela inteira a cada minuto.
-const PREFIXOS_PESSOAIS = ["favs/", "listas/", "prefs/", "carteira/"]; // carteira/: cifrada como está no D1
+const PREFIXOS_PESSOAIS = ["favs/", "listas/", "prefs/", "carteira/", "leitura/"]; // carteira/ e leitura/: cifradas como estão no D1
 const faixa = (p) => [p, p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1)];
 
 // Marca de versão de cada linha, calculada igual dos dois lados. Só o `atualizado` não basta: quem grava
