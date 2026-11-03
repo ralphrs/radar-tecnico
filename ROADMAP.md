@@ -13,6 +13,7 @@
 - [x] Estado dos candidatos: publicado ou descartado, com motivo (repetido, promocional, fora do tema, antigo, raso) (01/11)
 - [x] Rendimento das fontes no admin: lidos, publicados, descartados por motivo e feeds com erro, nos últimos 10 dias (01/11)
 - [x] Sonda de feeds no admin: cola as URLs, o cron testa 4 por minuto com o mesmo parser da coleta (01/11)
+- [x] Subreddits como fonte de candidatos (Tech, Negócios, Notícias e Política): um por minuto, cada um a cada 2 h, 429 dobra a espera, 403 três vezes marca bloqueado; texto do post e link externo no candidato (03/11)
 - [x] Índice na URL dos itens: a coleta varria a tabela inteira a cada feed e estourou o limite diário de leituras do D1 (01/11)
 - [x] Cache de borda de 3 min nas leituras da API, para poupar o D1 (01/11)
 - [x] Espelho de leitura em São Paulo: Durable Object com SQLite copia do D1 o que a página lê, a cada minuto; Worker sem Smart Placement, D1 só nas gravações e no fallback (02/11)
@@ -48,12 +49,13 @@ Negócios (só notícias, curadoria Sonnet 3x/dia sobre candidatos do RSS)
 Investimentos
 - [x] Notícias: bolsa e empresas, FIIs, renda fixa e juros, macro, cripto, regulação, IR; só fatos, sem recomendação de compra ou venda
 - [x] Painel de mercado: Ibovespa, IFIX, dólar, Selic, CDI, IPCA 12m, BTC (IFIX ainda fora; o Ibovespa só entra com o token da brapi)
-- [x] Cotações no cron do Worker, sem tokens: ações e FIIs a cada 30 min no pregão (brapi grátis, 1 ticker por chamada, ~500 chamadas/dia), cripto a cada 30 min, BCB SGS e AwesomeAPI 1x/dia, Tesouro 1x/dia; botão "Atualizar agora" limitado a 1 vez a cada 5 min. No fim as tabelas da B3 vêm da rota de lista da brapi, que responde sem token e traz tudo numa chamada por tipo; moedas caem para PTAX, CoinGecko e Mercado Bitcoin quando a AwesomeAPI recusa. Tesouro ainda não entrou
+- [x] Cotações no cron do Worker, sem tokens: ações e FIIs a cada 30 min no pregão (brapi grátis, 1 papel por chamada, ~500 chamadas/dia), cripto a cada 30 min, BCB SGS e AwesomeAPI 1x/dia, Tesouro 1x/dia; botão "Atualizar agora" limitado a 1 vez a cada 5 min. No fim as tabelas da B3 vêm da rota de lista da brapi, que responde sem token e traz tudo numa chamada por tipo; moedas caem para PTAX, CoinGecko e Mercado Bitcoin quando a AwesomeAPI recusa. Tesouro ainda não entrou
 - [x] Tabelas de ações, FIIs e ETFs da B3, ordenáveis e com filtro
 - [x] FIIs com dados do informe mensal da CVM: DY, rendimento, P/VP, cotistas e segmento (01/11)
 - [x] Detalhe do papel, com gráfico e link para o Investidor10 (01/11)
 - [x] Duas visões: Bolsa (principal) e Notícias, com letreiro de índices fixo (01/11)
-- [x] Listas de acompanhamento por pessoa, bem simples: nome da lista e tickers (sem quantidade nem preço médio), para espelhar o que cada um tem na própria instituição (01/11)
+- [x] Listas de acompanhamento por pessoa, bem simples: nome da lista e papéis (sem quantidade nem preço médio), para espelhar o que cada um tem na própria instituição (01/11)
+- [x] Listas automáticas da carteira (FIIs, Ações, BDRs, ETFs, Subscrições), travadas, com "Copiar para lista minha"; mover e copiar papel entre listas pelo menu, botão direito, toque longo ou arrastando no desktop (03/11)
 - [x] Ficha do papel para ações da B3, BDRs e ações dos EUA: faixas do dia e de 52 semanas, gráfico de 1 ano (1M · 3M · 1A), estatísticas, perfil, listagem cruzada BDR e EUA, cache de 24 h em `hist` e renovação no cron do que foi aberto na semana (03/11)
 - [ ] Ficha com os fundamentos completos: falta o Ralph colar o `FINNHUB_TOKEN` (EUA) e o `BRAPI_TOKEN` (B3); conferir na `_sistema/sonda-brapi-quote` os campos que a brapi mandou de verdade
 - [ ] Token da brapi como secret do Worker (o Ralph cria a conta e cola no painel); hoje só o Ibovespa depende dele

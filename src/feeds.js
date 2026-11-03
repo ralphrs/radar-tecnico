@@ -1,4 +1,4 @@
-// Feeds RSS e Atom que o cron do Worker lê. Cada linha: [radar, fonte, país, url].
+// Feeds RSS e Atom que o cron do Worker lê. Cada linha: [radar, fonte, país, url] ou, para subreddit, [radar, fonte, país, url, "reddit"].
 // A fonte é o nome que vai para o item (o mesmo padrão de NOMES DE FONTE das tarefas).
 // Feed que falha muitas vezes seguidas aparece em feeds_estado com erros_seguidos alto: corrija a URL ou tire daqui.
 // Fora em 31/10/2026: ACM Queue, BleepingComputer, CNX Software, FinTech Futures e Matinal bloqueiam o Worker (HTTP 403);
@@ -184,4 +184,17 @@ export const FEEDS = [
   ["esportes", "Gazeta Esportiva", "BR", "https://www.gazetaesportiva.com/feed/"],
   ["esportes", "BBC Sport", "GB", "https://feeds.bbci.co.uk/sport/football/rss.xml"],
   ["esportes", "Gazzetta dello Sport", "IT", "https://www.gazzetta.it/rss/home.xml"],
+
+  // Reddit: Atom de /new/ de cada subreddit, lido no ritmo próprio (src/coleta.js): no máximo 1 por minuto de cron,
+  // cada um a cada 120 min, user-agent do Lookout. A sonda de 03/11/2026 deu 200 com 25 posts, mas 4 pedidos no mesmo minuto deram 429.
+  ["tech", "r/opensource", "", "https://www.reddit.com/r/opensource/new/.rss", "reddit"],
+  ["tech", "r/databricks", "", "https://www.reddit.com/r/databricks/new/.rss", "reddit"],
+  ["tech", "r/MiniPCs", "", "https://www.reddit.com/r/MiniPCs/new/.rss", "reddit"],
+  ["tech", "r/hermesagent", "", "https://www.reddit.com/r/hermesagent/new/.rss", "reddit"],
+  ["tech", "r/antiai", "", "https://www.reddit.com/r/antiai/new/.rss", "reddit"],
+  ["negocios", "r/fintech", "", "https://www.reddit.com/r/fintech/new/.rss", "reddit"],
+  ["negocios", "r/FintechStartups", "", "https://www.reddit.com/r/FintechStartups/new/.rss", "reddit"],
+  ["negocios", "r/smallbusiness", "", "https://www.reddit.com/r/smallbusiness/new/.rss", "reddit"],
+  ["negocios", "r/TheFinanceCareer", "", "https://www.reddit.com/r/TheFinanceCareer/new/.rss", "reddit"],
+  ["politica", "r/EspacoPolitica", "BR", "https://www.reddit.com/r/EspacoPolitica/new/.rss", "reddit"],
 ];

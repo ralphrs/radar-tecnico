@@ -507,6 +507,44 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .lst-sug button span { color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lst-sug button:hover, .lst-sug button[aria-selected="true"] { background: var(--accent); }
 .lst-erro { margin: 0; font-size: 12px; color: var(--err); }
+.lst-aviso { margin: 0; font-size: 12px; color: var(--muted-foreground); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Lista automática da carteira: nome fixo, selo e o botão de copiar no lugar do "+ papel" */
+.lst-nome-fixo { cursor: default; flex: 0 1 auto; }
+.lst-nome-fixo:hover { color: var(--foreground); }
+.lst-cab .seu { margin-right: auto; }
+.lst-pe { display: flex; }
+.lst-pe .dd-btn--link { font: 500 12.5px var(--font-sans); height: auto; padding: 2px 0; }
+/* Ações por papel: ⋯ (mover e copiar) e × (tirar) */
+.lst-tab td:last-child, .lst-tab th:last-child { width: 48px; }
+.lst-acoes { display: inline-flex; gap: 4px; justify-content: flex-end; }
+.lst-x.lst-mais:hover, .lst-x.lst-mais[aria-expanded="true"] { color: var(--primary); }
+.lst-tab tr[draggable="true"] { cursor: grab; }
+.lst-tab tr.arrastando { opacity: .45; }
+.lst-tab tbody tr { -webkit-touch-callout: none; }
+/* Barra de onde o papel arrastado vai cair, como no Início */
+.lst { position: relative; }
+.lst-cai { display: none; }
+.lst.cai-aqui { background: color-mix(in srgb, var(--primary) 6%, transparent); border-radius: var(--radius-md); margin-inline: -8px; padding-inline: 8px; }
+.lst.cai-aqui .lst-cai { display: flex; flex-direction: column; gap: 3px; }
+.lst-cai::after { content: ""; height: 3px; border-radius: 2px; background: var(--primary); }
+.lst-cai span { font: 500 11.5px var(--font-sans); color: var(--primary); }
+/* Menu do papel */
+.lst-menu { position: fixed; z-index: 45; min-width: 210px; max-width: min(320px, calc(100vw - 16px)); max-height: min(70vh, 420px); overflow-y: auto; padding: 6px; display: flex; flex-direction: column; background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
+.lst-menu:focus { outline: none; }
+.lst-menu p { margin: 0; }
+.lst-menu-tit { padding: 4px 8px 6px; font-size: 12px; color: var(--muted-foreground); border-bottom: 1px solid var(--border); margin-bottom: 4px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lst-menu-tit b { font: 600 12.5px var(--font-mono); color: var(--primary); }
+.lst-menu-grupo { padding: 6px 8px 2px; font: 600 10.5px/1.2 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.lst-menu-vazio { padding: 6px 8px; font-size: 13px; color: var(--muted-foreground); }
+.lst-menu button { all: unset; box-sizing: border-box; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; padding: 7px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.lst-menu button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lst-menu button small { flex: none; font: 400 11px var(--font-mono); color: var(--muted-foreground); }
+.lst-menu button:hover, .lst-menu button:focus-visible { background: var(--accent); color: var(--primary); }
+.lst-menu button[aria-disabled="true"] { cursor: default; color: var(--muted-foreground); }
+.lst-menu button[aria-disabled="true"]:hover { background: none; color: var(--muted-foreground); }
+.lst-menu.folha { left: 0; right: 0; bottom: 0; top: auto; max-width: none; max-height: 70dvh; border-radius: var(--radius-xl, 16px) var(--radius-xl, 16px) 0 0; padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
+.lst-menu.folha button { padding: 12px 10px; font-size: 15px; }
 @media (max-width: 899px) { .lst-add .dd-input, .lst-cab .dd-input { height: 40px; font-size: 16px; } }
 .bloco > h3 .dd-btn--link { font: 500 12.5px var(--font-sans); letter-spacing: 0; text-transform: none; height: auto; }
 #listas-centro .bloco > h3 { font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; text-transform: none; color: var(--foreground); }
@@ -737,6 +775,7 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .wdg-lst + .wdg-lst { padding-top: 8px; border-top: 1px solid var(--border); }
 .wdg-lst h4 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 2px; font: 600 13px/1.3 var(--font-sans); min-width: 0; }
 .wdg-lst h4 span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wdg-lst h4 .seu { margin-right: auto; overflow: visible; }
 .wdg-lst h4 small { flex: none; font: 400 11px var(--font-mono); color: var(--muted-foreground); }
 .wdg-lst .wdg-rk li:first-child { border-top: 0; }
 .wdg-lst .mais { display: block; margin: 2px 0 0; font: 400 11px var(--font-mono); color: var(--muted-foreground); }
@@ -2279,10 +2318,18 @@ function renderHoje() {
   box.append(sec);
 }
 
-/* Minhas listas: nome e papéis, guardados na conta (/api/listas). No trilho direito em tela larga; abaixo disso, depois da tabela. */
-let listas = [], listasCarregadas = false, listasErro = "", editandoLista = null, desenhandoListas = false;
+/* Minhas listas: nome e papéis, guardados na conta (/api/listas). No trilho direito em tela larga; abaixo disso, depois da tabela.
+   Listas automáticas (auto: true, ids carteira-*) vêm da carteira importada: travadas aqui (sem "+ papel", renomear nem
+   "×"), com o selo "da carteira" e "Copiar para lista minha". Papel de lista manual tem menu (⋯, botão direito, toque
+   longo) com "Mover para…" e "Copiar para…"; de lista automática, só "Copiar para…". No desktop, arrastar a linha para
+   outra lista manual move (de uma automática, copia), numa operação só no servidor (POST /api/listas/mover). */
+let listas = [], listasCarregadas = false, listasErro = "", listasAviso = "", editandoLista = null, desenhandoListas = false;
 const rascunhos = {};
 const LISTA_MAX_PAPEIS = 60;
+const ORDEM_AUTO = ["carteira-fiis", "carteira-acoes", "carteira-bdrs", "carteira-etfs", "carteira-subscricoes"];
+const ehAuto = (l) => !!(l && l.auto && ORDEM_AUTO.includes(l.id));
+/* automáticas primeiro, na ordem fixa; depois as manuais na ordem em que foram criadas */
+const ordenarListas = (ls) => [...ls.filter(ehAuto).sort((a, b) => ORDEM_AUTO.indexOf(a.id) - ORDEM_AUTO.indexOf(b.id)), ...ls.filter((l) => !ehAuto(l))];
 async function apiListas(metodo, id, corpo) {
   const r = await fetch("/api/listas" + (id ? "/" + encodeURIComponent(id) : ""), {
     method: metodo, credentials: "same-origin", cache: "no-store",
@@ -2296,14 +2343,21 @@ async function apiListas(metodo, id, corpo) {
 async function carregarListas() {
   if (!R().mercado) return;
   const g = geracao;
-  try { const j = await apiListas("GET"); if (g !== geracao) return; listas = (j.docs || []).map((d) => ({ id: d.id, ...d.data })); listasErro = ""; }
+  try { const j = await apiListas("GET"); if (g !== geracao) return; listas = ordenarListas((j.docs || []).map((d) => ({ id: d.id, ...d.data }))); listasErro = ""; }
   catch (e) { if (g !== geracao) return; listasErro = "Não deu para carregar suas listas agora."; }
   listasCarregadas = true; renderListas();
 }
+let avisoListasT = 0;
+function avisarListas(t) { listasAviso = t; listasErro = ""; clearTimeout(avisoListasT); avisoListasT = setTimeout(() => { listasAviso = ""; renderListas(); }, 4000); }
 async function salvarLista(l) {
   renderListas();
   try { await apiListas("PUT", l.id, { nome: l.nome, papeis: l.papeis }); if (listasErro) { listasErro = ""; renderListas(); } }
   catch (e) { listasErro = e.message; renderListas(); }
+}
+function nomeLivre(base) {
+  const nomes = new Set(listas.map((l) => l.nome));
+  if (!nomes.has(base)) return base;
+  for (let n = 2; ; n++) { const t = base.replace(/\)$/, " " + n + ")"); if (!nomes.has(t)) return t; }
 }
 async function novaLista() {
   const nomes = new Set(listas.map((l) => l.nome));
@@ -2314,10 +2368,25 @@ async function novaLista() {
   renderListas();
   const i = $("lst-nome-" + editandoLista); if (i) { i.focus(); i.select(); }
 }
+/* Copiar para lista minha: lista manual nova com os mesmos papéis, "FIIs (cópia)" */
+async function copiarLista(l) {
+  const nome = nomeLivre(l.nome.replace(/^Carteira · /, "").slice(0, 30) + " (cópia)");
+  try {
+    const j = await apiListas("POST", "", { nome, papeis: l.papeis.slice(0, LISTA_MAX_PAPEIS) });
+    listas.push({ id: j.id, ...j.data });
+    avisarListas(`Lista “${nome}” criada. Essa é sua: dá para renomear, pôr e tirar papel.`);
+  } catch (e) { listasErro = e.message; }
+  renderListas();
+  const b = $("lst-nomebtn-" + (listas[listas.length - 1] || {}).id); if (b) b.focus({ preventScroll: false });
+}
 async function excluirLista(l) {
-  if (!confirm(`Excluir a lista “${l.nome}”? Os papéis dela saem junto.`)) return;
+  const msg = ehAuto(l)
+    ? `Excluir a lista “${l.nome}”? Ela é montada pela sua carteira e volta na próxima importação de extratos.`
+    : `Excluir a lista “${l.nome}”? Os papéis dela saem junto.`;
+  if (!confirm(msg)) return;
   listas = listas.filter((x) => x !== l); renderListas();
-  try { await apiListas("DELETE", l.id); } catch (e) { listasErro = e.message; carregarListas(); }
+  try { await apiListas("DELETE", l.id); if (ehAuto(l)) { avisarListas(`“${l.nome}” saiu. Volta quando você importar extratos de novo.`); renderListas(); } }
+  catch (e) { listasErro = e.message; carregarListas(); }
 }
 function adicionarPapel(l, t) {
   t = String(t || "").trim().toUpperCase();
@@ -2329,6 +2398,117 @@ function adicionarPapel(l, t) {
   l.papeis = [...l.papeis, t];
   salvarLista(l);
 }
+/* Mover ou copiar um papel entre listas: muda na tela na hora e o servidor grava as duas juntas */
+async function moverPapel(de, para, t, copiar) {
+  if (!de || !para || de === para || ehAuto(para)) return;
+  if (!copiar && ehAuto(de)) copiar = true;
+  if (para.papeis.includes(t)) { listasErro = `${t} já está em “${para.nome}”.`; renderListas(); return; }
+  if (para.papeis.length >= LISTA_MAX_PAPEIS) { listasErro = `“${para.nome}” já tem ${LISTA_MAX_PAPEIS} papéis.`; renderListas(); return; }
+  const antes = { de: de.papeis, para: para.papeis };
+  if (!copiar) de.papeis = de.papeis.filter((p) => p !== t);
+  para.papeis = [...para.papeis, t];
+  avisarListas(`${t} ${copiar ? "copiado" : "movido"} para “${para.nome}”.`);
+  renderListas();
+  try {
+    const r = await fetch("/api/listas/mover", { method: "POST", credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({ de: de.id, para: para.id, papel: t, copiar }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.erro && /\s/.test(j.erro) ? j.erro : "Não deu para salvar agora. Tente de novo.");
+    if (j.de) Object.assign(de, j.de.data);
+    if (j.para) Object.assign(para, j.para.data);
+  } catch (e) {
+    de.papeis = antes.de; para.papeis = antes.para;
+    listasAviso = ""; listasErro = e.message;
+    renderListas();
+  }
+}
+
+/* Menu do papel: "Mover para…" e "Copiar para…" com as outras listas manuais. Abre pelo ⋯, pelo botão direito e pelo toque longo. */
+let menuPapel = null;
+function fecharMenuPapel(devolverFoco) {
+  if (!menuPapel) return;
+  const { caixa, volta } = menuPapel;
+  menuPapel = null;
+  caixa.remove();
+  if (volta) volta.setAttribute("aria-expanded", "false");
+  document.removeEventListener("pointerdown", foraDoMenu, true);
+  window.removeEventListener("resize", fecharMenuSemFoco);
+  window.removeEventListener("scroll", fecharMenuSemFoco, true);
+  if (devolverFoco && volta && volta.isConnected) volta.focus({ preventScroll: true });
+}
+const fecharMenuSemFoco = (e) => { if (e && e.type === "scroll" && menuPapel && menuPapel.caixa.contains(e.target)) return; fecharMenuPapel(false); };
+function foraDoMenu(e) { if (menuPapel && !menuPapel.caixa.contains(e.target)) fecharMenuPapel(false); }
+function abrirMenuPapel(l, t, volta, ponto) {
+  fecharMenuPapel(false);
+  const outras = listas.filter((x) => x !== l && !ehAuto(x));
+  const caixa = el("div", { class: "lst-menu", role: "menu", "aria-label": `${t}: mover ou copiar` });
+  caixa.append(el("p", { class: "lst-menu-tit" }, el("b", {}, t), " · " + l.nome));
+  const grupo = (rotulo, copiar) => {
+    caixa.append(el("p", { class: "lst-menu-grupo", role: "presentation" }, rotulo));
+    outras.forEach((d) => {
+      const tem = d.papeis.includes(t), cheia = d.papeis.length >= LISTA_MAX_PAPEIS;
+      const b = el("button", { type: "button", role: "menuitem", tabindex: "-1", "data-para": d.id, "data-op": copiar ? "copiar" : "mover" }, el("span", {}, d.nome), tem ? el("small", {}, "já tem") : cheia ? el("small", {}, "cheia") : null);
+      if (tem || cheia) b.setAttribute("aria-disabled", "true");
+      else b.addEventListener("click", () => { fecharMenuPapel(false); moverPapel(l, d, t, copiar); const v = $(volta && volta.id); if (v) v.focus({ preventScroll: true }); });
+      caixa.append(b);
+    });
+  };
+  if (!outras.length) caixa.append(el("p", { class: "lst-menu-vazio" }, "Crie outra lista para mover ou copiar este papel."));
+  else { if (!ehAuto(l)) grupo("Mover para…", false); grupo("Copiar para…", true); }
+  document.body.append(caixa);
+  /* celular: folha de baixo; desktop: perto do clique ou embaixo do ⋯, sem sair da tela */
+  if (!window.matchMedia("(max-width: 699px)").matches) {
+    const r = volta ? volta.getBoundingClientRect() : null;
+    const x0 = ponto ? ponto.x : r ? r.right - caixa.offsetWidth : 16, y0 = ponto ? ponto.y : r ? r.bottom + 4 : 16;
+    const x = Math.max(8, Math.min(x0, innerWidth - caixa.offsetWidth - 8));
+    const y = y0 + caixa.offsetHeight > innerHeight - 8 ? Math.max(8, (ponto ? ponto.y : r ? r.top - 4 : y0) - caixa.offsetHeight) : y0;
+    caixa.style.left = x + "px"; caixa.style.top = y + "px";
+  } else caixa.classList.add("folha");
+  menuPapel = { caixa, volta };
+  if (volta) volta.setAttribute("aria-expanded", "true");
+  const itens = () => [...caixa.querySelectorAll('[role="menuitem"]:not([aria-disabled="true"])')];
+  caixa.addEventListener("keydown", (e) => {
+    const xs = itens(), k = xs.indexOf(document.activeElement);
+    if (e.key === "Escape") { e.preventDefault(); fecharMenuPapel(true); }
+    else if (e.key === "ArrowDown" && xs.length) { e.preventDefault(); xs[(k + 1) % xs.length].focus(); }
+    else if (e.key === "ArrowUp" && xs.length) { e.preventDefault(); xs[(k - 1 + xs.length) % xs.length].focus(); }
+    else if (e.key === "Home" && xs.length) { e.preventDefault(); xs[0].focus(); }
+    else if (e.key === "End" && xs.length) { e.preventDefault(); xs[xs.length - 1].focus(); }
+    else if (e.key === "Tab") fecharMenuPapel(false);
+  });
+  const primeiro = itens()[0];
+  if (primeiro) primeiro.focus({ preventScroll: true }); else { caixa.tabIndex = -1; caixa.focus({ preventScroll: true }); }
+  setTimeout(() => {
+    document.addEventListener("pointerdown", foraDoMenu, true);
+    window.addEventListener("resize", fecharMenuSemFoco);
+    window.addEventListener("scroll", fecharMenuSemFoco, true);
+  }, 0);
+}
+
+/* Arrastar e soltar (desktop): a linha do papel vai para outra lista manual, com a barra de onde vai cair */
+let arrastoLista = null;
+const podeArrastar = () => window.matchMedia("(pointer: fine) and (min-width: 900px)").matches;
+function limparAlvosLista() { document.querySelectorAll(".lst.cai-aqui").forEach((x) => x.classList.remove("cai-aqui")); }
+function ligarArrasto(box, l) {
+  box.dataset.lista = l.id;
+  box.addEventListener("dragover", (e) => {
+    if (!arrastoLista || ehAuto(l) || arrastoLista.de === l.id) return;
+    if (l.papeis.includes(arrastoLista.t) || l.papeis.length >= LISTA_MAX_PAPEIS) { e.dataTransfer.dropEffect = "none"; return; }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = arrastoLista.copiar ? "copy" : "move";
+    if (!box.classList.contains("cai-aqui")) {
+      limparAlvosLista(); box.classList.add("cai-aqui");
+      const rot = box.querySelector(".lst-cai span"); if (rot) rot.textContent = `${arrastoLista.copiar ? "Copiar" : "Mover"} ${arrastoLista.t} para “${l.nome}”`;
+    }
+  });
+  box.addEventListener("dragleave", (e) => { if (!box.contains(e.relatedTarget)) box.classList.remove("cai-aqui"); });
+  box.addEventListener("drop", (e) => {
+    if (!arrastoLista || ehAuto(l) || arrastoLista.de === l.id) return;
+    e.preventDefault();
+    const a = arrastoLista; arrastoLista = null; limparAlvosLista();
+    moverPapel(listas.find((x) => x.id === a.de), l, a.t, a.copiar);
+  });
+}
+
 /* Índice para o autocompletar: papéis da brapi e fundos do informe da CVM, com nome */
 let indicePapeis = null;
 function sugerirPapeis(q, ja) {
@@ -2348,10 +2528,17 @@ function sugerirPapeis(q, ja) {
   return out;
 }
 const LIXEIRA = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
+const TRES_PONTOS = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+const idSeguro = (s) => String(s).replace(/[^A-Za-z0-9_-]/g, "_");
 function listaEl(l) {
-  const box = el("div", { class: "lst" });
+  const auto = ehAuto(l);
+  const box = el("div", { class: "lst" + (auto ? " lst-auto" : "") });
+  ligarArrasto(box, l);
   const cab = el("div", { class: "lst-cab" });
-  if (editandoLista === l.id) {
+  if (auto) {
+    cab.append(el("span", { class: "lst-nome lst-nome-fixo", id: "lst-nomebtn-" + l.id }, l.nome),
+      el("span", { class: "seu", title: "Montada pela sua carteira a cada importação de extratos. Para mexer, copie para uma lista sua." }, "da carteira"));
+  } else if (editandoLista === l.id) {
     const inp = el("input", { class: "dd-input", id: "lst-nome-" + l.id, value: l.nome, maxlength: "40", "aria-label": "Nome da lista", autocomplete: "off" });
     let feito = false;
     const fim = (salvar, focar) => {
@@ -2369,7 +2556,7 @@ function listaEl(l) {
     nome.addEventListener("click", () => { editandoLista = l.id; renderListas(); const i = $("lst-nome-" + l.id); if (i) { i.focus(); i.select(); } });
     cab.append(nome);
   }
-  const apagar = el("button", { class: "lst-x", type: "button", "aria-label": `Excluir a lista ${l.nome}`, title: "Excluir a lista", html: LIXEIRA });
+  const apagar = el("button", { class: "lst-x", type: "button", "aria-label": `Excluir a lista ${l.nome}`, title: auto ? "Excluir a lista (volta na próxima importação)" : "Excluir a lista", html: LIXEIRA });
   apagar.addEventListener("click", () => excluirLista(l));
   cab.append(el("span", { class: "k" }, l.papeis.length === 1 ? "1 papel" : `${l.papeis.length} papéis`), apagar);
   box.append(cab);
@@ -2379,20 +2566,58 @@ function listaEl(l) {
     l.papeis.forEach((t) => {
       const c = cotDe(t), x = c && c[0];
       const papel = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x && x.nome) || t }, papelEl(t, x));
-      papel.addEventListener("click", () => abrirPapel(t));
-      const tirar = el("button", { class: "lst-x", type: "button", "aria-label": `Tirar ${t} da lista`, title: "Tirar da lista" }, "×");
-      tirar.addEventListener("click", () => { l.papeis = l.papeis.filter((p) => p !== t); salvarLista(l); });
+      papel.addEventListener("click", (e) => { if (tr.dataset.segurou) { e.preventDefault(); delete tr.dataset.segurou; return; } abrirPapel(t); });
+      const mais = el("button", { class: "lst-x lst-mais", type: "button", id: `lst-mais-${l.id}-${idSeguro(t)}`, "aria-haspopup": "menu", "aria-label": auto ? `Copiar ${t} para outra lista` : `Mover ou copiar ${t}`, title: auto ? "Copiar para…" : "Mover ou copiar para…", html: TRES_PONTOS });
+      mais.addEventListener("click", () => { if (menuPapel && menuPapel.volta === mais) fecharMenuPapel(true); else abrirMenuPapel(l, t, mais); });
+      const acoes = el("span", { class: "lst-acoes" }, mais);
+      if (!auto) {
+        const tirar = el("button", { class: "lst-x", type: "button", "aria-label": `Tirar ${t} da lista`, title: "Tirar da lista" }, "×");
+        tirar.addEventListener("click", () => { l.papeis = l.papeis.filter((p) => p !== t); salvarLista(l); });
+        acoes.append(tirar);
+      }
       const sem = () => el("span", { class: "sem", title: ehPapelEua(t) ? "Fora das ações e ETFs americanos que acompanhamos; sem cotação aqui" : "Fora dos mais negociados; sem cotação aqui" }, "–");
-      tb.append(el("tr", {},
+      const tr = el("tr", { "data-papel": t },
         el("td", {}, el("span", { class: "cot-papel-box" }, papel, pontoNoticia(t))),
         el("td", {}, x && x.preco != null ? fmtPreco(x) : sem()),
         el("td", { class: x && x.var > 0 ? "sobe" : x && x.var < 0 ? "desce" : "" }, x && x.var != null ? (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%" : x ? "–" : sem()),
         el("td", { title: x && x.dyAnual ? "Menos de 12 meses de informes: valor anualizado" : "" }, x && c[1] === "fiis" && x.dy != null ? fmtNum(x.dy, 2) + "%" + (x.dyAnual ? "*" : "") : "–"),
-        el("td", {}, tirar)));
+        el("td", {}, acoes));
+      /* botão direito no desktop (e o toque longo do Android, que chega como contextmenu) */
+      tr.addEventListener("contextmenu", (e) => { e.preventDefault(); abrirMenuPapel(l, t, mais, { x: e.clientX, y: e.clientY }); });
+      /* toque longo (iPhone não manda contextmenu): 500 ms parado abre o menu e o toque não abre a ficha */
+      let segura = 0, x0 = 0, y0 = 0;
+      tr.addEventListener("pointerdown", (e) => {
+        if (e.pointerType !== "touch") return;
+        x0 = e.clientX; y0 = e.clientY; clearTimeout(segura);
+        segura = setTimeout(() => { tr.dataset.segurou = "1"; if (!menuPapel) abrirMenuPapel(l, t, mais); }, 500);
+      });
+      tr.addEventListener("pointermove", (e) => { if (segura && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) { clearTimeout(segura); segura = 0; } });
+      ["pointerup", "pointercancel", "pointerleave"].forEach((ev) => tr.addEventListener(ev, () => { clearTimeout(segura); segura = 0; }));
+      if (podeArrastar()) {
+        tr.draggable = true;
+        tr.addEventListener("dragstart", (e) => {
+          fecharMenuPapel(false);
+          arrastoLista = { de: l.id, t, copiar: auto };
+          e.dataTransfer.effectAllowed = auto ? "copy" : "copyMove";
+          try { e.dataTransfer.setData("text/plain", t); } catch (er) {}
+          requestAnimationFrame(() => tr.classList.add("arrastando"));
+        });
+        tr.addEventListener("dragend", () => { tr.classList.remove("arrastando"); arrastoLista = null; limparAlvosLista(); });
+      }
+      tb.append(tr);
     });
     box.append(el("table", { class: "lst-tab" },
-      el("thead", {}, el("tr", {}, el("th", { scope: "col" }, "Papel"), el("th", { scope: "col" }, "Preço"), el("th", { scope: "col" }, "Dia"), el("th", { scope: "col", title: "Só para FIIs" }, "DY 12m"), el("th", {}))),
+      el("thead", {}, el("tr", {}, el("th", { scope: "col" }, "Papel"), el("th", { scope: "col" }, "Preço"), el("th", { scope: "col" }, "Dia"), el("th", { scope: "col", title: "Só para FIIs" }, "DY 12m"), el("th", {}, el("span", { class: "sr" }, "Ações")))),
       tb));
+  }
+  /* barra de onde o papel arrastado vai cair (fim da lista) */
+  if (!auto) box.append(el("div", { class: "lst-cai", "aria-hidden": "true" }, el("span", {})));
+
+  if (auto) {
+    const copiar = el("button", { class: "dd-btn dd-btn--link lst-copiar", type: "button", id: "lst-copiar-" + l.id }, "Copiar para lista minha");
+    copiar.addEventListener("click", () => copiarLista(l));
+    box.append(el("div", { class: "lst-pe" }, copiar));
+    return box;
   }
 
   /* + papel: sugere até 6 a partir de 2 letras; Enter escolhe a sugestão marcada ou o código digitado */
@@ -2443,6 +2668,7 @@ function renderListas() {
   else if (!listas.length) sec.append(el("p", { class: "nota", id: "listas-vazio" }, "Crie uma lista com os papéis da sua corretora para acompanhar cotação e DY aqui. Vale papel da B3, BDR e ação americana."));
   listas.forEach((l) => sec.append(listaEl(l)));
   if (listasErro) sec.append(el("p", { class: "lst-erro", role: "alert" }, listasErro));
+  else if (listasAviso) sec.append(el("p", { class: "lst-aviso", role: "status" }, listasAviso));
   alvo.append(sec);
   desenhandoListas = false;
   if (foco && $(foco)) { const n = $(foco); n.focus({ preventScroll: true }); if (cursor != null && n.setSelectionRange) { try { n.setSelectionRange(cursor, cursor); } catch (e) {} } }
@@ -4069,7 +4295,7 @@ function leitor(id) {
   if (id === "fiis") return async (f) => { const [d] = await Promise.all([lerB3Painel(f), lerFii()]); return d === undefined ? undefined : { d, marca: marcaDe(d) + "|" + (fiiCvm && fiiCvm.ref) }; };
   if (id === "listas") return async (f) => {
     const [j, d1, d2] = await Promise.all([apiListas("GET"), lerB3Painel(f), lerEuaPainel(f)]);
-    const ls = (j.docs || []).map((x) => ({ id: x.id, ...x.data }));
+    const ls = ordenarListas((j.docs || []).map((x) => ({ id: x.id, ...x.data })));
     return { d: ls, marca: JSON.stringify(ls) + marcaDe(d1, d2) };
   };
   if (id === "favoritos") return async () => { const l = favoritosRecentes(); return { d: l, marca: JSON.stringify(l.slice(0, 5)) + l.length }; };
@@ -4200,7 +4426,7 @@ const corpos = {
         ol.append(el("li", {}, b, el("span", { class: "rk-preco" }, x && x.preco != null ? fmtPreco(x) : "–"), el("span", { class: "rk-val " + clsVar(x && x.var) }, x && x.var != null ? pctVar(x.var) : "–")));
       });
       if (!l.papeis.length) ol.append(el("li", { class: "rk-vazio" }, "Lista vazia"));
-      return el("div", { class: "wdg-lst" }, el("h4", {}, el("span", {}, l.nome), el("small", {}, l.papeis.length === 1 ? "1 papel" : l.papeis.length + " papéis")),
+      return el("div", { class: "wdg-lst" }, el("h4", {}, el("span", {}, l.nome), ehAuto(l) ? el("span", { class: "seu", title: "Montada pela sua carteira" }, "da carteira") : null, el("small", {}, l.papeis.length === 1 ? "1 papel" : l.papeis.length + " papéis")),
         el("div", { class: "wdg-rk" }, ol), l.papeis.length > MAX ? el("span", { class: "mais" }, `+${l.papeis.length - MAX} na Bolsa`) : null);
     });
   },
@@ -6102,7 +6328,7 @@ function trocarRadar(id, porHash) {
   /* veio do card Favoritos do Início: abre a seção já filtrando os favoritos */
   if (pedirSoFav) { soFav = true; pedirSoFav = false; }
   resumoAberto.clear();
-  listas = []; listasCarregadas = false; listasErro = ""; editandoLista = null; papeisMemo.clear();
+  listas = []; listasCarregadas = false; listasErro = ""; listasAviso = ""; editandoLista = null; fecharMenuPapel(false); papeisMemo.clear();
   renderDestaques();
   render();
   renderListas();

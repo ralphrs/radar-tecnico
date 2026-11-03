@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS candidatos (
   visto TEXT NOT NULL,            -- quando o Worker achou
   status TEXT NOT NULL DEFAULT 'novo', -- novo | publicado | descartado (lido = rodadas antigas)
   lote TEXT,                      -- rodada que reservou o candidato
-  motivo TEXT                     -- motivo do descarte: repetido | promocional | fora-do-tema | antigo | raso
+  motivo TEXT,                    -- motivo do descarte: repetido | promocional | fora-do-tema | antigo | raso
+  tipo TEXT NOT NULL DEFAULT '',  -- '' (feed comum) | reddit (post de subreddit)
+  link_externo TEXT NOT NULL DEFAULT '' -- post do Reddit sem texto que aponta para fora: o link original
 );
 CREATE INDEX IF NOT EXISTS idx_candidatos_lote ON candidatos (lote);
 CREATE INDEX IF NOT EXISTS idx_candidatos_radar ON candidatos (radar, status, visto);
@@ -46,8 +48,11 @@ CREATE TABLE IF NOT EXISTS feeds_estado (
   erro TEXT NOT NULL DEFAULT '',
   erros_seguidos INTEGER NOT NULL DEFAULT 0,
   itens_ultima INTEGER NOT NULL DEFAULT 0,
-  novos_total INTEGER NOT NULL DEFAULT 0
+  novos_total INTEGER NOT NULL DEFAULT 0,
+  seguidos_403 INTEGER NOT NULL DEFAULT 0 -- 403 seguidos; no Reddit, 3 marcam o feed como bloqueado
 );
+-- Bancos criados antes de 03/11/2026: as três colunas acima entram por ALTER TABLE ADD COLUMN, feito pela própria
+-- coleta (garantirColunas em src/coleta.js) quando faltam.
 
 -- Seções por grupo (src/grupos.js). Sem grupos, todo convidado vê tudo.
 CREATE TABLE IF NOT EXISTS grupos (id TEXT PRIMARY KEY, nome TEXT NOT NULL, secoes TEXT NOT NULL DEFAULT '[]', padrao INTEGER NOT NULL DEFAULT 0, criado TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));

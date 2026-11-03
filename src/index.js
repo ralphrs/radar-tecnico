@@ -1,5 +1,6 @@
 import { emailDoAccess, accessConfigurado } from "./auth.js";
-import { coletar, limpar } from "./coleta.js";
+import { coletar, limpar, garantirColunas, ehReddit, REDDIT } from "./coleta.js";
+import { FEEDS } from "./feeds.js";
 import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
 import { cronEua } from "./eua.js";
 import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
@@ -11,6 +12,7 @@ import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
 import { rotaPapel, cronPapel, ID_OK as PAPEL_ID_OK } from "./papel.js";
 import { BDR_DE_US, US_DE_BDR } from "./bdr.js";
 import { rotaCarteira, limparCacheCarteira } from "./carteira.js";
+import { rotaListas, sincronizarListasCarteira } from "./listas.js";
 import { rotaLeitura, cronLeitura, lerFundamentos } from "./leitura.js";
 // Radar de dividendos: o mesmo arquivo que a página carrega (critérios, avisos e validação dos filtros salvos)
 import "../public/radar-filtro.js";
@@ -235,85 +237,11 @@ async function favoritos(request, env, quem, idFav) {
   return json({ erro: "metodo" }, 405);
 }
 
-// Listas de acompanhamento (Investimentos): nome e papéis, uma collection por pessoa.
-// B3: quatro caracteres e o número; o segundo pode ser dígito (B3SA3, BDRs como M1TA34).
-// EUA: de 1 a 5 letras, com a classe depois do ponto quando houver (AAPL, F, BRK.B).
-const PAPEL_OK = /^(?:[A-Z][A-Z0-9]{3}\d{1,2}|[A-Z]{1,5}(?:\.[A-Z])?)$/;
-const LISTA_ID_OK = /^[a-z0-9-]{1,60}$/;
-const LISTAS_MAX = 30;
-const slug = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "lista";
-
-// Confere o corpo de uma lista. Devolve { nome, papeis } ou { erro }.
-export function validarLista(b) {
-  if (!b || typeof b !== "object") return { erro: "corpo" };
-  const nome = String(b.nome ?? "").replace(/\s+/g, " ").trim();
-  if (!nome) return { erro: "Dê um nome à lista." };
-  if (nome.length > 40) return { erro: "O nome passa de 40 caracteres." };
-  const papeis = b.papeis ?? [];
-  if (!Array.isArray(papeis)) return { erro: "papeis" };
-  if (papeis.length > 60) return { erro: "Uma lista guarda até 60 papéis." };
-  const vistos = new Set();
-  for (const p of papeis) {
-    if (typeof p !== "string" || !PAPEL_OK.test(p)) return { erro: `Papel inválido: ${String(p).slice(0, 12)}` };
-    if (vistos.has(p)) return { erro: `${p} aparece duas vezes.` };
-    vistos.add(p);
-  }
-  return { nome, papeis: [...vistos] };
-}
-
+// Listas de acompanhamento (Investimentos): manuais e automáticas da carteira, mover e copiar papel. Tudo em src/listas.js.
+export { validarLista } from "./listas.js";
 export async function listas(request, env, quem, idLista) {
   if (!libera(quem.secoes, "investimentos")) return json({ erro: "secao" }, 403);
-  const col = "listas/" + quem.email;
-  if (request.method === "GET" && !idLista) {
-    const results = await lerLinhas(env, "SELECT id, data FROM docs WHERE collection = ? ORDER BY json_extract(data, '$.criado') LIMIT ?", [col, LISTAS_MAX], "listas");
-    return json({ docs: results.map(linhaParaDoc) });
-  }
-  const lerCorpo = async () => {
-    const corpo = await request.text();
-    if (corpo.length > 8000) return { erro: "grande", status: 413 };
-    try { return validarLista(JSON.parse(corpo)); } catch { return { erro: "json" }; }
-  };
-  const gravar = async (id, doc) => {
-    const data = JSON.stringify(doc);
-    await env.DB.prepare(
-      "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, ?, ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
-    ).bind(col, id, data, doc.atualizado).run();
-    gravarNoEspelho(env, [{ collection: col, id, data, coletado: "", atualizado: doc.atualizado }]);
-  };
-  if (request.method === "POST" && !idLista) {
-    const v = await lerCorpo();
-    if (v.erro) return json({ erro: v.erro }, v.status || 400);
-    const n = await env.DB.prepare("SELECT count(*) AS n FROM docs WHERE collection = ?").bind(col).first();
-    if ((n?.n || 0) >= LISTAS_MAX) return json({ erro: `Dá para ter até ${LISTAS_MAX} listas.` }, 400);
-    // Id com sufixo aleatório; confere antes para não sobrescrever outra lista com o mesmo nome.
-    let id = "";
-    for (let k = 0; k < 8 && !id; k++) {
-      const tenta = slug(v.nome) + "-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
-      if (!(await env.DB.prepare("SELECT 1 FROM docs WHERE collection = ? AND id = ?").bind(col, tenta).first())) id = tenta;
-    }
-    if (!id) return json({ erro: "Não deu para criar a lista agora. Tente de novo." }, 409);
-    const agora = agoraIso();
-    const doc = { nome: v.nome, papeis: v.papeis, criado: agora, atualizado: agora };
-    await gravar(id, doc);
-    return json({ ok: true, id, data: doc });
-  }
-  if (!idLista || !LISTA_ID_OK.test(idLista)) return json({ erro: "id" }, 400);
-  if (request.method === "PUT") {
-    const v = await lerCorpo();
-    if (v.erro) return json({ erro: v.erro }, v.status || 400);
-    const atual = await env.DB.prepare("SELECT data FROM docs WHERE collection = ? AND id = ?").bind(col, idLista).first();
-    if (!atual) return json({ erro: "Lista não encontrada." }, 404);
-    const agora = agoraIso();
-    const doc = { nome: v.nome, papeis: v.papeis, criado: JSON.parse(atual.data).criado || agora, atualizado: agora };
-    await gravar(idLista, doc);
-    return json({ ok: true, id: idLista, data: doc });
-  }
-  if (request.method === "DELETE") {
-    await env.DB.prepare("DELETE FROM docs WHERE collection = ? AND id = ?").bind(col, idLista).run();
-    removerDoEspelho(env, [{ collection: col, id: idLista }]);
-    return json({ ok: true });
-  }
-  return json({ erro: "metodo" }, 405);
+  return rotaListas(request, env, quem, idLista, { lerLinhas, gravarNoEspelho, removerDoEspelho });
 }
 
 // Painel inicial (aba Início): ordem, tamanho e o que aparece, um doc por pessoa em prefs/<email>, id "painel".
@@ -429,18 +357,27 @@ async function fichaPapel(url, env, quem) {
 
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Rendimento das fontes nos últimos 10 dias (o tempo que os candidatos ficam no banco)
+// Rendimento das fontes nos últimos 10 dias (o tempo que os candidatos ficam no banco).
+// semCandidatos: feeds de src/feeds.js que ainda não trouxeram nada (subreddit novo, feed bloqueado), com o estado deles.
 async function adminFontes(env) {
+  await garantirColunas(env);
   const { results } = await env.DB.prepare(
     `SELECT c.radar, c.fonte, c.feed, count(*) AS lidos,
        sum(c.status = 'publicado') AS publicados, sum(c.status = 'descartado') AS descartados, sum(c.status = 'novo') AS fila,
        sum(c.motivo = 'repetido') AS repetido, sum(c.motivo = 'promocional') AS promocional, sum(c.motivo = 'fora-do-tema') AS fora, sum(c.motivo = 'antigo') AS antigo, sum(c.motivo = 'raso') AS raso,
-       f.erro, f.erros_seguidos
+       f.erro, f.erros_seguidos, f.seguidos_403, f.ultima_checagem, f.ultimo_ok
      FROM candidatos c LEFT JOIN feeds_estado f ON f.url = c.feed
      GROUP BY c.feed ORDER BY c.radar, publicados DESC`
   ).all();
-  const { results: falhas } = await env.DB.prepare("SELECT radar, fonte, url AS feed, erro, erros_seguidos FROM feeds_estado WHERE erros_seguidos > 0 ORDER BY radar, fonte").all();
-  return json({ fontes: results, falhas });
+  const { results: estados } = await env.DB.prepare("SELECT radar, fonte, url AS feed, erro, erros_seguidos, seguidos_403, ultima_checagem, ultimo_ok FROM feeds_estado").all();
+  const falhas = estados.filter((f) => f.erros_seguidos > 0).sort((a, b) => a.radar.localeCompare(b.radar) || a.fonte.localeCompare(b.fonte));
+  const comCandidatos = new Set(results.map((r) => r.feed));
+  const porUrl = new Map(estados.map((e) => [e.feed, e]));
+  const semCandidatos = FEEDS.filter(([, , , url]) => !comCandidatos.has(url)).map(([radar, fonte, , url, tipo]) => {
+    const e = porUrl.get(url) || {};
+    return { radar, fonte, feed: url, tipo: tipo || "rss", erro: e.erro || "", erros_seguidos: e.erros_seguidos || 0, seguidos_403: e.seguidos_403 || 0, ultima_checagem: e.ultima_checagem || "", ultimo_ok: e.ultimo_ok || "" };
+  });
+  return json({ fontes: results.map((r) => ({ ...r, tipo: ehReddit(r.feed) ? "reddit" : "rss" })), falhas, semCandidatos, bloqueio403: REDDIT.BLOQUEIO_403 });
 }
 
 async function adminUsuarios(request, env, email) {
@@ -561,7 +498,7 @@ export default {
       if (!corpoJson(request)) return json({ erro: "json" }, 415);
       const resto = p.length > 14 ? decodificar(p.slice(14)) : "";
       if (resto === null) return json({ erro: "id" }, 400);
-      return rotaCarteira(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
+      return rotaCarteira(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho, sincronizarListas: sincronizarListasCarteira });
     }
 
     if (p === "/admin" || p === "/admin.html" || p.startsWith("/api/admin/")) {
@@ -597,12 +534,14 @@ export default {
   // Por último copia para o espelho de São Paulo o que mudou no D1.
   async scheduled(evento, env) {
     const minuto = new Date(evento.scheduledTime || Date.now()).getUTCMinutes();
-    try { await coletar(env); } catch (e) { console.error("coleta", e); }
+    let coleta = null;
+    try { coleta = await coletar(env); } catch (e) { console.error("coleta", e); }
     try { await cronMercado(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("mercado", e); }
     try { await cronB3(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("b3", e); }
     try { await cronEua(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("eua", e); }
     try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
-    try { await cronSonda(env); } catch (e) { console.error("sonda", e); }
+    // Reddit: uma URL por minuto somando coleta e sonda; se a coleta falhou antes de saber, a sonda não arrisca
+    try { await cronSonda(env, { redditLivre: !!coleta && !coleta.reddit }); } catch (e) { console.error("sonda", e); }
     try { const r = await cronPapel(env, evento.scheduledTime || Date.now()); if (r && r.candidatos) console.log("papel", JSON.stringify(r)); } catch (e) { console.error("papel", e); }
     // Leitura do dia: 10h40 a 10h49 UTC (7h40 em São Paulo), depois do informe da CVM das 10h17
     try {

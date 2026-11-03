@@ -48,6 +48,8 @@ li:first-child{border-top:0}
 .fontes th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
 .fontes .zero{color:#c2410c;font-weight:600}
 .fontes .falha{color:#b91c1c}
+.fontes .mut{color:var(--mut)}
+.fontes td.erro{color:var(--err, #b91c1c);max-width:220px;overflow:hidden;text-overflow:ellipsis;text-align:left}
 .custo-topo{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:4px 0 14px}
 .kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
 .kpi small{display:block;color:var(--mut);font-size:12px}
@@ -165,7 +167,7 @@ textarea{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:inheri
 
   <section class="card">
     <h2>Sondar feeds</h2>
-    <p class="dica" style="margin-top:0">Uma URL por linha, até 30 por vez. O próprio Worker testa até 4 por minuto, com o mesmo leitor da coleta, e o resultado aparece abaixo.</p>
+    <p class="dica" style="margin-top:0">Uma URL por linha, até 30 por vez. O próprio Worker testa até 4 por minuto, com o mesmo leitor da coleta, e o resultado aparece abaixo. URL do Reddit vai uma por minuto, nos minutos em que a coleta não leu subreddit.</p>
     <textarea id="sonda-urls" placeholder="https://exemplo.com/feed" aria-label="URLs para sondar, uma por linha" spellcheck="false"></textarea>
     <div class="sonda-acoes"><button class="pri" type="button" id="sonda-ir">Sondar</button><button type="button" id="sonda-atualizar">Atualizar</button></div>
     <p class="msg" id="msg-sonda" role="status"></p>
@@ -314,18 +316,31 @@ async function carregar() {
 async function carregarFontes() {
   const box = $("fontes");
   try {
-    const { fontes, falhas } = await api("/api/admin/fontes");
+    const { fontes, falhas, semCandidatos = [], bloqueio403 = 3 } = await api("/api/admin/fontes");
     const NOME = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
     const pct = (a, b) => (b ? Math.round((100 * a) / b) + "%" : "–");
-    let h = "<table><thead><tr><th>Aba</th><th>Fonte</th><th>Lidos</th><th>Publicados</th><th>Taxa</th><th>Repetido</th><th>Promo</th><th>Fora do tema</th><th>Antigo</th><th>Raso</th><th>Na fila</th></tr></thead><tbody>";
+    // Status pelo feeds_estado: bloqueado (403 seguidos), esperando (429), falhando, ok ou ainda não lido
+    const status = (f) => {
+      if ((f.seguidos_403 || 0) >= bloqueio403) return '<span class="falha" title="403 ' + esc(f.seguidos_403) + ' vezes seguidas. Tenta de novo a cada 24 h.">bloqueado</span>';
+      if (f.erros_seguidos && /HTTP 429/.test(f.erro || "")) return '<span class="falha" title="Pediu para esperar. A espera dobra a cada 429, até 24 h.">esperando (429)</span>';
+      if (f.erros_seguidos) return '<span class="falha">falhando</span>';
+      return f.ultima_checagem || f.ultimo_ok ? "ok" : '<span class="mut">ainda não lido</span>';
+    };
+    const erroDe = (f) => (f.erros_seguidos ? `<td class="erro" title="${esc(f.erro || "")}">${esc(f.erro || "")}${f.erros_seguidos > 1 ? ` · ${f.erros_seguidos}×` : ""}</td>` : "<td></td>");
+    const nomeDe = (f) => `<td title="${esc(f.feed)}">${esc(f.fonte)}${f.tipo === "reddit" ? ' <span class="mut">· Reddit</span>' : ""}</td>`;
+    let h = "<table><thead><tr><th>Aba</th><th>Fonte</th><th>Status</th><th>Lidos</th><th>Publicados</th><th>Taxa</th><th>Repetido</th><th>Promo</th><th>Fora do tema</th><th>Antigo</th><th>Raso</th><th>Na fila</th><th>Último erro</th></tr></thead><tbody>";
     for (const f of fontes) {
       const avaliados = (f.publicados || 0) + (f.descartados || 0);
       const zero = avaliados >= 10 && !f.publicados;
-      h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td><td title="${esc(f.feed)}">${esc(f.fonte)}${f.erros_seguidos ? ' <span class="falha">· falhando</span>' : ""}</td><td>${f.lidos}</td><td>${f.publicados || 0}</td><td class="${zero ? "zero" : ""}">${pct(f.publicados || 0, avaliados)}</td><td>${f.repetido || 0}</td><td>${f.promocional || 0}</td><td>${f.fora || 0}</td><td>${f.antigo || 0}</td><td>${f.raso || 0}</td><td>${f.fila || 0}</td></tr>`;
+      h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td>${nomeDe(f)}<td>${status(f)}</td><td>${f.lidos}</td><td>${f.publicados || 0}</td><td class="${zero ? "zero" : ""}">${pct(f.publicados || 0, avaliados)}</td><td>${f.repetido || 0}</td><td>${f.promocional || 0}</td><td>${f.fora || 0}</td><td>${f.antigo || 0}</td><td>${f.raso || 0}</td><td>${f.fila || 0}</td>${erroDe(f)}</tr>`;
+    }
+    // Fontes da lista que ainda não trouxeram candidato (subreddit recém-entrado, feed bloqueado): aparecem com zero
+    for (const f of semCandidatos) {
+      h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td>${nomeDe(f)}<td>${status(f)}</td><td>0</td><td>0</td><td>–</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>${erroDe(f)}</tr>`;
     }
     h += "</tbody></table>";
     if (falhas.length) h += `<p class="dica"><strong>Feeds com erro:</strong> ${falhas.map((f) => esc(f.fonte) + " (" + esc(NOME[f.radar] || f.radar) + ", " + esc(f.erro) + ")").join(" · ")}</p>`;
-    h += '<p class="dica">"Taxa" conta só o que já foi avaliado pela curadoria nova; links de rodadas antigas aparecem como lidos sem destino.</p>';
+    h += '<p class="dica">"Taxa" conta só o que já foi avaliado pela curadoria nova; links de rodadas antigas aparecem como lidos sem destino. Subreddits são lidos um por minuto, cada um a cada 2 h.</p>';
     box.innerHTML = h;
   } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
 }
@@ -500,7 +515,8 @@ async function carregarSonda() {
     const { pendentes, resultados } = await api("/api/admin/sonda");
     const linhas = Object.entries(resultados || {}).sort((a, b) => String(b[1].quando || "").localeCompare(String(a[1].quando || "")));
     let h = "";
-    if (pendentes.length) h += `<p class="dica">Na fila: ${pendentes.length} URL${pendentes.length > 1 ? "s" : ""}. Leva cerca de ${Math.ceil(pendentes.length / 4)} min.</p>`;
+    const nReddit = pendentes.filter((u) => /^https?:\/\/([^/]+\.)?reddit\.com\//i.test(u)).length;
+    if (pendentes.length) h += `<p class="dica">Na fila: ${pendentes.length} URL${pendentes.length > 1 ? "s" : ""}. Leva cerca de ${Math.max(Math.ceil((pendentes.length - nReddit) / 4), nReddit)} min${nReddit ? " (Reddit vai uma por minuto)" : ""}.</p>`;
     if (!linhas.length) { box.innerHTML = h + (pendentes.length ? "" : '<p class="vazio">Nenhuma URL sondada ainda.</p>'); return; }
     h += "<table><thead><tr><th>URL</th><th>Status</th><th>Tipo</th><th>Itens</th><th>Mais recente</th><th>Erro</th></tr></thead><tbody>";
     for (const [url, r] of linhas) {

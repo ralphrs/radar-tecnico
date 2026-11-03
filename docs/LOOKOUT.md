@@ -6,7 +6,7 @@ Abas: Início, Tech, Negócios, Investimentos, Notícias e Política, Esportes. 
 
 ## Como as notícias entram
 
-1. O cron do Worker roda a cada minuto e lê 6 feeds por vez (`src/coleta.js`, lista em `src/feeds.js`). Cada feed é lido no máximo a cada 90 min. O que já existe (mesmo id ou mesma URL) é ignorado; o resto vai para a tabela `candidatos` com status `novo`.
+1. O cron do Worker roda a cada minuto e lê 6 feeds por vez (`src/coleta.js`, lista em `src/feeds.js`). Cada feed é lido no máximo a cada 90 min. Os subreddits (tipo `reddit`) têm fila à parte: um por minuto, cada um a cada 120 min (detalhes em `docs/coleta.md`). O que já existe (mesmo id ou mesma URL) é ignorado; o resto vai para a tabela `candidatos` com status `novo`.
 2. Tarefas agendadas do Claude fazem a curadoria: reservam um lote, escolhem, escrevem título e resumo, gravam em `items-*` e `destaques-*` e marcam cada candidato como `publicado` ou `descartado` com motivo. Podem fazer algumas buscas na web para o que não tem feed. Sonnet nas abas novas; o Tech atual ainda é Opus com busca.
 3. Só o que está nas collections de itens aparece no site. No minuto 7 de cada hora o Worker apaga o que venceu (regras em `docs/coleta.md`).
 
@@ -139,6 +139,16 @@ Personalizar: painel lateral no desktop e folha de baixo no celular, com todos o
 
 Dados: cada widget faz no máximo uma leitura, todas em paralelo, pelas mesmas rotas da página (cache de memória e de borda, ETag). Os `meta/*` (mercado, b3, eua) ficam numa cópia em memória por 2 min, usada pelo Início e por Investimentos, nos dois sentidos; os ciclos de atualização pedem o doc de novo. A cada 2 min o Início atualiza só os cards que estão na tela (IntersectionObserver), e ao voltar para a aba atualiza os da tela com mais de 1 min.
 
+## Minhas listas
+
+Na visão Bolsa (trilho direito a partir de 1200 px, abaixo da tabela antes disso) e no widget do Início. Collection `listas/<email>`, código em `src/listas.js` (rota) e na página (`listaEl`, `renderListas`).
+
+- **Manuais:** nome e até 60 papéis (B3, BDR, EUA), até 30 listas. Criar, renomear, "+ papel", tirar (×) e excluir.
+- **Automáticas da carteira:** ids fixos `carteira-fiis`, `carteira-acoes`, `carteira-bdrs`, `carteira-etfs` e `carteira-subscricoes`, nomes "Carteira · FIIs" etc., `auto: true` e `classe`. Papéis = posições abertas da classe (quantidade > 0), na ordem de valor, até 60. Só existem as classes com papel. A sincronia (`sincronizarListasCarteira`) roda depois de `POST /api/carteira/importar` sem `simular` (também quando nada de novo entrou, para trazer de volta uma automática que a pessoa apagou), de `DELETE /api/carteira/importacoes/<id>` e de `DELETE /api/carteira`; lê do D1, regrava só a lista que mudou e apaga por lista de ids a classe que ficou sem papel. Apagar a carteira apaga todas. Quem não tem carteira não tem automática. Elas não contam no limite de 30.
+- **Travadas:** a página não mostra "+ papel", renomear nem × nelas; mostra o selo "da carteira" e "Copiar para lista minha" (cria uma manual, "FIIs (cópia)", "FIIs (cópia 2)" se já existir). `PUT` numa automática responde 400 `lista automática`. `DELETE` é aceito, a tela avisa que ela volta na próxima importação.
+- **Mover e copiar:** em papel de lista manual, menu com "Mover para…" e "Copiar para…" (⋯, botão direito no desktop, toque longo de 500 ms no celular, que abre como folha de baixo). De lista automática, só "Copiar para…". Os destinos são só as manuais. No desktop (mouse e 900 px ou mais), arrastar a linha para outra lista manual move (de uma automática, copia), com a barra de destino como no Início. `POST /api/listas/mover` `{ de, para, papel, copiar }` confere dono (as duas em `listas/<email>`), papel presente na origem, destino não automático, sem duplicar e limite de 60; grava as duas num batch do D1 e manda as duas ao espelho (write-through).
+- Ordem na tela: automáticas primeiro (FIIs, Ações, BDRs, ETFs, Subscrições), depois as manuais na ordem em que foram criadas.
+
 ## Minha carteira
 
 Pessoal, para quem tem Investimentos liberado. Abre pelo menu da conta (Minha carteira, Minha meta, Importar extratos), sem aba na barra de seções: `#carteira`, `#carteira/proventos`, `#carteira/meta`, `#carteira/importar` e `#carteira/mais` (rola até os blocos de baixo). Roda no modo do Início: nenhuma seção fica assinada enquanto ela está aberta. Código em `src/carteira.js` (cálculo e rota), `src/cofre.js` (cifra) e no `public/index.html`.
@@ -223,7 +233,7 @@ Até 8 fatos curtos por pessoa, montados por templates no Worker (`src/leitura.j
 
 ## API
 
-`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas`, `/api/prefs/painel`, `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
+`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas` e `POST /api/listas/mover` (veja "Minhas listas"), `/api/prefs/painel`, `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. A página só lê as collections de itens, destaques e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
 
 Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`) e recarga manual da CVM (`POST /api/admin/cvm`). Sem grupos criados, todo convidado vê tudo.
 
@@ -235,7 +245,7 @@ Ficam no painel da Cloudflare (Workers & Pages → `news` → Variables and Secr
 
 - Nunca `DROP`.
 - `UPDATE` e `DELETE` só com lista explícita de ids.
-- Coletores e curadoria não tocam em `favs/`, `listas/`, `prefs/` nem `carteira/`. Ninguém abre `carteira/` fora da rota da própria pessoa. `hist` só é gravado pela rota `/api/papel` e pelo cron dele.
+- Coletores e curadoria não tocam em `favs/`, `listas/`, `prefs/` nem `carteira/`. As listas automáticas são gravadas pela rota da carteira da própria pessoa, não por coletor. Ninguém abre `carteira/` fora da rota da própria pessoa. `hist` só é gravado pela rota `/api/papel` e pelo cron dele.
 - O prompt de cada tarefa só roda os comandos que ele mesmo lista.
 
 ## Custos

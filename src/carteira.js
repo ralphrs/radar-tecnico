@@ -773,6 +773,24 @@ async function lerMetaDoc(env, id, deps) {
   try { const r = await deps.lerLinha(env, "meta", id); return r ? JSON.parse(r.data) : null; } catch { return null; }
 }
 
+// Listas automáticas (src/listas.js): recalcula as posições e sincroniza listas/<email> depois de importar, desfazer
+// ou apagar. Falha aqui não desfaz a gravação da carteira; o erro vai ao log sem nada da carteira.
+async function sincronizarListas(env, quem, extrato, importacoes, deps) {
+  if (!deps.sincronizarListas) return null;
+  try {
+    let posicoes = null;
+    const n = extrato ? (extrato.neg || []).length + (extrato.mov || []).length + (extrato.prov || []).length : 0;
+    if (n) {
+      const [b3, fiiResumo] = await Promise.all([lerMetaDoc(env, "b3", deps), lerMetaDoc(env, "fii-resumo", deps)]);
+      posicoes = calcular(extrato, { b3, fiiResumo, importacoes, hoje: hojeBr() }).posicoes;
+    }
+    return await deps.sincronizarListas(env, quem.email, posicoes, deps);
+  } catch (e) {
+    console.error("carteira listas", String((e && e.name) || "erro"), String((e && e.message) || "").slice(0, 80));
+    return null;
+  }
+}
+
 // GET /api/carteira (e o GET de /meta, que é o mesmo cálculo)
 async function montar(env, quem, deps) {
   const col = "carteira/" + quem.email;
@@ -810,7 +828,8 @@ export async function rotaCarteira(request, env, quem, caminho, deps) {
       await env.DB.prepare("DELETE FROM docs WHERE collection = ? AND id IN (?, ?, ?)").bind(col, ...IDS).run();
       deps.removerDoEspelho(env, IDS.map((id) => ({ collection: col, id })));
       limparCacheCarteira(quem.email);
-      return resp({ ok: true });
+      const listas = await sincronizarListas(env, quem, null, null, deps);
+      return resp({ ok: true, listas });
     }
     if (caminho === "importar" && m === "POST") {
       const { b, erro, status } = await lerCorpo(request, 8_000_000);
@@ -832,12 +851,15 @@ export async function rotaCarteira(request, env, quem, caminho, deps) {
       const r = mesclar(docs.extrato || extratoVazio(), arquivos, imp);
       const porArquivo = r.porArquivo.map((x) => ({ nome: x.nome, tipo: x.tipo, linhas: x.linhas, novos: x.novos, repetidos: x.repetidos, ignorados: x.ignorados, motivos: x.motivos, de: x.de, ate: x.ate, tiposDesconhecidos: x.tiposDesconhecidos }));
       const saida = { novos: r.novos, repetidos: r.repetidos, ignorados: r.ignorados, porArquivo };
-      if (b.simular === true || !r.novos) return resp({ ...saida, simulado: b.simular === true, gravado: false });
+      if (b.simular === true) return resp({ ...saida, simulado: true, gravado: false });
+      // Nada novo: a carteira fica como está, mas as listas automáticas são conferidas (voltam se a pessoa apagou alguma)
+      if (!r.novos) return resp({ ...saida, simulado: false, gravado: false, listas: await sincronizarListas(env, quem, docs.extrato, docs.importacoes, deps) });
       const lista = (docs.importacoes?.lista || []).concat([{ id: imp, em: new Date().toISOString(), novos: r.novos,
         arquivos: r.porArquivo.filter((x) => x.novos).map((x) => ({ tipo: x.tipo, hash: x.hash, linhas: x.linhas, novos: x.novos, repetidos: x.repetidos, ignorados: x.ignorados, de: x.de, ate: x.ate })) }]).slice(-MAX_IMPORTACOES);
       await gravarDocs(env, col, { extrato: r.extrato, importacoes: { lista } }, deps);
       limparCacheCarteira(quem.email);
-      return resp({ ...saida, gravado: true, importacao: imp });
+      const listas = await sincronizarListas(env, quem, r.extrato, { lista }, deps);
+      return resp({ ...saida, gravado: true, importacao: imp, listas });
     }
     if (caminho.startsWith("importacoes/") && m === "DELETE") {
       const id = caminho.slice(12);
@@ -846,9 +868,11 @@ export async function rotaCarteira(request, env, quem, caminho, deps) {
       const lista = docs.importacoes?.lista || [];
       if (!lista.some((x) => x.id === id)) return resp({ erro: "Importação não encontrada." }, 404);
       const r = desfazer(docs.extrato || extratoVazio(), id);
-      await gravarDocs(env, col, { extrato: r.extrato, importacoes: { lista: lista.filter((x) => x.id !== id) } }, deps);
+      const restantes = lista.filter((x) => x.id !== id);
+      await gravarDocs(env, col, { extrato: r.extrato, importacoes: { lista: restantes } }, deps);
       limparCacheCarteira(quem.email);
-      return resp({ ok: true, removidas: r.removidas });
+      const listas = await sincronizarListas(env, quem, r.extrato, { lista: restantes }, deps);
+      return resp({ ok: true, removidas: r.removidas, listas });
     }
     if (caminho === "meta" && m === "GET") {
       const j = await montar(env, quem, deps);

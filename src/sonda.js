@@ -1,8 +1,9 @@
-// Sonda de feeds: o admin manda uma lista de URLs e o cron testa até 4 por minuto, daqui do Worker,
+// Sonda de feeds: o admin manda uma lista de URLs e o cron testa até 4 por minuto (URL do Reddit: 1 por minuto, e só
+// quando a coleta não leu subreddit naquele minuto, o mesmo ritmo de src/coleta.js), daqui do Worker,
 // que alcança os sites de notícia. Serve para conferir um feed antes de pô-lo em src/feeds.js.
 // Usa o mesmo fetch e o mesmo parser da coleta, então o resultado é o que a coleta veria.
 // Estado em docs: collection '_sistema', id 'sonda-feeds', data { pendentes: [url], resultados: { url: {...} } }.
-import { pegar, lerFeed, ehAtom } from "./coleta.js";
+import { pegar, lerFeed, ehAtom, ehReddit, REDDIT } from "./coleta.js";
 
 const POR_EXECUCAO = 4;
 const URLS_POR_PEDIDO = 30;
@@ -54,11 +55,19 @@ export async function sondar(url) {
   return { ...base, tipo, itens: lidos.length, maisRecente, erro };
 }
 
-// Cron: com a lista vazia faz só o SELECT do doc.
-export async function cronSonda(env) {
+// Quais pendentes vão neste minuto: até 4 fora do Reddit e, se a vez do Reddit estiver livre, 1 do Reddit.
+export function loteSonda(pendentes, redditLivre = true) {
+  const outros = pendentes.filter((u) => !ehReddit(u)).slice(0, POR_EXECUCAO);
+  const reddit = redditLivre ? pendentes.filter((u) => ehReddit(u)).slice(0, REDDIT.POR_MINUTO) : [];
+  return [...outros, ...reddit];
+}
+
+// Cron: com a lista vazia faz só o SELECT do doc. redditLivre: a coleta não leu subreddit neste minuto.
+export async function cronSonda(env, { redditLivre = true } = {}) {
   const s = await lerEstado(env);
   if (!s.pendentes.length) return 0;
-  const lote = s.pendentes.slice(0, POR_EXECUCAO);
+  const lote = loteSonda(s.pendentes, redditLivre);
+  if (!lote.length) return 0;
   const feitos = await Promise.all(lote.map(async (u) => [u, await sondar(u).catch((e) => ({ status: 0, tipo: "erro", itens: 0, maisRecente: "", erro: "falha: " + resumo(e), quando: new Date().toISOString() }))]));
   // Relê antes de gravar: o admin pode ter mandado URLs novas enquanto os fetches rodavam.
   const atual = await lerEstado(env);
