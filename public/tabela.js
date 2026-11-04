@@ -357,22 +357,38 @@
         if (f && ativo(f)) fs[col.id] = f; else delete fs[col.id];
         mudar({ filtros: fs });
       };
+      /* campos com formato (public/campo.js): "%" vira percentual, "R$" moeda, o resto número; datas com máscara */
+      const C = raiz.Campo;
       if (col.tipo === "num") {
-        const un = col.unidade ? " (" + col.unidade + ")" : "";
-        const mn = el("input", { class: "dd-input", type: "text", inputmode: "decimal", id: `tbf-${id}-${col.id}-min`, value: vazio(atual.min) ? "" : String(atual.min).replace(".", ","), placeholder: "sem limite", autocomplete: "off" });
-        const mx = el("input", { class: "dd-input", type: "text", inputmode: "decimal", id: `tbf-${id}-${col.id}-max`, value: vazio(atual.max) ? "" : String(atual.max).replace(".", ","), placeholder: "sem limite", autocomplete: "off" });
-        const ler = () => ({ min: numBr(mn.value), max: numBr(mx.value) });
+        const tipo = col.unidade === "%" ? "percentual" : col.unidade === "R$" ? "moeda" : "numero";
+        const un = col.unidade && tipo === "numero" ? " (" + col.unidade + ")" : "";
+        const casas = tipo === "percentual" ? 1 : 2;
+        const ini = (v) => (vazio(v) ? "" : String(v));
+        const mn = el("input", { class: "dd-input", type: "text", inputmode: "decimal", id: `tbf-${id}-${col.id}-min`, value: ini(atual.min), placeholder: "sem limite", autocomplete: "off" });
+        const mx = el("input", { class: "dd-input", type: "text", inputmode: "decimal", id: `tbf-${id}-${col.id}-max`, value: ini(atual.max), placeholder: "sem limite", autocomplete: "off" });
+        if (C) [mn, mx].forEach((i) => C.ligar(i, { tipo, casas }));
+        const lerUm = (i) => (C ? C.valor(i) : numBr(i.value));
+        const ler = () => ({ min: lerUm(mn), max: lerUm(mx) });
         let t = 0;
         [mn, mx].forEach((i) => {
-          i.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => aplicar(ler()), 300); });
-          i.addEventListener("keydown", (e) => { if (e.key === "Enter") { clearTimeout(t); aplicar(ler()); fecharPop(true); } });
+          i.addEventListener("input", () => { clearTimeout(t); if (C && C.invalido(i)) return; t = setTimeout(() => aplicar(ler()), 300); });
+          i.addEventListener("keydown", (e) => { if (e.key === "Enter") { if (C && C.invalido(i)) return; clearTimeout(t); aplicar(ler()); fecharPop(true); } });
         });
         corpo.append(el("div", { class: "tb-faixa" },
           el("label", { for: mn.id }, "Mínimo" + un, mn), el("label", { for: mx.id }, "Máximo" + un, mx)));
       } else if (col.tipo === "data") {
-        const de = el("input", { class: "dd-input", type: "date", id: `tbf-${id}-${col.id}-de`, value: atual.de || "" });
-        const ate = el("input", { class: "dd-input", type: "date", id: `tbf-${id}-${col.id}-ate`, value: atual.ate || "" });
-        [de, ate].forEach((i) => i.addEventListener("change", () => aplicar({ de: de.value, ate: ate.value })));
+        const de = el("input", { class: "dd-input", type: C ? "text" : "date", id: `tbf-${id}-${col.id}-de`, value: atual.de || "" });
+        const ate = el("input", { class: "dd-input", type: C ? "text" : "date", id: `tbf-${id}-${col.id}-ate`, value: atual.ate || "" });
+        if (C) [de, ate].forEach((i) => C.ligar(i, { tipo: "data" }));
+        const lerD = (i) => (C ? C.valor(i) || "" : i.value);
+        const aplicarD = () => { if (C && (C.invalido(de) || C.invalido(ate))) return; aplicar({ de: lerD(de), ate: lerD(ate) }); };
+        let td = 0;
+        [de, ate].forEach((i) => {
+          i.addEventListener("change", aplicarD);
+          /* digitando: aplica quando a data está completa (ou o campo ficou vazio) */
+          i.addEventListener("input", () => { clearTimeout(td); const v = i.value.trim(); if (!v || (C && C.valor(i))) td = setTimeout(aplicarD, 300); });
+          i.addEventListener("keydown", (e) => { if (e.key === "Enter") { clearTimeout(td); aplicarD(); fecharPop(true); } });
+        });
         corpo.append(el("div", { class: "tb-faixa" }, el("label", { for: de.id }, "De", de), el("label", { for: ate.id }, "Até", ate)));
       } else {
         const q = el("input", { class: "dd-input", type: "search", id: `tbf-${id}-${col.id}-q`, value: atual.q || "", placeholder: "contém…", autocomplete: "off", "aria-label": `${col.rotulo} contém` });

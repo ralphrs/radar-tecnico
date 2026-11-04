@@ -249,7 +249,7 @@ export async function listas(request, env, quem, idLista) {
   return rotaListas(request, env, quem, idLista, { lerLinhas, lerLinha, lerFundamentos, gravarNoEspelho, removerDoEspelho });
 }
 
-// Painel inicial (aba Início): ordem, tamanho e o que aparece, um doc por pessoa em prefs/<email>, id "painel".
+// Painel inicial (aba Início): grupos, ordem, formato e o que aparece, um doc por pessoa em prefs/<email>, id "painel".
 // Mesmo caminho dos favoritos: leitura pelo espelho (D1 de reserva), gravação no D1 e write-through no espelho.
 // Catálogo, padrão e validação em src/painel.js.
 async function prefsPainel(request, env, quem) {
@@ -263,12 +263,12 @@ async function prefsPainel(request, env, quem) {
   }
   if (request.method === "PUT") {
     const corpo = await request.text();
-    if (corpo.length > 4000) return json({ erro: "grande" }, 413);
+    if (corpo.length > 8000) return json({ erro: "grande" }, 413);
     let b;
     try { b = JSON.parse(corpo); } catch { return json({ erro: "json" }, 400); }
     const v = validarPainel(b, secoes);
     if (v.erro) return json({ erro: v.erro }, 400);
-    const doc = { widgets: v.widgets, atualizado: agoraIso() };
+    const doc = { grupos: v.grupos, atualizado: agoraIso() };
     const data = JSON.stringify(doc);
     await env.DB.prepare(
       "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, 'painel', ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"

@@ -1,5 +1,11 @@
 # Roadmap
 
+## Definition of done (vale para toda tarefa)
+- Navegação: de qualquer página ou estado (admin, lista, ficha, carteira, esportes, convite, erro) dá para voltar ao Início pelo logotipo e pelo botão Voltar do navegador; nenhuma tela é beco sem saída
+- Dois temas e celular conferidos com print
+- Texto em pt-BR natural, sem "ticker", sem recomendação, sem o nome do dono
+- `npm test` e `node --check` passando; mudou o cálculo da carteira, sobe a versão dos dados de teste e gera correção
+
 ## Agora
 - [x] Lookout no Cloudflare Workers com D1, histórico importado e coletas espelhadas
 - [x] Login pelo Cloudflare Access, lista de convidados e convites por WhatsApp ou e-mail
@@ -99,11 +105,12 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Internacional aparece como "Inter" no selo de clube e no título do grupo, para não confundir com o filtro Nacional/Internacional
 
 ## Pedidos de 04/11, manhã (fila em ordem)
-- [ ] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo
-- [ ] 1. Modo de edição do Início: grade quadriculada, redimensionar com os limites de cada card, arrastar para cima e para baixo, tirar card, grupos por tipo
+- [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)
+- [x] 1. Modo de edição do Início: grade quadriculada, redimensionar com os limites de cada card, arrastar para cima e para baixo, tirar card, grupos por tipo; Personalizar vira o catálogo "Adicionar card" e o doc do painel passa a grupos (04/11)
 - [ ] 2. Simulador de reinvestimento (mês/ano alvo, só proventos, cenários); memória de cálculo gravada na carteira, comparar e excluir
 - [ ] 3. Ajustes da curadoria Tech (relatório de 04/11), decisão 2 dias depois
 - [ ] 4. Renda fixa e Tesouro pelo relatório "Posição"
 - [ ] 5. Sessão dedicada a telas grandes, tablet e celular
 - [ ] 6. Job mensal de exportação dos extratos pelo Chrome
+- [x] Logotipo do admin leva ao Início (04/11)
 - [ ] Renomear o Worker "news" para "lookout" (ou só pelo domínio, quando houver)

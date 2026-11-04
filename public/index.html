@@ -830,9 +830,20 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .ini-aviso { margin: 0; font-size: 12.5px; color: var(--warn); }
 /* Grade do Início: 3 colunas a partir de 1200 px, 2 entre 700 e 1200, 1 abaixo. Formato "colunas x linhas" em data-c e
    data-r; a largura nunca passa do número de colunas da tela e a altura (linhas) vale em qualquer largura. */
-.ini-grade { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(180px, auto); grid-auto-flow: dense; gap: 16px; }
-@media (min-width: 700px) { .ini-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wdg[data-c="2"], .wdg[data-c="3"] { grid-column: span 2; } }
-@media (min-width: 1200px) { .ini-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); } .wdg[data-c="3"] { grid-column: span 3; } }
+/* A grade vem em grupos (.ini-grupo), cada um com o título e a sua grade (.ini-cards) */
+.ini-grade { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.ini-grupo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ini-gcab { margin: 0; display: flex; align-items: center; gap: 8px; min-width: 0; font: inherit; }
+.ini-gtit { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 2px 6px 2px 2px; margin-left: -2px; border-radius: var(--radius-md); cursor: pointer; font: 600 12px/16px var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; }
+.ini-gtit:hover { color: var(--foreground); }
+.ini-gtit:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.ini-gtit small { font: 400 11.5px var(--font-mono); text-transform: none; letter-spacing: 0; }
+.ini-gtit svg, .ini-grec svg { transition: transform 120ms; }
+.ini-grupo.recolhido .ini-gtit svg, .ini-grupo.recolhido .ini-grec svg { transform: rotate(-90deg); }
+.ini-cards { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(180px, auto); grid-auto-flow: dense; gap: 16px; min-width: 0; }
+.ini-cards[hidden] { display: none; }
+@media (min-width: 700px) { .ini-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wdg[data-c="2"], .wdg[data-c="3"] { grid-column: span 2; } }
+@media (min-width: 1200px) { .ini-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .wdg[data-c="3"] { grid-column: span 3; } }
 .wdg[data-r="2"] { grid-row: span 2; }
 .wdg > .wdg-corpo { flex: 1 1 auto; min-height: 0; }
 @media (min-width: 700px) {
@@ -841,7 +852,7 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .wdg[data-c="2"] .wdg-2col, .wdg[data-c="3"] .wdg-2col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
 .wdg[data-c="2"] .wdg-2col > div:nth-child(2), .wdg[data-c="3"] .wdg-2col > div:nth-child(2) { border-top: 0; padding-top: 0; }
 }
-@media (max-width: 699px) { .ini-cab h2 { font-size: 20px; } .ini-grade { gap: 12px; } }
+@media (max-width: 699px) { .ini-cab h2 { font-size: 20px; } .ini-cards { gap: 12px; } .ini-grade { gap: 14px; } }
 .wdg { container-type: inline-size; position: relative; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-sm); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .wdg-cab { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .wdg-cab h3 { margin: 0; flex: 1; min-width: 0; font: 600 15px/1.3 var(--font-display); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -849,16 +860,6 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .wdg-cab h3 a:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
 .wdg-cab small { flex: none; max-width: 55%; font: 400 11.5px/16px var(--font-mono); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wdg-cab .rk-quando { font-size: 11.5px; }
-.wdg-alca { display: none; flex: none; align-self: center; width: 18px; height: 18px; margin-right: -4px; color: var(--muted-foreground); cursor: grab; opacity: 0; transition: opacity 120ms; }
-.wdg-alca svg { width: 18px; height: 18px; display: block; }
-@media (pointer: fine) and (min-width: 900px) {
-  .wdg-alca { display: block; }
-  .wdg:hover .wdg-alca, .wdg:focus-within .wdg-alca, .pers-aberto .wdg-alca { opacity: 1; }
-}
-.wdg.arrastando { opacity: .45; }
-.wdg.cai-antes::before, .wdg.cai-depois::after { content: ""; position: absolute; top: 8px; bottom: 8px; width: 3px; border-radius: 2px; background: var(--primary); pointer-events: none; }
-.wdg.cai-antes::before { left: -10px; }
-.wdg.cai-depois::after { right: -10px; }
 .wdg-pe { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--border); font: 400 11.5px/16px var(--font-mono); color: var(--muted-foreground); }
 .wdg-pe a { margin-left: auto; font: 500 12.5px/18px var(--font-sans); color: var(--primary); text-decoration: none; border-radius: 3px; }
 .wdg-pe a:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -941,10 +942,6 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .pers-item label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pers-item input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--primary); }
 .pers-item.oculto label { color: var(--muted-foreground); }
-.pers-setas { display: inline-flex; gap: 2px; }
-.pers-setas .dd-btn--icon { width: 28px; height: 28px; font-size: 11px; }
-.pers-item .seg button { height: 24px; padding: 0 9px; font-size: 12px; }
-.pers-item .seg button:disabled { opacity: .35; }
 .pers .painel-pe .dd-btn { height: 40px; }
 /* Minha carteira (#carteira, #carteira/proventos, #carteira/meta, #carteira/importar): pessoal, abre pelo menu da conta.
    Usa o mesmo modo do Início (uma coluna, sem laterais) com a seção #carteira no lugar da grade. */
@@ -1143,6 +1140,11 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 .rd-campo { display: flex; flex-direction: column; min-width: 0; }
 .rd-campo .dd-input { height: var(--control-h-sm); }
 .rd-campo .campo { display: flex; align-items: center; gap: 8px; }
+/* Campos com formato (public/campo.js): mensagem curta embaixo quando o valor não serve */
+.campo-msg { display: block; margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+.campo-msg.erro { color: var(--err); }
+.dd-input[aria-invalid="true"] { border-color: var(--err); }
+.dd-input[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 1px var(--err); }
 .rd-campo .campo span { font-size: 12.5px; color: var(--muted-foreground); white-space: nowrap; }
 .rd-campo select.dd-input { width: 100%; padding-right: 8px; }
 .rd-form .seg { flex-wrap: wrap; max-width: 100%; }
@@ -1224,28 +1226,97 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 .rd-folha .painel-corpo { padding-block: 14px; }
 .rd-folha .rd-form .dd-input { height: 40px; font-size: 16px; }
 
-/* Personalizar: alça para arrastar (e setas do teclado), formatos em miniatura */
-.pers-item { grid-template-columns: auto minmax(0, 1fr) auto auto; }
-.pers-item.cai-antes { box-shadow: inset 0 2px 0 var(--primary); }
-.pers-item.cai-depois { box-shadow: inset 0 -2px 0 var(--primary); }
-.pers-item.arrastando { opacity: .45; }
-.pers-alca { display: inline-grid; place-items: center; width: 22px; height: 28px; border-radius: 4px; color: var(--muted-foreground); cursor: grab; }
-.pers-alca svg { width: 16px; height: 16px; }
-.pers-alca:hover { color: var(--foreground); }
-.pers-alca:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
-.pers-fmt { display: inline-flex; gap: 4px; }
-.pers-fmt button { all: unset; box-sizing: border-box; display: inline-grid; place-items: center; width: 34px; height: 28px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--card); }
-.pers-fmt button:hover { border-color: var(--muted-foreground); }
-.pers-fmt button[aria-checked="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--card)); }
-.pers-fmt button:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
-.pers-fmt button:disabled { opacity: .35; cursor: default; }
+/* Adicionar card (Personalizar): catálogo com busca, em grupos por tipo */
+.pers-item { grid-template-columns: auto minmax(0, 1fr) auto; }
+.pers-item .fmt-ico { margin-inline: 2px 4px; }
+.pers-nome { display: flex; flex-direction: column; min-width: 0; font: 500 13.5px/1.3 var(--font-sans); }
+.pers-nome span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pers-nome small { font: 400 11.5px/16px var(--font-mono); color: var(--muted-foreground); }
+.pers-item.oculto .pers-nome span { color: var(--muted-foreground); }
+.pers-item .dd-btn { height: 30px; padding-inline: 10px; font-size: 12.5px; }
+.pers-grupo .k { float: right; font: 400 11.5px var(--font-mono); text-transform: none; letter-spacing: 0; }
+.pers-nada { list-style: none; padding: 12px 0; color: var(--muted-foreground); font-size: 13px; }
+@media (pointer: coarse) { .pers-item .dd-btn { height: 40px; } }
 .fmt-ico { display: grid; grid-template-columns: repeat(3, 6px); grid-template-rows: repeat(2, 5px); gap: 1.5px; }
 .fmt-ico i { border-radius: 1px; background: color-mix(in srgb, var(--muted-foreground) 30%, transparent); }
 .fmt-ico i.on { background: var(--primary); }
-.pers-setas { display: none; }
-@media (pointer: coarse) { .pers-setas { display: inline-flex; } .pers-alca { display: none; } .pers-item { grid-template-columns: minmax(0, 1fr) auto auto; } .pers-fmt button { width: 40px; height: 36px; } }
-.pers-cel { display: none; margin: 0; font-size: 12.5px; color: var(--muted-foreground); }
-@media (max-width: 699px) { .pers-cel { display: block; } }
+
+/* ---- Modo de edição do Início (html.inicio-editando) ---- */
+.ini-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+html.inicio-editando .ini-acoes { display: none; }
+.ini-edbar { position: sticky; top: calc(var(--cab-h, 0px) + 6px); z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 10px 12px 10px 14px; border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-md); }
+.ini-edbar:focus { outline: none; }
+.ini-edbar[hidden] { display: none; }
+.ini-edtxt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 320px; font-size: 12.5px; line-height: 1.45; color: var(--muted-foreground); }
+.ini-edtxt b { font: 600 14px/1.3 var(--font-display); color: var(--foreground); }
+.ini-ednota { display: none; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted-foreground); }
+@media (max-width: 699px) { .ini-edtxt .so-largo { display: none; } html.inicio-editando .ini-ednota { display: block; } }
+.ini-edstatus:empty { display: none; }
+.ini-edstatus.warn { color: var(--warn); } .ini-edstatus.err { color: var(--err); }
+.ini-edacoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ini-edfim { display: inline-flex; gap: 6px; margin-left: 4px; }
+@media (max-width: 699px) {
+  .ini-edbar { top: calc(var(--cab-h, 0px) + 4px); padding: 8px 10px; gap: 6px; }
+  .ini-edtxt { flex-basis: 100%; flex-direction: row; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
+  .ini-edtxt b { font-size: 13px; }
+  .ini-edacoes { width: 100%; gap: 4px; }
+  .ini-edacoes .dd-btn { height: 38px; padding-inline: 9px; font-size: 13px; }
+  .ini-edfim { margin-left: auto; }
+}
+/* título do grupo editável: alça, recolher, nome */
+.ini-galca, .wdg-mover { display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: var(--radius-md); color: var(--muted-foreground); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.ini-galca svg, .wdg-mover svg { width: 16px; height: 16px; }
+.ini-galca:hover, .wdg-mover:hover { color: var(--foreground); background: var(--accent); }
+.ini-galca:focus-visible, .wdg-mover:focus-visible, .wdg-tam:focus-visible, .wdg-tirar:focus-visible, .wdg-tamcel:focus-visible, .ini-grec:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.ini-grec { all: unset; box-sizing: border-box; display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: var(--radius-md); color: var(--muted-foreground); cursor: pointer; }
+.ini-grec:hover { color: var(--foreground); background: var(--accent); }
+.ini-gnome.dd-input { height: 32px; width: min(280px, 100%); flex: 0 1 280px; min-width: 0; font: 600 13px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; }
+.ini-gcab small { font: 400 11.5px var(--font-mono); color: var(--muted-foreground); white-space: nowrap; }
+html.inicio-editando .ini-grupo { padding: 8px; margin-inline: -8px; border-radius: var(--radius-xl); }
+html.inicio-editando .ini-grupo.arrastando { outline: 2px dashed var(--primary); outline-offset: -2px; background: color-mix(in srgb, var(--primary) 6%, transparent); }
+.ini-gvazio { grid-column: 1 / -1; margin: 0; min-height: 96px; display: grid; place-items: center; padding: 12px; text-align: center; border: 1.5px dashed var(--input); border-radius: var(--radius-lg); color: var(--muted-foreground); font-size: 13px; }
+/* grade quadriculada: uma célula por coluna e linha, atrás dos cards */
+html.inicio-editando .ini-cards { position: relative; }
+.ini-celulas, .ini-alvo { position: absolute; inset: 0; pointer-events: none; }
+.ini-celulas i, .ini-alvo i, .ini-alvo b { position: absolute; box-sizing: border-box; border-radius: var(--radius-lg); }
+.ini-celulas i { border: 1px dashed color-mix(in srgb, var(--foreground) 16%, transparent); background: color-mix(in srgb, var(--foreground) 2.5%, transparent); }
+html.inicio-editando .wdg { z-index: 1; }
+html.inicio-editando .wdg-cab { padding-inline: 30px 26px; }
+html.inicio-editando .wdg-cab, html.inicio-editando .wdg-corpo, html.inicio-editando .wdg-pe { pointer-events: none; user-select: none; -webkit-user-select: none; }
+html.inicio-editando .wdg-pe { padding-right: 20px; }
+html.inicio-editando .wdg:focus-within { box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 45%, transparent), var(--shadow-sm); }
+.wdg-mover { position: absolute; top: 8px; left: 6px; z-index: 2; }
+.wdg-tirar { all: unset; box-sizing: border-box; position: absolute; top: 8px; right: 6px; z-index: 2; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-md); color: var(--muted-foreground); cursor: pointer; font: 400 18px/1 var(--font-sans); }
+.wdg-tirar:hover { color: var(--err); background: color-mix(in srgb, var(--err) 10%, transparent); }
+.wdg-tam { position: absolute; right: 2px; bottom: 2px; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--muted-foreground); cursor: nwse-resize; touch-action: none; }
+.wdg-tam svg { width: 14px; height: 14px; }
+.wdg-tam:hover { color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); }
+.wdg-tamcel { display: none; }
+.wdg.arrastando { opacity: .6; outline: 2px dashed var(--primary); outline-offset: 2px; background: color-mix(in srgb, var(--primary) 10%, var(--card)); }
+.wdg.redimensionando { outline: 2px solid var(--primary); outline-offset: 2px; }
+/* redimensionar: as células que o card pode ocupar em destaque, as outras hachuradas, e o formato que vale ao soltar */
+.ini-alvo { z-index: 3; }
+.ini-alvo .cel.ok { border: 1.5px solid var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); }
+.ini-alvo .cel.ok.alvo { background: color-mix(in srgb, var(--primary) 20%, transparent); }
+.ini-alvo .cel.nao { border: 1px dashed color-mix(in srgb, var(--muted-foreground) 45%, transparent); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--muted-foreground) 24%, transparent) 0 2px, transparent 2px 9px); }
+.ini-alvo .prev { border: 2px solid var(--primary); display: grid; place-items: end; padding: 8px 10px; font: 600 12px var(--font-mono); color: var(--primary); }
+.ini-fantasma { position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; max-width: 240px; padding: 6px 10px; border-radius: var(--radius-md); border: 1px solid var(--primary); background: var(--card); color: var(--foreground); box-shadow: var(--shadow-md); font: 600 13px/1.3 var(--font-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.ini-arrastando, html.ini-arrastando * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }
+/* celular (e toque): uma coluna, alças maiores; o tamanho vira um botão que troca o formato do computador */
+@media (max-width: 699px), (pointer: coarse) {
+  .wdg-mover, .ini-galca, .ini-grec { width: 40px; height: 40px; }
+  .wdg-tirar { width: 40px; height: 40px; font-size: 22px; }
+  .wdg-mover { top: 4px; left: 2px; } .wdg-tirar { top: 4px; right: 2px; }
+  html.inicio-editando .wdg-cab { padding-inline: 38px 36px; min-height: 32px; align-items: center; }
+  .wdg-tam { width: 36px; height: 36px; }
+}
+@media (max-width: 699px) {
+  .wdg-tam { display: none; }
+  .wdg-tamcel { display: inline-flex; align-items: center; gap: 6px; position: absolute; right: 6px; bottom: 6px; z-index: 2; height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); color: var(--muted-foreground); font: 500 12px var(--font-mono); cursor: pointer; }
+  .wdg-tamcel.so { opacity: .5; cursor: default; }
+  html.inicio-editando .wdg-pe { padding-right: 84px; }
+}
+
 
 .lst-cab-acoes { display: inline-flex; gap: 12px; align-items: baseline; }
 a.lst-link, #lista-todas { text-decoration: none; cursor: pointer; }
@@ -1544,9 +1615,30 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
         <h2 id="ini-titulo">Olá</h2>
         <p class="ini-sub"><span id="ini-data"></span><span id="ini-atual"></span></p>
       </div>
-      <button class="dd-btn dd-btn--outline alvo" type="button" id="personalizar" aria-haspopup="dialog" aria-expanded="false" aria-controls="pers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Personalizar</button>
+      <div class="ini-acoes">
+        <button class="dd-btn dd-btn--outline alvo" type="button" id="ini-editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>Editar</button>
+        <button class="dd-btn dd-btn--outline alvo" type="button" id="personalizar" aria-haspopup="dialog" aria-expanded="false" aria-controls="pers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Personalizar</button>
+      </div>
     </div>
+    <div class="ini-edbar" id="ini-edbar" role="region" aria-label="Edição do Início" tabindex="-1" hidden>
+      <div class="ini-edtxt">
+        <b>Editando o Início</b>
+        <span class="so-largo">Arraste pela alça do canto de cima para mover e pelo canto de baixo para mudar o tamanho. Pelo teclado: setas movem, Shift com setas muda o tamanho.</span>
+        <span class="ini-edstatus" id="ini-edstatus" role="status"></span>
+      </div>
+      <div class="ini-edacoes">
+        <button class="dd-btn dd-btn--outline" type="button" id="ini-ed-add" aria-haspopup="dialog" aria-controls="pers">Adicionar card</button>
+        <button class="dd-btn dd-btn--ghost" type="button" id="ini-novo-grupo">Novo grupo</button>
+        <button class="dd-btn dd-btn--ghost" type="button" id="ini-restaurar">Restaurar padrão</button>
+        <span class="ini-edfim">
+          <button class="dd-btn dd-btn--outline" type="button" id="ini-cancelar">Cancelar</button>
+          <button class="dd-btn dd-btn--primary" type="button" id="ini-salvar">Salvar</button>
+        </span>
+      </div>
+    </div>
+    <p class="ini-ednota" id="ini-ednota">No celular a grade tem uma coluna. O tamanho que você escolhe vale no computador: toque no botão de tamanho de cada card para trocar.</p>
     <p class="ini-aviso" id="ini-aviso" role="status" hidden></p>
+    <p class="sr" id="ini-anuncio" aria-live="polite"></p>
     <div class="ini-grade" id="ini-grade"></div>
   </section>
   <section class="cart" id="carteira" aria-labelledby="ct-titulo" hidden></section>
@@ -1641,20 +1733,22 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 <div class="pers-veu" id="pers-veu" hidden></div>
 <div class="pers" id="pers" role="dialog" aria-modal="true" aria-labelledby="pers-titulo" tabindex="-1" hidden>
   <div class="painel-topo">
-    <h2 id="pers-titulo">Personalizar o Início</h2>
+    <h2 id="pers-titulo">Adicionar card</h2>
     <button class="dd-btn dd-btn--ghost alvo" type="button" id="pers-fechar">Fechar</button>
   </div>
   <div class="painel-corpo">
-    <p class="pers-dica" id="pers-dica">Marque o que aparece, arraste pela alça (ou use as setas do teclado nela) para mudar a ordem e escolha o formato de cada card. A grade muda na hora e fica salva na sua conta quando você fecha.</p>
-    <p class="pers-cel">No celular a grade mostra uma coluna só. O formato que você escolher vale no computador.</p>
+    <input class="dd-input" id="pers-busca" type="search" placeholder="Buscar card" aria-label="Buscar card pelo nome" autocomplete="off" enterkeyhint="search">
+    <p class="pers-dica" id="pers-dica">Os cards entram no grupo do tipo deles. Para mudar a ordem, o tamanho ou o grupo, use Editar no Início.</p>
+    <p class="sr" id="pers-status" role="status"></p>
     <ul class="pers-lista" id="pers-lista" aria-describedby="pers-dica"></ul>
   </div>
   <div class="painel-pe">
-    <button class="dd-btn dd-btn--outline" type="button" id="pers-restaurar">Restaurar padrão</button>
     <button class="dd-btn dd-btn--primary" type="button" id="pers-ok">Pronto</button>
   </div>
 </div>
 
+<script src="/campo.js"></script>
+<script src="/inicio-grade.js"></script>
 <script src="/radar-filtro.js"></script>
 <script src="/tabela.js"></script>
 <script src="/esportes.js"></script>
@@ -3151,6 +3245,7 @@ function listaEl(l) {
   /* + papel: sugere até 6 a partir de 2 letras; Enter escolhe a sugestão marcada ou o código digitado */
   const idInp = "lst-add-" + l.id;
   const inp = el("input", { class: "dd-input", id: idInp, placeholder: ehDin(l) ? "+ fixar papel" : "+ papel", "aria-label": ehDin(l) ? `Fixar papel na lista ${l.nome}` : `Adicionar papel à lista ${l.nome}`, autocomplete: "off", autocapitalize: "characters", spellcheck: "false", maxlength: "40", value: rascunhos[l.id] || "", role: "combobox", "aria-expanded": "false", "aria-controls": idInp + "-sug", "aria-autocomplete": "list" });
+  Campo.ligar(inp, { tipo: "papel" });
   const sug = el("ul", { class: "lst-sug", id: idInp + "-sug", role: "listbox", "aria-label": "Sugestões", hidden: "" });
   let opcoes = [], marcada = -1;
   const desenhar = () => {
@@ -3745,7 +3840,8 @@ async function atualizarMercado() {
   lerB3(true); lerEua(true);
   pedindoMercado = false; renderMercado();
 }
-const fmtNum = (v, casas) => Number(v).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+/* public/campo.js: o mesmo formatador dos campos (window.Fmt) */
+const fmtNum = Fmt.num;
 function renderMercado() {
   const box = $("mercado"), pe = $("mercado-pe");
   if (!R().mercado || inicio) { box.hidden = true; pe.hidden = true; return; }
@@ -4894,12 +4990,9 @@ const CATALOGO_LOCAL = [
   { id: "leitura-dia", titulo: "Leitura do dia", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-contra-filtro", titulo: "Carteira contra o filtro", tamanho: 1, secao: "investimentos", pessoal: true },
 ];
-/* Formatos de cada widget ("colunas x linhas"), os mesmos de src/painel.js; o primeiro é o padrão. O catálogo do servidor manda. */
-const FORMATOS_LOCAL = { hoje: ["1x1"], mercado: ["1x1", "1x2"], pregao: ["2x1", "3x1", "2x2"], fiis: ["1x1", "2x1"], eua: ["1x1", "2x1"], listas: ["1x1", "1x2", "2x1"], favoritos: ["1x1", "1x2"], destaques: ["1x1", "1x2"], ultimas: ["1x1", "1x2"],
-  "carteira-meta": ["2x1", "3x1"], "carteira-patrimonio": ["1x1", "2x1"], "carteira-proventos-mes": ["1x1"], "carteira-pagamentos": ["1x1", "1x2"], "carteira-agenda": ["1x1", "1x2"], "carteira-rentabilidade": ["1x1", "2x1"],
-  "carteira-alertas": ["1x1", "1x2"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"], "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"],
-  "esportes-rodada": ["1x1", "2x1"], "esportes-tabela": ["1x1", "1x2"], "esportes-meu-time": ["1x1"] };
-const formatosW = (id) => { const d = (painelCat || []).find((w) => w.id === id); return (d && Array.isArray(d.formatos) && d.formatos.length ? d.formatos : null) || FORMATOS_LOCAL[id] || FORMATOS_LOCAL[String(id).replace(/^(esportes-(?:rodada|tabela))-.*$/, "$1")] || FORMATOS_LOCAL[String(id).replace(/-.*$/, "")] || ["1x1"]; };
+/* Formatos ("colunas x linhas"), grupos e encaixe: public/inicio-grade.js, o mesmo arquivo do Worker. O catálogo do servidor manda. */
+const IG = window.InicioGrade;
+const formatosW = (id) => { const d = (painelCat || []).find((w) => w.id === id); return (d && Array.isArray(d.formatos) && d.formatos.length ? d.formatos : null) || IG.formatosDe(id); };
 /* { id, formato } a partir do que veio (formato, ou o tamanho antigo 1 ou 2) */
 function comFormato(w) {
   const ok = formatosW(w.id);
@@ -4907,19 +5000,37 @@ function comFormato(w) {
   const quer = w.tamanho === 2 ? "2x1" : "1x1";
   return { id: w.id, formato: ok.includes(quer) ? quer : ok[0] };
 }
-const fmtCR = (f) => { const [c, r] = String(f || "1x1").split("x").map(Number); return { c: c || 1, r: r || 1 }; };
+const fmtCR = IG.cr;
 const PADRAO_LOCAL = ["hoje", "mercado", "destaques-tech", "destaques-negocios", "destaques-investimentos", "destaques-politica", "pregao", "eua", "listas", "favoritos", "destaques-esportes", "ultimas-tech"];
-let painelCat = null, painelW = null, painelSalvoTxt = null, painelMontado = false, prefsPedidas = false, meuNome = "";
+/* painelG: os grupos salvos na conta (null = nunca mexeu, vale o padrão). edG: o rascunho do modo de edição. */
+let painelCat = null, painelG = null, painelPadrao = null, painelSalvoTxt = null, painelMontado = false, prefsPedidas = false, meuNome = "";
+let edG = null, edSujo = false;
 try {
   const s = JSON.parse(localStorage.getItem("radar-painel") || "null");
   if (s && Array.isArray(s.catalogo)) painelCat = s.catalogo.filter((w) => w && typeof w.id === "string" && typeof w.titulo === "string");
-  if (s && Array.isArray(s.widgets)) painelW = s.widgets.filter((w) => w && typeof w.id === "string").map(comFormato);
+  if (s) painelG = IG.migrar(s);
 } catch (e) {}
 const catalogo = () => (painelCat || CATALOGO_LOCAL).filter((w) => !w.secao || !secoesLiberadas || secoesLiberadas.includes(w.secao));
 const defDe = (id) => catalogo().find((w) => w.id === id);
-const padraoLocal = () => PADRAO_LOCAL.map(defDe).filter(Boolean).map((w) => ({ id: w.id, formato: formatosW(w.id)[0] }));
-const widgetsAtuais = () => (painelW || padraoLocal()).filter((w) => defDe(w.id)).map(comFormato);
-function guardarPainelLocal() { try { localStorage.setItem("radar-painel", JSON.stringify({ widgets: painelW, catalogo: painelCat })); } catch (e) {} }
+const grupoDoWidget = (id) => { const d = defDe(id); return (d && d.grupo) || IG.grupoDe(id); };
+/* padrão em grupos: o do servidor ou, antes da resposta, o daqui na ordem dos grupos padrão */
+function padraoGrupos() {
+  if (painelPadrao) return limparGrupos(painelPadrao);
+  const ws = PADRAO_LOCAL.map(defDe).filter(Boolean).map((w) => ({ id: w.id, formato: formatosW(w.id)[0] }));
+  const por = new Map(IG.agrupar(ws).map((g) => [g.id, g]));
+  return IG.GRUPOS.filter((g) => por.has(g.id)).map((g) => por.get(g.id));
+}
+/* só os widgets que existem no catálogo da pessoa, sem repetir, com formato válido */
+function limparGrupos(gs) {
+  const vistos = new Set();
+  return (gs || []).map((g) => ({ id: g.id, nome: g.nome || IG.NOME_GRUPO[g.id] || "Grupo", recolhido: !!g.recolhido, widgets: (g.widgets || []).filter((w) => defDe(w.id) && !vistos.has(w.id) && vistos.add(w.id)).map(comFormato) }));
+}
+const copiaGrupos = (gs) => gs.map((g) => ({ ...g, widgets: g.widgets.map((w) => ({ ...w })) }));
+/* grupos que a grade mostra agora: o rascunho, se estiver editando; senão os salvos (ou o padrão) */
+const gruposSalvos = () => limparGrupos(painelG || padraoGrupos());
+const gruposAtuais = () => (edG ? edG : gruposSalvos());
+const widgetsAtuais = () => IG.plano(gruposSalvos());
+function guardarPainelLocal() { try { localStorage.setItem("radar-painel", JSON.stringify({ grupos: painelG, catalogo: painelCat })); } catch (e) {} }
 
 /* Para onde leva o título (e o "Ver tudo") de cada widget */
 function destinoDe(id) {
@@ -5177,9 +5288,8 @@ function pintarWidget(id) {
   const destino = destinoDe(id);
   const titulo = destino ? el("a", { href: destino }, tituloDoWidget(id, def)) : el("span", {}, tituloDoWidget(id, def));
   if (destino) ligarDestino(titulo, id);
-  const alca = el("span", { class: "wdg-alca", draggable: "true", title: "Arraste para mudar a ordem", html: ALCA });
   const sub = subtituloDe(id, x);
-  const cab = el("div", { class: "wdg-cab" }, el("h3", { id: "wdg-t-" + id }, titulo), def.pessoal ? el("span", { class: "seu", title: "Vem da sua carteira; só você vê" }, "seu") : null, sub ? (typeof sub === "string" ? el("small", { title: sub }, sub) : sub) : null, alca);
+  const cab = el("div", { class: "wdg-cab" }, el("h3", { id: "wdg-t-" + id }, titulo), def.pessoal ? el("span", { class: "seu", title: "Vem da sua carteira; só você vê" }, "seu") : null, sub ? (typeof sub === "string" ? el("small", { title: sub }, sub) : sub) : null);
   let corpo;
   if (!x || (x.estado === "carregando" && !x.d)) corpo = [esqueleto(tipoDoWidget(id) === "hoje" ? 5 : 6)];
   else if (x.estado === "erro") {
@@ -5187,14 +5297,21 @@ function pintarWidget(id) {
     b.addEventListener("click", () => { wDados.delete(id); pintarWidget(id); carregarWidget(id, true); });
     corpo = [el("p", { class: "wdg-vazio" }, "Não deu para carregar agora. ", b)];
   } else corpo = corposEsp[tipoDoWidget(id)] ? corposEsp[tipoDoWidget(id)](x.d, fmtCR(card.dataset.formato), id) : corpos[tipoDoWidget(id)](x.d, fmtCR(card.dataset.formato));
+  /* repintar no meio do modo de edição não tira as alças: guarda o foco e põe tudo de volta */
+  const foco = document.activeElement && card.contains(document.activeElement) ? document.activeElement.dataset.ctl : null;
   card.textContent = "";
   card.append(cab, el("div", { class: "wdg-corpo" }, ...corpo), rodapeDe(id, x));
+  if (edG) controlesEdicao(card, def);
+  if (foco) { const f = card.querySelector(`[data-ctl="${foco}"]`); if (f) f.focus({ preventScroll: true }); }
 }
 /* Na tela agora (IntersectionObserver): só esses entram na atualização automática */
 const naTela = new Set();
 const olhoPainel = "IntersectionObserver" in window ? new IntersectionObserver((ents) => {
   ents.forEach((e) => { if (e.isIntersecting) naTela.add(e.target.dataset.id); else naTela.delete(e.target.dataset.id); });
 }) : null;
+/* Esconde o que a pessoa não pode ver agora (carteira vazia, competição desligada) */
+const widgetVisivel = (id) => { const d = defDe(id); return !!d && !(d.pessoal && pessoalOculto(id)) && !espOculto(id); };
+const CHEVRON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 function montarGrade() {
   const g = $("ini-grade");
   /* ao voltar de outra seção, aplicarRadar zerou b3 e eua: os cards de mercado usam a mesma cópia em memória */
@@ -5207,18 +5324,42 @@ function montarGrade() {
   naTela.clear();
   g.textContent = "";
   painelMontado = true;
-  /* os da carteira só aparecem para quem importou os extratos */
-  const ws = widgetsAtuais().filter((w) => !(defDe(w.id).pessoal && pessoalOculto(w.id)) && !espOculto(w.id));
-  if (!ws.length) { g.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum card no Início"), "Use Personalizar para escolher o que aparece aqui.")); return; }
-  ws.forEach((w) => {
-    const { c, r } = fmtCR(w.formato);
-    const card = el("article", { class: "wdg", "data-id": w.id, "data-c": String(c), "data-r": String(r), "data-formato": w.formato, "aria-labelledby": "wdg-t-" + w.id });
-    g.append(card);
-    pintarWidget(w.id);
-    if (olhoPainel) olhoPainel.observe(card);
-    const x = wDados.get(w.id);
-    if (!x || (x.estado !== "carregando" && Date.now() - (x.em || 0) > META_FRESCO_MS) || (x.estado === "erro")) carregarWidget(w.id);
+  const editando = !!edG;
+  /* lendo: grupo sem card visível some; editando: todos aparecem, o vazio com o lugar para soltar */
+  const gs = gruposAtuais().map((x) => ({ ...x, vis: x.widgets.filter((w) => widgetVisivel(w.id)) })).filter((x) => editando || x.vis.length);
+  if (!gs.length) { g.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum card no Início"), "Use Personalizar para escolher o que aparece aqui.")); return; }
+  gs.forEach((gr) => {
+    const idCards = "ini-g-" + gr.id;
+    const sec = el("section", { class: "ini-grupo" + (gr.recolhido ? " recolhido" : ""), "data-grupo": gr.id, "aria-label": gr.nome });
+    const n = gr.vis.length;
+    if (editando) {
+      const alca = el("span", { class: "ini-galca", role: "button", tabindex: "0", "data-gctl": "mover", title: "Arraste para mudar a ordem dos grupos", "aria-label": `Mover o grupo ${gr.nome}. Use as setas para cima e para baixo`, html: ALCA });
+      const rec = el("button", { type: "button", class: "ini-grec", "data-gctl": "recolher", "aria-expanded": String(!gr.recolhido), "aria-controls": idCards, "aria-label": (gr.recolhido ? "Abrir o grupo " : "Recolher o grupo ") + gr.nome, html: CHEVRON });
+      const nome = el("input", { class: "dd-input ini-gnome", type: "text", "data-gctl": "nome", id: "ini-gnome-" + gr.id, value: gr.nome, maxlength: String(IG.NOME_MAX), "aria-label": "Nome do grupo", autocomplete: "off", spellcheck: "false" });
+      sec.append(el("div", { class: "ini-gcab" }, alca, rec, nome, el("small", {}, n === 1 ? "1 card" : n + " cards")));
+    } else {
+      const b = el("button", { type: "button", class: "ini-gtit", "aria-expanded": String(!gr.recolhido), "aria-controls": idCards, title: gr.recolhido ? "Mostrar os cards" : "Recolher" }, el("span", { html: CHEVRON }), gr.nome, gr.recolhido ? el("small", {}, n === 1 ? "1 card" : n + " cards") : null);
+      b.addEventListener("click", () => recolherGrupo(gr.id));
+      sec.append(el("h2", { class: "ini-gcab" }, b));
+    }
+    const cards = el("div", { class: "ini-cards", id: idCards, "data-grupo": gr.id });
+    if (gr.recolhido) cards.hidden = true;
+    sec.append(cards);
+    g.append(sec);
+    if (editando && !gr.vis.length) cards.append(el("p", { class: "ini-gvazio" }, gr.widgets.length ? "Os cards deste grupo aparecem quando houver dados para eles." : "Arraste cards para cá ou use Adicionar card."));
+    gr.vis.forEach((w) => {
+      const { c, r } = fmtCR(w.formato);
+      const card = el("article", { class: "wdg", "data-id": w.id, "data-c": String(c), "data-r": String(r), "data-formato": w.formato, "aria-labelledby": "wdg-t-" + w.id });
+      cards.append(card);
+      if (!gr.recolhido) {
+        pintarWidget(w.id);
+        if (olhoPainel) olhoPainel.observe(card);
+        const x = wDados.get(w.id);
+        if (!x || (x.estado !== "carregando" && Date.now() - (x.em || 0) > META_FRESCO_MS) || (x.estado === "erro")) carregarWidget(w.id);
+      }
+    });
   });
+  if (editando) desenharCelulas();
 }
 /* A cada 2 min, os que estão na tela; ao voltar para a aba, os da tela com mais de 1 min */
 function atualizarNaTela(idade) {
@@ -5258,37 +5399,57 @@ function atualizarCabInicio() {
 }
 window.lookoutEu.then((me) => { meuNome = String((me && me.nome) || "").trim(); atualizarCabInicio(); }, () => {});
 
-/* Grade guardada na conta. A resposta do servidor manda: troca a cópia local e redesenha (se o painel de personalizar não estiver aberto). */
+/* Grade guardada na conta, em grupos. A resposta do servidor manda: troca a cópia local e redesenha (fora do modo de
+   edição; editando, o rascunho fica e o Cancelar volta para o que chegou). Servidor antigo manda a lista plana. */
+function lerRespostaPainel(j) {
+  if (Array.isArray(j.catalogo)) painelCat = j.catalogo;
+  if (Array.isArray(j.gruposPadrao)) painelPadrao = j.gruposPadrao;
+  const gs = Array.isArray(j.grupos) ? IG.migrar({ grupos: j.grupos }) : Array.isArray(j.widgets) ? IG.migrar({ widgets: j.widgets }) : null;
+  if (!gs) return false;
+  painelG = j.padrao ? null : gs;
+  painelSalvoTxt = JSON.stringify(gruposSalvos());
+  return true;
+}
 async function carregarPrefs() {
   try {
     const r = await fetch("/api/prefs/painel", { credentials: "same-origin", cache: "no-store", headers: { "X-Requested-With": "XMLHttpRequest" } });
     if (!r.ok) return;
     const j = await r.json();
-    if (!Array.isArray(j.widgets) || !Array.isArray(j.catalogo)) return;
-    painelCat = j.catalogo; painelSalvoTxt = JSON.stringify(j.widgets);
-    if (persAberto) return;
-    const mudou = JSON.stringify(widgetsAtuais()) !== painelSalvoTxt;
-    painelW = j.widgets; guardarPainelLocal();
-    if (inicio && !carteiraVista && mudou) montarGrade();
+    const antes = JSON.stringify(gruposSalvos());
+    if (!lerRespostaPainel(j)) return;
+    guardarPainelLocal();
+    if (persAberto) renderPers();
+    if (inicio && !carteiraVista && !edG && antes !== painelSalvoTxt) montarGrade();
     atualizarPins();
   } catch (e) {}
 }
 function avisoPainel(txt) { const a = $("ini-aviso"); a.textContent = txt || ""; a.hidden = !txt; }
-async function salvarPainel() {
-  const w = widgetsAtuais();
-  painelW = w; guardarPainelLocal();
-  const txt = JSON.stringify(w);
-  if (txt === painelSalvoTxt) return;
+/* Grava os grupos (sem os vazios). Devolve true se a conta aceitou. */
+async function salvarPainel(grupos) {
+  const gs = (grupos || gruposSalvos()).filter((g) => g.widgets.length).map((g) => ({ id: g.id, nome: g.nome, recolhido: !!g.recolhido, widgets: g.widgets.map(({ id, formato }) => ({ id, formato })) }));
+  painelG = gs; guardarPainelLocal();
+  const txt = JSON.stringify(gs);
+  if (txt === painelSalvoTxt) return true;
   try {
-    const r = await fetch("/api/prefs/painel", { method: "PUT", credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({ widgets: w }) });
+    const r = await fetch("/api/prefs/painel", { method: "PUT", credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({ grupos: gs }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.erro || "http " + r.status);
-    painelSalvoTxt = JSON.stringify(j.widgets || w);
+    lerRespostaPainel(j); guardarPainelLocal();
     avisoPainel("");
-  } catch (e) { avisoPainel("Não deu para salvar o painel na sua conta agora. Ele fica guardado neste navegador e vai de novo na próxima mudança."); }
+    return true;
+  } catch (e) { avisoPainel("Não deu para salvar o Início na sua conta agora. Ele fica guardado neste navegador e vai de novo na próxima mudança."); return false; }
 }
 let tSalvar = 0;
-const salvarDepois = () => { clearTimeout(tSalvar); tSalvar = setTimeout(salvarPainel, 700); };
+const salvarDepois = () => { clearTimeout(tSalvar); tSalvar = setTimeout(() => salvarPainel(), 700); };
+/* Recolher ou abrir um grupo. Lendo, grava na hora (um pouco depois); editando, entra no rascunho. */
+function recolherGrupo(id) {
+  if (edG) { const g = edG.find((x) => x.id === id); if (g) { g.recolhido = !g.recolhido; edSujo = true; montarGrade(); focarGrupo(id, "recolher"); } return; }
+  const gs = gruposSalvos(), g = gs.find((x) => x.id === id); if (!g) return;
+  g.recolhido = !g.recolhido;
+  painelG = gs; guardarPainelLocal(); montarGrade();
+  const b = document.querySelector(`.ini-grupo[data-grupo="${id}"] .ini-gtit`); if (b) b.focus({ preventScroll: true });
+  salvarDepois();
+}
 
 function entrarInicio() {
   aplicarModo();
@@ -5316,6 +5477,8 @@ function irInicio(porHash) {
   window.scrollTo({ top: 0 });
 }
 function aplicarModo() {
+  /* sair do Início (para uma seção ou para a carteira) no meio da edição descarta o rascunho */
+  if (edG && (!inicio || carteiraVista)) fecharEdicao();
   document.documentElement.classList.toggle("no-inicio", inicio);
   $("inicio").hidden = !inicio;
   const h1 = document.querySelector("h1");
@@ -5327,117 +5490,78 @@ function aplicarModo() {
 }
 $("marca").addEventListener("click", (e) => { if (inicio && !carteiraVista) { e.preventDefault(); window.scrollTo({ top: 0 }); } });
 
-/* ---- Personalizar: lista de todos os widgets disponíveis, com mostrar, ordem e largura. Aplica na hora; grava ao fechar. ---- */
-let persAberto = false, persLista = [], persAbridor = null;
-function montarPersLista() {
-  const ws = widgetsAtuais(), ja = new Set(ws.map((w) => w.id));
-  persLista = [...ws.map((w) => ({ ...w, mostrar: true })), ...catalogo().filter((w) => !ja.has(w.id)).map((w) => ({ id: w.id, formato: formatosW(w.id)[0], mostrar: false }))];
-}
-/* Os widgets da carteira ficam num grupo à parte na lista; as setas trocam só com o vizinho do mesmo grupo */
-const ehPessoal = (id) => { const d = defDe(id); return !!(d && d.pessoal); };
-function aplicarPers(foco) {
-  painelW = persLista.filter((w) => w.mostrar).map(({ id, formato }) => ({ id, formato }));
-  montarGrade(); renderPers(foco);
-}
+/* ---- Personalizar: o catálogo "Adicionar card", com busca e os widgets em grupos por tipo ----
+   Fora do modo de edição, o card entra na hora e vai para a conta; editando, entra no rascunho e só vai no Salvar. */
+let persAberto = false, persAbridor = null, persBusca = "";
 const NOME_FMT = { "1x1": "1 coluna, 1 linha", "2x1": "2 colunas, 1 linha", "3x1": "3 colunas, 1 linha", "1x2": "1 coluna, 2 linhas", "2x2": "2 colunas, 2 linhas" };
 function icoFormato(f) {
   const { c, r } = fmtCR(f), box = el("span", { class: "fmt-ico", "aria-hidden": "true" });
   for (let y = 1; y <= 2; y++) for (let x = 1; x <= 3; x++) box.append(el("i", { class: x <= c && y <= r ? "on" : "" }));
   return box;
 }
-/* Move o item n de persLista para antes (ou depois) do item k, sem passar para o outro grupo (carteira e os demais) */
-function moverPers(n, k, depois) {
-  if (n === k || n < 0 || k < 0) return;
-  const alvo = persLista[k];
-  const [w] = persLista.splice(n, 1);
-  const i = persLista.indexOf(alvo) + (depois ? 1 : 0);
-  persLista.splice(i, 0, w);
+const nomeGrupoPadrao = (gid) => IG.NOME_GRUPO[gid] || "Grupo";
+/* Põe o widget no grupo do tipo dele (cria o grupo, na ordem dos padrões, se não houver). noComeco: o alfinete põe na frente. */
+function comCard(base, id, noComeco) {
+  const gid = grupoDoWidget(id);
+  let g = base.find((x) => x.id === gid);
+  if (!g) {
+    g = { id: gid, nome: nomeGrupoPadrao(gid), recolhido: false, widgets: [] };
+    const ordem = IG.GRUPOS.map((x) => x.id), k = ordem.indexOf(gid);
+    const pos = base.findIndex((x) => ordem.indexOf(x.id) > k);
+    if (pos < 0) base.push(g); else base.splice(pos, 0, g);
+  }
+  g.recolhido = false;
+  const w = { id, formato: formatosW(id)[0] };
+  if (noComeco) g.widgets.unshift(w); else g.widgets.push(w);
+  return g;
 }
-let persArrasto = null;
-function renderPers(foco) {
+function adicionarCard(id) {
+  const def = defDe(id); if (!def) return;
+  const base = edG || gruposSalvos();
+  if (IG.plano(base).some((w) => w.id === id)) return;
+  const g = comCard(base, id);
+  if (edG) { edSujo = true; montarGrade(); }
+  else { painelG = base; guardarPainelLocal(); montarGrade(); salvarPainel(); atualizarPins(); }
+  $("pers-status").textContent = `${def.titulo} entrou em ${g.nome}${edG ? ". Salve para guardar na conta." : "."}`;
+  renderPers();
+}
+function renderPers() {
   const ul = $("pers-lista"); ul.textContent = "";
+  const q = semAcento(persBusca).toLowerCase().trim();
+  const ja = new Set(IG.plano(gruposAtuais()).map((w) => w.id));
   const semCart = cartSemDados();
-  const ordem = [...persLista.map((w, n) => [w, n]).filter(([w]) => !ehPessoal(w.id)), ...persLista.map((w, n) => [w, n]).filter(([w]) => ehPessoal(w.id))];
-  let grupo = false;
-  ordem.forEach(([w, n]) => {
-    const def = defDe(w.id); if (!def) return;
-    /* os do radar só aparecem para quem tem carteira ou filtro salvo (e o contra o filtro, só com carteira) */
-    if (def.pessoal && !w.id.startsWith("carteira-") && pessoalOculto(w.id) && !w.mostrar) return;
-    /* Esportes: só as competições ligadas em Meus esportes (e o próximo jogo, só com time escolhido) */
-    if (espOculto(w.id) && !w.mostrar) return;
-    if (def.pessoal && !grupo) {
-      grupo = true;
-      ul.append(el("li", { class: "pers-grupo" }, "Minha carteira", el("small", {}, semCart ? "Aparecem depois que você importar os extratos da B3 em Minha carteira." : "Vêm da sua carteira e do seu radar. Só você vê. Também dá para fixar pelo alfinete de cada bloco da carteira.")));
-    }
-    const vizinho = (d) => { for (let k = n + d; k >= 0 && k < persLista.length; k += d) if (ehPessoal(persLista[k].id) === !!def.pessoal) return k; return -1; };
-    const chk = el("input", { type: "checkbox", id: "pers-chk-" + w.id });
-    chk.checked = w.mostrar;
-    chk.addEventListener("change", () => { w.mostrar = chk.checked; aplicarPers("pers-chk-" + w.id); });
-    const mover = (d, focoId) => { const k = vizinho(d); if (k < 0) return; [persLista[n], persLista[k]] = [persLista[k], persLista[n]]; aplicarPers(focoId); };
-    /* alça: arrasta com o mouse; com o foco nela, as setas sobem e descem o card */
-    /* span e não button: o Chromium não começa a arrastar a partir de um <button> */
-    const alca = el("span", { class: "pers-alca", role: "button", tabindex: "0", id: "pers-alca-" + w.id, draggable: "true", "aria-label": `Mover ${def.titulo}. Use as setas para cima e para baixo`, title: "Arraste ou use as setas", html: ALCA });
-    alca.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); mover(e.key === "ArrowUp" ? -1 : 1, "pers-alca-" + w.id); }
-    });
-    const li = el("li", { class: "pers-item" + (w.mostrar ? "" : " oculto"), "data-id": w.id });
-    alca.addEventListener("dragstart", (e) => {
-      persArrasto = { id: w.id, pessoal: !!def.pessoal };
-      e.dataTransfer.effectAllowed = "move";
-      try { e.dataTransfer.setData("text/plain", w.id); e.dataTransfer.setDragImage(li, 16, 16); } catch (er) {}
-      requestAnimationFrame(() => li.classList.add("arrastando"));
-    });
-    alca.addEventListener("dragend", () => { persArrasto = null; li.classList.remove("arrastando"); ul.querySelectorAll(".cai-antes, .cai-depois").forEach((x) => x.classList.remove("cai-antes", "cai-depois")); });
-    li.addEventListener("dragover", (e) => {
-      if (!persArrasto || persArrasto.id === w.id || persArrasto.pessoal !== !!def.pessoal) return;
-      e.preventDefault(); e.dataTransfer.dropEffect = "move";
-      const r = li.getBoundingClientRect(), antes = e.clientY < r.top + r.height / 2;
-      ul.querySelectorAll(".cai-antes, .cai-depois").forEach((x) => { if (x !== li) x.classList.remove("cai-antes", "cai-depois"); });
-      li.classList.toggle("cai-antes", antes); li.classList.toggle("cai-depois", !antes);
-    });
-    li.addEventListener("dragleave", (e) => { if (!li.contains(e.relatedTarget)) li.classList.remove("cai-antes", "cai-depois"); });
-    li.addEventListener("drop", (e) => {
-      if (!persArrasto || persArrasto.id === w.id) return;
-      e.preventDefault();
-      const id = persArrasto.id, de = persLista.findIndex((x) => x.id === id), depois = li.classList.contains("cai-depois");
-      persArrasto = null;
-      moverPers(de, persLista.indexOf(w), depois);
-      aplicarPers("pers-alca-" + id);
-    });
-    const cima = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon alvo", type: "button", id: "pers-cima-" + w.id, "aria-label": "Subir " + def.titulo, title: "Subir" }, "▲");
-    const baixo = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon alvo", type: "button", id: "pers-baixo-" + w.id, "aria-label": "Descer " + def.titulo, title: "Descer" }, "▼");
-    if (vizinho(-1) < 0) cima.disabled = true;
-    if (vizinho(1) < 0) baixo.disabled = true;
-    if (def.pessoal && pessoalOculto(w.id) && !w.mostrar) chk.disabled = true;
-    cima.addEventListener("click", () => mover(-1, "pers-cima-" + w.id));
-    baixo.addEventListener("click", () => mover(1, "pers-baixo-" + w.id));
-    /* formato: miniaturas só com os que o widget aceita (com um só, nada) */
-    const fmts = formatosW(w.id);
-    let fmt = null;
-    if (fmts.length > 1) {
-      fmt = el("div", { class: "pers-fmt", role: "radiogroup", "aria-label": "Formato de " + def.titulo });
-      fmts.forEach((f) => {
-        const b = el("button", { type: "button", role: "radio", id: `pers-fmt-${f}-${w.id}`, "aria-checked": String(w.formato === f), "aria-label": NOME_FMT[f] || f, title: NOME_FMT[f] || f, tabindex: w.formato === f ? "0" : "-1" }, icoFormato(f));
-        if (!w.mostrar) b.disabled = true;
-        b.addEventListener("click", () => { if (w.formato !== f) { w.formato = f; aplicarPers(`pers-fmt-${f}-${w.id}`); } });
-        b.addEventListener("keydown", (e) => {
-          const k = fmts.indexOf(f), d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
-          if (!d) return;
-          e.preventDefault();
-          const nf = fmts[(k + d + fmts.length) % fmts.length]; w.formato = nf; aplicarPers(`pers-fmt-${nf}-${w.id}`);
-        });
-        fmt.append(b);
-      });
-    }
-    li.append(alca, el("label", { for: "pers-chk-" + w.id }, chk, el("span", {}, def.titulo)), fmt || el("span"), el("span", { class: "pers-setas" }, cima, baixo));
-    ul.append(li);
+  const por = new Map();
+  catalogo().forEach((def) => {
+    /* os do radar só aparecem para quem tem carteira ou filtro salvo; Esportes, só as competições ligadas */
+    if (def.pessoal && !def.id.startsWith("carteira-") && pessoalOculto(def.id)) return;
+    if (espOculto(def.id)) return;
+    const gid = grupoDoWidget(def.id);
+    if (q && !semAcento(def.titulo + " " + nomeGrupoPadrao(gid)).toLowerCase().includes(q)) return;
+    if (!por.has(gid)) por.set(gid, []);
+    por.get(gid).push(def);
   });
-  if (foco && $(foco)) { const f = $(foco); (f.disabled ? $("pers-lista").querySelector("button:not(:disabled), input") : f).focus({ preventScroll: false }); }
+  const ordem = [...IG.GRUPOS.map((g) => g.id).filter((g) => por.has(g)), ...[...por.keys()].filter((g) => !IG.NOME_GRUPO[g])];
+  if (!ordem.length) { ul.append(el("li", { class: "pers-nada" }, q ? "Nenhum card com esse nome." : "Nenhum card disponível.")); return; }
+  ordem.forEach((gid) => {
+    const defs = por.get(gid), livres = defs.filter((d) => !ja.has(d.id)).length;
+    ul.append(el("li", { class: "pers-grupo" }, nomeGrupoPadrao(gid), el("span", { class: "k" }, livres ? `${livres} para adicionar` : "todos no Início"),
+      gid === "carteira" ? el("small", {}, semCart ? "Aparecem depois que você importar os extratos da B3 em Minha carteira." : "Vêm da sua carteira. Só você vê.") : null));
+    defs.forEach((def) => {
+      const esta = ja.has(def.id), trava = def.pessoal && def.id.startsWith("carteira-") && semCart;
+      const fmts = formatosW(def.id);
+      const b = el("button", { type: "button", class: "dd-btn dd-btn--outline", id: "pers-add-" + def.id, "aria-label": esta ? `${def.titulo} já está no Início` : `Adicionar ${def.titulo}` }, esta ? "No Início" : "Adicionar");
+      if (esta || trava) b.disabled = true;
+      b.addEventListener("click", () => { adicionarCard(def.id); const n = $("pers-lista").querySelector(".pers-item button:not(:disabled)"); (n || $("pers-busca")).focus({ preventScroll: true }); });
+      ul.append(el("li", { class: "pers-item" + (esta ? " oculto" : "") }, icoFormato(fmts[0]),
+        el("span", { class: "pers-nome" }, el("span", {}, def.titulo), el("small", {}, fmts.length > 1 ? fmts.map((f) => f.replace("x", "×")).join(" · ") : "um tamanho só")), b));
+    });
+  });
 }
 function abrirPers() {
   if (persAberto) return;
   persAberto = true; persAbridor = document.activeElement;
-  montarPersLista(); renderPers();
+  persBusca = ""; $("pers-busca").value = ""; $("pers-status").textContent = "";
+  renderPers();
   /* carteira e filtros decidem quais widgets pessoais entram na lista */
   if (!rdPrefs || !cartJ) Promise.all([lerRadarPrefs(), lerCarteira()]).then(() => { if (persAberto) renderPers(); });
   const html = document.documentElement, sb = window.innerWidth - html.clientWidth;
@@ -5455,17 +5579,13 @@ function fecharPers() {
   html.classList.remove("trava", "pers-aberto"); html.style.paddingRight = "";
   $("personalizar").setAttribute("aria-expanded", "false");
   if (persAbridor && persAbridor.isConnected && persAbridor.focus) persAbridor.focus({ preventScroll: true });
-  clearTimeout(tSalvar); salvarPainel();
 }
 $("personalizar").addEventListener("click", abrirPers);
+$("ini-ed-add").addEventListener("click", abrirPers);
 $("pers-fechar").addEventListener("click", fecharPers);
 $("pers-ok").addEventListener("click", fecharPers);
 $("pers-veu").addEventListener("click", fecharPers);
-$("pers-restaurar").addEventListener("click", () => {
-  const p = padraoLocal(), ja = new Set(p.map((w) => w.id));
-  persLista = [...p.map((w) => ({ ...w, mostrar: true })), ...catalogo().filter((w) => !ja.has(w.id)).map((w) => ({ id: w.id, formato: formatosW(w.id)[0], mostrar: false }))];
-  aplicarPers("pers-restaurar");
-});
+$("pers-busca").addEventListener("input", (e) => { persBusca = e.target.value; renderPers(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && persAberto) { e.preventDefault(); fecharPers(); } });
 $("pers").addEventListener("keydown", (e) => {
   if (e.key !== "Tab") return;
@@ -5476,48 +5596,353 @@ $("pers").addEventListener("keydown", (e) => {
   else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); pri.focus(); }
 });
 
-/* ---- Arrastar e soltar entre os cards (desktop): pela alça do cabeçalho, com a marca de onde vai cair ---- */
-let arrastado = null, alvoSolta = null;
-function limparMarcas() { $("ini-grade").querySelectorAll(".cai-antes, .cai-depois").forEach((c) => c.classList.remove("cai-antes", "cai-depois")); }
-$("ini-grade").addEventListener("dragstart", (e) => {
-  const alca = e.target.closest && e.target.closest(".wdg-alca"); if (!alca) return;
-  const card = alca.closest(".wdg");
-  arrastado = card.dataset.id; alvoSolta = null;
-  e.dataTransfer.effectAllowed = "move";
-  try { e.dataTransfer.setData("text/plain", arrastado); } catch (er) {}
-  try { e.dataTransfer.setDragImage(card, 24, 20); } catch (er) {}
-  requestAnimationFrame(() => card.classList.add("arrastando"));
-});
-$("ini-grade").addEventListener("dragover", (e) => {
-  if (!arrastado) return;
-  e.preventDefault(); e.dataTransfer.dropEffect = "move";
-  const card = e.target.closest && e.target.closest(".wdg");
-  if (!card || card.dataset.id === arrastado) return;
-  const r = card.getBoundingClientRect();
-  const antes = e.clientX < r.left + r.width / 2;
-  if (alvoSolta && alvoSolta.id === card.dataset.id && alvoSolta.antes === antes) return;
-  limparMarcas();
-  card.classList.add(antes ? "cai-antes" : "cai-depois");
-  alvoSolta = { id: card.dataset.id, antes };
-});
-$("ini-grade").addEventListener("drop", (e) => {
-  if (!arrastado) return;
-  e.preventDefault();
-  const ws = widgetsAtuais(), de = ws.findIndex((w) => w.id === arrastado);
-  if (alvoSolta && de >= 0) {
-    const [w] = ws.splice(de, 1);
-    let k = ws.findIndex((x) => x.id === alvoSolta.id);
-    if (k >= 0) { if (!alvoSolta.antes) k++; ws.splice(k, 0, w); painelW = ws; }
-    else ws.splice(de, 0, w);
-  }
-  arrastado = null; alvoSolta = null;
+/* ---- Modo de edição do Início (html.inicio-editando) ----
+   Grade quadriculada, alça para mover (canto de cima), × para tirar, alça de tamanho (canto de baixo), grupos com nome,
+   ordem e recolher. Tudo num rascunho (edG); só o Salvar manda para a conta, o Cancelar volta ao salvo.
+   Teclado: setas na alça movem o card (passando para o grupo vizinho na ponta), Shift com setas muda o formato;
+   setas na alça do grupo mudam a ordem dos grupos. No celular: uma coluna, alças maiores e o tamanho num botão. */
+const TAM = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M14 6v8H6M14 10l-4 4"/></svg>';
+const colunasGrade = () => (window.matchMedia("(min-width: 1200px)").matches ? 3 : window.matchMedia("(min-width: 700px)").matches ? 2 : 1);
+const anunciar = (t) => { const a = $("ini-anuncio"); a.textContent = ""; requestAnimationFrame(() => { a.textContent = t; }); };
+const tituloDe = (id) => { const d = defDe(id); return d ? tituloDoWidget(id, d) : id; };
+function edStatus(t, cls) { const s = $("ini-edstatus"); s.textContent = t || ""; s.className = "ini-edstatus" + (cls ? " " + cls : ""); }
+function marcarSujo() { edSujo = true; edStatus("Mudanças ainda não salvas.", "warn"); }
+function entrarEdicao() {
+  if (edG || !inicio || carteiraVista) return;
+  if (persAberto) fecharPers();
+  edG = copiaGrupos(gruposSalvos()); edSujo = false;
+  document.documentElement.classList.add("inicio-editando");
+  $("ini-edbar").hidden = false; $("ini-editar").hidden = true;
+  edStatus("");
+  /* carteira e filtros decidem o que aparece; a grade redesenha quando chegarem */
+  if (!rdPrefs || !cartJ) Promise.all([lerRadarPrefs(), lerCarteira()]).then(() => { if (edG) montarGrade(); });
   montarGrade();
-  if (persAberto) { montarPersLista(); renderPers(); } else salvarDepois();
+  $("ini-edbar").focus({ preventScroll: true });
+}
+function fecharEdicao() {
+  edG = null; edSujo = false;
+  document.documentElement.classList.remove("inicio-editando");
+  $("ini-edbar").hidden = true; $("ini-editar").hidden = false;
+  if (roCelulas) roCelulas.disconnect();
+}
+async function salvarEdicao() {
+  if (!edG) return;
+  const b = $("ini-salvar");
+  const vazio = edG.find((g) => !g.nome.trim());
+  if (vazio) vazio.nome = nomeGrupoPadrao(vazio.id);
+  b.disabled = true; edStatus("Salvando…");
+  const ok = await salvarPainel(edG);
+  b.disabled = false;
+  if (!ok) { edStatus("Não deu para salvar agora. As mudanças continuam aqui; tente de novo.", "err"); return; }
+  fecharEdicao(); avisoPainel(""); montarGrade(); atualizarPins();
+  anunciar("Início salvo.");
+  $("ini-editar").focus({ preventScroll: true });
+}
+function cancelarEdicao() {
+  if (!edG) return;
+  fecharEdicao(); montarGrade();
+  anunciar("Edição cancelada. O Início voltou ao que estava salvo.");
+  $("ini-editar").focus({ preventScroll: true });
+}
+$("ini-editar").addEventListener("click", entrarEdicao);
+$("ini-salvar").addEventListener("click", salvarEdicao);
+$("ini-cancelar").addEventListener("click", cancelarEdicao);
+$("ini-restaurar").addEventListener("click", () => { if (!edG) return; edG = copiaGrupos(padraoGrupos()); marcarSujo(); montarGrade(); anunciar("Voltou o Início padrão. Salve para guardar."); });
+$("ini-novo-grupo").addEventListener("click", () => {
+  if (!edG) return;
+  if (edG.length >= IG.MAX_GRUPOS) { edStatus(`O Início guarda até ${IG.MAX_GRUPOS} grupos.`, "warn"); return; }
+  const id = IG.novoId(edG);
+  edG.push({ id, nome: "Novo grupo", recolhido: false, widgets: [] });
+  marcarSujo(); montarGrade();
+  const i = $("ini-gnome-" + id); if (i) { i.scrollIntoView({ block: "center" }); i.focus(); i.select(); }
 });
-$("ini-grade").addEventListener("dragend", () => {
-  const c = arrastado && cardDe(arrastado); if (c) c.classList.remove("arrastando");
-  arrastado = null; alvoSolta = null; limparMarcas();
+window.addEventListener("beforeunload", (e) => { if (edG && edSujo) { e.preventDefault(); e.returnValue = ""; } });
+
+function focarCard(id, ctl) { const c = cardDe(id); const f = c && (c.querySelector(`[data-ctl="${ctl}"]`) || c.querySelector('[data-ctl="mover"]')); if (f && f.offsetParent !== null) f.focus({ preventScroll: false }); }
+function focarGrupo(gid, ctl) { const f = document.querySelector(`.ini-grupo[data-grupo="${gid}"] [data-gctl="${ctl}"]`); if (f) f.focus({ preventScroll: false }); }
+function mudarFormato(id, f, ctl) {
+  const w = IG.plano(edG).find((x) => x.id === id); if (!w || w.formato === f) return;
+  w.formato = f; marcarSujo(); montarGrade(); focarCard(id, ctl || "tam");
+  anunciar(`${tituloDe(id)}: ${NOME_FMT[f] || f}.`);
+}
+function tirarCard(id) {
+  const ws = IG.plano(edG).filter(widgetVisivel), k = ws.findIndex((w) => w.id === id), prox = ws[k + 1] || ws[k - 1];
+  edG = edG.map((g) => ({ ...g, widgets: g.widgets.filter((w) => w.id !== id) }));
+  marcarSujo(); montarGrade();
+  anunciar(`${tituloDe(id)} saiu do Início. Volta por Adicionar card.`);
+  if (prox) focarCard(prox.id, "mover"); else $("ini-ed-add").focus();
+}
+function moverGrupo(gid, d) {
+  const k = edG.findIndex((g) => g.id === gid), n = k + d;
+  if (k < 0 || n < 0 || n >= edG.length) return;
+  [edG[k], edG[n]] = [edG[n], edG[k]];
+  marcarSujo(); montarGrade(); focarGrupo(gid, "mover");
+  anunciar(`Grupo ${edG[n].nome}: posição ${n + 1} de ${edG.length}.`);
+}
+function controlesEdicao(card, def) {
+  const id = card.dataset.id, f = card.dataset.formato, fmts = formatosW(id), nome = tituloDoWidget(id, def);
+  const mover = el("span", { class: "wdg-mover", role: "button", tabindex: "0", "data-ctl": "mover", title: "Arraste para mover", "aria-label": `Mover ${nome}. Setas movem; Shift com setas muda o tamanho`, html: ALCA });
+  const tirar = el("button", { type: "button", class: "wdg-tirar", "data-ctl": "tirar", title: "Tirar do Início", "aria-label": `Tirar ${nome} do Início` }, "×");
+  tirar.addEventListener("click", () => tirarCard(id));
+  card.append(mover, tirar);
+  if (fmts.length > 1) {
+    card.append(el("span", { class: "wdg-tam", role: "button", tabindex: "0", "data-ctl": "tam", title: "Arraste para mudar o tamanho", "aria-label": `Tamanho de ${nome}: ${NOME_FMT[f] || f}. Shift com setas muda`, html: TAM }));
+    const cel = el("button", { type: "button", class: "wdg-tamcel", "data-ctl": "tamcel", "aria-label": `Tamanho de ${nome} no computador: ${NOME_FMT[f] || f}. Toque para trocar` }, icoFormato(f), el("span", {}, f.replace("x", "×")));
+    cel.addEventListener("click", () => { const k = fmts.indexOf(f); mudarFormato(id, fmts[(k + 1) % fmts.length], "tamcel"); });
+    card.append(cel);
+  } else card.append(el("span", { class: "wdg-tamcel so", title: "Este card tem um tamanho só" }, icoFormato(f)));
+}
+
+/* Trilhas da grade (colunas e linhas de verdade, em px da tela): o computed de grid-template-* já traz as linhas implícitas */
+function trilhas(grade) {
+  const cs = getComputedStyle(grade), r = grade.getBoundingClientRect();
+  const nums = (t) => String(t || "").split(/\s+/).map(parseFloat).filter((n) => Number.isFinite(n));
+  const gc = parseFloat(cs.columnGap) || 0, gr = parseFloat(cs.rowGap) || 0;
+  let x = r.left, y = r.top;
+  const cols = nums(cs.gridTemplateColumns).map((w) => { const o = { x, w }; x += w + gc; return o; });
+  const rows = nums(cs.gridTemplateRows).map((h) => { const o = { y, h }; y += h + gr; return o; });
+  return { r, cols, rows, gc, gr };
+}
+const linhaEm = (T, k) => {
+  if (k < T.rows.length) return T.rows[k];
+  const u = T.rows[T.rows.length - 1] || { y: T.r.top - T.gr, h: -T.gr + 0 };
+  const extra = k - T.rows.length;
+  return { y: (T.rows.length ? u.y + u.h + T.gr : T.r.top) + extra * (180 + T.gr), h: 180 };
+};
+const pertoDe = (lista, v, chave) => { let m = 0, d = Infinity; lista.forEach((o, k) => { const x = Math.abs(o[chave] - v); if (x < d) { d = x; m = k; } }); return m; };
+/* Fundo quadriculado: uma célula por coluna e linha da grade, desenhada atrás dos cards */
+let roCelulas = null;
+function desenharCelulas() {
+  if (!edG) return;
+  if (!roCelulas && "ResizeObserver" in window) roCelulas = new ResizeObserver(() => { cancelAnimationFrame(desenharCelulas.raf); desenharCelulas.raf = requestAnimationFrame(pintarCelulas); });
+  if (roCelulas) { roCelulas.disconnect(); $("ini-grade").querySelectorAll(".ini-cards").forEach((c) => roCelulas.observe(c)); }
+  pintarCelulas();
+}
+function pintarCelulas() {
+  if (!edG) return;
+  $("ini-grade").querySelectorAll(".ini-cards").forEach((grade) => {
+    let cam = grade.querySelector(":scope > .ini-celulas");
+    if (grade.hidden) { if (cam) cam.remove(); return; }
+    const T = trilhas(grade);
+    if (!cam) { cam = el("div", { class: "ini-celulas", "aria-hidden": "true" }); grade.prepend(cam); }
+    const chave = T.cols.map((c) => Math.round(c.w)).join(",") + "|" + T.rows.map((r) => Math.round(r.h)).join(",");
+    if (cam.dataset.k === chave) return;
+    cam.dataset.k = chave; cam.textContent = "";
+    T.rows.forEach((rw) => T.cols.forEach((cl) => cam.append(el("i", { style: `left:${cl.x - T.r.left}px;top:${rw.y - T.r.top}px;width:${cl.w}px;height:${rw.h}px` }))));
+  });
+}
+window.addEventListener("resize", () => { if (edG) pintarCelulas(); });
+
+/* ---- teclado ---- */
+$("ini-grade").addEventListener("keydown", (e) => {
+  if (!edG) return;
+  const t = e.target;
+  if (t.matches("input")) { if (e.key === "Enter") { e.preventDefault(); t.blur(); } return; }
+  const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
+  if (!d) return;
+  const sec = t.closest(".ini-grupo");
+  if (t.dataset.gctl === "mover") { if (d[1]) { e.preventDefault(); moverGrupo(sec.dataset.grupo, d[1]); } return; }
+  const card = t.closest(".wdg");
+  if (!card || t.dataset.ctl === "tirar") return;
+  e.preventDefault();
+  const id = card.dataset.id;
+  if (e.shiftKey || t.dataset.ctl === "tam") {
+    const nf = IG.passoFormato(formatosW(id), card.dataset.formato, d[0], d[1], { colunas: Math.max(colunasGrade(), 2) });
+    if (nf !== card.dataset.formato) mudarFormato(id, nf, t.dataset.ctl);
+    else anunciar(`${tituloDe(id)} não tem outro tamanho nessa direção.`);
+    return;
+  }
+  const antes = JSON.stringify(edG);
+  edG = IG.passo(edG, id, d[0] + d[1]);
+  if (JSON.stringify(edG) === antes) { anunciar(`${tituloDe(id)} já está na ponta.`); return; }
+  marcarSujo(); montarGrade(); focarCard(id, "mover");
+  const g = edG.find((x) => x.widgets.some((w) => w.id === id)), k = g.widgets.findIndex((w) => w.id === id);
+  anunciar(`${tituloDe(id)}: ${g.nome}, posição ${k + 1} de ${g.widgets.length}.`);
 });
+$("ini-grade").addEventListener("click", (e) => {
+  if (!edG) return;
+  const b = e.target.closest('[data-gctl="recolher"]');
+  if (b) recolherGrupo(b.closest(".ini-grupo").dataset.grupo);
+});
+$("ini-grade").addEventListener("input", (e) => {
+  if (!edG || !e.target.matches(".ini-gnome")) return;
+  const g = edG.find((x) => x.id === e.target.closest(".ini-grupo").dataset.grupo);
+  if (g) { g.nome = e.target.value.slice(0, IG.NOME_MAX); e.target.closest(".ini-grupo").setAttribute("aria-label", g.nome); marcarSujo(); }
+});
+$("ini-grade").addEventListener("focusout", (e) => {
+  if (!edG || !e.target.matches(".ini-gnome")) return;
+  const g = edG.find((x) => x.id === e.target.closest(".ini-grupo").dataset.grupo);
+  if (g && !g.nome.trim()) { g.nome = nomeGrupoPadrao(g.id) === "Grupo" ? "Novo grupo" : nomeGrupoPadrao(g.id); e.target.value = g.nome; }
+});
+
+/* ---- arrastar (mouse, caneta e toque): mover card, mudar tamanho, mover grupo ---- */
+let arr = null;
+$("ini-grade").addEventListener("pointerdown", (e) => {
+  if (!edG || (e.pointerType === "mouse" && e.button !== 0)) return;
+  const h = e.target.closest(".wdg-mover, .wdg-tam, .ini-galca"); if (!h) return;
+  e.preventDefault();
+  const tipo = h.classList.contains("wdg-tam") ? "tam" : h.classList.contains("ini-galca") ? "grupo" : "mover";
+  const alvo = tipo === "grupo" ? h.closest(".ini-grupo") : h.closest(".wdg");
+  arr = { tipo, el: alvo, id: tipo === "grupo" ? alvo.dataset.grupo : alvo.dataset.id, x0: e.clientX, y0: e.clientY, pid: e.pointerId, comecou: false, abriu: new Set(), ult: "", em: 0 };
+  try { h.releasePointerCapture(e.pointerId); } catch (er) {}
+  h.focus({ preventScroll: true });
+  window.addEventListener("pointermove", moverArrasto, { passive: false });
+  window.addEventListener("pointerup", soltarArrasto);
+  window.addEventListener("pointercancel", cancelarArrasto);
+});
+function pararOuvir() {
+  window.removeEventListener("pointermove", moverArrasto);
+  window.removeEventListener("pointerup", soltarArrasto);
+  window.removeEventListener("pointercancel", cancelarArrasto);
+  document.documentElement.classList.remove("ini-arrastando");
+  const f = document.querySelector(".ini-fantasma"); if (f) f.remove();
+  document.querySelectorAll(".ini-alvo").forEach((x) => x.remove());
+  clearInterval(rolarArrasto.t); rolarArrasto.v = 0;
+}
+/* perto da borda da janela, rola a página enquanto arrasta */
+function rolarArrasto(y) {
+  const m = 70, v = y < m + 40 ? -Math.ceil((m + 40 - y) / 6) : y > innerHeight - m ? Math.ceil((y - innerHeight + m) / 6) : 0;
+  rolarArrasto.v = v;
+  if (v && !rolarArrasto.t) rolarArrasto.t = setInterval(() => { if (!rolarArrasto.v) { clearInterval(rolarArrasto.t); rolarArrasto.t = 0; return; } window.scrollBy(0, rolarArrasto.v); }, 16);
+}
+function comecarArrasto() {
+  arr.comecou = true;
+  document.documentElement.classList.add("ini-arrastando");
+  if (arr.tipo === "tam") { comecarTam(); return; }
+  arr.el.classList.add("arrastando");
+  const nome = arr.tipo === "grupo" ? (edG.find((g) => g.id === arr.id) || {}).nome : tituloDe(arr.id);
+  document.body.append(el("div", { class: "ini-fantasma", "aria-hidden": "true" }, nome || ""));
+}
+function moverArrasto(e) {
+  if (!arr || e.pointerId !== arr.pid) return;
+  if (!arr.comecou) { if (Math.hypot(e.clientX - arr.x0, e.clientY - arr.y0) < 5) return; comecarArrasto(); }
+  e.preventDefault();
+  arr.x = e.clientX; arr.y = e.clientY;
+  const f = document.querySelector(".ini-fantasma"); if (f) f.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 14}px)`;
+  if (arr.tipo !== "tam") rolarArrasto(e.clientY);
+  if (arr.tipo === "tam") arrastarTam(e);
+  else if (arr.tipo === "grupo") arrastarGrupo(e);
+  else arrastarCard(e);
+}
+function arrastarCard(e) {
+  /* espera um pouco entre trocas: a grade se rearruma e não pode ficar indo e voltando */
+  if (Date.now() - arr.em < 90) return;
+  let sobre = null, grupoEl = null;
+  for (const n of document.elementsFromPoint(e.clientX, e.clientY)) {
+    const c = n.closest && n.closest(".wdg");
+    if (c === arr.el) return;
+    if (c && $("ini-grade").contains(c)) { sobre = c; break; }
+    const s = n.closest && n.closest(".ini-grupo");
+    if (s) { grupoEl = s; break; }
+  }
+  if (sobre) {
+    const r = sobre.getBoundingClientRect(), umaCol = colunasGrade() === 1;
+    const antes = umaCol ? e.clientY < r.top + r.height / 2 : e.clientX < r.left + r.width / 2;
+    const k = sobre.dataset.id + (antes ? "<" : ">");
+    if (k === arr.ult) return;
+    const ref = antes ? sobre : sobre.nextElementSibling;
+    if (ref !== arr.el) { sobre.parentNode.insertBefore(arr.el, ref); arr.em = Date.now(); }
+    arr.ult = k;
+  } else if (grupoEl) {
+    const cards = grupoEl.querySelector(".ini-cards");
+    const k = "g:" + grupoEl.dataset.grupo;
+    if (k === arr.ult && arr.el.parentNode === cards) return;
+    if (cards.hidden) { cards.hidden = false; grupoEl.classList.remove("recolhido"); arr.abriu.add(grupoEl.dataset.grupo); pintarCelulas(); }
+    /* no grupo, fora de qualquer card: vai para o fim dele (o mesmo grupo também, se a seta passou da última linha) */
+    const ult = [...cards.querySelectorAll(":scope > .wdg")].pop();
+    const abaixo = ult ? e.clientY > ult.getBoundingClientRect().bottom : true;
+    if (arr.el.parentNode !== cards || (abaixo && ult !== arr.el)) {
+      const v = cards.querySelector(".ini-gvazio"); if (v) v.remove();
+      cards.append(arr.el); arr.em = Date.now();
+    }
+    arr.ult = k;
+  }
+}
+function arrastarGrupo(e) {
+  if (Date.now() - arr.em < 90) return;
+  const secs = [...$("ini-grade").querySelectorAll(".ini-grupo")];
+  for (const s of secs) {
+    if (s === arr.el) continue;
+    const r = s.getBoundingClientRect();
+    if (e.clientY < r.top || e.clientY > r.bottom) continue;
+    const antes = e.clientY < r.top + Math.min(r.height / 2, 60);
+    const ref = antes ? s : s.nextElementSibling;
+    if (ref !== arr.el && arr.el.nextElementSibling !== ref) { $("ini-grade").insertBefore(arr.el, ref); arr.em = Date.now(); }
+    return;
+  }
+}
+/* Redimensionar: células até onde o card pode ir (as permitidas em destaque, as outras hachuradas) e o formato que vale ao soltar */
+function comecarTam() {
+  const card = arr.el, grade = card.parentNode, T = trilhas(grade), rc = card.getBoundingClientRect();
+  const ncol = T.cols.length || 1, r0 = pertoDe(T.rows.length ? T.rows : [{ y: rc.top }], rc.top, "y");
+  const fmts = formatosW(arr.id), { permitidas, proibidas } = IG.celulas(fmts, ncol);
+  /* card perto da borda direita: as células partem mais à esquerda, que é para onde a grade leva o card mais largo */
+  const larg = Math.max(...fmts.map((f) => fmtCR(f).c).filter((c) => c <= ncol), 1);
+  const c0 = Math.max(0, Math.min(pertoDe(T.cols, rc.left, "x"), ncol - larg));
+  const cam = el("div", { class: "ini-alvo", "aria-hidden": "true" });
+  for (let i = 1; i <= 3; i++) for (let j = 1; j <= 2; j++) {
+    const k = i + "," + j, col = T.cols[c0 + i - 1];
+    if (!col || (!permitidas.has(k) && !proibidas.has(k))) continue;
+    const rw = linhaEm(T, r0 + j - 1);
+    cam.append(el("i", { class: "cel " + (permitidas.has(k) ? "ok" : "nao"), "data-k": k, style: `left:${col.x - T.r.left}px;top:${rw.y - T.r.top}px;width:${col.w}px;height:${rw.h}px` }));
+  }
+  cam.append(el("b", { class: "prev" }));
+  grade.append(cam);
+  card.classList.add("redimensionando");
+  arr.t = { T, c0, r0, rc, fmts, ncol, cam, f: card.dataset.formato };
+  marcarTam(card.dataset.formato);
+}
+function marcarTam(f) {
+  const { T, c0, r0, cam } = arr.t, { c, r } = fmtCR(f);
+  cam.querySelectorAll(".cel").forEach((x) => { const [i, j] = x.dataset.k.split(",").map(Number); x.classList.toggle("alvo", i <= c && j <= r); });
+  const a = T.cols[c0], b = T.cols[Math.min(T.cols.length - 1, c0 + c - 1)], ra = linhaEm(T, r0), rb = linhaEm(T, r0 + r - 1);
+  const p = cam.querySelector(".prev");
+  p.style.cssText = `left:${a.x - T.r.left}px;top:${ra.y - T.r.top}px;width:${b.x + b.w - a.x}px;height:${rb.y + rb.h - ra.y}px`;
+  p.textContent = f.replace("x", "×");
+}
+function arrastarTam(e) {
+  const { T, rc, fmts, ncol, r0 } = arr.t;
+  const passoC = (T.cols[0] ? T.cols[0].w : rc.width) + T.gc, passoR = linhaEm(T, r0).h + T.gr;
+  const cf = Math.max(0.6, (e.clientX - rc.left + T.gc / 2) / passoC), rf = Math.max(0.6, (e.clientY - rc.top + T.gr / 2) / passoR);
+  const f = IG.encaixe(fmts, cf, rf, { colunas: ncol, atual: arr.el.dataset.formato });
+  if (f !== arr.t.f) { arr.t.f = f; marcarTam(f); }
+}
+function soltarArrasto(e) {
+  if (!arr || e.pointerId !== arr.pid) return;
+  const a = arr; arr = null;
+  pararOuvir();
+  if (!a.comecou) return;
+  if (a.tipo === "tam") { a.el.classList.remove("redimensionando"); if (a.t.f !== a.el.dataset.formato) mudarFormato(a.id, a.t.f, "tam"); return; }
+  /* a última posição do ponteiro vale, mesmo que tenha chegado na espera entre trocas */
+  if (a.x != null) { arr = a; a.em = 0; a.ult = ""; if (a.tipo === "grupo") arrastarGrupo({ clientX: a.x, clientY: a.y }); else arrastarCard({ clientX: a.x, clientY: a.y }); arr = null; }
+  a.el.classList.remove("arrastando");
+  if (a.tipo === "grupo") {
+    const ordem = [...$("ini-grade").querySelectorAll(".ini-grupo")].map((s) => s.dataset.grupo);
+    const antes = edG.map((g) => g.id).join();
+    edG = [...edG].sort((x, y) => ordem.indexOf(x.id) - ordem.indexOf(y.id));
+    if (edG.map((g) => g.id).join() !== antes) marcarSujo();
+    montarGrade(); focarGrupo(a.id, "mover");
+    return;
+  }
+  /* a ordem nova é a do DOM; os que não aparecem agora (carteira vazia, competição desligada) ficam no fim do grupo */
+  const por = new Map(IG.plano(edG).map((w) => [w.id, w]));
+  const antes = JSON.stringify(edG);
+  edG = edG.map((g) => {
+    const s = $("ini-grade").querySelector(`.ini-grupo[data-grupo="${g.id}"]`);
+    const vis = s ? [...s.querySelectorAll(".ini-cards > .wdg")].map((c) => por.get(c.dataset.id)).filter(Boolean) : [];
+    return { ...g, recolhido: a.abriu.has(g.id) ? false : g.recolhido, widgets: [...vis, ...g.widgets.filter((w) => !widgetVisivel(w.id))] };
+  });
+  if (JSON.stringify(edG) !== antes) marcarSujo();
+  montarGrade(); focarCard(a.id, "mover");
+  const g = edG.find((x) => x.widgets.some((w) => w.id === a.id));
+  if (g) anunciar(`${tituloDe(a.id)} em ${g.nome}.`);
+}
+function cancelarArrasto() {
+  if (!arr) return;
+  const a = arr; arr = null;
+  pararOuvir();
+  if (a.comecou) { a.el.classList.remove("arrastando", "redimensionando"); montarGrade(); }
+}
 
 /* ---------- Minha carteira: #carteira, #carteira/proventos, #carteira/meta, #carteira/importar (e #carteira/mais) ----------
    Pessoal: abre pelo menu da conta, sem aba na barra de seções. Roda no modo do Início (inicio = true, nenhuma seção
@@ -5656,10 +6081,10 @@ function atualizarPins() { document.querySelectorAll(".ct-pin[data-pin]").forEac
 async function alternarPin(id) {
   if (painelSalvoTxt == null) await carregarPrefs();
   const def = defDe(id); if (!def) return;
-  const ws = widgetsAtuais();
-  const i = ws.findIndex((w) => w.id === id);
-  if (i >= 0) ws.splice(i, 1); else ws.unshift({ id, formato: formatosW(id)[0] });
-  painelW = ws; guardarPainelLocal(); atualizarPins();
+  const gs = gruposSalvos();
+  if (IG.plano(gs).some((w) => w.id === id)) gs.forEach((g) => { g.widgets = g.widgets.filter((w) => w.id !== id); });
+  else comCard(gs, id, true);
+  painelG = gs; guardarPainelLocal(); atualizarPins();
   await salvarPainel();
 }
 
@@ -6144,27 +6569,30 @@ function aReceberEl(r, j, n) {
 }
 
 /* Meta */
-const numBr = (t) => { const s = String(t || "").replace(/[^\d,.-]/g, ""); if (!s) return null; const n = Number(s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(\.\d{3})+$/.test(s) ? s.replace(/\./g, "") : s); return Number.isFinite(n) ? n : null; };
+/* Campos numéricos da página: public/campo.js formata ao sair e Campo.valor devolve o número cru */
+const numBr = (t) => Campo.ler("numero", t).valor;
 function desenharMeta(box, j) {
   const m = j.meta, cfg = m.cfg;
   const f = el("section", { class: "ct-card" });
-  const campo = (id, rot, val, ph, sufixo) => el("div", {}, el("label", { class: "rotulo", for: id }, rot), el("div", { class: "campo" }, el("input", { class: "dd-input", id, type: "text", inputmode: "decimal", value: val, placeholder: ph, autocomplete: "off" }), sufixo ? el("span", {}, sufixo) : null));
+  const campo = (id, rot, val, ph, sufixo, op) => { const i = Campo.ligar(el("input", { class: "dd-input", id, value: val, placeholder: ph }), op); return el("div", {}, el("label", { class: "rotulo", for: id }, rot), el("div", { class: "campo" }, i, sufixo ? el("span", {}, sufixo) : null)); };
   const yc = m.yieldCarteira;
   const chk = el("input", { type: "checkbox", id: "mt-reinv" }); chk.checked = cfg.reinvestir !== false;
   const salvar = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, "Salvar meta");
   const aviso = el("p", { class: "ct-nota", role: "status" });
   const form = el("div", { class: "ct-form" },
-    campo("mt-alvo", "Meta de renda", cfg.alvo != null ? fmtNum(cfg.alvo, 0) : "", "5.000", "R$ por mês em proventos"),
-    campo("mt-aporte", "Aporte mensal", cfg.aporte != null ? fmtNum(cfg.aporte, 0) : "", "2.000", "R$"),
-    campo("mt-yield", "Yield esperado", cfg.yield != null ? fmtNum(cfg.yield * 100, 1) : "", yc ? fmtNum(yc * 100, 1) + " (o da carteira)" : "10,0", "% ao ano"),
+    campo("mt-alvo", "Meta de renda", cfg.alvo != null ? String(cfg.alvo) : "", "R$ 5.000,00", "por mês em proventos", { tipo: "moeda", min: 0 }),
+    campo("mt-aporte", "Aporte mensal", cfg.aporte != null ? String(cfg.aporte) : "", "R$ 2.000,00", "", { tipo: "moeda", min: 0 }),
+    campo("mt-yield", "Yield esperado", cfg.yield != null ? String(Math.round(cfg.yield * 1e4) / 100) : "", yc ? fmtNum(yc * 100, 1) + " % (o da carteira)" : "10,0 %", "ao ano", { tipo: "percentual", casas: 1, min: 0, max: 100 }),
     el("div", {}, el("span", { class: "rotulo", style: "display:block;margin-bottom:6px" }, "Proventos"), el("label", { class: "check", for: "mt-reinv" }, chk, "reinvestir tudo")),
     salvar);
   salvar.addEventListener("click", async () => {
-    const alvo = numBr($("mt-alvo").value), aporte = numBr($("mt-aporte").value), y = numBr($("mt-yield").value);
+    const inv = ["mt-alvo", "mt-aporte", "mt-yield"].find((id) => Campo.invalido($(id)));
+    if (inv) { aviso.textContent = "Confira o campo marcado."; $(inv).focus(); return; }
+    const alvo = Campo.valor($("mt-alvo")), aporte = Campo.valor($("mt-aporte")), y = Campo.valor($("mt-yield"));
     if (!alvo || alvo <= 0) { aviso.textContent = "Escreva quanto quer receber por mês."; $("mt-alvo").focus(); return; }
     salvar.disabled = true; aviso.textContent = "Salvando…";
     try {
-      const r = await apiCart("PUT", "/meta", { alvo, aporte: aporte || 0, yield: y ? y / 100 : null, reinvestir: chk.checked });
+      const r = await apiCart("PUT", "/meta", { alvo, aporte: aporte || 0, yield: y ? Math.round(y * 1e6) / 1e8 : null, reinvestir: chk.checked });
       if (cartJ) cartJ.meta = r.meta;
       [...wDados.keys()].forEach((k) => { if (k.startsWith("carteira-")) wDados.delete(k); });
       desenharCarteira(cartJ || { ...j, meta: r.meta });
@@ -6682,9 +7110,13 @@ function segRadar(rot, idPre, opcoes, atual, acao) {
   return el("div", { class: "rd-campo" }, el("span", { class: "rotulo" }, rot), g);
 }
 const campoRadar = (id, rot, valor, casas, sufixo, definir, ph) => campoRadarBase(id, rot, valor, casas, sufixo, definir, ph, mudouRadar);
+/* sufixo "%" vira campo percentual (o % aparece no próprio valor); os outros são número com as casas pedidas */
 function campoRadarBase(id, rot, valor, casas, sufixo, definir, ph, mudou) {
-  const inp = el("input", { class: "dd-input", id, type: "text", inputmode: "decimal", autocomplete: "off", value: valor == null ? "" : fmtNum(valor, casas), placeholder: ph || "sem limite" });
-  inp.addEventListener("input", () => { definir(numBr(inp.value)); mudou(true); });
+  const pct = sufixo === "%";
+  const inp = Campo.ligar(el("input", { class: "dd-input", id, value: valor == null ? "" : String(valor), placeholder: ph || "sem limite" }), { tipo: pct ? "percentual" : "numero", casas, min: 0 });
+  /* texto que não é número não mexe no filtro: fica o último valor que valia e a mensagem embaixo */
+  inp.addEventListener("input", () => { if (Campo.invalido(inp)) return; definir(Campo.valor(inp)); mudou(true); });
+  if (pct) sufixo = "";
   return el("div", { class: "rd-campo" }, el("label", { class: "rotulo", for: id }, rot), el("div", { class: "campo" }, inp, sufixo ? el("span", {}, sufixo) : null));
 }
 function chipsRadar(rot, idPre, valores, escolhidos, alternar, dica) {
@@ -6854,12 +7286,13 @@ function desenharCentroRadar() {
   if (!f) { box.append(el("section", { class: "ct-card" }, esqueleto(6))); return; }
   const base = f.classe === "eua" ? eua : b3;
   const card = el("section", { class: "ct-card rd-tabela", "aria-labelledby": "rd-tit" });
-  const aporte = el("input", { class: "dd-input", id: "rd-aporte", type: "text", inputmode: "decimal", autocomplete: "off", value: f.aporte ? fmtNum(f.aporte, 0) : "" , placeholder: "1.000" });
-  aporte.addEventListener("input", () => { rdRasc.aporte = numBr(aporte.value) || 0; mudouRadar(true); });
+  const us = f.classe === "eua";
+  const aporte = Campo.ligar(el("input", { class: "dd-input", id: "rd-aporte", value: f.aporte ? String(f.aporte) : "", placeholder: us ? "US$ 1.000,00" : "R$ 1.000,00" }), { tipo: "moeda", moeda: us ? "USD" : "BRL", min: 0 });
+  aporte.addEventListener("input", () => { if (Campo.invalido(aporte)) return; rdRasc.aporte = Campo.valor(aporte) || 0; mudouRadar(true); });
   const cab = el("div", { class: "rd-cab" }, el("h2", { id: "rd-tit" }, "Passam no filtro hoje"));
   card.append(cab);
   if (!base || (f.classe === "fiis" && !fiiCvm)) {
-    cab.append(el("span", { class: "ct-esp" }), el("label", { class: "rd-aporte", for: "rd-aporte" }, "Simular aporte de " + rdMoeda(f.classe).trim(), aporte));
+    cab.append(el("span", { class: "ct-esp" }), el("label", { class: "rd-aporte", for: "rd-aporte" }, "Simular aporte de", aporte));
     card.append(base ? esqueleto(6) : el("p", { class: "ct-nota" }, f.classe === "eua" ? "As cotações dos EUA aparecem depois da primeira consulta." : "As cotações aparecem depois da primeira consulta."));
     box.append(card, baixoRadar(f, []));
     return;
@@ -6876,7 +7309,7 @@ function desenharCentroRadar() {
   };
   const sub = el("span", { class: "ct-sub", id: "rd-sub" }, `${lista.length} de ${r.total} ${RF.NOME_CLASSE[f.classe]} · ${txtOrdem(est)}`);
   cab.append(sub, el("span", { class: "ct-esp" }),
-    el("label", { class: "rd-aporte", for: "rd-aporte" }, "Simular aporte de " + rdMoeda(f.classe).trim(), aporte));
+    el("label", { class: "rd-aporte", for: "rd-aporte" }, "Simular aporte de", aporte));
   if (lista.length) {
     const tab = Tabela.criar({
       id: idTab, colunas: colunasRadar(f.classe), linhas: lista, padrao: PADRAO_RADAR, rotuloConta: "na lista",
@@ -7657,6 +8090,7 @@ function campoPapeisPainel(chave, rotulo, dica) {
   });
   const idInp = "lp-p-" + chave;
   const inp = el("input", { class: "dd-input", id: idInp, placeholder: "+ papel", autocomplete: "off", autocapitalize: "characters", spellcheck: "false", maxlength: "40", role: "combobox", "aria-expanded": "false", "aria-controls": idInp + "-sug", "aria-autocomplete": "list", "aria-label": rotulo });
+  Campo.ligar(inp, { tipo: "papel" });
   const sug = el("ul", { class: "lst-sug", id: idInp + "-sug", role: "listbox", hidden: "" });
   let ops = [], marc = -1;
   const pinta = () => {

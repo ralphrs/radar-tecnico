@@ -115,7 +115,7 @@ test("catálogo do Início: Fóruns · <seção> só onde há subreddit e para q
   assert.deepEqual(formatosDe("foruns-tech"), ["1x1", "1x2"]);
   assert.deepEqual(catalogoDe(["esportes", "investimentos"]).filter((w) => w.id.startsWith("foruns-")).map((w) => w.id), ["foruns-investimentos", "foruns-esportes"]);
   assert.deepEqual(catalogoDe(["negocios"]).filter((w) => w.id.startsWith("foruns-")).map((w) => w.id), ["foruns-negocios"]);
-  assert.ok(!padraoDe(null).some((w) => w.id.startsWith("foruns-")), "fora do padrão: a pessoa escolhe em Personalizar");
+  assert.ok(!padraoDe(null).flatMap((g) => g.widgets).some((w) => w.id.startsWith("foruns-")), "fora do padrão: a pessoa escolhe em Personalizar");
   assert.deepEqual(validarPainel({ widgets: [{ id: "foruns-tech", formato: "1x2" }, { id: "foruns-politica", formato: "1x1" }] }, null).widgets.map((w) => w.formato), ["1x2", "1x1"]);
   assert.match(validarPainel({ widgets: [{ id: "foruns-tech", formato: "2x1" }] }, null).erro, /Formato inválido/);
   assert.match(validarPainel({ widgets: [{ id: "foruns-tech", formato: "1x1" }] }, ["negocios"]).erro, /seção não liberada/);

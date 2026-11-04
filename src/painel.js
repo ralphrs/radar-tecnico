@@ -1,9 +1,10 @@
-// Painel inicial (aba Início): catálogo de widgets, ordem padrão e conferência do que a pessoa salva.
+// Painel inicial (aba Início): catálogo de widgets, grupos e ordem padrão, e conferência do que a pessoa salva.
 //
-// O doc fica em prefs/<email>, id "painel": { widgets: [{ id, formato }], atualizado }. formato é "colunas x linhas"
-// ("1x1", "2x1", "3x1", "1x2", "2x2") e precisa estar nos `formatos` do widget. Doc antigo com { tamanho: 1|2 } vira
-// "1x1" ou "2x1" na leitura (e no PUT, se a página antiga mandar). A ordem do array é a ordem da grade; widget fora
-// do array está oculto.
+// O doc fica em prefs/<email>, id "painel": { grupos: [{ id, nome, recolhido, widgets: [{ id, formato }] }], atualizado }.
+// formato é "colunas x linhas" ("1x1", "2x1", "3x1", "1x2", "2x2") e precisa estar nos `formatos` do widget. O doc antigo,
+// { widgets: [...] } em lista plana (e o { tamanho: 1|2 } de antes dele), vira um grupo por tipo de widget na leitura e
+// no PUT, se a página antiga mandar. Widget fora dos grupos está oculto. As regras de grupo, formato e encaixe ficam em
+// public/inicio-grade.js, o mesmo arquivo que a página carrega.
 //
 // Este arquivo não importa nada do Worker (nem grupos.js, que puxa o espelho e "cloudflare:workers"),
 // para os testes rodarem no Node. As seções seguem a mesma lista e a mesma regra de grupos.js.
@@ -11,32 +12,19 @@
 import { SECOES_COM_FORUM } from "./feeds.js";
 // Competições de Esportes (o mesmo arquivo que a página carrega): um widget de rodada e um de tabela por competição.
 import "../public/esportes.js";
+import "../public/inicio-grade.js";
 const ESP = globalThis.Esportes;
+const G = globalThis.InicioGrade;
 
 const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes"];
 const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
 const liberada = (secoes, s) => !s || secoes == null || secoes.includes(s);
 
-export const FORMATOS = ["1x1", "2x1", "3x1", "1x2", "2x2"];
-// Formatos que fazem sentido em cada widget; o primeiro é o padrão (o de antes, quando havia tamanho 2).
-const FORMATOS_DE = {
-  hoje: ["1x1"], mercado: ["1x1", "1x2"], pregao: ["2x1", "3x1", "2x2"], fiis: ["1x1", "2x1"], eua: ["1x1", "2x1"],
-  listas: ["1x1", "1x2", "2x1"], favoritos: ["1x1", "1x2"], destaques: ["1x1", "1x2"], ultimas: ["1x1", "1x2"],
-  "carteira-meta": ["2x1", "3x1"], "carteira-patrimonio": ["1x1", "2x1"], "carteira-proventos-mes": ["1x1"],
-  "carteira-pagamentos": ["1x1", "1x2"], "carteira-agenda": ["1x1", "1x2"], "carteira-rentabilidade": ["1x1", "2x1"],
-  "carteira-alertas": ["1x1", "1x2"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"],
-  "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"],
-  "esportes-rodada": ["1x1", "2x1"], "esportes-tabela": ["1x1", "1x2"], "esportes-meu-time": ["1x1"],
-};
-const tipoEsportes = (id) => { const m = /^esportes-(rodada|tabela)-/.exec(String(id)); return m ? "esportes-" + m[1] : null; };
-export const formatosDe = (id) => FORMATOS_DE[id] || FORMATOS_DE[tipoEsportes(id)] || FORMATOS_DE[String(id).replace(/-.*$/, "")] || ["1x1"];
+export const FORMATOS = G.FORMATOS;
+export const formatosDe = G.formatosDe;
+export const GRUPOS = G.GRUPOS;
 // Formato antigo (tamanho 1 ou 2) para o novo, sempre dentro do que o widget aceita
-export function migrarFormato(id, w) {
-  const ok = formatosDe(id);
-  if (w && typeof w.formato === "string" && ok.includes(w.formato)) return w.formato;
-  const quer = w && w.tamanho === 2 ? "2x1" : "1x1";
-  return ok.includes(quer) ? quer : ok[0];
-}
+export const migrarFormato = G.formatoDe;
 
 // secao: a seção que a pessoa precisa ter liberada para ver o widget (null = qualquer um vê).
 export const WIDGETS = [
@@ -81,46 +69,56 @@ export const MAX_WIDGETS = 40;
 
 // secoes: lista de seções liberadas, ou null quando a pessoa vê tudo (o mesmo valor de quemEntra).
 export const catalogoDe = (secoes) => WIDGETS.filter((w) => liberada(secoes, w.secao));
-export const padraoDe = (secoes) => PADRAO.map((id) => POR_ID.get(id)).filter((w) => liberada(secoes, w.secao)).map((w) => ({ id: w.id, formato: formatosDe(w.id)[0] }));
+// Padrão em grupos: os do PADRAO, cada um no grupo do seu tipo, os grupos na ordem de GRUPOS
+export function padraoDe(secoes) {
+  const ws = PADRAO.map((id) => POR_ID.get(id)).filter((w) => liberada(secoes, w.secao)).map((w) => ({ id: w.id, formato: formatosDe(w.id)[0] }));
+  const por = new Map(G.agrupar(ws).map((g) => [g.id, g]));
+  return G.GRUPOS.filter((g) => por.has(g.id)).map((g) => por.get(g.id));
+}
+// Doc salvo (novo ou antigo) em grupos
+export const migrarPainel = (salvo) => G.migrar(salvo);
 
-// Confere o corpo de um PUT. Devolve { widgets } ou { erro }.
+// Confere o corpo de um PUT: { grupos } (novo) ou { widgets } (página antiga, vira grupos). Devolve { grupos } ou { erro }.
 export function validarPainel(b, secoes) {
   if (!b || typeof b !== "object" || Array.isArray(b)) return { erro: "corpo" };
-  const lista = b.widgets;
-  if (!Array.isArray(lista)) return { erro: "widgets" };
-  if (lista.length > MAX_WIDGETS) return { erro: `O painel guarda até ${MAX_WIDGETS} widgets.` };
-  const vistos = new Set(), widgets = [];
-  for (const w of lista) {
-    if (!w || typeof w !== "object") return { erro: "widget" };
-    const id = typeof w.id === "string" ? w.id : "";
-    const def = POR_ID.get(id);
-    if (!def) return { erro: `Widget desconhecido: ${String(w.id).slice(0, 40)}` };
-    if (!liberada(secoes, def.secao)) return { erro: `Widget de seção não liberada: ${id}` };
-    let formato;
-    if (w.formato !== undefined) {
-      if (!formatosDe(id).includes(w.formato)) return { erro: `Formato inválido em ${id}: use ${formatosDe(id).join(", ")}.` };
-      formato = w.formato;
-    } else if (w.tamanho === 1 || w.tamanho === 2) formato = migrarFormato(id, w);
-    else return { erro: `Formato inválido em ${id}: use ${formatosDe(id).join(", ")}.` };
-    if (vistos.has(id)) return { erro: `${id} aparece duas vezes.` };
-    vistos.add(id);
-    widgets.push({ id, formato });
+  let grupos = b.grupos;
+  if (grupos === undefined) {
+    if (!Array.isArray(b.widgets)) return { erro: "grupos" };
+    if (b.widgets.length > MAX_WIDGETS) return { erro: `O painel guarda até ${MAX_WIDGETS} widgets.` };
+    // lista plana: confere o formato antes de agrupar (o tamanho antigo 1 ou 2 ainda vale)
+    const lista = [];
+    for (const w of b.widgets) {
+      if (!w || typeof w !== "object") return { erro: "widget" };
+      const id = typeof w.id === "string" ? w.id : "";
+      if (!POR_ID.has(id)) return { erro: `Widget desconhecido: ${String(w.id).slice(0, 40)}` };
+      if (w.formato !== undefined) lista.push({ id, formato: w.formato });
+      else if (w.tamanho === 1 || w.tamanho === 2) lista.push({ id, formato: migrarFormato(id, w) });
+      else return { erro: `Formato inválido em ${id}: use ${formatosDe(id).join(", ")}.` };
+    }
+    grupos = G.agrupar(lista);
   }
-  return { widgets };
+  const v = G.validar(grupos, { existe: (id) => POR_ID.has(id), liberado: (id) => liberada(secoes, POR_ID.get(id).secao), maxWidgets: MAX_WIDGETS });
+  return v.erro ? v : { grupos: v.grupos, widgets: G.plano(v.grupos) };
 }
 
-// Resposta do GET (e do PUT): a grade da pessoa já filtrada pelas seções de hoje e o catálogo que ela pode usar.
-// Um widget salvo de seção que a pessoa perdeu some da resposta e volta sozinho se a seção for liberada de novo.
+// Resposta do GET (e do PUT): os grupos da pessoa já filtrados pelas seções de hoje (grupo que ficou vazio sai), a
+// lista plana (para quem só quer saber o que está no Início), o padrão e o catálogo que ela pode usar. Um widget salvo
+// de seção que a pessoa perdeu some da resposta e volta sozinho se a seção for liberada de novo.
 export function respostaPainel(salvo, secoes) {
   const ok = (w) => w && POR_ID.has(w.id) && liberada(secoes, POR_ID.get(w.id).secao);
-  const vistos = new Set();
-  const widgets = salvo && Array.isArray(salvo.widgets)
-    ? salvo.widgets.filter((w) => ok(w) && !vistos.has(w.id) && vistos.add(w.id)).map((w) => ({ id: w.id, formato: migrarFormato(w.id, w) }))
+  const vistos = new Set(), idsG = new Set();
+  const salvos = G.migrar(salvo);
+  const grupos = salvos
+    ? salvos.filter((g) => G.validar([{ ...g, widgets: [] }]).grupos && !idsG.has(g.id) && idsG.add(g.id))
+        .map((g) => ({ ...g, widgets: g.widgets.filter((w) => ok(w) && !vistos.has(w.id) && vistos.add(w.id)) }))
+        .filter((g) => g.widgets.length)
     : padraoDe(secoes);
   return {
-    widgets,
+    grupos,
+    widgets: G.plano(grupos),
     padrao: !salvo,
+    gruposPadrao: padraoDe(secoes),
     atualizado: (salvo && salvo.atualizado) || null,
-    catalogo: catalogoDe(secoes).map(({ id, titulo, secao, pessoal, liga }) => ({ id, titulo, formatos: formatosDe(id), secao, ...(pessoal ? { pessoal: true } : {}), ...(liga ? { liga } : {}) })),
+    catalogo: catalogoDe(secoes).map(({ id, titulo, secao, pessoal, liga }) => ({ id, titulo, formatos: formatosDe(id), grupo: G.grupoDe(id), secao, ...(pessoal ? { pessoal: true } : {}), ...(liga ? { liga } : {}) })),
   };
 }
