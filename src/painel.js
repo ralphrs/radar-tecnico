@@ -9,6 +9,9 @@
 // para os testes rodarem no Node. As seções seguem a mesma lista e a mesma regra de grupos.js.
 // feeds.js é só a lista de feeds: dela sai quais seções têm subreddit (widget foruns-<secao>).
 import { SECOES_COM_FORUM } from "./feeds.js";
+// Competições de Esportes (o mesmo arquivo que a página carrega): um widget de rodada e um de tabela por competição.
+import "../public/esportes.js";
+const ESP = globalThis.Esportes;
 
 const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes"];
 const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
@@ -23,8 +26,10 @@ const FORMATOS_DE = {
   "carteira-pagamentos": ["1x1", "1x2"], "carteira-agenda": ["1x1", "1x2"], "carteira-rentabilidade": ["1x1", "2x1"],
   "carteira-alertas": ["1x1", "1x2"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"],
   "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"],
+  "esportes-rodada": ["1x1", "2x1"], "esportes-tabela": ["1x1", "1x2"], "esportes-meu-time": ["1x1"],
 };
-export const formatosDe = (id) => FORMATOS_DE[id] || FORMATOS_DE[String(id).replace(/-.*$/, "")] || ["1x1"];
+const tipoEsportes = (id) => { const m = /^esportes-(rodada|tabela)-/.exec(String(id)); return m ? "esportes-" + m[1] : null; };
+export const formatosDe = (id) => FORMATOS_DE[id] || FORMATOS_DE[tipoEsportes(id)] || FORMATOS_DE[String(id).replace(/-.*$/, "")] || ["1x1"];
 // Formato antigo (tamanho 1 ou 2) para o novo, sempre dentro do que o widget aceita
 export function migrarFormato(id, w) {
   const ok = formatosDe(id);
@@ -46,6 +51,13 @@ export const WIDGETS = [
   ...SECOES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   // Nos fóruns: posts de subreddit das últimas 24 h, só nas seções que têm subreddit em src/feeds.js. Fora do padrão.
   ...SECOES.filter((s) => SECOES_COM_FORUM.includes(s)).map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  // Esportes (src/esportes.js): rodada e tabela de cada competição e o próximo jogo do time que a pessoa acompanha.
+  // O catálogo traz todas; a página só oferece as competições que a pessoa ligou em "Meus esportes". Fora do padrão.
+  ...ESP.ORDEM_LIGAS.flatMap((l) => [
+    { id: "esportes-rodada-" + l, titulo: ESP.LIGAS[l].curto + " · rodada", tamanho: 1, secao: "esportes", liga: l },
+    { id: "esportes-tabela-" + l, titulo: ESP.LIGAS[l].curto + " · tabela", tamanho: 1, secao: "esportes", liga: l },
+  ]),
+  { id: "esportes-meu-time", titulo: "Meu time · próximo jogo", tamanho: 1, secao: "esportes" },
   // Minha carteira (src/carteira.js): pessoais, leem /api/carteira uma vez só para todos; aparecem para quem importou
   // os extratos (a página esconde enquanto a carteira estiver vazia). Fora do padrão: a pessoa fixa pelo alfinete.
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },
@@ -109,6 +121,6 @@ export function respostaPainel(salvo, secoes) {
     widgets,
     padrao: !salvo,
     atualizado: (salvo && salvo.atualizado) || null,
-    catalogo: catalogoDe(secoes).map(({ id, titulo, secao, pessoal }) => ({ id, titulo, formatos: formatosDe(id), secao, ...(pessoal ? { pessoal: true } : {}) })),
+    catalogo: catalogoDe(secoes).map(({ id, titulo, secao, pessoal, liga }) => ({ id, titulo, formatos: formatosDe(id), secao, ...(pessoal ? { pessoal: true } : {}), ...(liga ? { liga } : {}) })),
   };
 }

@@ -26,7 +26,10 @@ const SECAO_DO_META = {
   status: "tech", "status-negocios": "negocios", "status-investimentos": "investimentos", "status-politica": "politica", "status-esportes": "esportes",
   mercado: "investimentos", b3: "investimentos", fii: "investimentos", "fii-resumo": "investimentos", eua: "investimentos",
 };
-export const secaoDe = (c, id) => (c === "meta" ? SECAO_DO_META[id] : SECAO_DA_COLECAO[c]);
+// meta/esportes-<liga> (src/esportes.js): rodada, próximos e tabela de cada competição, todos da seção Esportes
+const PREFIXOS_DO_META = [["esportes-", "esportes"]];
+const secaoDoMeta = (id) => SECAO_DO_META[id] || (PREFIXOS_DO_META.find(([p]) => String(id || "").startsWith(p)) || [])[1];
+export const secaoDe = (c, id) => (c === "meta" ? secaoDoMeta(id) : SECAO_DA_COLECAO[c]);
 
 export const ESQUEMA = [
   "CREATE TABLE IF NOT EXISTS grupos (id TEXT PRIMARY KEY, nome TEXT NOT NULL, secoes TEXT NOT NULL DEFAULT '[]', padrao INTEGER NOT NULL DEFAULT 0, criado TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))",

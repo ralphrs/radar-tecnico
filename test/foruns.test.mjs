@@ -23,7 +23,7 @@ test("subreddits leem os mais votados do dia (/top/.rss?t=day) e as seções com
   const subs = FEEDS.filter((f) => f[4] === "reddit");
   assert.ok(subs.length >= 10);
   for (const [, fonte, , url] of subs) assert.match(url, /^https:\/\/www\.reddit\.com\/r\/[A-Za-z0-9_]+\/top\/\.rss\?t=day$/, fonte);
-  assert.deepEqual(SECOES_COM_FORUM, ["tech", "negocios", "politica"]);
+  assert.deepEqual([...SECOES_COM_FORUM].sort(), ["esportes", "investimentos", "negocios", "politica", "tech"]);
   assert.equal(REDDIT.INTERVALO_MIN, 120, "ritmo mantido");
   assert.equal(REDDIT.POR_MINUTO, 1);
 });
@@ -110,15 +110,16 @@ test("limpeza: foruns-* com mais de 3 dias saem por lista de ids; os recentes e 
 
 test("catálogo do Início: Fóruns · <seção> só onde há subreddit e para quem tem a seção, em 1x1 e 1x2", () => {
   const ids = catalogoDe(null).filter((w) => w.id.startsWith("foruns-")).map((w) => [w.id, w.titulo]);
-  assert.deepEqual(ids, [["foruns-tech", "Fóruns · Tech"], ["foruns-negocios", "Fóruns · Negócios"], ["foruns-politica", "Fóruns · Notícias"]]);
+  // desde 04/11/2026 as cinco seções têm subreddit (src/feeds.js)
+  assert.deepEqual(ids, [["foruns-tech", "Fóruns · Tech"], ["foruns-negocios", "Fóruns · Negócios"], ["foruns-investimentos", "Fóruns · Investimentos"], ["foruns-politica", "Fóruns · Notícias"], ["foruns-esportes", "Fóruns · Esportes"]]);
   assert.deepEqual(formatosDe("foruns-tech"), ["1x1", "1x2"]);
-  assert.deepEqual(catalogoDe(["esportes", "investimentos"]).filter((w) => w.id.startsWith("foruns-")), [], "sem subreddit nessas seções");
+  assert.deepEqual(catalogoDe(["esportes", "investimentos"]).filter((w) => w.id.startsWith("foruns-")).map((w) => w.id), ["foruns-investimentos", "foruns-esportes"]);
   assert.deepEqual(catalogoDe(["negocios"]).filter((w) => w.id.startsWith("foruns-")).map((w) => w.id), ["foruns-negocios"]);
   assert.ok(!padraoDe(null).some((w) => w.id.startsWith("foruns-")), "fora do padrão: a pessoa escolhe em Personalizar");
   assert.deepEqual(validarPainel({ widgets: [{ id: "foruns-tech", formato: "1x2" }, { id: "foruns-politica", formato: "1x1" }] }, null).widgets.map((w) => w.formato), ["1x2", "1x1"]);
   assert.match(validarPainel({ widgets: [{ id: "foruns-tech", formato: "2x1" }] }, null).erro, /Formato inválido/);
   assert.match(validarPainel({ widgets: [{ id: "foruns-tech", formato: "1x1" }] }, ["negocios"]).erro, /seção não liberada/);
-  assert.match(validarPainel({ widgets: [{ id: "foruns-esportes", formato: "1x1" }] }, null).erro, /desconhecido/);
+  assert.match(validarPainel({ widgets: [{ id: "foruns-inventada", formato: "1x1" }] }, null).erro, /desconhecido/);
   const r = respostaPainel({ widgets: [{ id: "foruns-tech", formato: "1x2" }] }, ["politica"]);
   assert.deepEqual(r.widgets, [], "perdeu Tech: o widget some da grade");
   assert.deepEqual(r.catalogo.find((w) => w.id === "foruns-politica").formatos, ["1x1", "1x2"]);

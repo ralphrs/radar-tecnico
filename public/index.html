@@ -1338,6 +1338,124 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
   .lp-acoes .dd-btn { height: 40px; flex: 1 1 auto; }
   .lp-hist > li { grid-template-columns: 46px minmax(0, 1fr); }
 }
+/* Esportes: um cartão por competição ligada, acima do feed (rodada, próximos e tabela). Sem escudos nem fotos. */
+.esp { display: flex; flex-direction: column; gap: var(--space-3); }
+.esp-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.esp-topo h2 { margin: 0; font: 600 17px/1.25 var(--font-display); letter-spacing: -0.01em; }
+.esp-topo .dd-btn { text-decoration: none; }
+.esp-topo .dd-btn svg { width: 15px; height: 15px; }
+.esp-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 16px 10px; box-shadow: var(--shadow-sm); min-width: 0; }
+.esp-cab { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+.esp-tit { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; min-height: 36px; border-radius: 6px; flex: 1 1 auto; min-width: 0; font: 600 15px/1.3 var(--font-display); color: var(--foreground); }
+.esp-tit > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-tit svg { width: 16px; height: 16px; flex: none; color: var(--muted-foreground); transition: transform 150ms ease; }
+.esp-card.fechado .esp-tit svg { transform: rotate(-90deg); }
+.esp-tit:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.esp-tit small { font: 400 12px/1 var(--font-sans); color: var(--muted-foreground); white-space: nowrap; }
+.esp-tit .esp-vivo { font-size: 12px; }
+.esp-card.fechado .esp-corpo, .esp-card.fechado .esp-pe, .esp-card.fechado .esp-abas { display: none; }
+.esp-corpo { margin-top: 6px; min-width: 0; }
+.esp-jogos { list-style: none; margin: 0; padding: 0; }
+.esp-jogo { display: grid; grid-template-columns: 150px minmax(0, 1fr) 58px minmax(0, 1fr); grid-template-areas: "q m p v"; align-items: center; gap: 2px 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.esp-jogo:first-child { border-top: 0; }
+.esp-q { grid-area: q; font: 400 12px/1.3 var(--font-mono); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.esp-m { grid-area: m; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-v { grid-area: v; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-p { grid-area: p; text-align: center; font-weight: 600; white-space: nowrap; }
+.esp-jogo.pre .esp-p { color: var(--muted-foreground); font-weight: 400; }
+.esp-jogo.in .esp-p { color: var(--err); }
+.esp-jogo b { font-weight: 600; }
+.esp-jogo .esp-sig { color: var(--muted-foreground); font: 400 11px var(--font-mono); margin-left: 4px; }
+.esp-m .esp-sig { margin: 0 4px 0 0; }
+.esp-vivo { display: inline-flex; align-items: center; gap: 5px; color: var(--err); font: 600 12px/1 var(--font-sans); white-space: nowrap; }
+.esp-vivo::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+@media (prefers-reduced-motion: no-preference) { .esp-vivo::before { animation: esp-pisca 1.6s ease-in-out infinite; } @keyframes esp-pisca { 50% { opacity: .3; } } }
+@media (max-width: 699px) {
+  .esp-card { padding: 8px 12px 8px; }
+  .esp-cab .seg { width: 100%; }
+  .esp-cab .seg button { flex: 1 1 0; justify-content: center; }
+  .esp-jogo { grid-template-columns: minmax(0, 1fr) 50px minmax(0, 1fr); grid-template-areas: "q q q" "m p v"; }
+  .esp-q { text-align: center; }
+}
+.esp-pe { display: flex; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted-foreground); }
+.esp-nota { margin: 2px 0 6px; font-size: 12px; color: var(--muted-foreground); }
+.esp-vazio { margin: 10px 0 4px; font-size: 13px; color: var(--muted-foreground); }
+.esp-corpo .tb-barra { margin-bottom: 6px; }
+.esp-tab td.esp-time { text-align: left; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.esp-tab th.esp-esq { text-align: left; }
+.esp-tab td.esp-grupo { text-align: left; color: var(--muted-foreground); font: 400 12px var(--font-sans); }
+.esp-tab td.esp-pos { text-align: center; color: var(--muted-foreground); }
+.esp-tab td.esp-pts { font-weight: 600; }
+.esp-tab tr.esp-z td { background: color-mix(in srgb, var(--z) 8%, var(--card)); }
+.esp-tab tr.esp-z td:first-child { box-shadow: inset 3px 0 0 var(--z); }
+.esp-tab tr.esp-meu td { font-weight: 600; }
+.esp-tab tr.esp-meu td.esp-time::after { content: "seu time"; margin-left: 8px; font: 500 10.5px/1 var(--font-sans); color: var(--primary); text-transform: uppercase; letter-spacing: .04em; }
+@media (max-width: 699px) {
+  .esp-tab td, .esp-tab th { padding: 8px 8px; }
+  .esp-tab td.esp-time { max-width: 132px; }
+  .esp-tab tr.esp-meu td.esp-time::after { content: none; }
+}
+.esp-leg { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--muted-foreground); }
+.esp-leg li { display: inline-flex; align-items: center; gap: 6px; }
+.esp-leg i { width: 12px; height: 12px; border-radius: 3px; background: color-mix(in srgb, var(--z) 22%, var(--card)); box-shadow: inset 3px 0 0 var(--z); }
+/* Meus esportes */
+.esp-cfg-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.esp-cfg-item { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid var(--border); }
+.esp-cfg-item:first-child { border-top: 0; }
+.esp-cfg-item label { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 36px; cursor: pointer; font: 500 13.5px/1.3 var(--font-sans); }
+.esp-cfg-item label small { color: var(--muted-foreground); font-weight: 400; }
+.esp-alca { cursor: grab; color: var(--muted-foreground); display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 32px; touch-action: none; }
+.esp-alca svg { width: 16px; height: 16px; }
+@media (pointer: coarse) { .esp-alca { display: none; } .esp-cfg-item { grid-template-columns: minmax(0, 1fr) auto; } }
+.esp-cfg-item.arrastando { opacity: .45; }
+.esp-cfg-item.cai-antes { box-shadow: inset 0 2px 0 var(--primary); }
+.esp-cfg-setas { display: inline-flex; gap: 4px; }
+.esp-cfg h3 { margin: 6px 0 2px; font: 600 13px/1.3 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.esp-times { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.esp-busca { position: relative; }
+.esp-busca .lst-sug { position: absolute; left: 0; right: 0; top: 100%; z-index: 2; }
+.esp-erro { color: var(--err); font-size: 13px; margin: 0; }
+/* Widgets de Esportes no Início */
+.wdg-esp { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.wdg-esp li { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0 8px; padding: 5px 0; border-top: 1px solid var(--border); font-size: 13px; font-variant-numeric: tabular-nums; }
+.wdg-esp li:first-child { border-top: 0; }
+.wdg-esp .esp-q, .wdg-esp .esp-m, .wdg-esp .esp-p, .wdg-esp .esp-v { grid-area: auto; }
+.wdg-esp .esp-q { grid-column: 1 / -1; font-size: 11px; }
+.wdg-esp .esp-p { min-width: 40px; }
+.wdg-esp li.pre .esp-p { color: var(--muted-foreground); font-weight: 400; }
+.wdg-esp li.in .esp-p { color: var(--err); }
+@media (min-width: 700px) {
+  .wdg[data-c="2"] .wdg-esp { display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px; }
+  .wdg[data-c="2"] .wdg-esp li:nth-child(2) { border-top: 0; }
+}
+.wdg-esp-tab { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.wdg-esp-tab td { padding: 5px 4px; border-top: 1px solid var(--border); text-align: right; white-space: nowrap; }
+.wdg-esp-tab tr:first-child td { border-top: 0; }
+.wdg-esp-tab td:nth-child(2) { text-align: left; width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wdg-esp-tab td:first-child { color: var(--muted-foreground); width: 24px; text-align: center; }
+.wdg-esp-tab tr.esp-z td:first-child { box-shadow: inset 3px 0 0 var(--z); }
+.wdg-esp-tab tr.esp-meu td { font-weight: 600; background: color-mix(in srgb, var(--primary) 7%, var(--card)); }
+.wdg-esp-tab tr.esp-pula td { border-top: 0; color: var(--muted-foreground); text-align: center; padding: 0; line-height: 1; }
+.wdg-meu { display: flex; flex-direction: column; gap: 10px; }
+.wdg-meu h4 { margin: 0 0 4px; font: 600 11px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.wdg-meu .placar { font: 600 20px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.wdg-meu p { margin: 0; font-size: 13px; }
+.wdg-meu .n { color: var(--muted-foreground); font-size: 12px; }
+.wdg-meu .res-v { color: var(--ok); } .wdg-meu .res-d { color: var(--err); } .wdg-meu .res-e { color: var(--muted-foreground); }
+/* Minhas listas: Qtd e Valor quando o papel está na carteira; a linha leva a cor do resultado da posição */
+.lst-rola { overflow-x: auto; scrollbar-width: thin; }
+/* na lateral estreita a tabela rola de lado com o papel parado na primeira coluna */
+.lst-rola .lst-tab td:first-child, .lst-rola .lst-tab th:first-child { position: sticky; left: 0; z-index: 1; background: var(--card); padding-right: 6px; }
+.lst-rola .lst-tab tr.lst-pos td:first-child { background: color-mix(in srgb, var(--ok) 8%, var(--card)); }
+.lst-rola .lst-tab tr.lst-neg td:first-child { background: color-mix(in srgb, var(--err) 8%, var(--card)); }
+.lst-tab tr.lst-pos td { background: color-mix(in srgb, var(--ok) 8%, var(--card)); }
+.lst-tab tr.lst-neg td { background: color-mix(in srgb, var(--err) 8%, var(--card)); }
+.lst-tab td.lst-q, .lst-tab td.lst-valor { color: var(--foreground); }
+.lst-tab td.lst-vazia { color: var(--muted-foreground); }
+.wdg-lst li.lst-pos { background: color-mix(in srgb, var(--ok) 8%, var(--card)); }
+.wdg-lst li.lst-neg { background: color-mix(in srgb, var(--err) 8%, var(--card)); }
+.wdg-rk li.c4 { grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; }
+.wdg-lst .rk-q { color: var(--muted-foreground); white-space: nowrap; font-size: 12px; }
 </style>
 
 <div class="wrap">
@@ -1444,6 +1562,7 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
   <section class="cotacoes" id="cotacoes" aria-label="Cotações da B3" hidden></section>
   <section class="rd" id="radar" aria-label="Radar de dividendos" hidden></section>
   <div id="listas-centro"></div>
+  <section class="esp" id="esportes-box" aria-labelledby="esp-titulo" hidden></section>
 
   <div class="feed-topo" role="toolbar" aria-label="Ordem e exibição do feed">
     <div class="feed-ordem">
@@ -1484,8 +1603,11 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
   <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira/importar" id="conta-importar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Importar extratos</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="#listas" id="conta-listas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>Minhas listas</a>
   <div class="conta-sep" role="separator" id="conta-sep-cart"></div>
+  <a class="conta-item" role="menuitem" tabindex="-1" href="#esportes/config" id="conta-esportes" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m12 7 4 3-1.5 4.5h-5L8 10z"/><path d="M12 3v4M21 10l-5 0M18 19l-3-4.5M6 19l3-4.5M3 10h5"/></svg>Meus esportes</a>
+  <div class="conta-sep" role="separator" id="conta-sep-esp" hidden></div>
   <button class="conta-item" type="button" role="menuitem" tabindex="-1" id="aparencia" data-fica></button>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/admin" id="conta-admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Administração</a>
+  <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout" id="conta-trocar" title="Sai e abre o login para escolher outra conta do Google" aria-description="Sai e abre o login para escolher outra conta do Google" onclick="try{sessionStorage.setItem('radar-trocar','1')}catch(e){}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>Trocar de conta</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sair</a>
 </div>
 
@@ -1497,6 +1619,15 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
   </div>
   <div class="painel-corpo" id="rd-folha-corpo"></div>
   <div class="painel-pe" id="rd-folha-pe"></div>
+</div>
+<div class="pers-veu" id="esp-veu" hidden></div>
+<div class="pers rd-folha esp-cfg" id="esp-folha" role="dialog" aria-modal="true" aria-labelledby="esp-folha-titulo" tabindex="-1" hidden>
+  <div class="painel-topo">
+    <h2 id="esp-folha-titulo">Meus esportes</h2>
+    <button class="dd-btn dd-btn--ghost alvo" type="button" id="esp-folha-fechar">Fechar</button>
+  </div>
+  <div class="painel-corpo" id="esp-folha-corpo"></div>
+  <div class="painel-pe" id="esp-folha-pe"></div>
 </div>
 <div class="pers-veu" id="lp-veu" hidden></div>
 <div class="pers rd-folha lp-folha" id="lp-folha" role="dialog" aria-modal="true" aria-labelledby="lp-folha-titulo" tabindex="-1" hidden>
@@ -1526,6 +1657,7 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 <script src="/radar-filtro.js"></script>
 <script src="/tabela.js"></script>
+<script src="/esportes.js"></script>
 <script>
 /* Lookout: adaptador que imita o banco do artifact (window.claude.use) usando a API do Worker.
    Leituras viram GET em /api/q e /api/doc; "onSnapshot" vira consulta a cada 2 minutos e quando a aba volta ao foco.
@@ -1717,7 +1849,8 @@ const TEMAS_INVESTIMENTOS = [
   { id: "mundo", curto: "Mercados lá fora", nome: "Mercados lá fora", cor: G.set, temas: ["mundo"] },
 ];
 const TEMAS_ESPORTES = [
-  { id: "inter", curto: "Inter", nome: "Internacional", cor: G.seg, temas: ["inter"],
+  /* "Inter" na tela (o tema gravado continua "inter"): "Internacional" se confundia com o filtro Nacional/Internacional */
+  { id: "inter", curto: "Inter", nome: "Inter", cor: G.seg, temas: ["inter"],
     subs: [
       { id: "jogos", nome: "Jogos e resultados" }, { id: "elenco", nome: "Elenco e lesões" },
       { id: "bastidores", nome: "Diretoria, técnico e bastidores" }, { id: "base", nome: "Base e feminino" },
@@ -2849,6 +2982,9 @@ const COLS_LISTA = [
   { id: "t", rotulo: "Papel", tipo: "texto", valor: (d) => d.t },
   { id: "preco", rotulo: "Preço", tipo: "num", valor: (d) => d.preco },
   { id: "var", rotulo: "Dia", tipo: "num", valor: (d) => d.var },
+  /* da carteira importada: quantidade e valor (quantidade × preço atual); "–" para quem não tem o papel */
+  { id: "q", rotulo: "Qtd", tipo: "num", valor: (d) => (d.pos ? d.pos.q : null) },
+  { id: "valor", rotulo: "Valor", tipo: "num", valor: (d) => (d.pos ? d.pos.valor : null) },
   { id: "dy", rotulo: "DY 12m", tipo: "num", valor: (d) => d.dy },
   { id: "pvp", rotulo: "P/VP", tipo: "num", valor: (d) => d.pvp },
 ];
@@ -2862,7 +2998,15 @@ function dadosLista(t) {
     const f = fu && fu[t];
     if (f) { dy = f.dy ?? null; pvp = f.pvp ?? null; fonte = "ficha do papel"; }
   }
-  return { t, x, aba, preco: x ? x.preco : null, var: x ? x.var : null, dy, pvp, dyAnual, fonte };
+  const pos = temCarteira() ? RF.posicaoLista(t, cartJ.posicoes, x ? x.preco : null) : null;
+  return { t, x, aba, preco: x ? x.preco : null, var: x ? x.var : null, dy, pvp, dyAnual, fonte, pos };
+}
+/* Uma leitura de /api/carteira por minuto, a mesma dos widgets: quando chega, as listas redesenham com Qtd e Valor */
+var listasCartPedida = false;
+function pedirCarteiraListas(depois) {
+  if (listasCartPedida || cartJ || (secoesLiberadas && !secoesLiberadas.includes("investimentos"))) return;
+  listasCartPedida = true;
+  lerCarteira().then((j) => { if (j && !j.erro && !j.vazia && !j.desligada) depois(); });
 }
 const PADRAO_LISTA = { ordem: [], filtros: {}, pagina: 1, porPagina: 25 };
 const ordemDaLista = (l) => (ehAuto(l) ? Tabela.estadoDe("lista-" + l.id, PADRAO_LISTA).ordem : Array.isArray(l.ordem) ? l.ordem : []);
@@ -2931,12 +3075,17 @@ function listaEl(l) {
       const sem = () => el("span", { class: "sem", title: ehPapelEua(t) ? "Fora das ações e ETFs americanos que acompanhamos; sem cotação aqui" : "Fora dos mais negociados; sem cotação aqui" }, "–");
       const td = {
         t: () => el("td", {}, el("span", { class: "cot-papel-box" }, papel, pontoNoticia(t))),
-        preco: () => el("td", {}, x && x.preco != null ? fmtPreco(x) : sem()),
+        /* sem o "R$" na lateral, para Qtd e Valor caberem (o papel americano mantém o US$) */
+        preco: () => el("td", {}, x && x.preco != null ? (x.us ? fmtPreco(x) : fmtNum(x.preco, 2)) : sem()),
         var: () => el("td", { class: x && x.var > 0 ? "sobe" : x && x.var < 0 ? "desce" : "" }, x && x.var != null ? (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%" : x ? "–" : sem()),
+        q: () => el("td", { class: d.pos ? "lst-q" : "lst-vazia", title: d.pos ? "Na sua carteira" : "Fora da sua carteira" }, d.pos ? qtd(d.pos.q) : "–"),
+        valor: () => el("td", { class: d.pos ? "lst-valor" : "lst-vazia", title: d.pos ? "Quantidade × preço atual" + (d.pos.resPct != null ? " · resultado " + (d.pos.resPct > 0 ? "+" : "") + fmtNum(d.pos.resPct, 2) + "% sobre o preço médio" : "") : "" }, d.pos && d.pos.valor != null ? rs(d.pos.valor) : "–"),
         dy: () => el("td", { title: d.dy == null ? "" : (d.dyAnual ? "Menos de 12 meses de informes: valor anualizado. " : "") + "Fonte: " + d.fonte }, d.dy == null ? "–" : fmtNum(d.dy, 2) + "%" + (d.dyAnual ? "*" : "")),
         pvp: () => el("td", { title: d.pvp == null ? "" : "Fonte: " + d.fonte }, d.pvp == null ? "–" : fmtNum(d.pvp, 2)),
       };
-      const tr = el("tr", { "data-papel": t }, ...cols.map((c) => td[c.id]()), el("td", {}, acoes));
+      /* linha verde ou vermelha: o resultado da posição para quem tem o papel; sem ele, a variação do dia */
+      const tom = RF.tomLista(d.pos, d.var);
+      const tr = el("tr", { "data-papel": t, ...(tom ? { class: "lst-" + tom } : {}) }, ...cols.map((c) => td[c.id]()), el("td", {}, acoes));
       /* ordem personalizada: arrastar a linha para cima de outra da mesma lista põe o papel antes dela */
       if (!auto && !ehDin(l) && personalizada && podeArrastar()) {
         tr.addEventListener("dragover", (e) => {
@@ -2982,7 +3131,7 @@ function listaEl(l) {
     });
     const ordenarPor = (col, shift) => definirOrdemLista(l, Tabela.cliqueOrdem(ordem, col.id, shift, col.tipo === "texto" ? 1 : -1));
     const ths = cols.map((c) => { const th = Tabela.cabecalho(c, ordem, ordenarPor); const b = th.querySelector("button"); if (b) b.id = `lst-ord-${l.id}-${c.id}`; return th; });
-    box.append(el("table", { class: "lst-tab" }, el("thead", {}, el("tr", {}, ...ths, el("th", {}, el("span", { class: "sr" }, "Ações")))), tb));
+    box.append(el("div", { class: "lst-rola" }, el("table", { class: "lst-tab" }, el("thead", {}, el("tr", {}, ...ths, el("th", {}, el("span", { class: "sr" }, "Ações")))), tb)));
     if (!personalizada) {
       const volta = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "lst-pers-" + l.id }, auto ? "voltar à ordem da carteira" : "voltar à ordem personalizada");
       volta.addEventListener("click", () => { definirOrdemLista(l, []); const b = $("lst-ord-" + l.id + "-t"); if (b) b.focus({ preventScroll: true }); });
@@ -3036,6 +3185,7 @@ function renderListas() {
   if (!emBolsa()) { alvo.textContent = ""; return; }
   /* DY e P/VP das ações vêm das fichas guardadas; a ordem das listas automáticas, de /api/prefs/tabelas */
   if (!rdFund && !rdLendoFund && listas.length) lerFundRadar().then(() => { if (emBolsa()) renderListas(); });
+  if (listas.length) pedirCarteiraListas(() => { if (emBolsa()) renderListas(); });
   if (!listasOuvemServidor) { listasOuvemServidor = true; Tabela.aoChegarServidor(() => { if (emBolsa() && listasCarregadas) renderListas(); }); }
   /* recria o bloco inteiro: guarda o foco (e o cursor) para devolver ao campo equivalente */
   const ativo = document.activeElement;
@@ -3992,12 +4142,16 @@ const sigla = (nome) => {
   return (p.length === 1 ? p[0].slice(0, 3) : p.slice(0, 3).map((w) => w[0]).join("")).toUpperCase();
 };
 const corValida = (c) => (/^#[0-9a-f]{3,8}$/i.test(String(c || "")) ? c : "");
+/* Nome de exibição do clube: o Internacional aparece como "Inter" no selo e nos cards de negociação, para não
+   confundir com o filtro Nacional/Internacional. O campo gravado (clube, origem, destino) fica como veio. */
+const NOME_CLUBE = { "internacional": "Inter", "sport club internacional": "Inter", "sc internacional": "Inter" };
+const nomeClube = (n) => NOME_CLUBE[String(n || "").trim().toLowerCase()] || String(n || "");
 function clubeEl(c, papel) {
   if (!c || !c.clube) return el("div", { class: "clube-l" }, el("span", { class: "escudo vazio", "aria-hidden": "true" }, "?"), el("span", { class: "nome" }, papel === "origem" ? "Origem a confirmar" : "Destino a confirmar"));
   const cor = corValida(c.cor);
   return el("div", { class: "clube-l" },
     el("span", { class: "escudo", style: cor ? `--cc:${cor}` : "", "aria-hidden": "true" }, c.sigla ? String(c.sigla).slice(0, 4) : sigla(c.clube)),
-    el("span", { class: "nome" }, c.clube),
+    el("span", { class: "nome", title: c.clube }, nomeClube(c.clube)),
     c.pais ? el("span", { class: "pais" }, emojiPais(c.pais), " ", (nomesPais && nomesPais.of(String(c.pais).toUpperCase())) || c.pais) : null);
 }
 function cardTransf(i) {
@@ -4063,7 +4217,7 @@ function itemEl(i) {
         Number(i.relevancia) >= 3 ? el("span", { class: "dd-badge b-alta" }, "Relevante") : null,
         novo ? el("span", { class: "dd-badge b-novo" }, "Novo") : null,
         i.urgente === true ? el("span", { class: "dd-badge b-urgente" }, "Urgente") : null,
-        i.clube ? el("span", { class: "dd-badge b-clube" }, String(i.clube)) : null),
+        i.clube ? el("span", { class: "dd-badge b-clube", title: String(i.clube) }, nomeClube(i.clube)) : null),
       fonteEl(i),
       el("span", {}, i.publicado ? (fmtRel(i.publicado).startsWith("em ") ? "previsto " : "publicado ") + fmtRel(i.publicado) : "coletado " + fmtRel(i.coletado))),
     papeis, resumo, lerMais);
@@ -4252,6 +4406,7 @@ function renderPregao() {
 }
 function render() {
   aplicarModo();
+  renderEsportes();
   /* no Início só a barra de abas e o card de favoritos dependem do estado geral */
   if (inicio) { aplicarVisao(); renderRadares(); if (painelMontado) carregarWidget("favoritos"); return; }
   clearTimeout(tBusca); tBusca = 0;
@@ -4721,7 +4876,13 @@ const CATALOGO_LOCAL = [
   ...ORDEM_RADARES.map((s) => ({ id: "destaques-" + s, titulo: "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   ...ORDEM_RADARES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   /* Nos fóruns: as seções com subreddit hoje (src/feeds.js); o catálogo do servidor, que já vem filtrado, manda */
-  ...["tech", "negocios", "politica"].map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  ...ORDEM_RADARES.map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  /* Esportes (public/esportes.js): rodada e tabela de cada competição e o próximo jogo do time; só as ligadas aparecem */
+  ...window.Esportes.ORDEM_LIGAS.flatMap((l) => [
+    { id: "esportes-rodada-" + l, titulo: window.Esportes.LIGAS[l].curto + " · rodada", tamanho: 1, secao: "esportes", liga: l },
+    { id: "esportes-tabela-" + l, titulo: window.Esportes.LIGAS[l].curto + " · tabela", tamanho: 1, secao: "esportes", liga: l },
+  ]),
+  { id: "esportes-meu-time", titulo: "Meu time · próximo jogo", tamanho: 1, secao: "esportes" },
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },
   { id: "carteira-patrimonio", titulo: "Patrimônio", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-proventos-mes", titulo: "Proventos do mês", tamanho: 1, secao: "investimentos", pessoal: true },
@@ -4736,8 +4897,9 @@ const CATALOGO_LOCAL = [
 /* Formatos de cada widget ("colunas x linhas"), os mesmos de src/painel.js; o primeiro é o padrão. O catálogo do servidor manda. */
 const FORMATOS_LOCAL = { hoje: ["1x1"], mercado: ["1x1", "1x2"], pregao: ["2x1", "3x1", "2x2"], fiis: ["1x1", "2x1"], eua: ["1x1", "2x1"], listas: ["1x1", "1x2", "2x1"], favoritos: ["1x1", "1x2"], destaques: ["1x1", "1x2"], ultimas: ["1x1", "1x2"],
   "carteira-meta": ["2x1", "3x1"], "carteira-patrimonio": ["1x1", "2x1"], "carteira-proventos-mes": ["1x1"], "carteira-pagamentos": ["1x1", "1x2"], "carteira-agenda": ["1x1", "1x2"], "carteira-rentabilidade": ["1x1", "2x1"],
-  "carteira-alertas": ["1x1", "1x2"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"], "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"] };
-const formatosW = (id) => { const d = (painelCat || []).find((w) => w.id === id); return (d && Array.isArray(d.formatos) && d.formatos.length ? d.formatos : null) || FORMATOS_LOCAL[id] || FORMATOS_LOCAL[String(id).replace(/-.*$/, "")] || ["1x1"]; };
+  "carteira-alertas": ["1x1", "1x2"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"], "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"],
+  "esportes-rodada": ["1x1", "2x1"], "esportes-tabela": ["1x1", "1x2"], "esportes-meu-time": ["1x1"] };
+const formatosW = (id) => { const d = (painelCat || []).find((w) => w.id === id); return (d && Array.isArray(d.formatos) && d.formatos.length ? d.formatos : null) || FORMATOS_LOCAL[id] || FORMATOS_LOCAL[String(id).replace(/^(esportes-(?:rodada|tabela))-.*$/, "$1")] || FORMATOS_LOCAL[String(id).replace(/-.*$/, "")] || ["1x1"]; };
 /* { id, formato } a partir do que veio (formato, ou o tamanho antigo 1 ou 2) */
 function comFormato(w) {
   const ok = formatosW(w.id);
@@ -4761,6 +4923,7 @@ function guardarPainelLocal() { try { localStorage.setItem("radar-painel", JSON.
 
 /* Para onde leva o título (e o "Ver tudo") de cada widget */
 function destinoDe(id) {
+  if (id.startsWith("esportes-")) return "#esportes";
   if (id === "destaques-investimentos" || id === "ultimas-investimentos") return "#investimentos/noticias";
   if (id.startsWith("destaques-")) return "#" + id.slice(10);
   if (id.startsWith("ultimas-")) return "#" + id.slice(8);
@@ -4792,6 +4955,7 @@ async function lerB3Painel(fresco) { const d = await lerMeta("b3", fresco); if (
 async function lerEuaPainel(fresco) { const d = await lerMeta("eua", fresco); if (d !== undefined && !emBolsa()) eua = d; return d; }
 const marcaDe = (...ds) => ds.map((d) => (d && d.atualizado) || (d === null ? "-" : "?")).join("|");
 function leitor(id) {
+  if (id.startsWith("esportes-")) return leitorEsp(id);
   if (id.startsWith("destaques-")) { const r = RADARES[id.slice(10)]; return async () => { const x = await lerFeedResumo(r.destaques, "data", 1); return x && { d: x.d[0] || null, marca: x.marca }; }; }
   if (id.startsWith("ultimas-")) { const r = RADARES[id.slice(8)]; return () => lerFeedResumo(r.items, "", 10); }
   if (id.startsWith("foruns-")) return async () => { const db = await dbDoPainel(); return db ? lerForuns(db, id.slice(7), 10) : undefined; };
@@ -4800,9 +4964,9 @@ function leitor(id) {
   if (id === "eua") return async (f) => { const d = await lerEuaPainel(f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
   if (id === "fiis") return async (f) => { const [d] = await Promise.all([lerB3Painel(f), lerFii()]); return d === undefined ? undefined : { d, marca: marcaDe(d) + "|" + (fiiCvm && fiiCvm.ref) }; };
   if (id === "listas") return async (f) => {
-    const [j, d1, d2] = await Promise.all([apiListas("GET"), lerB3Painel(f), lerEuaPainel(f)]);
+    const [j, d1, d2, c] = await Promise.all([apiListas("GET"), lerB3Painel(f), lerEuaPainel(f), lerCarteira().catch(() => null)]);
     const ls = ordenarListas((j.docs || []).map((x) => ({ id: x.id, ...x.data })));
-    return { d: ls, marca: JSON.stringify(ls) + marcaDe(d1, d2) };
+    return { d: ls, marca: JSON.stringify(ls) + marcaDe(d1, d2) + "|" + ((c && c._marca) || "") };
   };
   if (id === "favoritos") return async () => { const l = favoritosRecentes(); return { d: l, marca: JSON.stringify(l.slice(0, 5)) + l.length }; };
   if (id === "radar-meu" || id === "leitura-dia" || id === "carteira-contra-filtro") return (f) => lerWidgetRadar(id, f);
@@ -4929,11 +5093,17 @@ const corpos = {
     const MAX = Math.max(2, Math.min(fm.r > 1 ? 9 : 4, Math.floor((fm.r > 1 ? 22 : 12) / porColuna) - 1));
     return [el("div", { class: "wdg-lsts" }, ...ls.map((l) => {
       const ol = el("ol", {});
+      /* com carteira: Qtd e Valor no lugar do preço, e a linha na cor do resultado da posição */
+      const cart = temCarteira();
       papeisOrdenados(l).slice(0, MAX).forEach((t) => {
         const c = cotDe(t), x = c && c[0];
         const b = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x && x.nome) || t }, papelEl(t, x));
         b.addEventListener("click", () => abrirPapel(t));
-        ol.append(el("li", {}, b, el("span", { class: "rk-preco" }, x && x.preco != null ? fmtPreco(x) : "–"), el("span", { class: "rk-val " + clsVar(x && x.var) }, x && x.var != null ? pctVar(x.var) : "–")));
+        const varEl = el("span", { class: "rk-val " + clsVar(x && x.var) }, x && x.var != null ? pctVar(x.var) : "–");
+        if (!cart) { ol.append(el("li", {}, b, el("span", { class: "rk-preco" }, x && x.preco != null ? fmtPreco(x) : "–"), varEl)); return; }
+        const pos = RF.posicaoLista(t, cartJ.posicoes, x ? x.preco : null), tom = RF.tomLista(pos, x ? x.var : null);
+        ol.append(el("li", { class: "c4" + (tom ? " lst-" + tom : ""), title: pos ? `${qtd(pos.q)} na carteira · ${rs(pos.valor)}` + (pos.resPct != null ? ` · ${pos.resPct > 0 ? "+" : ""}${fmtNum(pos.resPct, 2)}% sobre o preço médio` : "") : "Fora da sua carteira" },
+          b, el("span", { class: "rk-q" }, pos ? qtd(pos.q) : "–"), el("span", { class: "rk-preco" }, pos && pos.valor != null ? rs(pos.valor) : "–"), varEl));
       });
       if (!l.papeis.length) ol.append(el("li", { class: "rk-vazio" }, "Lista vazia"));
       return el("div", { class: "wdg-lst" }, el("h4", {}, el("a", { href: "#lista/" + encodeURIComponent(l.id), class: "wdg-lst-nome" }, l.nome), ehAuto(l) ? el("span", { class: "seu", title: "Montada pela sua carteira" }, "da carteira") : ehDin(l) ? el("span", { class: "seu", title: "Os papéis vêm de uma regra, recalculada a cada hora" }, "por regra") : null, el("small", {}, l.papeis.length === 1 ? "1 papel" : l.papeis.length + " papéis")),
@@ -4956,9 +5126,10 @@ const corpos = {
       el("span", { class: "nome" }, NOME_SECAO[x.secao]), el("span", { class: "wdg-barra", "aria-hidden": "true" }, el("span", { class: x.n ? "" : "zero", style: `width:${(x.n / max) * 100}%` })), el("span", { class: "k" }, String(x.n))))))];
   },
 };
-const tipoDoWidget = (id) => (id.startsWith("destaques-") ? "destaques" : id.startsWith("ultimas-") ? "ultimas" : id.startsWith("foruns-") ? "foruns" : id);
+const tipoDoWidget = (id) => (id.startsWith("destaques-") ? "destaques" : id.startsWith("ultimas-") ? "ultimas" : id.startsWith("foruns-") ? "foruns" : id.startsWith("esportes-rodada-") ? "esportes-rodada" : id.startsWith("esportes-tabela-") ? "esportes-tabela" : id);
 /* Subtítulo (canto direito do cabeçalho) e rodapé, conforme o widget e os dados */
 function subtituloDe(id, x) {
+  if (id.startsWith("esportes-")) return subtituloEsp(id, x);
   const d = x && x.estado === "ok" ? x.d : null;
   const t = tipoDoWidget(id);
   if (t === "destaques") return d ? diaCurto(d.data) : "";
@@ -5004,7 +5175,7 @@ function pintarWidget(id) {
   const def = defDe(id); if (!def) return;
   const x = wDados.get(id);
   const destino = destinoDe(id);
-  const titulo = destino ? el("a", { href: destino }, def.titulo) : el("span", {}, def.titulo);
+  const titulo = destino ? el("a", { href: destino }, tituloDoWidget(id, def)) : el("span", {}, tituloDoWidget(id, def));
   if (destino) ligarDestino(titulo, id);
   const alca = el("span", { class: "wdg-alca", draggable: "true", title: "Arraste para mudar a ordem", html: ALCA });
   const sub = subtituloDe(id, x);
@@ -5015,7 +5186,7 @@ function pintarWidget(id) {
     const b = el("button", { class: "dd-btn dd-btn--link", type: "button" }, "Tentar de novo");
     b.addEventListener("click", () => { wDados.delete(id); pintarWidget(id); carregarWidget(id, true); });
     corpo = [el("p", { class: "wdg-vazio" }, "Não deu para carregar agora. ", b)];
-  } else corpo = corpos[tipoDoWidget(id)](x.d, fmtCR(card.dataset.formato));
+  } else corpo = corposEsp[tipoDoWidget(id)] ? corposEsp[tipoDoWidget(id)](x.d, fmtCR(card.dataset.formato), id) : corpos[tipoDoWidget(id)](x.d, fmtCR(card.dataset.formato));
   card.textContent = "";
   card.append(cab, el("div", { class: "wdg-corpo" }, ...corpo), rodapeDe(id, x));
 }
@@ -5037,7 +5208,7 @@ function montarGrade() {
   g.textContent = "";
   painelMontado = true;
   /* os da carteira só aparecem para quem importou os extratos */
-  const ws = widgetsAtuais().filter((w) => !(defDe(w.id).pessoal && pessoalOculto(w.id)));
+  const ws = widgetsAtuais().filter((w) => !(defDe(w.id).pessoal && pessoalOculto(w.id)) && !espOculto(w.id));
   if (!ws.length) { g.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum card no Início"), "Use Personalizar para escolher o que aparece aqui.")); return; }
   ws.forEach((w) => {
     const { c, r } = fmtCR(w.formato);
@@ -5070,6 +5241,7 @@ function maisRecenteDoPainel() {
     else if (t === "mercado" || t === "pregao" || t === "eua" || t === "fiis") ver(x.d.atualizado);
     else if (t === "destaques") ver(x.d.atualizado);
     else if (t === "ultimas" || t === "foruns") x.d.forEach((i) => ver(i.coletado));
+    else if (t.startsWith("esportes-")) ver(x.d.atualizado);
   });
   return m;
 }
@@ -5191,6 +5363,8 @@ function renderPers(foco) {
     const def = defDe(w.id); if (!def) return;
     /* os do radar só aparecem para quem tem carteira ou filtro salvo (e o contra o filtro, só com carteira) */
     if (def.pessoal && !w.id.startsWith("carteira-") && pessoalOculto(w.id) && !w.mostrar) return;
+    /* Esportes: só as competições ligadas em Meus esportes (e o próximo jogo, só com time escolhido) */
+    if (espOculto(w.id) && !w.mostrar) return;
     if (def.pessoal && !grupo) {
       grupo = true;
       ul.append(el("li", { class: "pers-grupo" }, "Minha carteira", el("small", {}, semCart ? "Aparecem depois que você importar os extratos da B3 em Minha carteira." : "Vêm da sua carteira e do seu radar. Só você vê. Também dá para fixar pelo alfinete de cada bloco da carteira.")));
@@ -7596,10 +7770,446 @@ $("lp-folha").addEventListener("keydown", (e) => {
   else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); pri.focus(); }
 });
 
+/* ---------- Esportes: competições acima do feed da aba, "Meus esportes" (#esportes/config) e widgets do Início ----------
+   Uma cópia de meta/esportes-<liga> por competição ligada (lerMeta, a mesma memória do Início). As competições, as
+   zonas da tabela e a validação vêm de /esportes.js (window.Esportes), o mesmo arquivo do Worker. Sem escudo nem foto:
+   só o nome do time e a sigla. Horários no fuso de quem vê. */
+var espPrefs = null, espPrefsLendo = null, espVisto = "", espTick = 0;
+var espDocs = new Map(), espLidoEm = new Map(), espLendo = new Set();
+const ES = window.Esportes;
+const espLiberado = () => !secoesLiberadas || secoesLiberadas.includes("esportes");
+const espPrefsOu = () => espPrefs || ES.respostaPrefs(null);
+const espLigadas = () => ES.ligadas(espPrefsOu());
+const espTimes = () => espPrefsOu().times || [];
+const espTimeDe = (liga) => espTimes().find((t) => t.liga === liga) || null;
+const espMeuTime = () => espTimes()[0] || null;
+let espEstado = { aba: {}, fechados: [] };
+try { const s = JSON.parse(localStorage.getItem("radar-esportes") || "null"); if (s && typeof s === "object") espEstado = { aba: s.aba && typeof s.aba === "object" ? s.aba : {}, fechados: Array.isArray(s.fechados) ? s.fechados : [] }; } catch (e) {}
+const guardarEspEstado = () => { try { localStorage.setItem("radar-esportes", JSON.stringify(espEstado)); } catch (e) {} };
+
+function lerPrefsEsportes(fresco) {
+  if (!espLiberado()) return Promise.resolve(null);
+  if (espPrefs && !fresco) return Promise.resolve(espPrefs);
+  if (espPrefsLendo) return espPrefsLendo;
+  espPrefsLendo = (async () => {
+    try {
+      const r = await fetch("/api/prefs/esportes", { credentials: "same-origin", cache: "no-store", headers: { "X-Requested-With": "XMLHttpRequest" } });
+      if (r.ok) espPrefs = await r.json();
+    } catch (e) {}
+    finally { espPrefsLendo = null; }
+    return espPrefs;
+  })();
+  return espPrefsLendo;
+}
+/* undefined: a leitura falhou (fica o que já havia); null: o cron ainda não gravou essa competição */
+async function lerEsp(liga, fresco) {
+  const d = await lerMeta("esportes-" + liga, fresco);
+  if (d !== undefined) { espDocs.set(liga, d); espLidoEm.set(liga, Date.now()); }
+  return d;
+}
+function carregarEsportes(fresco) {
+  espLigadas().forEach((liga) => {
+    if (espLendo.has(liga) || (!fresco && espDocs.has(liga))) return;
+    espLendo.add(liga);
+    lerEsp(liga, fresco).finally(() => { espLendo.delete(liga); renderEsportes(); });
+  });
+}
+const espQuente = (d) => !!d && [...((d.rodada && d.rodada.jogos) || []), ...(d.proximos || [])].some((j) => j.estado === "in" || (j.estado === "pre" && Math.abs(Date.parse(j.data) - Date.now()) < 2 * 3600000));
+/* Na aba: a cada minuto relê o que tem jogo agora ou começando; o resto, a cada 5 min */
+setInterval(() => {
+  if (inicio || radar !== "esportes" || document.hidden || !espLiberado()) return;
+  espTick++;
+  espLigadas().forEach((liga) => {
+    const d = espDocs.get(liga), idade = Date.now() - (espLidoEm.get(liga) || 0);
+    if (espQuente(d) || idade > 5 * 60000) { espLendo.add(liga); lerEsp(liga, true).finally(() => { espLendo.delete(liga); renderEsportes(); }); }
+  });
+}, 60000);
+
+/* ---- pedaços ---- */
+const nomeLiga = (liga) => (ES.LIGAS[liga] ? ES.LIGAS[liga].curto : liga);
+const fonteTxt = (d) => (d && d.fonte === "ge" ? "Globo Esporte" : "ESPN");
+function quandoJogo(j) {
+  if (j.estado === "in") return el("span", { class: "esp-vivo" }, "ao vivo" + (j.minuto ? " · " + j.minuto : ""));
+  if (j.detalhe === "adiado") return "adiado";
+  const p = ES.partesData(j.data);
+  if (!p) return "";
+  const dia = ES.rotuloDia(j.data);
+  return j.estado === "post" ? dia + " · encerrado" : dia + " · " + p.hora;
+}
+const ehMeu = (j, t) => !!t && (j.ids || []).includes(t.id);
+function jogoEl(j, t, curto) {
+  const p = ES.partesData(j.data);
+  const meuM = ehMeu(j, t) && j.ids[0] === t.id, meuV = ehMeu(j, t) && j.ids[1] === t.id;
+  const nome = (n, sig, meu) => { const x = curto && sig ? sig : n; return meu ? el("b", {}, x) : x; };
+  const placar = j.placar ? j.placar[0] + " × " + j.placar[1] : p ? p.hora : "×";
+  const tit = [j.mandante, j.visitante].join(" × ") + (j.estadio ? " · " + j.estadio : "") + (p ? " · " + p.semana + " " + p.ddmm + " " + p.hora : "");
+  return el("li", { class: "esp-jogo " + j.estado + (ehMeu(j, t) ? " meu" : ""), title: tit },
+    el("span", { class: "esp-q" }, quandoJogo(j)),
+    el("span", { class: "esp-m" }, nome(j.mandante, j.siglas && j.siglas[0], meuM)),
+    el("span", { class: "esp-p", "aria-label": j.placar ? `${j.placar[0]} a ${j.placar[1]}` : "a jogar" }, j.estado === "pre" ? "×" : placar),
+    el("span", { class: "esp-v" }, nome(j.visitante, j.siglas && j.siglas[1], meuV)));
+}
+const listaJogos = (js, t, curto) => el("ul", { class: "esp-jogos" }, ...js.map((j) => jogoEl(j, t, curto)));
+const corZona = (z) => ES.ZONAS_COR[z] || "";
+const COLS_ESP = [
+  { id: "pos", rotulo: "Pos", tipo: "num", dir: 1, valor: (r) => r.pos, filtravel: false },
+  { id: "time", rotulo: "Time", tipo: "texto", valor: (r) => r.time, filtravel: false, cls: "esp-esq" },
+  { id: "j", rotulo: "J", tipo: "num", valor: (r) => r.j, filtravel: false },
+  { id: "pts", rotulo: "Pts", tipo: "num", valor: (r) => r.pts, filtravel: false },
+  { id: "sg", rotulo: "SG", tipo: "num", valor: (r) => r.sg, filtravel: false },
+  { id: "v", rotulo: "V", tipo: "num", valor: (r) => r.v, filtravel: false },
+  { id: "e", rotulo: "E", tipo: "num", valor: (r) => r.e, filtravel: false },
+  { id: "d", rotulo: "D", tipo: "num", valor: (r) => r.d, filtravel: false },
+  { id: "gp", rotulo: "GP", tipo: "num", valor: (r) => r.gp, filtravel: false },
+  { id: "gc", rotulo: "GC", tipo: "num", valor: (r) => r.gc, filtravel: false },
+];
+const COL_GRUPO = { id: "grupo", rotulo: "Grupo", tipo: "texto", valor: (r) => r.grupo, filtravel: false, cls: "esp-esq" };
+function tabelaEsp(liga, d) {
+  const linhas = (d.tabela || []).filter((r) => r && r.time);
+  if (!linhas.length) return [el("p", { class: "esp-vazio" }, ES.LIGAS[liga] && !ES.LIGAS[liga].zonas.length ? "Competição em mata-mata: não tem tabela de pontos." : "A tabela desta competição ainda não chegou.")];
+  const t = espTimeDe(liga);
+  const grupos = linhas.some((r) => r.grupo);
+  const cols = grupos ? [COL_GRUPO, ...COLS_ESP] : COLS_ESP;
+  const tab = Tabela.criar({
+    id: "esp-tab-" + ES.slugLiga(liga), colunas: cols, linhas, rotuloConta: "times", classeTabela: "cot-tab esp-tab",
+    padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 50 }, semOrdem: "Na ordem da classificação.",
+    attrsLinha: (r) => { const z = corZona(r.zona); return { class: (z ? "esp-z" : "") + (t && r.id === t.id ? " esp-meu" : ""), ...(z ? { style: "--z:" + z } : {}), title: r.zona ? ES.ZONAS_NOME[r.zona] || "" : "" }; },
+    celula: (c, r) => {
+      const v = r[c.id];
+      if (c.id === "pos") return el("td", { class: "esp-pos" }, v == null ? "–" : String(v));
+      if (c.id === "time") return el("td", { class: "esp-time", title: r.time }, r.time);
+      if (c.id === "grupo") return el("td", { class: "esp-grupo" }, v || "–");
+      if (c.id === "sg") return el("td", {}, v == null ? "–" : (v > 0 ? "+" : "") + v);
+      return el("td", c.id === "pts" ? { class: "esp-pts" } : {}, v == null ? "–" : String(v));
+    },
+  });
+  const leg = ES.legendaDe(liga);
+  return [tab.el, leg.length ? el("ul", { class: "esp-leg", "aria-label": "Legenda das zonas" }, ...leg.map((z) => el("li", {}, el("i", { style: "--z:" + z.cor, "aria-hidden": "true" }), z.nome + " (" + z.faixa + ")"))) : null];
+}
+const ABAS_ESP = [["rodada", "Rodada"], ["proximos", "Próximos"], ["tabela", "Tabela"]];
+function corpoEsp(liga, d, aba) {
+  const t = espTimeDe(liga);
+  const curto = window.matchMedia("(max-width: 359px)").matches;
+  if (aba === "tabela") return tabelaEsp(liga, d);
+  if (aba === "proximos") {
+    const dele = t && d.times && d.times[t.id] && d.times[t.id].proximos;
+    const js = (dele && dele.length ? dele : d.proximos || []).slice(0, 10);
+    const nota = el("p", { class: "esp-nota" }, dele && dele.length ? "Próximos jogos do " + t.nome : "Próximos jogos da competição");
+    return js.length ? [nota, listaJogos(js, t, curto)] : [el("p", { class: "esp-vazio" }, "Nenhum jogo marcado para os próximos dias.")];
+  }
+  const r = d.rodada || {}, js = r.jogos || [];
+  if (!js.length) return [el("p", { class: "esp-vazio" }, "Sem jogos nesta semana.")];
+  return [listaJogos(js, t, curto)];
+}
+function cartaoEsp(liga) {
+  const def = ES.LIGAS[liga]; if (!def) return null;
+  const s = ES.slugLiga(liga), d = espDocs.get(liga);
+  const fechado = espEstado.fechados.includes(liga);
+  const aba = ABAS_ESP.some(([a]) => a === espEstado.aba[liga]) ? espEstado.aba[liga] : "rodada";
+  const vivo = d && ((d.rodada && d.rodada.jogos) || []).some((j) => j.estado === "in");
+  const corpoId = "esp-corpo-" + s;
+  const tit = el("button", { class: "esp-tit", type: "button", id: "esp-tit-" + s, "aria-expanded": String(!fechado), "aria-controls": corpoId, title: fechado ? "Mostrar" : "Recolher" });
+  tit.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>');
+  tit.append(el("span", {}, def.nome));
+  if (vivo) tit.append(el("span", { class: "esp-vivo" }, "ao vivo"));
+  else if (d && d.rodada && d.rodada.numero) tit.append(el("small", {}, "rodada " + d.rodada.numero));
+  tit.addEventListener("click", () => {
+    espEstado.fechados = fechado ? espEstado.fechados.filter((x) => x !== liga) : [...espEstado.fechados, liga];
+    guardarEspEstado(); renderEsportes(true); const b = $("esp-tit-" + s); if (b) b.focus({ preventScroll: true });
+  });
+  const seg = el("div", { class: "seg esp-abas", role: "group", "aria-label": "Ver de " + def.curto });
+  ABAS_ESP.forEach(([id, nome]) => {
+    const b = el("button", { type: "button", id: `esp-aba-${s}-${id}`, "aria-pressed": String(aba === id) }, nome);
+    b.addEventListener("click", () => { espEstado.aba[liga] = id; guardarEspEstado(); renderEsportes(true); const x = $(`esp-aba-${s}-${id}`); if (x) x.focus({ preventScroll: true }); });
+    seg.append(b);
+  });
+  const corpo = el("div", { class: "esp-corpo", id: corpoId });
+  if (d === undefined && !espDocs.has(liga)) corpo.append(esqueleto(4));
+  else if (!d) corpo.append(el("p", { class: "esp-vazio" }, "Sem dados desta competição ainda."));
+  else corpo.append(...corpoEsp(liga, d, aba).filter(Boolean));
+  const pe = el("div", { class: "esp-pe" }, el("span", {}, "Dados: " + fonteTxt(d)), d && d.atualizado ? el("span", { title: fmtData(d.atualizado) }, "atualizado " + fmtRel(d.atualizado)) : null);
+  return el("section", { class: "esp-card" + (fechado ? " fechado" : ""), id: "esp-" + s, "aria-labelledby": "esp-tit-" + s }, el("div", { class: "esp-cab" }, tit, seg), corpo, d ? pe : null);
+}
+function renderEsportes(forcar) {
+  const box = $("esportes-box");
+  const mostra = !inicio && radar === "esportes" && espLiberado();
+  box.hidden = !mostra;
+  if (!mostra) { if (box.firstChild) box.textContent = ""; espVisto = ""; return; }
+  if (!espPrefs && !espPrefsLendo) lerPrefsEsportes().then(() => { renderEsportes(); carregarEsportes(); });
+  carregarEsportes();
+  const ligas = espLigadas();
+  /* render() roda a cada filtro do feed: os cartões só são refeitos quando o que eles mostram mudou */
+  const k = JSON.stringify([ligas, espTimes(), ligas.map((l) => { const d = espDocs.get(l); return d === undefined ? "?" : d ? d.atualizado : "-"; }), espEstado, window.innerWidth < 700, window.innerWidth < 360, Math.floor(Date.now() / 60000)]);
+  if (!forcar && k === espVisto) return;
+  espVisto = k;
+  box.textContent = "";
+  const cfg = el("a", { class: "dd-btn dd-btn--outline alvo", href: "#esportes/config", id: "esp-config", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>' });
+  cfg.append("Meus esportes");
+  box.append(el("div", { class: "esp-topo" }, el("h2", { id: "esp-titulo" }, "Competições"), cfg));
+  if (!ligas.length) { box.append(el("p", { class: "esp-vazio" }, "Nenhuma competição ligada. Escolha as suas em Meus esportes.")); return; }
+  ligas.forEach((l) => { const c = cartaoEsp(l); if (c) box.append(c); });
+}
+window.addEventListener("resize", () => { if (!inicio && radar === "esportes") renderEsportes(); });
+
+/* ---- Meus esportes: competições (ligar, desligar, ordem) e times que a pessoa acompanha ---- */
+var espP = null, espPAberto = false, espPAbridor = null, espArrasto = null;
+function abrirMeusEsportes() {
+  if (!espLiberado()) return;
+  const p = espPrefsOu();
+  espP = { on: new Set(p.competicoes || []), ordem: ES.ordemCompleta(p.ordem), times: (p.times || []).map((t) => ({ ...t })), busca: "", marcada: -1, erro: "", salvando: false };
+  if (!espPAberto) {
+    espPAberto = true; espPAbridor = document.activeElement;
+    const html = document.documentElement, sb = window.innerWidth - html.clientWidth;
+    if (sb > 0) html.style.paddingRight = sb + "px";
+    html.classList.add("trava");
+    $("esp-veu").hidden = false; $("esp-folha").hidden = false;
+  }
+  desenharMeusEsportes();
+  $("esp-folha").focus({ preventScroll: true });
+  /* os times do autocompletar vêm das tabelas e dos jogos das competições ligadas */
+  lerPrefsEsportes().then(() => { if (espPAberto && espP && !espP.mexeu && espPrefs) { espP.on = new Set(espPrefs.competicoes); espP.ordem = ES.ordemCompleta(espPrefs.ordem); espP.times = espPrefs.times.map((t) => ({ ...t })); desenharMeusEsportes(); } });
+  Promise.all(ES.ORDEM_LIGAS.filter((l) => espP.on.has(l)).map((l) => (espDocs.has(l) ? null : lerEsp(l)))).then(() => { if (espPAberto) desenharMeusEsportes(); });
+}
+function fecharMeusEsportes() {
+  if (!espPAberto) return;
+  espPAberto = false; espP = null;
+  $("esp-veu").hidden = true; $("esp-folha").hidden = true;
+  const html = document.documentElement; html.classList.remove("trava"); html.style.paddingRight = "";
+  $("esp-folha-corpo").textContent = ""; $("esp-folha-pe").textContent = "";
+  if (partesDoHash()[0] === "esportes" && partesDoHash()[1] === "config") { try { history.replaceState(null, "", location.pathname + location.search + "#esportes"); } catch (e) {} }
+  const volta = espPAbridor && espPAbridor.isConnected ? espPAbridor : $("esp-config");
+  if (volta && volta.focus) volta.focus({ preventScroll: true });
+}
+/* Times conhecidos: os das tabelas e dos jogos guardados de cada competição ligada */
+function timesConhecidos() {
+  const out = new Map();
+  ES.ORDEM_LIGAS.filter((l) => espP.on.has(l)).forEach((liga) => {
+    const d = espDocs.get(liga); if (!d) return;
+    (d.tabela || []).forEach((r) => { if (r.id && r.time) out.set(liga + "|" + r.id, { liga, id: r.id, nome: r.time, sigla: r.sigla || "" }); });
+    [...((d.rodada && d.rodada.jogos) || []), ...(d.proximos || []), ...(d.ultimos || [])].forEach((j) => [0, 1].forEach((k) => {
+      const id = j.ids && j.ids[k], nome = k ? j.visitante : j.mandante;
+      if (id && nome && !out.has(liga + "|" + id)) out.set(liga + "|" + id, { liga, id, nome, sigla: (j.siglas && j.siglas[k]) || "" });
+    }));
+  });
+  return [...out.values()];
+}
+function sugerirTimes(q) {
+  const s = semAcento(q).toLowerCase().trim();
+  if (s.length < 2) return [];
+  const ja = new Set(espP.times.map((t) => t.liga + "|" + t.id));
+  return timesConhecidos().filter((t) => !ja.has(t.liga + "|" + t.id) && (semAcento(t.nome).toLowerCase().includes(s) || t.sigla.toLowerCase() === s))
+    .sort((a, b) => Number(!semAcento(b.nome).toLowerCase().startsWith(s)) - Number(!semAcento(a.nome).toLowerCase().startsWith(s)) || a.nome.localeCompare(b.nome, "pt-BR")).slice(0, 8);
+}
+function moverEsp(id, para) {
+  const o = espP.ordem.filter((x) => x !== id);
+  o.splice(Math.max(0, Math.min(para, o.length)), 0, id);
+  espP.ordem = o; espP.mexeu = true;
+}
+function desenharMeusEsportes(foco) {
+  if (!espP) return;
+  const corpo = $("esp-folha-corpo"), pe = $("esp-folha-pe");
+  const ativo = foco || (document.activeElement && document.activeElement.id);
+  corpo.textContent = ""; pe.textContent = "";
+  corpo.append(el("p", { class: "pers-dica" }, "Ligue as competições que aparecem na aba Esportes e no Início. A ordem daqui é a dos cartões: arraste pela alça ou use as setas."));
+  const r = espPrefsOu();
+  (r.esportes || ES.ESPORTES).forEach((esp) => {
+    corpo.append(el("h3", {}, esp.nome));
+    const ids = espP.ordem.filter((id) => (esp.ligas || []).some((l) => (l.id || l) === id));
+    const ul = el("ul", { class: "esp-cfg-lista" });
+    ids.forEach((id, n) => {
+      const def = ES.LIGAS[id];
+      const chk = el("input", { type: "checkbox", id: "esp-chk-" + ES.slugLiga(id) });
+      chk.checked = espP.on.has(id);
+      chk.addEventListener("change", () => { if (chk.checked) espP.on.add(id); else espP.on.delete(id); espP.mexeu = true; if (chk.checked && !espDocs.has(id)) lerEsp(id).then(() => { if (espPAberto) desenharMeusEsportes(); }); });
+      const sobe = el("button", { type: "button", class: "dd-btn dd-btn--outline dd-btn--icon", id: "esp-sobe-" + ES.slugLiga(id), "aria-label": "Subir " + def.nome, ...(n === 0 ? { disabled: "" } : {}) }, "↑");
+      sobe.addEventListener("click", () => { moverEsp(id, espP.ordem.indexOf(ids[n - 1])); desenharMeusEsportes(n - 1 === 0 ? "esp-desce-" + ES.slugLiga(id) : sobe.id); });
+      const desce = el("button", { type: "button", class: "dd-btn dd-btn--outline dd-btn--icon", id: "esp-desce-" + ES.slugLiga(id), "aria-label": "Descer " + def.nome, ...(n === ids.length - 1 ? { disabled: "" } : {}) }, "↓");
+      desce.addEventListener("click", () => { moverEsp(id, espP.ordem.indexOf(ids[n + 1])); desenharMeusEsportes(n + 1 === ids.length - 1 ? sobe.id : desce.id); });
+      const alca = el("span", { class: "esp-alca", draggable: "true", title: "Arraste para mudar a ordem", html: ALCA });
+      const li = el("li", { class: "esp-cfg-item", "data-liga": id }, alca, el("label", { for: chk.id }, chk, el("span", {}, def.nome, def.pais ? el("small", {}, " ", emojiPais(def.pais)) : null)), el("span", { class: "esp-cfg-setas" }, sobe, desce));
+      alca.addEventListener("dragstart", (e) => { espArrasto = id; try { e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move"; } catch (er) {} requestAnimationFrame(() => li.classList.add("arrastando")); });
+      alca.addEventListener("dragend", () => { espArrasto = null; li.classList.remove("arrastando"); ul.querySelectorAll(".cai-antes").forEach((x) => x.classList.remove("cai-antes")); });
+      li.addEventListener("dragover", (e) => { if (!espArrasto || espArrasto === id) return; e.preventDefault(); ul.querySelectorAll(".cai-antes").forEach((x) => { if (x !== li) x.classList.remove("cai-antes"); }); li.classList.add("cai-antes"); });
+      li.addEventListener("dragleave", (e) => { if (!li.contains(e.relatedTarget)) li.classList.remove("cai-antes"); });
+      li.addEventListener("drop", (e) => { if (!espArrasto || espArrasto === id) return; e.preventDefault(); const m = espArrasto; espArrasto = null; moverEsp(m, espP.ordem.filter((x) => x !== m).indexOf(id)); desenharMeusEsportes(); });
+      ul.append(li);
+    });
+    corpo.append(ul);
+  });
+  /* times */
+  corpo.append(el("h3", {}, "Times que eu acompanho"));
+  const chips = el("div", { class: "esp-times" });
+  espP.times.forEach((t, n) => {
+    const b = el("button", { type: "button", class: "chip", id: "esp-time-x-" + n, "aria-label": `Parar de acompanhar ${t.nome}`, title: "Tirar" }, el("span", {}, t.nome + " · " + nomeLiga(t.liga)), el("span", { "aria-hidden": "true" }, " ×"));
+    b.addEventListener("click", () => { espP.times.splice(n, 1); espP.mexeu = true; desenharMeusEsportes(espP.times.length ? "esp-time-x-" + Math.min(n, espP.times.length - 1) : "esp-time-q"); });
+    chips.append(b);
+  });
+  if (!espP.times.length) chips.append(el("span", { class: "pers-dica" }, "Nenhum time ainda. O primeiro da lista vira o card “próximo jogo” do Início e aparece destacado na tabela."));
+  corpo.append(chips);
+  const inp = el("input", { class: "dd-input", id: "esp-time-q", placeholder: "Buscar time pelo nome", value: espP.busca, autocomplete: "off", role: "combobox", "aria-expanded": "false", "aria-controls": "esp-time-sug", "aria-autocomplete": "list", "aria-label": "Buscar time" });
+  const sug = el("ul", { class: "lst-sug", id: "esp-time-sug", role: "listbox", "aria-label": "Times", hidden: "" });
+  let opcoes = [];
+  const escolher = (o) => { if (espP.times.length >= ES.MAX_TIMES) { espP.erro = `Dá para acompanhar até ${ES.MAX_TIMES} times.`; desenharMeusEsportes("esp-time-q"); return; } espP.times.push({ liga: o.liga, id: o.id, nome: o.nome.slice(0, 40) }); espP.busca = ""; espP.mexeu = true; espP.erro = ""; desenharMeusEsportes("esp-time-q"); };
+  const pintarSug = () => {
+    sug.textContent = "";
+    opcoes.forEach((o, n) => {
+      const b = el("button", { type: "button", role: "option", tabindex: "-1", id: "esp-time-op" + n, "aria-selected": String(n === espP.marcada) }, el("b", {}, o.nome), el("span", {}, nomeLiga(o.liga)));
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => escolher(o));
+      sug.append(el("li", {}, b));
+    });
+    sug.hidden = !opcoes.length; inp.setAttribute("aria-expanded", String(!!opcoes.length));
+    if (espP.marcada >= 0) inp.setAttribute("aria-activedescendant", "esp-time-op" + espP.marcada); else inp.removeAttribute("aria-activedescendant");
+  };
+  const atualizar = () => { espP.busca = inp.value; opcoes = sugerirTimes(inp.value); espP.marcada = opcoes.length ? 0 : -1; pintarSug(); };
+  inp.addEventListener("input", atualizar);
+  inp.addEventListener("blur", () => { opcoes = []; pintarSug(); });
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" && opcoes.length) { e.preventDefault(); espP.marcada = (espP.marcada + 1) % opcoes.length; pintarSug(); }
+    else if (e.key === "ArrowUp" && opcoes.length) { e.preventDefault(); espP.marcada = (espP.marcada - 1 + opcoes.length) % opcoes.length; pintarSug(); }
+    else if (e.key === "Enter" && opcoes.length) { e.preventDefault(); escolher(opcoes[Math.max(0, espP.marcada)]); }
+    else if (e.key === "Escape" && (opcoes.length || inp.value)) { e.preventDefault(); e.stopPropagation(); inp.value = ""; atualizar(); }
+  });
+  corpo.append(el("div", { class: "esp-busca" }, inp, sug));
+  const conhecidos = timesConhecidos().length;
+  corpo.append(el("p", { class: "pers-dica" }, conhecidos ? "Os nomes vêm das tabelas e dos jogos das competições ligadas." : "Ligue uma competição e espere a primeira coleta: os times dela aparecem aqui."));
+  if (espP.erro) corpo.append(el("p", { class: "esp-erro", role: "alert" }, espP.erro));
+  const cancelar = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "esp-cancelar" }, "Cancelar");
+  cancelar.addEventListener("click", fecharMeusEsportes);
+  const salvar = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "esp-salvar", ...(espP.salvando ? { disabled: "" } : {}) }, espP.salvando ? "Salvando…" : "Salvar");
+  salvar.addEventListener("click", salvarMeusEsportes);
+  pe.append(cancelar, salvar);
+  if (espP.busca) { opcoes = sugerirTimes(espP.busca); espP.marcada = opcoes.length ? Math.max(0, Math.min(espP.marcada, opcoes.length - 1)) : -1; pintarSug(); }
+  const f = ativo && $(ativo);
+  if (f && f.focus) { f.focus({ preventScroll: true }); if (f === inp) { try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) {} } }
+}
+async function salvarMeusEsportes() {
+  if (!espP || espP.salvando) return;
+  const corpo = { competicoes: espP.ordem.filter((id) => espP.on.has(id)), ordem: espP.ordem, times: espP.times };
+  const v = ES.validarPrefs(corpo);
+  if (v.erro) { espP.erro = v.erro; desenharMeusEsportes(); return; }
+  espP.salvando = true; espP.erro = ""; desenharMeusEsportes("esp-salvar");
+  try {
+    const r = await fetch("/api/prefs/esportes", { method: "PUT", credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify(v.prefs) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.erro && /\s/.test(j.erro) ? j.erro : "Não deu para salvar agora. Tente de novo.");
+    espPrefs = j;
+    fecharMeusEsportes();
+    [...wDados.keys()].forEach((k) => { if (k.startsWith("esportes-")) wDados.delete(k); });
+    renderEsportes(true); carregarEsportes();
+    if (inicio && !carteiraVista && painelMontado) montarGrade();
+  } catch (e) { if (espP) { espP.salvando = false; espP.erro = e.message; desenharMeusEsportes(); } }
+}
+$("esp-veu").addEventListener("click", fecharMeusEsportes);
+$("esp-folha-fechar").addEventListener("click", fecharMeusEsportes);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && espPAberto) { e.preventDefault(); fecharMeusEsportes(); } });
+$("esp-folha").addEventListener("keydown", (e) => {
+  if (e.key !== "Tab") return;
+  const foc = [...$("esp-folha").querySelectorAll("button:not(:disabled), input, select")].filter((x) => x.offsetParent !== null);
+  if (!foc.length) return;
+  const pri = foc[0], ult = foc[foc.length - 1];
+  if (e.shiftKey && (document.activeElement === pri || document.activeElement === $("esp-folha"))) { e.preventDefault(); ult.focus(); }
+  else if (!e.shiftKey && document.activeElement === ult) { e.preventDefault(); pri.focus(); }
+});
+function ajustarMenuEsportes() {
+  const ok = espLiberado();
+  $("conta-esportes").hidden = !ok; $("conta-sep-esp").hidden = !ok;
+}
+
+/* ---- widgets do Início: rodada e tabela de cada competição ligada, próximo jogo do time ---- */
+const ligaDoWidget = (id) => { const m = /^esportes-(?:rodada|tabela)-(.+)$/.exec(id); return m ? m[1] : null; };
+/* Só as competições ligadas em Meus esportes; "próximo jogo" só com time escolhido */
+function espOculto(id) {
+  if (!id.startsWith("esportes-")) return false;
+  if (id === "esportes-meu-time") return !espMeuTime();
+  const l = ligaDoWidget(id);
+  return !l || !espLigadas().includes(l);
+}
+function leitorEsp(id) {
+  if (id === "esportes-meu-time") return async (f) => {
+    await lerPrefsEsportes();
+    const t = espMeuTime();
+    if (!t) return { d: null, marca: "sem-time" };
+    const d = await lerEsp(t.liga, f);
+    return d === undefined ? undefined : { d, marca: marcaDe(d) + JSON.stringify(t) };
+  };
+  const l = ligaDoWidget(id);
+  if (!l) return null;
+  return async (f) => { await lerPrefsEsportes(); const d = await lerEsp(l, f); return d === undefined ? undefined : { d, marca: marcaDe(d) + JSON.stringify(espTimeDe(l)) }; };
+}
+/* Hoje, se houver jogo hoje; senão a rodada */
+function jogosDoCard(d) {
+  const js = (d && d.rodada && d.rodada.jogos) || [];
+  const hoje = js.filter((j) => ES.rotuloDia(j.data) === "hoje");
+  return { js: hoje.length ? hoje : js, hoje: !!hoje.length };
+}
+const corposEsp = {
+  "esportes-rodada"(d, fm, id) {
+    if (!d) return [vazioW("Sem dados desta competição ainda.")];
+    const liga = ligaDoWidget(id), t = espTimeDe(liga);
+    const { js } = jogosDoCard(d);
+    if (!js.length) return [vazioW("Sem jogos nesta semana.")];
+    const n = fm.c > 1 ? 10 : 5 * fm.r;
+    return [el("ul", { class: "wdg-esp" }, ...js.slice(0, n).map((j) => { const li = jogoEl(j, t, fm.c === 1); li.className = j.estado; return li; })),
+      js.length > n ? el("p", { class: "wdg-vazio" }, `+${js.length - n} jogos na rodada`) : null].filter(Boolean);
+  },
+  "esportes-tabela"(d, fm, id) {
+    if (!d) return [vazioW("Sem dados desta competição ainda.")];
+    const liga = ligaDoWidget(id), t = espTimeDe(liga);
+    const linhas = (d.tabela || []).filter((r) => !r.grupo || r.grupo === (d.tabela[0] && d.tabela[0].grupo));
+    if (!linhas.length) return [vazioW("A tabela ainda não chegou.")];
+    const n = fm.r > 1 ? 14 : 6;
+    const topo = linhas.slice(0, n), meu = t && linhas.find((r) => r.id === t.id);
+    const tr = (r) => { const z = corZona(r.zona); return el("tr", { class: (z ? "esp-z" : "") + (t && r.id === t.id ? " esp-meu" : ""), ...(z ? { style: "--z:" + z } : {}) }, el("td", {}, String(r.pos ?? "–")), el("td", { title: r.time }, r.time), el("td", { title: "Jogos" }, String(r.j ?? "–")), el("td", { title: "Pontos" }, el("b", {}, String(r.pts ?? "–")))); };
+    const rows = topo.map(tr);
+    if (meu && !topo.includes(meu)) rows.push(el("tr", { class: "esp-pula", "aria-hidden": "true" }, el("td", { colspan: "4" }, "⋯")), tr(meu));
+    return [el("table", { class: "wdg-esp-tab" }, el("tbody", {}, ...rows))];
+  },
+  "esportes-meu-time"(d) {
+    const t = espMeuTime();
+    if (!t) return [vazioW("Escolha um time em Meus esportes.")];
+    if (!d) return [vazioW("Sem dados de " + t.nome + " ainda.")];
+    const dele = (d.times && d.times[t.id]) || {};
+    const todos = [...((d.rodada && d.rodada.jogos) || []), ...(d.proximos || []), ...(d.ultimos || [])].filter((j) => (j.ids || []).includes(t.id));
+    /* jogo em andamento entra no lugar do último resultado ("Agora"); o próximo é o primeiro que ainda não começou */
+    const vivo = [...(dele.proximos || []), ...todos].find((j) => j.estado === "in");
+    const ult = vivo || (dele.ultimos && dele.ultimos[0]) || todos.filter((j) => j.estado === "post").sort((a, b) => String(b.data).localeCompare(String(a.data)))[0];
+    const prox = (dele.proximos || []).find((j) => j.estado === "pre") || todos.filter((j) => j.estado === "pre").sort((a, b) => String(a.data).localeCompare(String(b.data)))[0];
+    const out = el("div", { class: "wdg-meu" });
+    if (ult) {
+      const casa = ult.ids[0] === t.id, [gm, gv] = ult.placar || [null, null];
+      const res = gm == null ? "" : gm === gv ? "e" : (gm > gv) === casa ? "v" : "d";
+      out.append(el("div", {}, el("h4", {}, ult.estado === "in" ? "Agora" : "Último resultado"),
+        el("p", { class: "placar res-" + res }, `${ult.siglas[0] || ult.mandante} ${gm ?? "–"} × ${gv ?? "–"} ${ult.siglas[1] || ult.visitante}`),
+        el("p", { class: "n" }, (ult.estado === "in" ? el("span", { class: "esp-vivo" }, "ao vivo" + (ult.minuto ? " · " + ult.minuto : "")) : ES.rotuloDia(ult.data)), ult.estado === "in" ? null : " · " + ult.mandante + " × " + ult.visitante)));
+    }
+    if (prox) {
+      const p = ES.partesData(prox.data);
+      out.append(el("div", {}, el("h4", {}, "Próximo jogo"), el("p", {}, el("b", {}, prox.mandante + " × " + prox.visitante)),
+        el("p", { class: "n" }, (ES.rotuloDia(prox.data) || "") + (p ? " · " + p.hora : "") + (prox.estadio ? " · " + prox.estadio : ""))));
+    }
+    if (!ult && !prox) out.append(vazioW("Nenhum jogo de " + t.nome + " por agora."));
+    return [out];
+  },
+};
+const tituloDoWidget = (id, def) => (id === "esportes-meu-time" && espMeuTime() ? espMeuTime().nome + " · próximo jogo" : def.titulo);
+function subtituloEsp(id, x) {
+  const d = x && x.estado === "ok" ? x.d : null;
+  if (!d) return "";
+  if (id === "esportes-meu-time") { const t = espMeuTime(); return t ? nomeLiga(t.liga) : ""; }
+  if (id.startsWith("esportes-rodada-")) {
+    if (((d.rodada && d.rodada.jogos) || []).some((j) => j.estado === "in")) return el("span", { class: "esp-vivo" }, "ao vivo");
+    const { hoje } = jogosDoCard(d);
+    return hoje ? "jogos de hoje" : d.rodada && d.rodada.numero ? "rodada " + d.rodada.numero : "";
+  }
+  return d.atualizado ? "atualizado " + fmtRel(d.atualizado) : "";
+}
+
 /* push: sair do Início para uma seção (ou voltar a ele pela aba) cria uma entrada no histórico, para o "voltar"
    do navegador trazer o Início de volta. Entre seções e visões o endereço é só trocado, como antes. */
 function escreverHash(push) {
-  const alvo = inicio && carteiraVista ? hashCarteira() : inicio ? "#inicio" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
+  const config = !inicio && radar === "esportes" && (espPAberto || partesDoHash()[1] === "config");
+  const alvo = inicio && carteiraVista ? hashCarteira() : inicio ? "#inicio" : config ? "#esportes/config" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
   if ((location.hash || "") === alvo) return;
   try { history[push ? "pushState" : "replaceState"](null, "", location.pathname + location.search + alvo); }
   catch (e) { try { location.hash = alvo; } catch (e2) {} }
@@ -7609,6 +8219,7 @@ function trocarRadar(id, porHash) {
   const doInicio = inicio;
   if (doInicio) { fecharPers(); inicio = false; carteiraVista = null; }
   fecharPainel();
+  if (id !== "esportes") fecharMeusEsportes();
   radar = id;
   /* Investimentos abre sempre na Bolsa, a não ser que o endereço peça os EUA ou as notícias */
   visao = porHash && RADARES[id].mercado ? visaoDoHash() : "bolsa";
@@ -7630,10 +8241,12 @@ window.addEventListener("hashchange", () => {
   if (cv) { irCarteira(cv, true); return; }
   const h = radarDoHash();
   if (!h) { irInicio(true); if (location.hash !== "#inicio") escreverHash(); return; }
-  if (!inicio && h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); return; }
+  const querConfig = h === "esportes" && partesDoHash()[1] === "config";
+  if (!inicio && h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); else if (querConfig) abrirMeusEsportes(); else fecharMeusEsportes(); return; }
   /* seção não liberada: o endereço volta para o radar aberto em vez de ficar apontando para outro */
   if (!radaresVisiveis().includes(h)) { escreverHash(); return; }
   trocarRadar(h, true);
+  if (querConfig) abrirMeusEsportes();
 });
 escreverHash();
 render();
@@ -7653,7 +8266,8 @@ if (inicio) entrarInicio();
   const me = (await pMe) || {};
   if (Array.isArray(me.secoes)) secoesLiberadas = me.secoes;
   meuNome = String(me.nome || "").trim();
-  ajustarMenuCarteira();
+  ajustarMenuCarteira(); ajustarMenuEsportes();
+  if (espLiberado()) lerPrefsEsportes().then(() => { if (inicio && !carteiraVista && painelMontado) montarGrade(); renderEsportes(); });
   const vis = radaresVisiveis();
   if (!vis.length) {
     desligar.forEach((f) => { try { if (typeof f === "function") f(); } catch (e) {} }); desligar = []; geracao++;
@@ -7676,6 +8290,7 @@ if (inicio) entrarInicio();
     ligarRadar();
   }
   else renderRadares();
+  if (!inicio && radar === "esportes" && partesDoHash()[1] === "config" && espLiberado()) abrirMeusEsportes();
   setInterval(() => {
     if (inicio) { atualizarCabInicio(); return; }
     renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral();

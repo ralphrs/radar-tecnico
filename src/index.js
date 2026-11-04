@@ -17,6 +17,7 @@ import { rotaLeitura, cronLeitura, lerFundamentos } from "./leitura.js";
 // Radar de dividendos: o mesmo arquivo que a página carrega (critérios, avisos e validação dos filtros salvos)
 import "../public/radar-filtro.js";
 import { validarTabelas, mesclarTabelas, respostaTabelas, validarLayout, respostaLayout } from "./prefs.js";
+import { cronEsportes, validarPrefsEsportes, respostaPrefsEsportes } from "./esportes.js";
 const RF = globalThis.RadarFiltro;
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
@@ -345,6 +346,36 @@ async function prefsRadar(request, env, quem) {
   return json({ erro: "metodo" }, 405);
 }
 
+// Meus esportes (aba Esportes): competições ligadas, a ordem delas e os times que a pessoa acompanha, em prefs/<email>,
+// id "esportes". Mesmo caminho do painel. Validação e padrão em public/esportes.js; o cron (src/esportes.js) lê todos
+// esses docs para saber quais competições coletar.
+async function prefsEsportes(request, env, quem) {
+  if (!libera(quem.secoes, "esportes")) return json({ erro: "secao" }, 403);
+  const col = "prefs/" + quem.email;
+  if (request.method === "GET") {
+    const linhas = await lerLinhas(env, "SELECT id, data FROM docs WHERE collection = ? AND id = ?", [col, "esportes"], "prefs");
+    let salvo = null;
+    try { salvo = linhas[0] ? JSON.parse(linhas[0].data) : null; } catch { salvo = null; }
+    return json(respostaPrefsEsportes(salvo));
+  }
+  if (request.method === "PUT") {
+    const corpo = await request.text();
+    if (corpo.length > 6000) return json({ erro: "grande" }, 413);
+    let b;
+    try { b = JSON.parse(corpo); } catch { return json({ erro: "json" }, 400); }
+    const v = validarPrefsEsportes(b);
+    if (v.erro) return json({ erro: v.erro }, 400);
+    const doc = { ...v.prefs, atualizado: agoraIso() };
+    const data = JSON.stringify(doc);
+    await env.DB.prepare(
+      "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, 'esportes', ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
+    ).bind(col, data, doc.atualizado).run();
+    gravarNoEspelho(env, [{ collection: col, id: "esportes", data, coletado: "", atualizado: doc.atualizado }]);
+    return json({ ok: true, ...respostaPrefsEsportes(doc) });
+  }
+  return json({ erro: "metodo" }, 405);
+}
+
 // Múltiplos (P/L, P/VP, DY, dividendo 12m, variação em 1 ano) das fichas de papel já guardadas em `hist`, compactos,
 // para o Radar filtrar ações da B3 e dos EUA. Igual para todo mundo: cache de 30 s no isolate e 3 min na borda.
 async function fundamentos(env, quem, request) {
@@ -534,6 +565,10 @@ export default {
       if (!corpoJson(request)) return json({ erro: "json" }, 415);
       return prefsRadar(request, env, quem);
     }
+    if (p === "/api/prefs/esportes") {
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      return prefsEsportes(request, env, quem);
+    }
     if (p === "/api/radar/fundamentos" && request.method === "GET") return fundamentos(env, quem, request);
     // Leitura do dia (src/leitura.js): pessoal, cifrada, sem cache
     if (p === "/api/leitura" || p === "/api/leitura/gerar") {
@@ -597,6 +632,8 @@ export default {
     try { await cronB3(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("b3", e); }
     try { await cronEua(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("eua", e); }
     try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
+    // Esportes (src/esportes.js): sonda no começo e, a cada 5 min, rodada, tabela e jogos dos times das competições ligadas
+    try { const r = await cronEsportes(env, evento.scheduledTime || Date.now()); if (r && (r.ligas.length || r.erros)) console.log("esportes", JSON.stringify(r)); } catch (e) { console.error("esportes", String((e && e.message) || e).slice(0, 120)); }
     // Reddit: uma URL por minuto somando coleta e sonda; se a coleta falhou antes de saber, a sonda não arrisca
     try { await cronSonda(env, { redditLivre: !!coleta && !coleta.reddit }); } catch (e) { console.error("sonda", e); }
     try { const r = await cronPapel(env, evento.scheduledTime || Date.now()); if (r && r.candidatos) console.log("papel", JSON.stringify(r)); } catch (e) { console.error("papel", e); }

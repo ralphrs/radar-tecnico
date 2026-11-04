@@ -1,4 +1,4 @@
-# Lookout: estado atual (03/11/2026)
+# Lookout: estado atual (04/11/2026)
 
 Feed pessoal de notícias do Admin, aberto só para convidados. Um Worker da Cloudflare (`news`, código em `src/`) serve a página, a API e o admin, e guarda tudo num banco D1 (`lookout`). As leituras da página saem de um espelho do D1 em São Paulo (veja "Banco e espelho"). O login é pelo Cloudflare Access; o Worker confere o token em cada requisição e, sem configuração, não deixa ninguém entrar.
 
@@ -161,14 +161,64 @@ Dados: cada widget faz no máximo uma leitura, todas em paralelo, pelas mesmas r
 
 Posts dos subreddits de `src/feeds.js` (os mais votados do dia, `/r/<sub>/top/.rss?t=day`), sem curadoria: post de fórum não é notícia, mas mostra o que o pessoal está discutindo. A coleta grava cada post em `foruns-<radar>` (id = id do post no Reddit; `data` = `{ titulo, url, linkExterno, sub, autor, publicado, resumo, coletado }`, sem votos, que o Atom não traz) e nunca em `candidatos`. Ficam 3 dias.
 
-- **Lateral:** bloco "Nos fóruns" nas seções com subreddit (hoje Tech, Negócios e Notícias e Política; Investimentos e Esportes quando tiverem). Na Bolsa vai abaixo de "Notícias de hoje"; nas outras seções, que não têm "Notícias de hoje", abaixo de "Novos nesta rodada". Até 6 posts das últimas 24 h, por `publicado` (mais novo primeiro): título (abre o Reddit em nova aba, com o resumo no `title`), "r/<sub> · há X" e "fonte" quando há `linkExterno`. "Ver mais" abre até 20 ("Ver menos" fecha). Vazio: "Nada novo nos fóruns hoje." Abaixo de 1200 px o bloco vai para depois do feed (`#foruns-centro`).
+- **Lateral:** bloco "Nos fóruns" nas seções com subreddit (desde 04/11/2026 todas as cinco: Tech, Negócios, Investimentos, Notícias e Política, Esportes; lista e ritmo em `docs/coleta.md`). Na Bolsa vai abaixo de "Notícias de hoje"; nas outras seções, que não têm "Notícias de hoje", abaixo de "Novos nesta rodada". Até 6 posts das últimas 24 h, por `publicado` (mais novo primeiro): título (abre o Reddit em nova aba, com o resumo no `title`), "r/<sub> · há X" e "fonte" quando há `linkExterno`. "Ver mais" abre até 20 ("Ver menos" fecha). Vazio: "Nada novo nos fóruns hoje." Abaixo de 1200 px o bloco vai para depois do feed (`#foruns-centro`).
 - **Dados:** `/api/q?c=foruns-<radar>&order=publicado&dir=desc&wf=publicado&wo=>=&wv=<corte>&limit=20`, com o corte de 24 h andando de 10 em 10 min (cabe no cache). Mesmo ciclo de 2 min das outras leituras. As seções com subreddit vêm em `foruns` de `/api/me`, já filtradas pelas seções da pessoa; a API recusa com 403 `foruns-*` de seção não liberada (`SECAO_DA_COLECAO` em `src/grupos.js`).
 - **Widget:** `foruns-<secao>` (tabela do Início).
 - **Admin:** no "Rendimento das fontes", cada subreddit aparece uma vez, sem números de curadoria, com "No fórum" (posts dele em `foruns-*` agora).
 
+## Esportes
+
+Rodada, próximos jogos e tabela das competições que cada pessoa liga em "Meus esportes", sem IA. Código em `src/esportes.js` (fontes, parsers, cron e sonda) e `public/esportes.js` (competições, zonas da tabela, validação de "Meus esportes" e a hora no fuso de quem vê; o mesmo arquivo roda no Worker, na página e nos testes). Sem escudo de clube e sem foto de jogador: só o nome do time e, onde falta espaço, a sigla de 3 letras.
+
+### Fontes
+
+- **ESPN**, endpoints públicos sem chave (JSON): `site.api.espn.com/apis/site/v2/sports/<esporte>/<liga>/scoreboard?dates=AAAAMMDD-AAAAMMDD` (3 dias antes a 10 depois, em São Paulo), `site.api.espn.com/apis/v2/sports/<esporte>/<liga>/standings` (reserva: `site.web.api.espn.com/.../standings?season=AAAA`) e `.../teams/<id>/schedule` (e `?fixture=true` quando o primeiro não traz jogo futuro). O módulo aceita qualquer `<esporte>/<liga>` da ESPN; hoje `LIGAS` tem só futebol: `bra.1`, `conmebol.libertadores`, `bra.copa_do_brasil`, `bra.camp.gaucho`, `conmebol.sudamericana`, `eng.1`, `uefa.champions`, `esp.1`, `ita.1`, `ger.1`, `fra.1`. NBA, NFL e F1 ficam para depois (é só pôr em `LIGAS` e em `ESPORTES`).
+- Campos lidos: `events[].competitions[0].competitors[]` (`homeAway`, `team.displayName/abbreviation/id`, `score` como texto ou `{ value }`), `status.type.state` (`pre`, `in`, `post`), `status.displayClock`, `STATUS_HALFTIME` vira "intervalo", adiado e cancelado viram `detalhe: "adiado"`; `venue.fullName`; `week.number` quando houver. Tabela: `children[].standings.entries[].stats` por `name` (`rank`, `points`, `gamesPlayed`, `wins`, `draws` ou `ties`, `losses`, `pointsFor`, `pointsAgainst`, `pointDifferential`); vários `children` são grupos (Libertadores) e cada linha leva `grupo`. Campo que falta vira `null` e aparece "–"; evento sem nome de time sai.
+- **Globo Esporte**: a página `ge.globo.com/futebol/campeonato-gaucho/` entra quando a ESPN não tem o Gauchão (`reserva: "ge"` em `LIGAS`). O parser procura o JSON embutido (`"classificacao"` com `ordem`, `nome_popular`, `sigla`, `pontos`, `jogos`, `vitorias`, `empates`, `derrotas`, `gols_pro`, `gols_contra`, `saldo_gols`; `"lista_jogos"`/`"jogos"` com `equipes.mandante/visitante`, `placar_oficial_*`, `data_realizacao`, hora sem fuso lida como de Brasília) e, sem ele, a primeira tabela do HTML com posição, nome e números. Não achou nada: `null`, o erro vai para `_sistema/esportes-erro` e o cron segue. Com a ESPN recusando (4xx), a competição fica no ge por 24 h antes de tentar a ESPN de novo.
+- **Notícias do ge**: os feeds RSS que já estavam em `src/feeds.js` (futebol, Brasileirão, Inter e futebol internacional) respondem em produção (`feeds_estado` de 04/11, sem erro). Os candidatos novos (`/rss/ge/`, `/rss/ge/rs/`, Gauchão, Copa do Brasil, Libertadores) estão na sonda; o Admin põe em `src/feeds.js` os que derem 200 com itens.
+- **Sonda** (`_sistema/sonda-esportes`): na primeira execução do cron monta a lista (scoreboard e standings de cada liga acima, a standings da `site.web.api`, o scoreboard de um dia só, o schedule de um time tirado da tabela do `bra.1`, a página do Gauchão no ge e os RSS candidatos) e anda 6 por minuto. Cada resposta vai crua, até 20 KB, para `_sistema/sonda-esportes-aNN` (`{ url, status, quando, amostra, cortado }`); o resumo (status, tempo, tamanho, tipo de conteúdo e o que o parser achou: jogos, estados, linhas, itens) fica em `resultados`. Pronta (`fim`), não roda mais; para rodar de novo, apagar os docs da sonda pela lista de ids. O proxy do ambiente de desenvolvimento não alcança a ESPN nem o ge: os parsers foram escritos pelo formato conhecido e conferidos com JSON e HTML de exemplo (`test/fixtures-esportes.mjs`), e as amostras de produção servem para ajustar.
+
+### Docs
+
+`meta/esportes-<liga>` (seção Esportes: `SECAO_DO_META` em `src/grupos.js` aceita o prefixo `esportes-`; convidado sem a seção recebe 403; o espelho copia `meta` inteiro):
+
+```
+{ atualizado, liga, nome, temporada, fonte: "espn" | "ge",
+  tabela: [{ pos, time, sigla, id, j, v, e, d, gp, gc, sg, pts, zona, grupo? }],
+  rodada: { numero, jogos: [jogo] }, proximos: [até 20], ultimos: [até 20],
+  times: { <id do time>: { nome, proximos: [até 10], ultimos: [até 10] } },
+  rodadaEm, tabelaEm, timesEm, tentativas: { rodada?, tabela?, times? }, espnFalhouEm? }
+jogo: { id, data (ISO), mandante, visitante, siglas: [m, v], ids: [m, v], placar: [m, v] | null, estado: "pre" | "in" | "post", minuto, estadio, detalhe }
+```
+
+`rodada` é o número de rodada do jogo ao vivo ou do mais perto de agora, quando a ESPN manda; sem número, os jogos até 2 dias em volta dele. `zona` sai de `LIGAS[liga].zonas` (faixas de posição por competição; Brasileirão: Libertadores 1º a 6º, Pré-Libertadores 7º e 8º, Sul-Americana 9º a 14º, rebaixamento 17º a 20º). Mexer nas faixas muda a cor das linhas e a legenda, nada mais. Uma parte que falha deixa a anterior como estava e marca `tentativas`.
+
+### Cron (`cronEsportes`, a cada minuto no `scheduled`)
+
+- A sonda anda enquanto tiver pendentes.
+- As competições são conferidas nos minutos terminados em 4 e 9. Ativas: as ligadas em todos os `prefs/<email>` id `esportes` (lidos pela faixa da chave, sem `LIKE`) mais Brasileirão e Libertadores sempre.
+- Rodada (scoreboard): a cada 15 min quando há jogo ao vivo ou começando entre 3 h atrás e 2 h à frente; senão 1x por hora. Tabela: 2x por dia. Schedule dos times de interesse: 1x por dia, só de quem está numa competição ligada. Tentativa que falhou espera pelo menos 30 min.
+- Fila de chamadas com 400 ms entre uma e outra, 8 s de limite cada, 429 dobra a espera e tenta de novo uma vez (o segundo 429 para a passada), no máximo 14 chamadas por passada, competições com jogo agora primeiro. Erros por competição e parte em `_sistema/esportes-erro` (`porLiga["bra.1:rodada"]`); o cron nunca lança.
+
+### Meus esportes
+
+`prefs/<email>`, id `esportes`: `{ competicoes: [ids ligados], times: [{ liga, id, nome }], ordem: [todas as competições] }`, por `GET`/`PUT /api/prefs/esportes` (403 sem a seção Esportes; validação em `Esportes.validarPrefs`: competição fora de `LIGAS` é recusada, até 10 times, id do time só letras, números e hífen, nome até 40). Quem nunca salvou: Brasileirão, Libertadores e Copa do Brasil, sem time. `ordem` guarda todas para a competição voltar ao mesmo lugar quando for religada.
+
+Tela: `#esportes/config`, aberta pelo menu da conta ("Meus esportes", só com a seção liberada) e pelo botão no topo da aba. É uma folha lateral (de baixo no celular) com Futebol → competições (ligar e desligar, arrastar pela alça ou ▲▼) e "Times que eu acompanho" (autocompletar pelos times das tabelas e jogos das competições ligadas; o primeiro time é o do widget "próximo jogo"). Fechar volta o endereço para `#esportes`.
+
+### Aba Esportes
+
+Acima do feed, um cartão por competição ligada, na ordem da pessoa, com três abas: **Rodada** (dia e hora no fuso de quem vê, mandante × visitante, placar ou "×"; "ao vivo · 67'" em vermelho), **Próximos** (os 10 próximos do time de interesse daquela competição, quando houver; senão os da competição) e **Tabela** (helper `Tabela`, id `esp-tab-<liga>`, ordenável, sem filtro; faixa de cor por zona com legenda, time de interesse em negrito com "seu time"; grupos numa coluna "Grupo"). Cartão recolhível; aba e recolhido ficam no `localStorage` (`radar-esportes`). Sem doc: "Sem dados desta competição ainda." Rodapé: "Dados: ESPN" ou "Dados: Globo Esporte" e "atualizado há X". A página relê a cada minuto as competições com jogo agora e a cada 5 min as outras. O filtro Nacional/Internacional do feed segue como estava; o Internacional aparece como "Inter" no selo de clube e no título do grupo (o dado gravado não muda). No celular os cartões empilham, as abas ocupam a largura e a tabela mostra Pos, Time, J, Pts e SG, com o resto na rolagem lateral.
+
+### Widgets
+
+`esportes-rodada-<liga>` ("Brasileirão · rodada", 1x1 ou 2x1: os jogos de hoje, ou a rodada quando não há jogo hoje), `esportes-tabela-<liga>` ("Brasileirão · tabela", 1x1 com os 6 primeiros ou 1x2 com 14, mais a linha do time de interesse se ele estiver abaixo) e `esportes-meu-time` ("Inter · próximo jogo", com o nome do time escolhido: o jogo em andamento ou o último resultado, e o próximo jogo). Todos da seção Esportes, fora do padrão. O catálogo do servidor tem os de todas as competições; a página só mostra e oferece em Personalizar os das competições ligadas (e o "próximo jogo" só com time escolhido).
+
 ## Minhas listas
 
 Collection `listas/<email>`, código em `src/listas.js` (modelo, regra, histórico, rota e cron) e na página (lateral `listaEl`/`renderListas`, página da lista `desenharPaginaLista`, lista de listas `desenharTodasListas`, painel `desenharPainelLista`). Aparecem na lateral da Bolsa e dos EUA (trilho direito a partir de 1200 px, abaixo da tabela antes disso), no widget do Início, na página de cada lista (`#lista/<id>`) e na lista de listas (`#listas`, também "Minhas listas" no menu da conta).
+
+Qtd e Valor (desde 04/11/2026): na lateral, colunas Qtd e Valor (quantidade × preço atual) para o papel que está em posição aberta na carteira importada, ordenáveis pelo cabeçalho como as outras; sem carteira ou sem o papel, "–". A linha ganha fundo leve verde ou vermelho pelo resultado da posição (preço atual contra o preço médio), como na página da lista; sem o papel, pela variação do dia. A conta é `RadarFiltro.posicaoLista` e `tomLista` (`public/radar-filtro.js`), com a mesma leitura de `/api/carteira` dos widgets (1 por minuto). Na lateral o preço sai sem "R$" e a tabela rola de lado com o papel parado na primeira coluna. No widget do Início, com carteira, cada linha mostra Papel, Qtd, Valor e Dia (o preço sai para caber) com a mesma cor.
 
 ### Modelo
 
@@ -316,13 +366,17 @@ Toda tabela de dados da página usa o mesmo helper, `public/tabela.js` (script c
 - **Paginação:** 25 por página (25, 50 ou 100 no rodapé), "‹ 1 2 3 … ›" com elipse e "N–M de T". Trocar de página mantém ordenação e filtros; mudar filtro, ordenação ou busca volta para a página 1. No celular os botões têm 44 px. "Ver todos" e "Carregar mais" saíram.
 - **Estado salvo:** por tabela em `localStorage` (`radar-tabela-<id>`: ordenação, filtros, página, por página), que pinta primeiro, e em `/api/prefs/tabelas`, que manda: na primeira leitura da abertura, tabela que a pessoa ainda não mexeu troca para o estado da conta. `GET` devolve `{ tabelas }`; `PUT { tabelas: { <id>: estado | null } }` manda só as que mudaram (1,2 s depois da última mudança, e no `pagehide`) e o servidor junta com o salvo, cada uma com `em`, guardando as 40 mais recentes. Doc `prefs/<email>`, id `tabelas`, D1 e write-through no espelho. Conferência (`validarEstado`, a mesma na página e no Worker, regras em `src/prefs.js`): id `^[a-z0-9-]{1,80}$`, coluna `^[A-Za-z0-9_]{1,24}$`, até 5 critérios, até 20 filtros, até 12 valores de até 80 caracteres, "contém" até 60, datas AAAA-MM-DD, página 1 a 10000, por página 25, 50 ou 100.
 
+## Menu da conta
+
+Avatar no cabeçalho (página e `/admin`): nome e e-mail, Minha carteira, Minha meta, Importar extratos e Minhas listas (com Investimentos), Meus esportes (com Esportes), Aparência, Administração (só o Admin), **Trocar de conta** e Sair. "Trocar de conta" (ajuda: "Sai e abre o login para escolher outra conta do Google") vai para `/cdn-cgi/access/logout` e antes grava `radar-trocar=1` no `sessionStorage`. O Access não volta sozinho para o login depois do logout; ao abrir o site de novo ele pede o login e aí dá para escolher a outra conta. O `radar-trocar` fica só como marca, sem uso por enquanto.
+
 ## Colunas recolhíveis
 
 A partir de 900 px, a coluna esquerda e a direita têm um botão no topo (chevron, `aria-label="Recolher coluna"`, e "Abrir coluna" quando recolhida). Recolhida, a coluna vira uma faixa de 36 px só com o botão e o centro passa a `minmax(0, 1fr)`, ocupando o espaço até o limite de 1360 px da página. A troca do `grid-template-columns` tem 180 ms, nada com `prefers-reduced-motion`. Vale para Tech, Negócios, Investimentos (Bolsa, EUA, Radar, Notícias), Notícias e Esportes; Início e carteira não têm colunas. O letreiro e a barra de abas não mudam. A coluna direita só existe a partir de 1200 px (e não existe no Radar), então entre 900 e 1199 px só a esquerda recolhe. Estado por lado em `localStorage` (`radar-col-esq`, `radar-col-dir`, "1" recolhida) e em `/api/prefs/layout` (`{ esq, dir }`, doc `prefs/<email>`, id `layout`; o `GET` responde `salvo: false` para quem nunca mexeu e aí vale o `localStorage`).
 
 ## API
 
-`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas` com `/api/listas/<id>`, `/recalcular`, `/ordem` e `/mover` (veja "Minhas listas"), `/api/prefs/painel`, `/api/prefs/tabelas` e `/api/prefs/layout` (veja "Tabelas" e "Colunas recolhíveis"), `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. `/api/me` traz também `foruns`, as seções liberadas que têm subreddit. A página só lê as collections de itens, destaques, `foruns-*` e `meta`, e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
+`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas` com `/api/listas/<id>`, `/recalcular`, `/ordem` e `/mover` (veja "Minhas listas"), `/api/prefs/painel`, `/api/prefs/tabelas` e `/api/prefs/layout` (veja "Tabelas" e "Colunas recolhíveis"), `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/prefs/esportes` (veja "Esportes"), `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. `/api/me` traz também `foruns`, as seções liberadas que têm subreddit. A página só lê as collections de itens, destaques, `foruns-*` e `meta` (com `meta/esportes-*`), e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
 
 Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`) e recarga manual da CVM (`POST /api/admin/cvm`). Sem grupos criados, todo convidado vê tudo.
 

@@ -384,8 +384,22 @@
   // Proventos de 12 meses sobre o custo da posição, em %
   const dySobreCusto = (prov12, custo) => (custo > 0 && prov12 != null ? Math.round((prov12 / custo) * 1e4) / 100 : null);
 
+  // Minhas listas (lateral e widget do Início): a posição de um papel que está na carteira, com quantidade, valor
+  // (quantidade × preço atual) e o resultado contra o preço médio, em %. null quando a pessoa não tem o papel.
+  // preco: a cotação que a lista mostra; sem ela, a da carteira.
+  function posicaoLista(t, posicoes, preco) {
+    const p = (Array.isArray(posicoes) ? posicoes : []).find((x) => x && x.t === t && x.q > 0);
+    if (!p) return null;
+    const pr = Number.isFinite(preco) && preco > 0 ? preco : Number.isFinite(p.preco) && p.preco > 0 ? p.preco : null;
+    const valor = pr != null ? Math.round(p.q * pr * 100) / 100 : Number.isFinite(p.valor) ? p.valor : null;
+    const resPct = p.pm > 0 && pr != null ? Math.round((pr / p.pm - 1) * 1e4) / 100 : Number.isFinite(p.resPct) ? p.resPct : null;
+    return { q: p.q, valor, pm: p.pm ?? null, resPct };
+  }
+  // Cor da linha: o resultado da posição para quem tem o papel; sem ele, a variação do dia. "pos", "neg" ou "".
+  const tomLista = (pos, varDia) => { const v = pos ? pos.resPct : varDia; return v > 0 ? "pos" : v < 0 ? "neg" : ""; };
+
   raiz.RadarFiltro = {
-    paraEmpatar, dySobreCusto,
+    paraEmpatar, dySobreCusto, posicaoLista, tomLista,
     CLASSES_REGRA, EXTRAS, CAMPOS, linhasB3, linhasDe, fraseRegra, mudancasRegra, resumoValores, variacoes, valorCampo, ROTULO,
     CLASSES, NOME_CLASSE, ORDENS, PADRAO_CLASSE, FABRICA, MAX_FILTROS, NOME_MAX,
     novoFiltro, padraoPrefs, validarFiltro, validarPrefs, respostaPrefs, filtroPadrao,

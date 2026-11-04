@@ -88,3 +88,22 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Listas (pacote 2): campo Descrição (texto longo, editável; lista criada pelo Claude vem com motivo, critérios, decisões, exclusões e data); linha verde ou vermelha pelo resultado da posição na carteira (sem carteira, pela variação do dia); página própria por lista (`#lista/<id>`) com descrição, histórico de entradas e saídas e a tabela de comparações por papel (atual × preço médio, resultado em R$ e %, quanto falta para empatar, DY sobre custo × atual, P/VP, liquidez, quantidade e valor, situação contra a regra)
 - [x] Início, Personalizar (pacote 2): arrastar dentro do painel; tamanho por widget só onde o catálogo permitir (1, 2 ou 3 colunas; 1×2 e 2×2), responsivo (3/2/1 colunas) com pré-visualização
 - [ ] Renda fixa e Tesouro: importar o relatório "Posição" da Área do Investidor (CDB, LCI/LCA, CRI, Tesouro), classes novas na carteira, preço do Tesouro pela API pública 1x/dia, CDB/LCI/LCA atualizados pela curva (CDI/IPCA + taxa), IR estimado e isenção, vencimentos na agenda
+
+## Pedidos de 04/11
+- [x] Esportes: rodada, próximos jogos e tabela por competição configurável, pela ESPN (endpoints públicos) e pelo Globo Esporte no Gauchão quando a ESPN não tiver; `meta/esportes-<liga>`, cron a cada 15 min com jogo perto e 1x/hora sem, tabela 2x/dia, times 1x/dia; cartões acima do feed com Rodada, Próximos e Tabela com zonas coloridas; "Meus esportes" (`#esportes/config`, menu da conta) com competições, ordem e times; widgets de rodada, tabela e próximo jogo no Início (docs/LOOKOUT.md, "Esportes")
+- [ ] Esportes: conferir as amostras de `_sistema/sonda-esportes-aNN` do primeiro cron em produção e ajustar os parsers da ESPN e do ge ao formato real; pôr em `src/feeds.js` os RSS do ge que a sonda achar com itens
+- [ ] Esportes: NBA, NFL e F1 (o módulo já aceita `<esporte>/<liga>` da ESPN; falta pôr em `LIGAS` e na tela)
+- [x] Minhas listas: colunas Qtd e Valor e linha colorida pelo resultado da posição na lateral e no widget do Início, para quem tem o papel na carteira
+- [x] Nos fóruns em todas as seções: 28 subreddits novos (38 no total), Investimentos e Esportes com bloco e widget (docs/coleta.md)
+- [x] "Trocar de conta" no menu da conta (página e admin)
+- [x] Internacional aparece como "Inter" no selo de clube e no título do grupo, para não confundir com o filtro Nacional/Internacional
+
+## Pedidos de 04/11, manhã (fila em ordem)
+- [ ] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo
+- [ ] 1. Modo de edição do Início: grade quadriculada, redimensionar com os limites de cada card, arrastar para cima e para baixo, tirar card, grupos por tipo
+- [ ] 2. Simulador de reinvestimento (mês/ano alvo, só proventos, cenários); memória de cálculo gravada na carteira, comparar e excluir
+- [ ] 3. Ajustes da curadoria Tech (relatório de 04/11), decisão 2 dias depois
+- [ ] 4. Renda fixa e Tesouro pelo relatório "Posição"
+- [ ] 5. Sessão dedicada a telas grandes, tablet e celular
+- [ ] 6. Job mensal de exportação dos extratos pelo Chrome
+- [ ] Renomear o Worker "news" para "lookout" (ou só pelo domínio, quando houver)
