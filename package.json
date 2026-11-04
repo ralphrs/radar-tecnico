@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "b3-fake": "node test/fixtures/b3-fake/gerar.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.40.0"
