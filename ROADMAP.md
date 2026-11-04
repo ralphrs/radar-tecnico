@@ -113,4 +113,9 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [ ] 5. Sessão dedicada a telas grandes, tablet e celular
 - [ ] 6. Job mensal de exportação dos extratos pelo Chrome
 - [x] Logotipo do admin leva ao Início (04/11)
-- [ ] Renomear o Worker "news" para "lookout" (ou só pelo domínio, quando houver)
+- [ ] Troca de nome news → lookout (passo a passo em docs/cloudflare.md, "Troca de nome do Worker")
+  - [x] Repositório todo em `lookout`: wrangler, custos, user-agent, docs, admin (04/11)
+  - [ ] Worker `lookout` criado no Workers Builds, 8 secrets colados (CARTEIRA_KEY a mesma), Access ligado com AUD novo
+  - [ ] Conferir no ar: login, Início, admin, custos, cron gravando, espelho cheio; depois apagar o `news`
+  - [ ] Renomear o repositório no GitHub para `lookout`; conferir o Workers Builds, `git remote set-url` nas máquinas, trocar `ralphrs/radar-tecnico` nos docs e README
+  - [ ] Domínio próprio (depende do nome da empresa): custom domain `lookout.<domínio>`; só então mandar o link para o Gabriel
