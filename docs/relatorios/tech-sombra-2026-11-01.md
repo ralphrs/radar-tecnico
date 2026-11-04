@@ -62,7 +62,7 @@ Sombra: US 37, BR 5, GB 4, IN 4, CA 2, NL 1, sem país 6 (Kubernetes, Kotlin x2,
 | Itens | 5 de 34 (15%) | 5 de 59 (8%) |
 | Quais | Finsiders Brasil 3, Let's Money 1, Código Fonte TV 1 | Tecnoblog 3, Mobile Time 1, Let's Money 1 |
 
-A sombra tem menos Brasil em proporção, e o Brasil que aparece é Tecnoblog (consumo/notícia geral). A atual traz mercado brasileiro de pagamentos (Pix na Black Friday, IPO da Elo, ações de PicPay e Inter), que tem mais a ver com o trabalho do Ralph. O Finsiders não aparece na sombra; vale conferir se está na lista de RSS.
+A sombra tem menos Brasil em proporção, e o Brasil que aparece é Tecnoblog (consumo/notícia geral). A atual traz mercado brasileiro de pagamentos (Pix na Black Friday, IPO da Elo, ações de PicPay e Inter), que tem mais a ver com o trabalho do Admin. O Finsiders não aparece na sombra; vale conferir se está na lista de RSS.
 
 ## 3. Sobreposição
 
@@ -149,7 +149,7 @@ Não trocaria ainda. Deixaria a sombra rodando mais 3 ou 4 dias e mexeria em qua
 
 1. **Gravar buscas na atual** (`buscas` no `meta/status`) e passar a guardar histórico por rodada nas duas. Sem isso a decisão de custo é no chute.
 2. **Endurecer o resumo da sombra.** Exigir pelo menos um fato concreto (número, nome, data, versão) por resumo e proibir a frase final genérica ("Mostra...", "É um caso real de...", "Serve para..."). Para release de fornecedor, pedir a lista do que foi lançado ou descartar o item.
-3. **Reforçar o Brasil na sombra.** Confirmar se Finsiders Brasil e outras fontes de pagamentos brasileiras estão no RSS. Hoje a sombra perde exatamente a parte do feed mais ligada ao trabalho do Ralph.
+3. **Reforçar o Brasil na sombra.** Confirmar se Finsiders Brasil e outras fontes de pagamentos brasileiras estão no RSS. Hoje a sombra perde exatamente a parte do feed mais ligada ao trabalho do Admin.
 4. **Na atual, se ela continuar**, gravar `pais` e tirar o país do título, e barrar `publicado` com mais de 30 dias que não seja whitepaper.
 
 Depois disso, a troca faz sentido se a sombra mantiver: resumos com número em pelo menos 2 de cada 3 itens, 8 a 15 itens por dia, e Brasil perto dos 15% da atual.
