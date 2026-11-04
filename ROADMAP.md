@@ -87,8 +87,8 @@ Decisão pendente: framework
 - Candidatos que rodam dentro do Worker, com assets: React Router 7 (modo framework, adaptador Cloudflare), Astro em SSR (adaptador Cloudflare, ilhas), Hono + hono/jsx (SSR mínimo, sem build além do esbuild do wrangler), SvelteKit ou Nuxt (Vue) com adaptador Cloudflare
 - Critérios: tamanho do JS que chega ao navegador, build no Workers Builds sem passo extra, Durable Object e D1 pelo `env` sem gambiarra, facilidade de migrar um widget por vez, testes com `node --test`
 - Decidir na fase 0, com um protótipo de uma tela (o Início) em dois candidatos
-- [ ] Build automático no Workers Builds a cada push
-- [ ] Trocar a versão atual pela nova só depois de conferir celular e desktop
+
+Quando: passos 5 a 10 da "Fila em ordem (04/11)". Primeira página na stack nova é a Administração 2.0; o Início fica para o fim, quando os widgets já tiverem migrado. O deploy segue pelo Workers Builds a cada push, e a versão nova só substitui a atual depois de conferir celular e desktop.
 
 ## Depois
 - [ ] Domínio próprio
@@ -121,15 +121,22 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] "Trocar de conta" no menu da conta (página e admin)
 - [x] Internacional aparece como "Inter" no selo de clube e no título do grupo, para não confundir com o filtro Nacional/Internacional
 
-## Pedidos de 04/11, manhã (fila em ordem)
+## Fila em ordem (04/11)
+A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
 - [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)
 - [x] 1. Modo de edição do Início: grade quadriculada, redimensionar com os limites de cada card, arrastar para cima e para baixo, tirar card, grupos por tipo; Personalizar vira o catálogo "Adicionar card" e o doc do painel passa a grupos (04/11)
-- [ ] 2. Simulador de reinvestimento (mês/ano alvo, só proventos, cenários); memória de cálculo gravada na carteira, comparar e excluir
-- [ ] 3. Ajustes da curadoria Tech (relatório de 04/11), decisão 2 dias depois
-- [ ] 4. Renda fixa e Tesouro pelo relatório "Posição"
-- [ ] 5. Sessão dedicada a telas grandes, tablet e celular
-- [ ] 6. Job mensal de exportação dos extratos pelo Chrome
 - [x] Logotipo do admin leva ao Início (04/11)
+- [ ] 2. Troca de nome news → lookout (em andamento, sub-itens abaixo)
+- [ ] 3. Simulador de reinvestimento (mês/ano alvo, só proventos, cenários); memória de cálculo gravada na carteira, comparar e excluir; com o tempo, análise sob demanda do desvio (previsto × real por mês, causas: rendimento por cota, cotação no reinvestimento, aportes, composição); nada automático, nada de alerta
+- [ ] 4. Ajustes da curadoria Tech (relatório de 04/11), decisão 2 dias depois
+- [ ] 5. SSR, fase 0: inventário de telas, widgets e chamadas `/api/*`; medir a primeira tela de hoje; protótipo do Início em dois candidatos e decisão do framework
+- [ ] 6. SSR, fase 1: camada backend (BFF) no Worker, a página de hoje passa a consumir as rotas novas sem mudar o visual
+- [ ] 7. Administração 2.0, já na stack nova (piloto do SSR: página menor, só o Admin vê, erro não chega aos convidados): menos texto e mais visual; convites por grupo e por canal (WhatsApp, e-mail, link) com funil enviado → abriu → entrou → ativo e reenvio para quem não entrou; métricas por pessoa (último acesso, dias ativos, seções e widgets mais usados); ideia: métricas de uso (Cloudflare Web Analytics sem cookie, GA4 com consentimento, ou contadores internos em `uso/<email>`)
+- [ ] 8. Renda fixa e Tesouro pelo relatório "Posição" (importação e cálculo contra o BFF; tela simples, migra junto no passo 9)
+- [ ] 9. SSR, fases 2 e 3: shell renderizado no servidor e widget por widget na stack nova; a sessão de telas grandes, tablet e celular acontece aqui, widget a widget, não como passo separado
+- [ ] 10. SSR, fase 4: cutover, `public/index.html` sai, `/api/*` restrito, medir e comparar com a fase 0
+- [ ] 11. Job mensal de exportação dos extratos pelo Chrome
+- [ ] 12. Esportes: NBA, NFL e F1; conferir sondas da ESPN e do ge em produção
 - [ ] Troca de nome news → lookout (passo a passo em docs/cloudflare.md, "Troca de nome do Worker")
   - [x] Repositório todo em `lookout`: wrangler, custos, user-agent, docs, admin (04/11)
   - [ ] Worker `lookout` criado no Workers Builds, 8 secrets colados (CARTEIRA_KEY a mesma), Access ligado com AUD novo
