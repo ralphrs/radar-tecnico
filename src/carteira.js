@@ -3,10 +3,11 @@
 // A página lê os .xlsx no navegador (SheetJS) e manda só as linhas, como arrays no formato do cabeçalho da B3.
 // Aqui cada linha é conferida, reduzida ao que pode ser guardado e deduplicada contra o que já existe.
 //
-// Collection carteira/<email>, três docs, todos cifrados por src/cofre.js:
+// Collection carteira/<email>, cinco docs, todos cifrados por src/cofre.js:
 // - extrato: { v, neg, mov, prov } em arrays compactos (formato abaixo), cada linha marcada com o id da importação;
 // - importacoes: { lista: [{ id, em, arquivos: [{ tipo, hash, linhas, novos, repetidos, ignorados, de, ate }] }] };
-// - meta: { alvo, aporte, yield, reinvestir, atualizado }.
+// - meta: { alvo, aporte, yield, reinvestir, atualizado };
+// - simulacoes e mensal: o simulador de reinvestimento (seção própria, mais abaixo).
 //
 // Linhas guardadas (nunca nome, CPF, conta, CNPJ, ISIN, a linha "Produto" inteira, razão social nem totais em dinheiro):
 //   neg:  [data, "C"|"V", papel, quantidade, preço, corretora, imp]
@@ -734,21 +735,231 @@ export function projecao(metaCfg, calc, hoje) {
   return out;
 }
 
+// ---------- simulador de reinvestimento ----------
+//
+// Dois docs a mais em carteira/<email>, cifrados como os outros:
+// - simulacoes: { v: 1, lista: [{ id, nome, criado, atualizado, cfg: { ate, aporte, reinvestir, yield }, memoria }] }.
+//   memoria é a foto da criação e nunca é recalculada: { mesInicio, p0, y, yCarteira, rendaHoje, custo, patrimonio,
+//   noMes: { fluxo, proventos }, posicoes: [{ papel, classe, q, pm }], previsto: [[mes, renda, patrimonio]] }.
+//   A renda do mês sai de serieProjetada (a mesma conta da Meta). O patrimônio previsto é o do fim do mês, em valor de
+//   mercado: o patrimônio da criação mais o que a conta soma de aporte e reinvestimento até ali, para dar para comparar
+//   com o patrimônio real do fechamento. noMes guarda compras menos vendas e proventos do mês de início até a criação.
+// - mensal: { v: 1, meses: { "AAAA-MM": { fechadoEm, proventos, compras, vendas, patrimonio, custo, prov12, posicoes } } },
+//   os números do que aconteceu, um por mês, gravados no fechamento (GET da carteira ou cron do dia 1). O patrimônio e o
+//   custo são os do dia do fechamento, com a cotação que o Lookout tem naquele dia (meta/b3).
+// A análise é só leitura: previsto × real mês a mês e o desvio de renda decomposto no nível da carteira.
+export const MAX_SIMULACOES = 12;
+const MAX_MESES_MENSAL = 480;
+export const ID_SIMULACAO = /^[a-z0-9]{4,20}$/;
+const MES_OK = /^\d{4}-(0[1-9]|1[0-2])$/;
+export const difMeses = (de, ate) => { const [a1, m1] = de.split("-").map(Number), [a2, m2] = ate.split("-").map(Number); return (a2 - a1) * 12 + (m2 - m1); };
+
+// Corpo do POST -> { nome, cfg } ou { erro }. yield em fração (0,104 = 10,4% ao ano), null = o da carteira.
+export function validarSimulacao(b, mesAtual) {
+  if (!b || typeof b !== "object" || Array.isArray(b)) return { erro: "corpo" };
+  const ate = String(b.ate ?? "").trim();
+  if (!MES_OK.test(ate)) return { erro: "Escolha o mês e o ano em que a simulação termina." };
+  const n = difMeses(mesAtual, ate);
+  if (n < 1) return { erro: "A simulação precisa terminar do mês que vem em diante." };
+  if (n > 480) return { erro: "A simulação pode ir até 40 anos daqui." };
+  const num = (v, min, max, msg) => {
+    if (v === null || v === undefined || v === "") return { v: null };
+    const x = Number(v);
+    if (!Number.isFinite(x) || x < min || x > max) return { erro: msg };
+    return { v: x };
+  };
+  const ap = num(b.aporte, 0, 1_000_000, "O aporte mensal vai de R$ 0 a R$ 1.000.000.");
+  const y = num(b.yield, 0.001, 0.3, "O yield vai de 0,1% a 30% ao ano.");
+  for (const x of [ap, y]) if (x.erro) return { erro: x.erro };
+  if (b.reinvestir != null && typeof b.reinvestir !== "boolean") return { erro: "reinvestir" };
+  let nome = String(b.nome ?? "").replace(/\s+/g, " ").trim();
+  if (nome.length > 60) return { erro: "O nome pode ter até 60 caracteres." };
+  if (!nome) nome = "Até " + ate.slice(5) + "/" + ate.slice(0, 4);
+  return { nome, cfg: { ate, aporte: ap.v == null ? 0 : r2(ap.v), reinvestir: b.reinvestir !== false, yield: y.v == null ? null : Math.round(y.v * 1e4) / 1e4 } };
+}
+
+// Memória de cálculo, a partir de calcular(). y e p0 como na projeção da Meta.
+export function memoriaSimulacao(calc, cfg, mesAtual) {
+  const r = calc.resumo;
+  const yCart = r.custo > 0 && r.prov12 > 0 ? Math.round((r.prov12 / r.custo) * 1e6) / 1e6 : null;
+  const y = cfg.yield != null ? cfg.yield : yCart;
+  if (!(y > 0)) return { erro: "A carteira ainda não tem proventos em 12 meses para dar o yield. Escreva o yield que quer usar." };
+  const rendaHoje = r.media12;
+  const p0 = rendaHoje > 0 ? (rendaHoje * 12) / y : r.custo;
+  const n = difMeses(mesAtual, cfg.ate);
+  const renda = serieProjetada({ aporte: cfg.aporte, y, reinvestir: cfg.reinvestir, p0, meses: n });
+  const previsto = [];
+  let p = p0;
+  for (let k = 0; k <= n; k++) {
+    p += (cfg.aporte || 0) + (cfg.reinvestir ? renda[k] : 0); // fim do mês k
+    previsto.push([somarMeses(mesAtual, k), renda[k], r2(r.patrimonio + p - p0)]);
+  }
+  const f = calc.fluxoMes.get(mesAtual) || { compras: 0, vendas: 0 };
+  return {
+    mesInicio: mesAtual, p0: r2(p0), y, yCarteira: yCart, rendaHoje, custo: r.custo, patrimonio: r.patrimonio,
+    noMes: { fluxo: r2(f.compras - f.vendas), proventos: r.mesAtual.total },
+    posicoes: calc.posicoes.map((x) => ({ papel: x.t, classe: x.classe, q: x.q, pm: x.pm })),
+    previsto,
+  };
+}
+
+// Fechamento de `mes` com o cálculo de hoje (chamado no mês seguinte). prov12 são os 12 meses fechados até `mes`.
+export function fechamentoDoMes(calc, mes, agora = new Date().toISOString()) {
+  const r = calc.resumo;
+  const pm = (r.meses || []).find((x) => x.mes === mes);
+  const f = calc.fluxoMes.get(mes) || { compras: 0, vendas: 0 };
+  return { fechadoEm: agora, proventos: r2(pm ? pm.total : 0), compras: r2(f.compras), vendas: r2(f.vendas), patrimonio: r.patrimonio, custo: r.custo, prov12: r.prov12, posicoes: calc.posicoes.map((x) => ({ papel: x.t, q: x.q })) };
+}
+// mensal com o mês novo, guardando os 480 mais recentes
+export function comFechamento(mensal, mes, fech) {
+  const meses = { ...((mensal && mensal.meses) || {}), [mes]: fech };
+  const chaves = Object.keys(meses).sort();
+  for (const k of chaves.slice(0, Math.max(0, chaves.length - MAX_MESES_MENSAL))) delete meses[k];
+  return { v: 1, meses };
+}
+// O mês anterior precisa ser fechado? Só para quem tem simulação e ainda não tem o fechamento dele.
+export const mesParaFechar = (simulacoes, mensal, mesAtual) => {
+  if (!simulacoes || !(simulacoes.lista || []).length) return null;
+  const mes = somarMeses(mesAtual, -1);
+  return mensal && mensal.meses && mensal.meses[mes] ? null : mes;
+};
+
+const pct1 = (v, base) => (base > 0 ? Math.round((v / base) * 1000) / 10 : null);
+const tendenciaDe = (pct, desvio) => (pct == null ? (Math.abs(desvio || 0) < 0.005 ? "na linha" : desvio > 0 ? "acima" : "abaixo") : Math.abs(pct) <= 3 ? "na linha" : pct > 0 ? "acima" : "abaixo");
+
+// Previsto × real nos meses que já fecharam, e a decomposição do desvio acumulado de renda (nível da carteira):
+//   rendimento: (yield real 12m − y) × patrimônio previsto / 12, somado nos meses. O yield real é o que a carteira paga
+//     sobre o custo no fechamento (prov12 / custo), na escala da conta: y × (yield real / yield da carteira na criação),
+//     para que um yield escrito à mão não vire desvio no primeiro mês;
+//   capital: (patrimônio real − patrimônio previsto) × y / 12, somado; dentro dele, aportes (compras menos vendas contra o
+//     que o plano pedia: o aporte e, quando reinvestir, os proventos do mês; acumulado, × y / 12) e reinvestimento e
+//     cotação (o resto do capital);
+//   resíduo: o que sobra (total − rendimento − capital), como o vaivém de proventos entre um mês e outro.
+export function analisarSimulacao(sim, mensal) {
+  const mem = sim.memoria, cfg = sim.cfg, y = mem.y;
+  const doMes = (mensal && mensal.meses) || {};
+  const meses = [];
+  let total = 0, totPrev = 0, rend = 0, cap = 0, ap = 0, fluxoReal = 0, fluxoPlano = 0, ultimo = null;
+  for (const [mes, renda, patr] of mem.previsto) {
+    const f = doMes[mes];
+    if (!f) continue;
+    const ini = mes === mem.mesInicio && mem.noMes ? mem.noMes : { fluxo: 0, proventos: 0 };
+    const aportes = r2(f.compras - f.vendas);
+    const dr = f.proventos - renda;
+    const yReal = f.custo > 0 ? f.prov12 / f.custo : null;
+    const yConta = yReal == null ? null : mem.yCarteira > 0 ? (y * yReal) / mem.yCarteira : yReal;
+    fluxoReal += aportes - ini.fluxo;
+    fluxoPlano += (cfg.aporte || 0) + (cfg.reinvestir ? Math.max(0, f.proventos - ini.proventos) : 0);
+    total += dr; totPrev += renda;
+    if (yConta != null) rend += (yConta - y) * ((renda * 12) / y) / 12;
+    cap += ((f.patrimonio - patr) * y) / 12;
+    ap += ((fluxoReal - fluxoPlano) * y) / 12;
+    ultimo = { mes, yReal, yConta, fluxoGap: fluxoReal - fluxoPlano, patrGap: f.patrimonio - patr };
+    meses.push({ mes, previsto: { renda, patrimonio: patr }, real: { proventos: f.proventos, aportes, patrimonio: f.patrimonio }, desvio: { renda: r2(dr), pct: pct1(dr, renda) } });
+  }
+  const proximo = somarMeses(meses.length ? meses[meses.length - 1].mes : somarMeses(mem.mesInicio, -1), 1);
+  const out = { id: sim.id, mesesFechados: meses.length, meses, proximoFechamento: proximo <= cfg.ate ? proximo : null };
+  if (!meses.length) return { ...out, decomposicao: null, pct: null, tendencia: null, parecer: "" };
+  const d = { total: r2(total), rendimento: r2(rend), capital: r2(cap), aportes: r2(ap) };
+  d.reinvestimento = r2(d.capital - d.aportes);
+  d.residuo = r2(d.total - d.rendimento - d.capital);
+  const u = meses[meses.length - 1];
+  const a = {
+    ...out, decomposicao: d, pct: pct1(total, totPrev), previstoAcumulado: r2(totPrev),
+    tendencia: tendenciaDe(u.desvio.pct, u.desvio.renda),
+    ultimo: { mes: u.mes, yieldReal: ultimo.yReal == null ? null : Math.round(ultimo.yReal * 1e4) / 1e4, yieldConta: ultimo.yConta == null ? null : Math.round(ultimo.yConta * 1e4) / 1e4, aportesGap: r2(ultimo.fluxoGap), patrimonioGap: r2(ultimo.patrGap) },
+  };
+  a.parecer = parecerSimulacao(a, sim);
+  return a;
+}
+
+// Parecer em texto fixo, de 2 a 5 frases, só com fatos da conta (nada de recomendação).
+const MESES_EXT = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const mesExt = (m) => `${MESES_EXT[Number(m.slice(5, 7)) - 1]} de ${m.slice(0, 4)}`;
+const fmtBr = (v, c) => Number(v).toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c });
+const reais = (v) => { const x = Math.abs(v); return "R$ " + fmtBr(x, x < 100 ? 2 : 0); };
+const pctSinal = (v) => (v > 0.05 ? "+" : v < -0.05 ? "−" : "") + fmtBr(Math.abs(v), 1) + "%";
+const pctAno = (y) => fmtBr(y * 100, 1) + "%";
+const lado = (v) => (v >= 0 ? "acima" : "abaixo");
+export function parecerSimulacao(a, sim) {
+  const d = a.decomposicao, mem = sim.memoria, cfg = sim.cfg, u = a.ultimo, n = a.mesesFechados;
+  const frases = [];
+  const abre = n === 1 ? `No primeiro mês fechado (${mesExt(a.meses[0].mes)})` : `Em ${n} meses fechados`;
+  const pct = a.pct == null ? 0 : a.pct;
+  frases.push(Math.abs(pct) <= 3 && Math.abs(d.total) >= 0.005
+    ? `${abre} a renda ficou na linha do previsto: ${reais(d.total)} ${lado(d.total)} (${pctSinal(pct)}).`
+    : Math.abs(d.total) < 0.005 ? `${abre} a renda ficou igual ao previsto.`
+    : `${abre} a renda ficou ${reais(d.total)} ${lado(d.total)} do previsto (${pctSinal(pct)}).`);
+  const partes = [["rendimento", d.rendimento], ["aportes", d.aportes], ["reinvestimento", d.reinvestimento], ["residuo", d.residuo]];
+  const yPadrao = mem.yCarteira == null || Math.abs(mem.y - mem.yCarteira) < 1e-4;
+  const explica = (k, v, intro) => {
+    if (k === "rendimento") {
+      if (u.yieldReal == null) return `${intro} do rendimento.`;
+      return yPadrao
+        ? `${intro} do rendimento: a carteira pagou ${pctAno(u.yieldReal)} ao ano sobre o custo contra ${pctAno(mem.y)} usados na conta.`
+        : `${intro} do rendimento: o que a carteira paga sobre o custo foi de ${pctAno(mem.yCarteira)} para ${pctAno(u.yieldReal)} ao ano, o que na conta equivale a ${pctAno(u.yieldConta)} contra ${pctAno(mem.y)} usados.`;
+    }
+    if (k === "aportes") return `${intro} dos aportes: entraram na carteira ${reais(u.aportesGap)} ${u.aportesGap >= 0 ? "a mais" : "a menos"} do que o plano pedia${cfg.reinvestir ? " (o aporte mais os proventos de cada mês)" : ""}.`;
+    if (k === "reinvestimento") return `${intro} do patrimônio: sem contar os aportes, ele cresceu ${v >= 0 ? "mais" : "menos"} do que a conta previa, pela cotação dos papéis e pelo que foi reinvestido.`;
+    return `${intro} do vaivém dos proventos entre um mês e outro, que o yield e o patrimônio não explicam.`;
+  };
+  const somaAbs = partes.reduce((s, [, v]) => s + Math.abs(v), 0);
+  if (somaAbs < 0.5) frases.push("Rendimento, aportes e patrimônio andaram como a conta previa.");
+  else {
+    const mesmoLado = partes.filter(([, v]) => Math.abs(d.total) < 0.005 || Math.sign(v) === Math.sign(d.total)).sort((x, y2) => Math.abs(y2[1]) - Math.abs(x[1]));
+    const [k, v] = mesmoLado[0] || partes.slice().sort((x, y2) => Math.abs(y2[1]) - Math.abs(x[1]))[0];
+    frases.push(explica(k, v, Math.abs(d.total) >= 0.005 && Math.abs(v) >= Math.abs(d.total) * 0.5 ? "A maior parte veio" : "A parte maior veio"));
+    const contra = partes.filter(([k2, v2]) => k2 !== k && Math.abs(d.total) >= 0.005 && Math.sign(v2) === -Math.sign(d.total) && Math.abs(v2) >= Math.max(1, Math.abs(d.total) * 0.1))
+      .sort((x, y2) => Math.abs(y2[1]) - Math.abs(x[1]))[0];
+    if (contra) {
+      const [k2, v2] = contra;
+      if (k2 === "aportes" && Math.sign(u.aportesGap) === Math.sign(v2)) frases.push(`Os aportes ficaram ${reais(u.aportesGap)} ${lado(u.aportesGap)} do plano, o que compensou uma parte.`);
+      else if (k2 === "rendimento") frases.push(`O rendimento foi para o outro lado (${reais(v2)} na renda) e compensou uma parte.`);
+      else if (k2 === "reinvestimento") frases.push(`A cotação e o reinvestimento foram para o outro lado (${reais(v2)} na renda) e compensaram uma parte.`);
+      else if (k2 === "aportes") frases.push(`Os aportes foram para o outro lado (${reais(v2)} na renda) e compensaram uma parte.`);
+      else frases.push(`O vaivém dos proventos entre os meses foi para o outro lado (${reais(v2)}) e compensou uma parte.`);
+    }
+  }
+  if (n > 1) {
+    const um = a.meses[a.meses.length - 1];
+    frases.push(a.tendencia === "na linha" ? `No último mês fechado (${mesExt(um.mes)}) a renda ficou na linha do previsto.` : `No último mês fechado (${mesExt(um.mes)}) a renda ficou ${fmtBr(Math.abs(um.desvio.pct ?? 0), 1)}% ${a.tendencia} do previsto.`);
+  }
+  return frases.slice(0, 5).join(" ");
+}
+
+// O que a lista e a comparação mostram de cada simulação
+export function resumoSimulacao(sim, mensal) {
+  const prev = sim.memoria.previsto, fim = prev[prev.length - 1];
+  const doMes = (mensal && mensal.meses) || {};
+  const fechados = prev.filter(([m]) => doMes[m]);
+  let ultimoDesvioPct = null, tendencia = null;
+  if (fechados.length) {
+    const [m, renda] = fechados[fechados.length - 1];
+    const dr = doMes[m].proventos - renda;
+    ultimoDesvioPct = pct1(dr, renda);
+    tendencia = tendenciaDe(ultimoDesvioPct, dr);
+  }
+  return { id: sim.id, nome: sim.nome, criado: sim.criado, cfg: sim.cfg, mesInicio: sim.memoria.mesInicio, ate: sim.cfg.ate, rendaFinal: fim[1], patrimonioFinal: fim[2], mesesFechados: fechados.length, ultimoDesvioPct, tendencia };
+}
+export const listarSimulacoes = (simulacoes, mensal) => ((simulacoes && simulacoes.lista) || []).map((s) => resumoSimulacao(s, mensal));
+
 // ---------- rota ----------
 
 const resp = (dados, status = 200) =>
   new Response(JSON.stringify(dados), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" } });
 
 const IDS = ["extrato", "importacoes", "meta"];
+const IDS_SIM = ["simulacoes", "mensal"];
+const IDS_TODOS = [...IDS, ...IDS_SIM];
 const cacheGet = new Map(); // email -> { em, txt }
 const CACHE_MS = 60_000;
 export const limparCacheCarteira = (email) => (email ? cacheGet.delete(email) : cacheGet.clear());
 
-async function lerDocs(env, col, deps, doD1) {
+async function lerDocs(env, col, deps, doD1, ids = IDS) {
   let linhas;
-  const sql = "SELECT id, data FROM docs WHERE collection = ? AND id IN (?, ?, ?)";
-  if (doD1) linhas = (await env.DB.prepare(sql).bind(col, ...IDS).all()).results;
-  else linhas = await deps.lerLinhas(env, sql, [col, ...IDS], "carteira");
+  const sql = `SELECT id, data FROM docs WHERE collection = ? AND id IN (${ids.map(() => "?").join(", ")})`;
+  if (doD1) linhas = (await env.DB.prepare(sql).bind(col, ...ids).all()).results;
+  else linhas = await deps.lerLinhas(env, sql, [col, ...ids], "carteira");
   const out = {};
   for (const r of linhas || []) out[r.id] = await decifrar(env, r.data);
   return out;
@@ -767,6 +978,8 @@ async function gravarDocs(env, col, docs, deps) {
 }
 const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 const hojeBr = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+// deps.hoje (AAAA-MM-DD) só nos testes
+const hojeDe = (deps) => (deps && deps.hoje) || hojeBr();
 async function hashDe(linhas) {
   const b = new TextEncoder().encode(JSON.stringify(linhas));
   const h = new Uint8Array(await crypto.subtle.digest("SHA-256", b));
@@ -801,25 +1014,148 @@ async function sincronizarListas(env, quem, extrato, importacoes, deps) {
 }
 
 // GET /api/carteira (e o GET de /meta, que é o mesmo cálculo)
+const temLinhas = (ex) => !!(ex && (ex.neg || []).length + (ex.mov || []).length + (ex.prov || []).length);
 async function montar(env, quem, deps) {
   const col = "carteira/" + quem.email;
-  const docs = await lerDocs(env, col, deps, false);
-  if (!docs.extrato || !((docs.extrato.neg || []).length + (docs.extrato.mov || []).length + (docs.extrato.prov || []).length)) {
-    return { vazia: true, meta: projecao(docs.meta, calcular(extratoVazio(), { hoje: hojeBr() }), hojeBr()), importacoes: docs.importacoes?.lista || [] };
+  const docs = await lerDocs(env, col, deps, false, IDS_TODOS);
+  const hoje = hojeDe(deps);
+  if (!temLinhas(docs.extrato)) {
+    return { vazia: true, meta: projecao(docs.meta, calcular(extratoVazio(), { hoje }), hoje), importacoes: docs.importacoes?.lista || [], simulacoes: [] };
   }
   const [b3, fiiResumo] = await Promise.all([lerMetaDoc(env, "b3", deps), lerMetaDoc(env, "fii-resumo", deps)]);
-  const hoje = hojeBr();
   const calc = calcular(docs.extrato, { b3, fiiResumo, importacoes: docs.importacoes, hoje });
+  const mensal = await fecharSePreciso(env, col, docs, calc, hoje, deps);
   return {
     vazia: false,
     posicoes: calc.posicoes, proventos: calc.proventos, resumo: calc.resumo,
     meta: projecao(docs.meta, calc, hoje),
     importacoes: (docs.importacoes?.lista || []).slice().reverse(),
     cotacoes: { b3: b3 ? b3.atualizado : null, cvm: fiiResumo ? fiiResumo.ref : null },
+    simulacoes: listarSimulacoes(docs.simulacoes, mensal),
   };
 }
 
-// caminho: "" | "importar" | "meta" | "importacoes/<id>"
+// Fechamento do mês anterior, na primeira leitura do mês de quem tem simulação. A leitura do GET pode ter vindo de uma
+// cópia atrasada do espelho: antes de gravar, confere no D1. Falha aqui não derruba o GET.
+async function fecharSePreciso(env, col, docs, calc, hoje, deps) {
+  const mes = mesParaFechar(docs.simulacoes, docs.mensal, ym(hoje));
+  if (!mes) return docs.mensal;
+  try {
+    const d1 = await lerDocs(env, col, deps, true, IDS_SIM);
+    if (!mesParaFechar(d1.simulacoes, d1.mensal, ym(hoje))) return d1.mensal;
+    const mensal = comFechamento(d1.mensal, mes, fechamentoDoMes(calc, mes));
+    await gravarDocs(env, col, { mensal }, deps);
+    return mensal;
+  } catch (e) {
+    console.error("carteira fechamento", String((e && e.name) || "erro"), String((e && e.message) || "").slice(0, 80));
+    return docs.mensal;
+  }
+}
+
+// Fechamento no cron: dia 1, das 6h às 6h59 em Brasília (UTC−3), até 20 pessoas por minuto, uma vez por mês.
+// A marca _sistema/simulador-fechamento guarda o mês feito e quantas pessoas já passaram (sem e-mail de ninguém).
+// Só lê e grava carteira/<email> (simulacoes, mensal, extrato, importacoes) e lê meta/b3 e meta/fii-resumo.
+const SIM_POR_MINUTO = 20;
+export async function cronSimulador(env, quando, deps = {}) {
+  const br = new Date(new Date(quando).getTime() - 3 * 3600_000);
+  if (br.getUTCDate() !== 1 || br.getUTCHours() !== 6) return null;
+  if (!cofreLigado(env)) return null;
+  const hoje = br.toISOString().slice(0, 10), mes = somarMeses(ym(hoje), -1);
+  const marca = await env.DB.prepare("SELECT data FROM docs WHERE collection = '_sistema' AND id = 'simulador-fechamento'").first();
+  let st = null;
+  try { st = marca ? JSON.parse(marca.data) : null; } catch {}
+  if (!st || st.mes !== mes) st = { mes, feitos: 0, fim: false, fechadas: 0, erros: 0, inicio: new Date(quando).toISOString() };
+  if (st.fim) return { mes, fim: true, fechadas: 0 };
+  const { results } = await env.DB.prepare("SELECT collection FROM docs WHERE id = 'simulacoes' AND collection >= 'carteira/' AND collection < 'carteira0' ORDER BY collection LIMIT ? OFFSET ?")
+    .bind(SIM_POR_MINUTO, st.feitos).all();
+  const pessoas = results || [];
+  let fechadas = 0, erros = 0, base = null;
+  for (const { collection: col } of pessoas) {
+    try {
+      const docs = await lerDocs(env, col, deps, true, IDS_TODOS);
+      if (!mesParaFechar(docs.simulacoes, docs.mensal, ym(hoje)) || !temLinhas(docs.extrato)) continue;
+      if (!base) {
+        const ler = async (id) => { const r = await env.DB.prepare("SELECT data FROM docs WHERE collection = 'meta' AND id = ?").bind(id).first(); try { return r ? JSON.parse(r.data) : null; } catch { return null; } };
+        base = { b3: await ler("b3"), fiiResumo: await ler("fii-resumo") };
+      }
+      const calc = calcular(docs.extrato, { ...base, importacoes: docs.importacoes, hoje });
+      await gravarDocs(env, col, { mensal: comFechamento(docs.mensal, mes, fechamentoDoMes(calc, mes, new Date(quando).toISOString())) }, { gravarNoEspelho: () => {}, ...deps });
+      limparCacheCarteira(col.slice(9));
+      fechadas++;
+    } catch (e) {
+      erros++;
+      console.error("simulador fechamento", String((e && e.name) || "erro"), String((e && e.message) || "").slice(0, 80));
+    }
+  }
+  st.feitos += pessoas.length; st.fechadas += fechadas; st.erros += erros;
+  if (pessoas.length < SIM_POR_MINUTO) { st.fim = true; st.terminou = new Date(quando).toISOString(); }
+  await env.DB.prepare("INSERT INTO docs (collection, id, data) VALUES ('_sistema', 'simulador-fechamento', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = strftime('%Y-%m-%dT%H:%M:%fZ','now')")
+    .bind(JSON.stringify(st)).run();
+  return { mes, pessoas: pessoas.length, fechadas, erros, fim: st.fim };
+}
+
+// caminho depois de "simulacoes": "" | "/<id>" | "/<id>/analisar"
+async function rotaSimulacoes(request, env, quem, resto, deps) {
+  const col = "carteira/" + quem.email, m = request.method;
+  if (resto && !resto.startsWith("/")) return resp({ erro: "rota" }, 404);
+  const partes = resto.split("/").slice(1);
+  const id = partes[0] || "", acao = partes[1] || "";
+  if (partes.length > 2 || (acao && acao !== "analisar")) return resp({ erro: "rota" }, 404);
+  if (resto && !ID_SIMULACAO.test(id)) return resp({ erro: "id" }, 400);
+  const hoje = hojeDe(deps);
+  if (!id && m === "GET") {
+    const docs = await lerDocs(env, col, deps, false, IDS_SIM);
+    return resp({ simulacoes: listarSimulacoes(docs.simulacoes, docs.mensal), max: MAX_SIMULACOES });
+  }
+  if (!id && m === "POST") {
+    const { b, erro, status } = await lerCorpo(request, 2000);
+    if (erro) return resp({ erro }, status);
+    const docs = await lerDocs(env, col, deps, true, IDS_TODOS);
+    if (!temLinhas(docs.extrato)) return resp({ erro: "Importe os extratos antes de simular." }, 409);
+    const lista = (docs.simulacoes && docs.simulacoes.lista) || [];
+    if (lista.length >= MAX_SIMULACOES) return resp({ erro: `Dá para guardar até ${MAX_SIMULACOES} simulações. Exclua uma para criar outra.` }, 400);
+    const v = validarSimulacao(b, ym(hoje));
+    if (v.erro) return resp({ erro: v.erro }, 400);
+    const [b3, fiiResumo] = await Promise.all([lerMetaDoc(env, "b3", deps), lerMetaDoc(env, "fii-resumo", deps)]);
+    const calc = calcular(docs.extrato, { b3, fiiResumo, importacoes: docs.importacoes, hoje });
+    const memoria = memoriaSimulacao(calc, v.cfg, ym(hoje));
+    if (memoria.erro) return resp({ erro: memoria.erro }, 400);
+    const agora = new Date().toISOString();
+    let sid = novoId();
+    while (lista.some((x) => x.id === sid)) sid = novoId();
+    const sim = { id: sid, nome: v.nome, criado: agora, atualizado: agora, cfg: v.cfg, memoria };
+    await gravarDocs(env, col, { simulacoes: { v: 1, lista: lista.concat([sim]) } }, deps);
+    limparCacheCarteira(quem.email);
+    return resp(sim);
+  }
+  if (id && !acao && m === "DELETE") {
+    const docs = await lerDocs(env, col, deps, true, IDS_SIM);
+    const lista = (docs.simulacoes && docs.simulacoes.lista) || [];
+    const resta = lista.filter((x) => x.id !== id);
+    if (resta.length === lista.length) return resp({ erro: "Simulação não encontrada." }, 404);
+    // A última que sai leva o doc junto (o cron procura quem tem simulacoes); os números de mensal ficam.
+    if (resta.length) await gravarDocs(env, col, { simulacoes: { v: 1, lista: resta } }, deps);
+    else {
+      await env.DB.prepare("DELETE FROM docs WHERE collection = ? AND id = 'simulacoes'").bind(col).run();
+      deps.removerDoEspelho(env, [{ collection: col, id: "simulacoes" }]);
+    }
+    limparCacheCarteira(quem.email);
+    return resp({ ok: true, restam: resta.length });
+  }
+  if (id && (m === "GET" || (acao === "analisar" && m === "POST"))) {
+    if ((m === "GET") !== !acao) return resp({ erro: "metodo" }, 405);
+    const docs = await lerDocs(env, col, deps, false, IDS_SIM);
+    const sim = ((docs.simulacoes && docs.simulacoes.lista) || []).find((x) => x.id === id);
+    if (!sim) return resp({ erro: "Simulação não encontrada." }, 404);
+    if (acao) return resp(analisarSimulacao(sim, docs.mensal));
+    const doMes = (docs.mensal && docs.mensal.meses) || {};
+    const meses = Object.fromEntries(sim.memoria.previsto.filter(([mes]) => doMes[mes]).map(([mes]) => [mes, doMes[mes]]));
+    return resp({ ...sim, mensal: { meses } });
+  }
+  return resp({ erro: "metodo" }, 405);
+}
+
+// caminho: "" | "importar" | "meta" | "importacoes/<id>" | "simulacoes" | "simulacoes/<id>" | "simulacoes/<id>/analisar"
 export async function rotaCarteira(request, env, quem, caminho, deps) {
   if (!cofreLigado(env)) return resp({ erro: "carteira desligada" }, 503);
   const col = "carteira/" + quem.email;
@@ -833,9 +1169,10 @@ export async function rotaCarteira(request, env, quem, caminho, deps) {
       cacheGet.set(quem.email, { em: Date.now(), txt });
       return new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" } });
     }
+    if (caminho === "simulacoes" || caminho.startsWith("simulacoes/")) return await rotaSimulacoes(request, env, quem, caminho.slice(10), deps);
     if (caminho === "" && m === "DELETE") {
-      await env.DB.prepare("DELETE FROM docs WHERE collection = ? AND id IN (?, ?, ?)").bind(col, ...IDS).run();
-      deps.removerDoEspelho(env, IDS.map((id) => ({ collection: col, id })));
+      await env.DB.prepare(`DELETE FROM docs WHERE collection = ? AND id IN (${IDS_TODOS.map(() => "?").join(", ")})`).bind(col, ...IDS_TODOS).run();
+      deps.removerDoEspelho(env, IDS_TODOS.map((id) => ({ collection: col, id })));
       limparCacheCarteira(quem.email);
       const listas = await sincronizarListas(env, quem, null, null, deps);
       return resp({ ok: true, listas });

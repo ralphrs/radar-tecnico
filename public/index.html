@@ -952,7 +952,8 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .ct-volta:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ct-cab .ct-esp { flex: 1 1 auto; }
 .ct-quem { font: 400 12px/16px var(--font-mono); color: var(--muted-foreground); }
-.ct-nav { flex-wrap: wrap; }
+.ct-nav { flex-wrap: wrap; max-width: 100%; box-sizing: border-box; }
+.ct-nav a { flex: none; }
 .ct-nav a { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 6px; font: 500 13px/1 var(--font-sans); color: var(--muted-foreground); text-decoration: none; }
 .ct-nav a:hover { color: var(--foreground); }
 .ct-nav a[aria-current="page"] { background: var(--card); color: var(--foreground); box-shadow: var(--shadow-sm); }
@@ -1097,6 +1098,45 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .ct-passos .num { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 14%, var(--card)); color: var(--primary); font: 600 12px var(--font-sans); }
 .ct-ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .ct-acoes { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+/* Simulações (#carteira/simulacoes e #carteira/simulacoes/<id>) */
+.sm-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; align-items: start; }
+.sm-card h3 { overflow-wrap: anywhere; }
+.sm-card .ct-linhas > div > span:last-child { flex: none; }
+.sm-conf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border-radius: var(--radius-md); border: 1px solid color-mix(in srgb, var(--err) 30%, var(--border)); background: color-mix(in srgb, var(--err) 6%, var(--card)); font-size: 13px; }
+.sm-conf span { flex: 1 1 180px; }
+.sm-form { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)) auto; gap: 14px 16px; align-items: start; }
+.sm-form label.rotulo, .sm-form .rotulo { display: block; margin-bottom: 6px; }
+.sm-form .dd-input { width: 100%; box-sizing: border-box; }
+.sm-form .lp-switch { height: var(--control-h); }
+.sm-ajuda { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--muted-foreground); }
+.sm-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.sm-dec { display: flex; flex-direction: column; gap: 10px; }
+.sm-dec > div { display: grid; grid-template-columns: minmax(120px, 210px) minmax(0, 1fr) 104px; gap: 12px; align-items: center; font-size: 13.5px; }
+.sm-dec .trilho { position: relative; height: 12px; border-radius: 999px; background: var(--secondary); box-shadow: inset 0 0 0 1px var(--border); }
+.sm-dec .trilho::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; border-left: 1px solid var(--muted-foreground); }
+.sm-dec .trilho span { position: absolute; top: 0; bottom: 0; min-width: 2px; }
+.sm-dec .pos span { left: 50%; border-radius: 0 999px 999px 0; background: var(--ok); }
+.sm-dec .neg span { right: 50%; border-radius: 999px 0 0 999px; background: var(--err); }
+.sm-dec .ct-mono { text-align: right; white-space: nowrap; }
+.sm-dec .tot { padding-top: 10px; border-top: 1px solid var(--border); font-weight: 600; }
+.sm-parecer { margin: 0; font-size: 14.5px; line-height: 1.6; max-width: 80ch; }
+.sm-ia { margin: 0; font-size: 12.5px; color: var(--muted-foreground); }
+.sm-mem > summary { cursor: pointer; font: 600 17px/1.3 var(--font-display); letter-spacing: -0.02em; border-radius: var(--radius-md); }
+.sm-mem > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.sm-mem[open] > summary { margin-bottom: 4px; }
+.sm-formula { margin: 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--secondary); font: 400 12.5px/1.6 var(--font-mono); overflow-wrap: anywhere; }
+.ct-graf .real { fill: var(--brand-end); stroke: var(--card); stroke-width: 2; }
+.ct-leg-graf i.pt { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--brand-end); vertical-align: -1px; }
+.wdg-sim .ct-tag { font-size: 11px; line-height: 15px; padding: 0 6px; }
+.wdg-sim a { color: var(--foreground); text-decoration: none; font-weight: 500; }
+.wdg-sim a:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 1099px) { .sm-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sm-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 699px) {
+  .sm-form { grid-template-columns: minmax(0, 1fr); }
+  .sm-dec > div { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; }
+  .sm-dec .trilho { grid-column: 1 / -1; grid-row: 2; }
+  .sm-dec .tot { grid-template-columns: minmax(0, 1fr) auto; }
+}
 /* Widgets da carteira no Início */
 .seu { flex: none; align-self: center; font: 600 10.5px/15px var(--font-sans); padding: 0 6px; border-radius: var(--radius-md); color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--card)); }
 .wdg-big { font: 500 22px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
@@ -4986,6 +5026,7 @@ const CATALOGO_LOCAL = [
   { id: "carteira-agenda", titulo: "Agenda da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-rentabilidade", titulo: "Rentabilidade", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-alertas", titulo: "Alertas da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-simulacoes", titulo: "Minhas simulações", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "radar-meu", titulo: "Meu radar", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "leitura-dia", titulo: "Leitura do dia", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-contra-filtro", titulo: "Carteira contra o filtro", tamanho: 1, secao: "investimentos", pessoal: true },
@@ -5042,6 +5083,7 @@ function destinoDe(id) {
   if (id === "eua") return "#investimentos/eua";
   if (id === "mercado" || id === "pregao" || id === "fiis" || id === "listas") return "#investimentos";
   if (id === "carteira-meta") return "#carteira/meta";
+  if (id === "carteira-simulacoes") return "#carteira/simulacoes";
   if (id === "radar-meu" || id === "leitura-dia" || id === "carteira-contra-filtro") return "#investimentos/radar";
   if (id === "carteira-proventos-mes" || id === "carteira-pagamentos") return "#carteira/proventos";
   if (id.startsWith("carteira-")) return "#carteira";
@@ -5484,7 +5526,7 @@ function aplicarModo() {
   const h1 = document.querySelector("h1");
   $("inicio").hidden = !inicio || !!carteiraVista;
   $("carteira").hidden = !inicio || !carteiraVista;
-  if (inicio && carteiraVista) { document.title = (ehVistaLista(carteiraVista) ? "Minhas listas" : TITULOS_CART[carteiraVista] || "Minha carteira") + " · Lookout"; h1.textContent = "Lookout"; }
+  if (inicio && carteiraVista) { document.title = (ehVistaLista(carteiraVista) ? "Minhas listas" : tituloCart(carteiraVista)) + " · Lookout"; h1.textContent = "Lookout"; }
   else if (inicio) { document.title = "Início · Lookout"; h1.textContent = "Lookout"; }
   else { document.title = R().titulo + " · Lookout"; h1.textContent = R().titulo; }
 }
@@ -5944,19 +5986,23 @@ function cancelarArrasto() {
   if (a.comecou) { a.el.classList.remove("arrastando", "redimensionando"); montarGrade(); }
 }
 
-/* ---------- Minha carteira: #carteira, #carteira/proventos, #carteira/meta, #carteira/importar (e #carteira/mais) ----------
+/* ---------- Minha carteira: #carteira, #carteira/proventos, #carteira/meta, #carteira/simulacoes(/<id>), #carteira/importar (e #carteira/mais) ----------
    Pessoal: abre pelo menu da conta, sem aba na barra de seções. Roda no modo do Início (inicio = true, nenhuma seção
    assinada), com a seção #carteira no lugar da grade. Os dados vêm de /api/carteira, uma leitura só por minuto,
    compartilhada pelas telas e pelos widgets da carteira no Início. Os .xlsx da B3 são lidos aqui no navegador
    (SheetJS, carregado só na tela de importar); o servidor recebe só as linhas, e o nome da empresa fica por aqui. */
 var carteiraVista = null;
-const VISTAS_CART = { "": "geral", mais: "geral", proventos: "proventos", meta: "meta", importar: "importar" };
-const TITULOS_CART = { geral: "Minha carteira", proventos: "Proventos", meta: "Minha meta", importar: "Importar extratos da B3" };
+const VISTAS_CART = { "": "geral", mais: "geral", proventos: "proventos", meta: "meta", simulacoes: "simulacoes", importar: "importar" };
+const TITULOS_CART = { geral: "Minha carteira", proventos: "Proventos", meta: "Minha meta", simulacoes: "Simulações", importar: "Importar extratos da B3" };
+/* Uma simulação aberta é a vista "sim:<id>" (#carteira/simulacoes/<id>) */
+const ehVistaSim = (v) => String(v || "").startsWith("sim:");
+const tituloCart = (v) => (ehVistaSim(v) ? TITULOS_CART.simulacoes : TITULOS_CART[v] || "Minha carteira");
 /* Minhas listas usam o mesmo modo: "listas" (#listas) e "lista:<id>" (#lista/<id>) */
 function carteiraDoHash() {
   const p = partesDoHash();
   if (p[0] === "listas") return "listas";
   if (p[0] === "lista" && p[1]) { try { return "lista:" + decodeURIComponent(p[1]); } catch (e) { return "listas"; } }
+  if (p[0] === "carteira" && p[1] === "simulacoes" && p[2]) { try { return "sim:" + decodeURIComponent(p[2]); } catch (e) { return "simulacoes"; } }
   return p[0] === "carteira" ? VISTAS_CART[p[1] || ""] || "geral" : null;
 }
 const ehVistaLista = (v) => v === "listas" || String(v || "").startsWith("lista:");
@@ -5964,6 +6010,7 @@ carteiraVista = carteiraDoHash();
 function hashCarteira() {
   if (carteiraVista === "listas") return "#listas";
   if (ehVistaLista(carteiraVista)) return "#lista/" + encodeURIComponent(carteiraVista.slice(6));
+  if (ehVistaSim(carteiraVista)) return "#carteira/simulacoes/" + encodeURIComponent(carteiraVista.slice(4));
   const cur = location.hash || "";
   if (cur.startsWith("#carteira") && carteiraDoHash() === carteiraVista) return cur;
   return "#carteira" + (carteiraVista === "geral" ? "" : "/" + carteiraVista);
@@ -6175,10 +6222,10 @@ function textoAlerta(a) {
 function cabCarteira(j) {
   const v = carteiraVista;
   const cab = el("div", { class: "ct-cab" });
-  cab.append(el("h2", { id: "ct-titulo" }, TITULOS_CART[v]));
+  cab.append(el("h2", { id: "ct-titulo" }, tituloCart(v)));
   const nav = el("nav", { class: "seg ct-nav", "aria-label": "Partes da carteira" });
-  [["geral", "Visão geral", "#carteira"], ["proventos", "Proventos", "#carteira/proventos"], ["meta", "Meta", "#carteira/meta"], ["importar", "Importar", "#carteira/importar"]]
-    .forEach(([id, n, h]) => nav.append(el("a", { href: h, ...(id === v ? { "aria-current": "page" } : {}) }, n)));
+  [["geral", "Visão geral", "#carteira"], ["proventos", "Proventos", "#carteira/proventos"], ["meta", "Meta", "#carteira/meta"], ["simulacoes", "Simulações", "#carteira/simulacoes"], ["importar", "Importar", "#carteira/importar"]]
+    .forEach(([id, n, h]) => nav.append(el("a", { href: h, ...(id === v || (id === "simulacoes" && ehVistaSim(v)) ? { "aria-current": "page" } : {}) }, n)));
   cab.append(nav, el("span", { class: "ct-esp" }));
   const quem = ["no seu perfil, só você vê"];
   if (j && !j.vazia && j.importacoes && j.importacoes[0]) quem.push("importado " + fmtRel(j.importacoes[0].em));
@@ -6226,6 +6273,8 @@ function desenharCarteira(j) {
   else if (v === "geral") desenharGeral(box, j);
   else if (v === "proventos") desenharProventos(box, j);
   else if (v === "meta") desenharMeta(box, j);
+  else if (v === "simulacoes") desenharSimulacoes(box, j);
+  else if (ehVistaSim(v)) desenharSimulacao(box, j, v.slice(4));
   atualizarPins();
   window.scrollTo({ top: rolar });
 }
@@ -6668,8 +6717,265 @@ function grafMeta(m) {
   return s + "</svg>";
 }
 
+/* Simulações: #carteira/simulacoes (lista, nova, comparar, excluir) e #carteira/simulacoes/<id> (gráfico, mês a mês,
+   memória de cálculo e Analisar). A lista vem junto do GET /api/carteira (cartJ.simulacoes); a simulação inteira e a
+   análise, de /api/carteira/simulacoes. A conta é feita e guardada no servidor; nada roda sozinho além de guardar os
+   números de cada mês, e a análise sai só quando a pessoa pede. */
+var simForm = null, simExcluir = null, simAviso = "", simDet = {}, simAnal = {}, simAnalisando = null, simAutoAnalisar = null;
+const MAX_SIM = 12;
+const mesExtenso = (ym) => (ym ? mesNome(ym) + " de " + ym.slice(0, 4) : "");
+function pillSim(s) {
+  if (!s.mesesFechados || !s.tendencia) return el("span", { class: "ct-nota" }, "sem mês fechado");
+  const cls = s.tendencia === "acima" ? "ok" : s.tendencia === "abaixo" ? "err" : "";
+  return tagEl(`${s.tendencia} · ${pc(s.ultimoDesvioPct, true)}`, cls, "Renda do último mês fechado contra a prevista");
+}
+const textoYield = (cfg) => (cfg.yield == null ? "o da carteira" : pc(cfg.yield * 100) + " ao ano");
+async function lerSimulacao(id) {
+  const antes = simDet[id];
+  try { simDet[id] = { ...(await apiCart("GET", "/simulacoes/" + encodeURIComponent(id))), _em: Date.now() }; }
+  catch (e) { simDet[id] = antes && antes.memoria && !/não encontrada/i.test(e.message) ? { ...antes, _em: Date.now() } : { erro: e.message, _em: Date.now() }; }
+  if (carteiraVista === "sim:" + id) desenharCarteira(cartJ);
+}
+async function analisarSim(id) {
+  if (simAnalisando) return;
+  simAnalisando = id; simAnal[id] = { lendo: true };
+  if (carteiraVista === "sim:" + id) desenharCarteira(cartJ);
+  try { simAnal[id] = await apiCart("POST", "/simulacoes/" + encodeURIComponent(id) + "/analisar", {}); }
+  catch (e) { simAnal[id] = { erro: e.message }; }
+  simAnalisando = null;
+  if (carteiraVista === "sim:" + id) { desenharCarteira(cartJ); const a = $("sm-analise"); if (a) a.focus({ preventScroll: true }); }
+}
+async function excluirSim(s, btn) {
+  btn.disabled = true;
+  try {
+    await apiCart("DELETE", "/simulacoes/" + encodeURIComponent(s.id));
+    delete simDet[s.id]; delete simAnal[s.id]; simExcluir = null; simAviso = `“${s.nome}” foi excluída.`;
+    invalidarCarteira(); await lerCarteira(true);
+  } catch (e) { simAviso = "Não deu para excluir: " + e.message; }
+  if (carteiraVista === "simulacoes") { desenharCarteira(cartJ); const n = $("sm-nova") || $("ct-titulo"); if (n) n.focus({ preventScroll: true }); }
+}
+
+function desenharSimulacoes(box, j) {
+  const lista = j.simulacoes || [], cheio = lista.length >= MAX_SIM;
+  const topo = el("section", { class: "ct-card" });
+  const nova = el("button", { type: "button", class: "dd-btn dd-btn--primary", id: "sm-nova" }, "Nova simulação");
+  nova.addEventListener("click", () => { simForm = { nome: "", reinvestir: true }; simAviso = ""; desenharCarteira(cartJ); requestAnimationFrame(() => { const i = $("sm-nome"); if (i) i.focus(); }); });
+  topo.append(el("div", { class: "ct-tit" }, el("h3", {}, "Simulações de reinvestimento"), el("span", { class: "ct-sub" }, `${lista.length} de ${MAX_SIM}`), el("span", { class: "ct-esp" }), cheio || simForm ? null : nova, pinBtn("carteira-simulacoes")),
+    el("p", { class: "ct-nota" }, "Parte da carteira de hoje: reinvestindo os proventos e aportando um valor por mês até a data que você escolher, quanto chega de renda por mês e de patrimônio. A conta fica guardada do jeito que foi feita. A cada mês fechado o Lookout guarda o que aconteceu, e Analisar mostra o previsto contra o real."));
+  if (cheio) topo.append(el("p", { class: "ct-nota ct-aviso", role: "status" }, `Você chegou a ${MAX_SIM} simulações. Exclua uma para criar outra.`));
+  if (simAviso) topo.append(el("p", { class: "ct-nota", role: "status" }, simAviso));
+  box.append(topo);
+  if (simForm && !cheio) box.append(formSimulacao(j));
+  if (!lista.length) { if (!simForm) box.append(el("section", { class: "ct-card suave" }, el("p", { class: "ct-nota" }, "Nenhuma simulação ainda. Comece pela Nova simulação: escolha até quando, quanto aporta por mês e se reinveste os proventos."))); return; }
+  const grade = el("div", { class: "sm-grade" });
+  lista.slice().reverse().forEach((s) => {
+    const c = el("section", { class: "ct-card sm-card", "aria-labelledby": "sm-t-" + s.id });
+    c.append(el("div", { class: "ct-tit" }, el("h3", { id: "sm-t-" + s.id }, s.nome), el("span", { class: "ct-sub" }, "até " + mesL(s.ate))),
+      el("div", { class: "ct-linhas" },
+        linhaEl("Renda prevista no fim", rs(s.rendaFinal) + "/mês"),
+        linhaEl("Patrimônio no fim", rs(s.patrimonioFinal)),
+        linhaEl("Meses fechados", String(s.mesesFechados)),
+        el("div", {}, el("span", {}, "Último desvio"), pillSim(s))));
+    const ver = el("a", { class: "dd-btn dd-btn--outline", href: "#carteira/simulacoes/" + encodeURIComponent(s.id), "aria-label": "Ver " + s.nome }, "Ver");
+    const an = el("button", { type: "button", class: "dd-btn dd-btn--outline", "aria-label": "Analisar " + s.nome }, "Analisar");
+    if (!s.mesesFechados) { an.disabled = true; an.title = "A primeira comparação sai depois do fechamento de " + mesExtenso(s.mesInicio) + "."; }
+    an.addEventListener("click", () => { simAutoAnalisar = s.id; location.hash = "#carteira/simulacoes/" + encodeURIComponent(s.id); });
+    const ex = el("button", { type: "button", class: "dd-btn dd-btn--link", "aria-label": "Excluir " + s.nome, "aria-expanded": String(simExcluir === s.id) }, "Excluir");
+    ex.addEventListener("click", () => { simExcluir = simExcluir === s.id ? null : s.id; simAviso = ""; desenharCarteira(cartJ); const b = $("sm-conf-" + s.id); if (b) b.focus(); });
+    c.append(el("div", { class: "ct-acoes" }, ver, an, el("span", { style: "flex:1 1 auto" }), ex));
+    if (simExcluir === s.id) {
+      const sim = el("button", { type: "button", class: "dd-btn dd-btn--perigo", id: "sm-conf-" + s.id }, "Excluir");
+      const nao = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Cancelar");
+      sim.addEventListener("click", () => excluirSim(s, sim));
+      nao.addEventListener("click", () => { simExcluir = null; desenharCarteira(cartJ); });
+      c.append(el("div", { class: "sm-conf", role: "group", "aria-label": "Confirmar exclusão" }, el("span", {}, "Excluir esta simulação? A memória de cálculo vai junto e não tem volta."), sim, nao));
+    }
+    grade.append(c);
+  });
+  box.append(grade);
+  if (lista.length > 1) {
+    const cmp = cardEl("Lado a lado", { sub: "as simulações guardadas, na ordem em que foram criadas" });
+    const cab = ["Simulação", "Até", "Aporte", "Proventos", "Yield", "Renda no fim", "Patrimônio no fim", "Meses fechados", "Último desvio"];
+    cmp.append(el("div", { class: "ct-caixa" }, el("table", { class: "ct-tab" },
+      el("thead", {}, el("tr", {}, ...cab.map((h, i) => el("th", { scope: "col", class: i < 2 ? "e" : "" }, h)))),
+      el("tbody", {}, ...lista.map((s) => el("tr", {},
+        el("td", { class: "e" }, el("a", { href: "#carteira/simulacoes/" + encodeURIComponent(s.id), class: "ct-volta" }, s.nome)),
+        el("td", { class: "e mono" }, mesL(s.ate)), el("td", { class: "mono" }, rs(s.cfg.aporte) + "/mês"),
+        el("td", {}, s.cfg.reinvestir ? "reinveste" : "não reinveste"), el("td", { class: "mono" }, textoYield(s.cfg)),
+        el("td", { class: "mono" }, rs(s.rendaFinal) + "/mês"), el("td", { class: "mono" }, rs(s.patrimonioFinal)),
+        el("td", { class: "mono" }, String(s.mesesFechados)), el("td", {}, pillSim(s))))))));
+    box.append(cmp);
+  }
+}
+function formSimulacao(j) {
+  const f = simForm, yc = j.meta && j.meta.yieldCarteira;
+  const c = cardEl("Nova simulação");
+  const nome = el("input", { class: "dd-input", id: "sm-nome", maxlength: "60", placeholder: "Ex.: reinvestir tudo até 2031", autocomplete: "off" });
+  nome.value = f.nome || "";
+  nome.addEventListener("input", () => { f.nome = nome.value; });
+  const ate = Campo.ligar(el("input", { class: "dd-input", id: "sm-ate", value: f.ate || "" }), { tipo: "mesano", obrigatorio: true });
+  const aporte = Campo.ligar(el("input", { class: "dd-input", id: "sm-aporte", value: f.aporte != null ? String(f.aporte) : "", placeholder: "R$ 0,00" }), { tipo: "moeda", min: 0, max: 1000000 });
+  const yld = Campo.ligar(el("input", { class: "dd-input", id: "sm-yield", value: f.yield != null ? String(f.yield) : "", placeholder: yc ? fmtNum(yc * 100, 1) + " % (o da carteira)" : "10,0 %", "aria-describedby": "sm-yield-ajuda" }), { tipo: "percentual", casas: 1, min: 0.1, max: 30 });
+  [[ate, "ate"], [aporte, "aporte"], [yld, "yield"]].forEach(([i, k]) => i.addEventListener("change", () => { f[k] = Campo.valor(i); }));
+  const sw = el("button", { type: "button", class: "lp-switch", role: "switch", id: "sm-reinv", "aria-checked": String(f.reinvestir !== false), "aria-labelledby": "sm-reinv-r sm-reinv" }, f.reinvestir !== false ? "sim, todos" : "não");
+  sw.addEventListener("click", () => { f.reinvestir = !(f.reinvestir !== false); sw.setAttribute("aria-checked", String(f.reinvestir)); sw.textContent = f.reinvestir ? "sim, todos" : "não"; });
+  const criar = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, "Criar simulação");
+  const cancelar = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Cancelar");
+  const msg = el("p", { class: "ct-nota", role: "alert" }, f.erro || "");
+  cancelar.addEventListener("click", () => { simForm = null; desenharCarteira(cartJ); const n = $("sm-nova"); if (n) n.focus(); });
+  criar.addEventListener("click", async () => {
+    const inv = ["sm-ate", "sm-aporte", "sm-yield"].find((id) => Campo.invalido($(id)));
+    if (inv) { msg.textContent = "Confira o campo marcado."; $(inv).focus(); return; }
+    const ateV = Campo.valor(ate);
+    if (!ateV) { msg.textContent = "Escolha o mês e o ano em que a simulação termina."; ate.focus(); return; }
+    const yv = Campo.valor(yld);
+    criar.disabled = true; msg.textContent = "Calculando…";
+    try {
+      const s = await apiCart("POST", "/simulacoes", { nome: nome.value.trim(), ate: ateV, aporte: Campo.valor(aporte) || 0, reinvestir: f.reinvestir !== false, yield: yv ? Math.round(yv * 1e6) / 1e8 : null });
+      simDet[s.id] = { ...s, mensal: { meses: {} }, _em: Date.now() };
+      simForm = null; simAviso = "";
+      invalidarCarteira(); await lerCarteira(true);
+      location.hash = "#carteira/simulacoes/" + encodeURIComponent(s.id);
+    } catch (e) { f.erro = "Não deu para criar: " + e.message; msg.textContent = f.erro; criar.disabled = false; }
+  });
+  const campo = (id, rot, input, ajuda) => el("div", {}, el("label", { class: "rotulo", for: id }, rot), input, ajuda || null);
+  c.append(el("div", { class: "sm-form" },
+    campo("sm-nome", "Nome", nome),
+    campo("sm-ate", "Até", ate, el("p", { class: "sm-ajuda" }, "mês e ano, do mês que vem a 40 anos")),
+    campo("sm-aporte", "Aporte mensal", aporte),
+    campo("sm-yield", "Yield ao ano", yld, el("p", { class: "sm-ajuda", id: "sm-yield-ajuda" }, yc ? `Vazio usa o da carteira: ${pc(yc * 100)} (proventos de 12 meses sobre o custo).` : "A carteira ainda não tem proventos em 12 meses: escreva o yield.")),
+    el("div", {}, el("span", { class: "rotulo", id: "sm-reinv-r" }, "Reinvestir os proventos"), sw)),
+    el("div", { class: "ct-acoes" }, criar, cancelar), msg);
+  return c;
+}
+
+/* Uma simulação */
+const COLS_SIM = [
+  { id: "mes", rotulo: "Mês", tipo: "texto", cls: "e", valor: (l) => l.mes },
+  { id: "prev", rotulo: "Renda prevista", tipo: "num", unidade: "R$", valor: (l) => l.prev },
+  { id: "real", rotulo: "Renda real", tipo: "num", unidade: "R$", valor: (l) => l.real },
+  { id: "desvio", rotulo: "Desvio", tipo: "num", unidade: "R$", valor: (l) => l.desvio },
+  { id: "pct", rotulo: "Desvio %", tipo: "num", unidade: "%", valor: (l) => l.pct },
+  { id: "patrPrev", rotulo: "Patrimônio previsto", tipo: "num", unidade: "R$", valor: (l) => l.patrPrev },
+  { id: "patrReal", rotulo: "Patrimônio real", tipo: "num", unidade: "R$", valor: (l) => l.patrReal },
+];
+function celulaSim(c, l) {
+  if (c === "mes") return el("td", { class: "e mono" }, mesL(l.mes));
+  const v = l[c];
+  if (v == null) return el("td", { class: "mono ct-nota" }, "–");
+  if (c === "desvio") return el("td", { class: "mono " + clsS(v) }, rsS(v, Math.abs(v) < 100));
+  if (c === "pct") return el("td", { class: "mono " + clsS(v) }, pc(v, true));
+  return el("td", { class: "mono" }, rs(v, c !== "patrPrev" && c !== "patrReal" && v < 100));
+}
+function grafSim(s) {
+  const W = 1200, H = 280, x0 = 64, x1 = 1180, y0 = 244, y1 = 24;
+  const prev = s.memoria.previsto, real = (s.mensal && s.mensal.meses) || {};
+  const n = Math.max(1, prev.length - 1);
+  const pontos = prev.map(([m], k) => [k, m, real[m] ? real[m].proventos : null]).filter((p) => p[2] != null);
+  const vmax = Math.max(1, ...prev.map((p) => p[1]), ...pontos.map((p) => p[2])) * 1.1;
+  const X = (k) => x0 + (k / n) * (x1 - x0);
+  const Y = (v) => y0 - (Math.max(0, v) / vmax) * (y0 - y1);
+  const passo = Math.max(1, Math.ceil(prev.length / 300));
+  const linha = prev.map((p, k) => [p, k]).filter(([, k]) => k % passo === 0 || k === prev.length - 1).map(([p, k]) => `${X(k).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+  let t = `<svg class="ct-graf" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escHtml(`Renda por mês prevista de ${mesL(prev[0][0])} a ${mesL(prev[prev.length - 1][0])}, de ${rs(prev[0][1])} a ${rs(prev[prev.length - 1][1])}${pontos.length ? `, com ${pontos.length} ${pontos.length === 1 ? "mês fechado" : "meses fechados"}` : ""}`)}">`;
+  t += `<line x1="${x0}" y1="${y1}" x2="${x0}" y2="${y0}" stroke="var(--border)"/><line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y0}" stroke="var(--border)"/>`;
+  [0, vmax / 2, vmax / 1.1].forEach((v) => { t += `<text x="4" y="${(Y(v) + 4).toFixed(1)}">${escHtml(fmtNum(v, 0))}</text>`; if (v) t += `<line x1="${x0}" y1="${Y(v).toFixed(1)}" x2="${x1}" y2="${Y(v).toFixed(1)}" stroke="var(--border)" stroke-dasharray="2 6"/>`; });
+  const a0 = Number(prev[0][0].slice(0, 4)), a1 = Number(prev[prev.length - 1][0].slice(0, 4));
+  if (a1 - a0 >= 2) { const pa = Math.max(1, Math.ceil((a1 - a0) / 6)); for (let a = a0 + 1; a <= a1; a += pa) { const k = idxMes(a + "-01") - idxMes(prev[0][0]); if (k > 0 && k < prev.length) t += `<text x="${Math.min(x1 - 30, X(k)).toFixed(1)}" y="${H - 12}">${a}</text>`; } }
+  else { t += `<text x="${x0}" y="${H - 12}">${escHtml(mesL(prev[0][0]))}</text><text x="${x1}" y="${H - 12}" text-anchor="end">${escHtml(mesL(prev[prev.length - 1][0]))}</text>`; }
+  t += `<polyline fill="none" stroke="var(--primary)" stroke-width="2.5" points="${linha}"/>`;
+  pontos.forEach(([k, m, v]) => { t += `<circle class="real" cx="${X(k).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="5"><title>${escHtml(`${mesL(m)}: recebeu ${rs(v, true)}, previsto ${rs(prev[k][1], true)}`)}</title></circle>`; });
+  const kf = prev.length - 1, xf = X(kf), yf = Y(prev[kf][1]);
+  t += `<text x="${(xf - 8).toFixed(1)}" y="${(yf - 12).toFixed(1)}" text-anchor="end" class="forte">${escHtml(rs(prev[kf][1]) + "/mês em " + mesL(prev[kf][0]))}</text>`;
+  return t + "</svg>";
+}
+function decomposicaoEl(a) {
+  const d = a.decomposicao;
+  const itens = [["Rendimento", d.rendimento, "o yield que a carteira pagou contra o da conta"], ["Aportes", d.aportes, "o que entrou contra o que o plano pedia"], ["Reinvestimento e cotação", d.reinvestimento, "o resto do patrimônio"], ["Resíduo", d.residuo, "o que sobra entre um mês e outro"]];
+  const max = Math.max(0.01, ...itens.map((x) => Math.abs(x[1])));
+  const box = el("div", { class: "sm-dec", role: "list", "aria-label": "De onde veio o desvio de renda" });
+  itens.forEach(([n, v, dica]) => box.append(el("div", { role: "listitem" }, el("span", { title: dica }, n),
+    el("div", { class: "trilho " + (v >= 0 ? "pos" : "neg"), "aria-hidden": "true" }, el("span", { style: `width:${(Math.abs(v) / max) * 50}%` })),
+    el("span", { class: "ct-mono " + clsS(v) }, rsS(v, true)))));
+  box.append(el("div", { class: "tot", role: "listitem" }, el("span", {}, `Desvio acumulado de renda (${a.mesesFechados} ${a.mesesFechados === 1 ? "mês" : "meses"})`), el("span", { "aria-hidden": "true" }), el("span", { class: "ct-mono " + clsS(d.total) }, rsS(d.total, true))));
+  return box;
+}
+function desenharSimulacao(box, j, id) {
+  const s = simDet[id];
+  const volta = el("a", { href: "#carteira/simulacoes", class: "ct-volta" }, "← Todas as simulações");
+  if (!s || (!s.memoria && !s.erro)) { box.append(el("div", {}, volta), el("section", { class: "ct-card" }, esqueleto(5))); if (!s) { simDet[id] = { _em: 0 }; lerSimulacao(id); } return; }
+  if (s.erro) {
+    const b = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Tentar de novo");
+    b.addEventListener("click", () => { delete simDet[id]; desenharCarteira(cartJ); });
+    box.append(el("div", {}, volta), el("section", { class: "ct-card ct-vazio" }, el("h3", {}, /não encontrada/i.test(s.erro) ? "Esta simulação não existe mais" : "Não deu para abrir a simulação"), el("p", {}, /não encontrada/i.test(s.erro) ? "Ela pode ter sido excluída em outro aparelho." : s.erro), /não encontrada/i.test(s.erro) ? el("a", { class: "dd-btn dd-btn--outline", href: "#carteira/simulacoes" }, "Ver as simulações") : b));
+    return;
+  }
+  /* a análise pedida pela lista sai assim que a simulação está na tela; a simulação é relida depois de 1 min */
+  if (Date.now() - (s._em || 0) > 60000) lerSimulacao(id);
+  const mem = s.memoria, cfg = s.cfg, prev = mem.previsto, fim = prev[prev.length - 1];
+  const reais = (s.mensal && s.mensal.meses) || {};
+  const fechados = prev.filter(([m]) => reais[m]).length;
+  if (simAutoAnalisar === id) { simAutoAnalisar = null; if (fechados) setTimeout(() => analisarSim(id), 0); }
+  // Cabeçalho e números
+  const cab = el("section", { class: "ct-card" });
+  cab.append(el("div", {}, volta), el("div", { class: "ct-tit" }, el("h3", {}, s.nome), el("span", { class: "ct-sub" }, `${mesL(mem.mesInicio)} a ${mesL(cfg.ate)} · criada em ${dataBr(String(s.criado).slice(0, 10))}`)),
+    el("div", { class: "ct-fatos" }, el("span", {}, "Aporte ", el("b", {}, rs(cfg.aporte) + "/mês")), el("span", {}, "Proventos ", el("b", {}, cfg.reinvestir ? "reinvestidos" : "não reinvestidos")), el("span", {}, "Yield ", el("b", {}, pc(mem.y * 100) + " ao ano"), cfg.yield == null ? " (o da carteira)" : " (escrito por você)")));
+  box.append(cab);
+  const k = el("div", { class: "ct-kpis sm-kpis" });
+  const kpi = (rot, val, desc) => el("div", { class: "ct-card ct-kpi" }, el("span", { class: "rotulo" }, rot), el("span", { class: "v" }, val), el("span", { class: "d" }, desc));
+  k.append(kpi("Renda prevista no fim", rs(fim[1]), "por mês em " + mesL(fim[0])), kpi("Patrimônio no fim", rs(fim[2]), "previsto para " + mesL(fim[0])),
+    kpi("Renda na criação", rs(mem.rendaHoje), "por mês, média de 12 meses"), kpi("Meses fechados", `${fechados} de ${prev.length}`, fechados ? "com o real guardado" : "primeiro em " + mesL(mem.mesInicio)));
+  box.append(k);
+  // Gráfico
+  const g = cardEl("Renda por mês", { sub: "prevista e recebida" });
+  g.append(el("div", { html: grafSim(s) }), el("div", { class: "ct-leg-graf" }, el("span", {}, el("i", {}), "prevista na simulação"), el("span", {}, el("i", { class: "pt" }), "recebida (mês fechado)")));
+  if (!fechados) g.append(el("p", { class: "ct-nota", role: "status" }, `A primeira comparação sai depois do fechamento de ${mesExtenso(mem.mesInicio)}.`));
+  box.append(g);
+  // Análise
+  const an = el("section", { class: "ct-card", id: "sm-analise", tabindex: "-1", "aria-labelledby": "sm-analise-t" });
+  const btn = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, simAnalisando === id ? "Analisando…" : simAnal[id] && simAnal[id].parecer ? "Analisar de novo" : "Analisar");
+  if (!fechados || simAnalisando === id) btn.disabled = true;
+  btn.addEventListener("click", () => analisarSim(id));
+  an.append(el("div", { class: "ct-tit" }, el("h3", { id: "sm-analise-t" }, "Previsto contra o real"), el("span", { class: "ct-esp" }), btn));
+  const a = simAnal[id];
+  if (!fechados) an.append(el("p", { class: "ct-nota" }, "Ainda não há mês fechado para comparar."));
+  else if (!a) an.append(el("p", { class: "ct-nota" }, `${fechados} ${fechados === 1 ? "mês fechado" : "meses fechados"}. Analisar compara a renda prevista com a recebida e mostra por onde veio a diferença.`));
+  else if (a.lendo) an.append(esqueleto(3));
+  else if (a.erro) an.append(el("p", { class: "ct-nota ct-neg", role: "alert" }, "Não deu para analisar: " + a.erro));
+  else if (a.decomposicao) an.append(el("p", { class: "sm-parecer", role: "status" }, a.parecer), decomposicaoEl(a));
+  an.append(el("p", { class: "sm-ia" }, "Parecer por IA: desligado nesta versão."));
+  box.append(an);
+  // Mês a mês
+  const tc = cardEl("Mês a mês", { sub: "o real entra quando o mês fecha" });
+  const linhas = prev.map(([m, r, p]) => { const x = reais[m]; return { mes: m, prev: r, real: x ? x.proventos : null, desvio: x ? Math.round((x.proventos - r) * 100) / 100 : null, pct: x && r > 0 ? Math.round(((x.proventos - r) / r) * 1000) / 10 : null, patrPrev: p, patrReal: x ? x.patrimonio : null }; });
+  const tab = Tabela.criar({
+    id: "carteira-simulacao", colunas: COLS_SIM, linhas, total: linhas.length, rotuloConta: "meses",
+    padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 25 }, semOrdem: "Sem critério, do primeiro mês ao último.",
+    celula: (c, l) => celulaSim(c.id, l), classeTabela: "ct-tab", classeCaixa: "ct-caixa",
+    vazio: () => el("p", { class: "ct-nota" }, "Nenhum mês com esse filtro."),
+  });
+  tc.append(tab.el, el("p", { class: "ct-nota" }, "Patrimônio previsto: o da criação mais os aportes e o que a conta reinveste até o fim de cada mês. O real é o do dia do fechamento, com a cotação que o Lookout tinha naquele dia."));
+  box.append(tc);
+  // Memória de cálculo
+  const md = el("details", { class: "ct-card sm-mem" }, el("summary", {}, "Memória de cálculo"));
+  md.append(el("div", { class: "ct-linhas" },
+    linhaEl("Mês de início", mesL(mem.mesInicio)),
+    linhaEl("Yield usado (y)", pc(mem.y * 100) + " ao ano", cfg.yield == null ? "o da carteira" : "escrito por você"),
+    linhaEl("Yield da carteira na criação", mem.yCarteira != null ? pc(mem.yCarteira * 100) + " ao ano" : "–", "proventos de 12 meses ÷ custo"),
+    linhaEl("Renda na criação", rs(mem.rendaHoje, true) + "/mês", "média de 12 meses"),
+    linhaEl("P inicial (p0)", rs(mem.p0), mem.rendaHoje > 0 ? "renda × 12 ÷ y" : "o custo, sem proventos"),
+    linhaEl("Custo na criação", rs(mem.custo)), linhaEl("Patrimônio na criação", rs(mem.patrimonio), "com a cotação do dia"),
+    linhaEl("Aporte por mês", rs(cfg.aporte)), linhaEl("Proventos", cfg.reinvestir ? "reinvestidos" : "não reinvestidos")),
+    el("p", { class: "sm-formula" }, `cada mês: renda = P × ${fmtNum(mem.y * 100, 2)}% ÷ 12; depois P = P + ${fmtNum(cfg.aporte, 2)}${cfg.reinvestir ? " + renda" : ""}. Começa em P = ${fmtNum(mem.p0, 2)}.`));
+  const pos = mem.posicoes || [];
+  md.append(el("h4", { class: "rotulo", style: "margin:8px 0 0" }, `Foto da carteira na criação · ${pos.length} ${pos.length === 1 ? "papel" : "papéis"}`),
+    el("div", { class: "ct-caixa" }, el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Papel", "Classe", "Qtd", "Preço médio"].map((h, i) => el("th", { scope: "col", class: i < 2 ? "e" : "" }, h)))),
+      el("tbody", {}, ...pos.map((p) => el("tr", {}, el("td", { class: "e" }, papelBtn(p.papel)), el("td", { class: "e" }, NOME_CLASSE[p.classe] || "Outros"), el("td", { class: "mono" }, qtd(p.q)), el("td", { class: "mono" }, p.pm == null ? "–" : "R$ " + fmtNum(p.pm, 2))))))));
+  box.append(md);
+}
+
 /* Importar */
-const SHEETJS = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+const SHEETJS ="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
 let sheetP = null;
 function carregarSheetJS() {
   if (window.XLSX) return Promise.resolve();
@@ -6817,10 +7123,10 @@ function desenharImportar(box, j) {
   conf.addEventListener("input", () => { ba.disabled = conf.value.trim() !== "APAGAR"; });
   ba.addEventListener("click", async () => {
     ba.disabled = true; msg.textContent = "Apagando…";
-    try { await apiCart("DELETE", ""); invalidarCarteira(); imp = { fase: "inicio", arquivos: [], erro: "", resultado: null }; await lerCarteira(true); desenharCarteira(cartJ); const s = $("carteira").querySelector(".ct-perigo [role=status]"); if (s) s.textContent = "Carteira apagada: extrato, meta e importações."; }
+    try { await apiCart("DELETE", ""); invalidarCarteira(); imp = { fase: "inicio", arquivos: [], erro: "", resultado: null }; await lerCarteira(true); desenharCarteira(cartJ); const s = $("carteira").querySelector(".ct-perigo [role=status]"); if (s) s.textContent = "Carteira apagada: extrato, meta, importações e simulações."; }
     catch (e) { msg.textContent = "Não deu para apagar: " + e.message; ba.disabled = false; }
   });
-  apagar.append(el("p", { class: "ct-nota" }, "Tira do banco o extrato, a meta e o histórico de importações. Não tem volta. Digite APAGAR para liberar o botão."), el("div", { class: "ct-ferr" }, conf, ba), msg);
+  apagar.append(el("p", { class: "ct-nota" }, "Tira do banco o extrato, a meta, as simulações e o histórico de importações. Não tem volta. Digite APAGAR para liberar o botão."), el("div", { class: "ct-ferr" }, conf, ba), msg);
   dir.append(passos, como, priv, apagar);
   dois.append(esq, dir);
   box.append(dois);
@@ -6915,6 +7221,14 @@ corpos["carteira-alertas"] = (j, fm = { r: 1 }) => {
   const l = j.resumo.alertas || [];
   if (!l.length) return [vazioW("Nenhum alerta agora.")];
   return [el("div", { class: "ct-linhas" }, ...l.slice(0, 5 * fm.r).map((a) => el("div", {}, el("span", {}, ...textoAlerta(a)))))];
+};
+corpos["carteira-simulacoes"] = (j, fm = { c: 1, r: 1 }) => {
+  const v = semCartW(j); if (v) return v;
+  const l = (j.simulacoes || []).slice().reverse().slice(0, 3);
+  if (!l.length) return [vazioW("Nenhuma simulação ainda. Crie uma em Minha carteira, na aba Simulações.")];
+  return [el("div", { class: "ct-linhas wdg-sim" }, ...l.map((s) => el("div", {},
+    el("span", {}, el("a", { href: "#carteira/simulacoes/" + encodeURIComponent(s.id) }, s.nome), el("small", {}, ` até ${mesL(s.ate)}${fm.c > 1 ? " · " + rs(s.rendaFinal) + "/mês no fim" : ""}`)),
+    pillSim(s))))];
 };
 
 /* ---------- Radar de dividendos: #investimentos/radar ----------

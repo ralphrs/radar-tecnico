@@ -11,7 +11,7 @@ import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1,
 import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
 import { rotaPapel, cronPapel, ID_OK as PAPEL_ID_OK } from "./papel.js";
 import { BDR_DE_US, US_DE_BDR } from "./bdr.js";
-import { rotaCarteira, limparCacheCarteira } from "./carteira.js";
+import { rotaCarteira, limparCacheCarteira, cronSimulador } from "./carteira.js";
 import { rotaListas, sincronizarListasCarteira, cronListas } from "./listas.js";
 import { rotaLeitura, cronLeitura, lerFundamentos } from "./leitura.js";
 // Radar de dividendos: o mesmo arquivo que a página carrega (critérios, avisos e validação dos filtros salvos)
@@ -643,6 +643,8 @@ export default {
       const r = await cronLeitura(env, evento.scheduledTime || Date.now(), { lerLinhas, lerLinha, gravarNoEspelho }, podeVer);
       if (r && (r.geradas || r.erros)) console.log("leitura", JSON.stringify(r));
     } catch (e) { console.error("leitura", String((e && e.message) || e).slice(0, 120)); }
+    // Simulador de reinvestimento: fecha o mês anterior de quem tem simulação, no dia 1 entre 6h e 6h59 em Brasília
+    try { const r = await cronSimulador(env, evento.scheduledTime || Date.now(), { gravarNoEspelho }); if (r && (r.fechadas || r.erros)) console.log("simulador", JSON.stringify(r)); } catch (e) { console.error("simulador", String((e && e.message) || e).slice(0, 120)); }
     // Minhas listas por regra: recalcula as ligadas de todo mundo no minuto 41 (grava só as que mudaram)
     try { const r = await cronListas(env, evento.scheduledTime || Date.now(), { lerLinha, lerFundamentos, gravarNoEspelho }); if (r && r.listas) console.log("listas", JSON.stringify(r)); } catch (e) { console.error("listas", String((e && e.message) || e).slice(0, 120)); }
     if (minuto === 7) {
