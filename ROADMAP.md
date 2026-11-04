@@ -114,7 +114,8 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 
 ## Pedidos de 04/11
 - [x] Esportes: rodada, próximos jogos e tabela por competição configurável, pela ESPN (endpoints públicos) e pelo Globo Esporte no Gauchão quando a ESPN não tiver; `meta/esportes-<liga>`, cron a cada 15 min com jogo perto e 1x/hora sem, tabela 2x/dia, times 1x/dia; cartões acima do feed com Rodada, Próximos e Tabela com zonas coloridas; "Meus esportes" (`#esportes/config`, menu da conta) com competições, ordem e times; widgets de rodada, tabela e próximo jogo no Início (docs/LOOKOUT.md, "Esportes")
-- [ ] Esportes: conferir as amostras de `_sistema/sonda-esportes-aNN` do primeiro cron em produção e ajustar os parsers da ESPN e do ge ao formato real; pôr em `src/feeds.js` os RSS do ge que a sonda achar com itens
+- [x] Esportes conferido em produção (04/11, 15h14): Brasileirão com 9 próximos, 3 últimos e tabela de 20; Libertadores com tabela de 32 (mata-mata sem rodada); scoreboard da ESPN só aceita um dia por chamada, corrigido em c607db4
+- [ ] Esportes: pôr em `src/feeds.js` os RSS do ge que a sonda achar com itens
 - [ ] Esportes: NBA, NFL e F1 (o módulo já aceita `<esporte>/<liga>` da ESPN; falta pôr em `LIGAS` e na tela)
 - [x] Minhas listas: colunas Qtd e Valor e linha colorida pelo resultado da posição na lateral e no widget do Início, para quem tem o papel na carteira
 - [x] Nos fóruns em todas as seções: 28 subreddits novos (38 no total), Investimentos e Esportes com bloco e widget (docs/coleta.md)
