@@ -11,7 +11,7 @@ const INTERVALO_MIN = 90;      // cada feed é lido no máximo a cada 90 minutos
 const FEEDS_POR_MINUTO = 6;    // o cron roda de minuto em minuto
 const ITENS_POR_FEED = 20;
 const JANELA_DIAS = { tech: 21, politica: 3, esportes: 3, negocios: 7, investimentos: 7 };
-const UA = "Mozilla/5.0 (compatible; LookoutBot/1.0; +https://news.ralph-renato.workers.dev)";
+const UA = "Mozilla/5.0 (compatible; LookoutBot/1.0; +https://lookout.ralph-renato.workers.dev)";
 // Reddit: ritmo próprio, porque 4 pedidos no mesmo minuto já deram 429 (sonda de 03/11/2026).
 export const REDDIT = {
   INTERVALO_MIN: 120,     // cada subreddit relido a cada 120 min
@@ -21,7 +21,7 @@ export const REDDIT = {
   TRECHO: 600,
   RESUMO_FORUM: 300,      // resumo guardado em foruns-<radar>
   DIAS_FORUM: 3,          // foruns-* com mais de 3 dias saem na limpeza
-  UA: "Lookout/1.0 (agregador pessoal de noticias; +https://news.ralph-renato.workers.dev)",
+  UA: "Lookout/1.0 (agregador pessoal de noticias; +https://lookout.ralph-renato.workers.dev)",
 };
 const COLECOES_ITENS = ["items", "items-politica", "items-esportes", "items-negocios", "items-investimentos", "sombra-items"];
 

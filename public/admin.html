@@ -415,7 +415,7 @@ async function carregarCustos() {
     } else if (c.erroCloudflare) {
       h += `<p class="msg err">A API da Cloudflare recusou: ${esc(c.erroCloudflare)}</p>`;
     } else {
-      h += '<p class="dica">Para ver requisições, leituras e gravações reais, crie um token na Cloudflare (My Profile › API Tokens › Create Token › Custom) com as permissões <b>Account Analytics: Read</b> e <b>D1: Read</b>, e salve no Worker <b>news</b> como secret <b>CF_API_TOKEN</b> (Settings › Variables and Secrets). Enquanto isso, fica só o que dá para medir daqui.</p>';
+      h += '<p class="dica">Para ver requisições, leituras e gravações reais, crie um token na Cloudflare (My Profile › API Tokens › Create Token › Custom) com as permissões <b>Account Analytics: Read</b> e <b>D1: Read</b>, e salve no Worker <b>lookout</b> como secret <b>CF_API_TOKEN</b> (Settings › Variables and Secrets). Enquanto isso, fica só o que dá para medir daqui.</p>';
     }
     const L = c.local;
     const totDocs = L.colecoes.reduce((s, x) => s + (x.bytes || 0), 0) + (L.candidatos.bytes || 0);

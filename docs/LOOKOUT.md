@@ -1,6 +1,6 @@
 # Lookout: estado atual (04/11/2026)
 
-Feed pessoal de notícias do Admin, aberto só para convidados. Um Worker da Cloudflare (`news`, código em `src/`) serve a página, a API e o admin, e guarda tudo num banco D1 (`lookout`). As leituras da página saem de um espelho do D1 em São Paulo (veja "Banco e espelho"). O login é pelo Cloudflare Access; o Worker confere o token em cada requisição e, sem configuração, não deixa ninguém entrar.
+Feed pessoal de notícias do Admin, aberto só para convidados. Um Worker da Cloudflare (`lookout`, código em `src/`) serve a página, a API e o admin, e guarda tudo num banco D1 (`lookout`). As leituras da página saem de um espelho do D1 em São Paulo (veja "Banco e espelho"). O login é pelo Cloudflare Access; o Worker confere o token em cada requisição e, sem configuração, não deixa ninguém entrar.
 
 Abas: Início, Tech, Negócios, Investimentos, Notícias e Política, Esportes. O site abre no Início (painel de widgets, veja abaixo). Investimentos tem três visões: Bolsa (a principal), EUA e Notícias.
 
@@ -51,7 +51,7 @@ O D1 fica no leste dos EUA e não existe D1 na América do Sul. Antes o Worker r
 - **Ordem igual nos dois lados:** o `/api/q` ordena por `<campo> <dir>, coletado DESC, id DESC` (por `coletado` é só `coletado <dir>, id DESC`). O mesmo SQL roda no espelho e no D1, então a paginação por "mais antigos" não pula nem repete item quando há empate. No espelho há índices compostos `(collection, <campo>, coletado, id)`; com direção DESC a ordenação inteira sai do índice, em ASC o índice serve a primeira coluna e só os empates são ordenados à parte. No D1 só existe o `docs_col_coletado`, como antes.
 - **Fallback:** se o espelho der erro, passar de 2 s ou ainda não tiver terminado a primeira carga, a leitura vai ao D1. As gravações vão sempre ao D1.
 - **Caches:** os de antes continuam (memória do isolate por 30 s e 60 s, borda por 3 min). Uma mudança no D1 leva até 1 min para chegar ao espelho e depois os mesmos 3 min e meio de cache de antes.
-- **Desligar sem deploy:** a variável `ESPELHO_ATIVO` (padrão `"1"` no `wrangler.jsonc`). Com `"0"` no painel (Workers & Pages → `news` → Variables and Secrets), todas as leituras voltam ao D1. O próximo deploy devolve o valor do `wrangler.jsonc`, então para deixar desligado de vez troque lá também.
+- **Desligar sem deploy:** a variável `ESPELHO_ATIVO` (padrão `"1"` no `wrangler.jsonc`). Com `"0"` no painel (Workers & Pages → `lookout` → Variables and Secrets), todas as leituras voltam ao D1. O próximo deploy devolve o valor do `wrangler.jsonc`, então para deixar desligado de vez troque lá também.
 - **Se o espelho corromper:** no admin, card "Espelho em São Paulo", botão "Zerar e recarregar" (é um `POST /api/admin/espelho` com `{ "zerar": true }`). Ele esvazia o DO e recarrega tudo do D1 na mesma hora; enquanto a carga não termina, as leituras vão ao D1. Se a carga passar de 25 s, continua no cron seguinte.
 - **Medição:** cada vez que o admin abre, o Worker que o atendeu faz a mesma consulta no espelho e no D1 e guarda os dois tempos (as duas últimas medições ficam no card).
 - **Logs das leituras:** cada `console.log` vira um evento de observabilidade, e a cota é de 20 mi por mês. Por isso a leitura que deu certo no espelho é amostrada: sai 1 em cada 20 por isolate, como `{"leitura": "espelho", "rotulo", "ms", "amostra": 20}`. Quando a leitura cai no D1 sai sempre, com o motivo em `fallback` (`timeout`, `erro` ou `vazio`). Esses fallbacks também são somados no isolate e mandados ao DO no máximo a cada 10 s; o card do espelho mostra a contagem de hoje por motivo e o total de ontem (janela simples por dia, em UTC). É aproximado: se o isolate morrer antes de mandar, a contagem dele se perde. Com `ESPELHO_ATIVO=0` a leitura no D1 é o caminho normal e entra na mesma amostragem.
@@ -414,7 +414,7 @@ Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios
 
 ## Segredos
 
-Ficam no painel da Cloudflare (Workers & Pages → `news` → Variables and Secrets), nunca no repositório: `ADMIN_EMAIL`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `BRAPI_TOKEN`, `FINNHUB_TOKEN` (cotações e ficha dos EUA), `CF_API_TOKEN` e `CF_ACCOUNT_ID` (estes dois para o card de custos) e `CARTEIRA_KEY` (cifra da Minha carteira). O `wrangler.jsonc` usa `keep_vars: true`, então deploy não apaga nada. Para rodar local, `DEV_EMAIL` vai no `.dev.vars`, que o git ignora.
+Ficam no painel da Cloudflare (Workers & Pages → `lookout` → Variables and Secrets), nunca no repositório: `ADMIN_EMAIL`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `BRAPI_TOKEN`, `FINNHUB_TOKEN` (cotações e ficha dos EUA), `CF_API_TOKEN` e `CF_ACCOUNT_ID` (estes dois para o card de custos) e `CARTEIRA_KEY` (cifra da Minha carteira). O `wrangler.jsonc` usa `keep_vars: true`, então deploy não apaga nada. Para rodar local, `DEV_EMAIL` vai no `.dev.vars`, que o git ignora.
 
 ## Regras para agentes
 

@@ -6,8 +6,8 @@ Passo a passo para colocar o Lookout no ar, com o que deu errado no caminho e co
 
 | Peça | Nome | Observação |
 |---|---|---|
-| Worker | `news` | Deploy automático a cada push em `main` (Workers Builds) |
-| Endereço | `news.ralph-renato.workers.dev` | Protegido pelo Cloudflare Access |
+| Worker | `lookout` | Deploy automático a cada push em `main` (Workers Builds) |
+| Endereço | `lookout.ralph-renato.workers.dev` | Protegido pelo Cloudflare Access |
 | Banco D1 | `lookout` (`b83811df-f894-41b0-8d3b-4323faf1e1ff`) | Já referenciado no `wrangler.jsonc` |
 | Zero Trust | equipe `bitter-mountain-e37c`, plano Zero Trust Free | Gratuito até 50 usuários |
 
@@ -16,7 +16,7 @@ O nome do Worker no painel precisa ser igual ao `name` do `wrangler.jsonc`. Se f
 ## 1. Criar o Worker a partir do repositório
 
 1. Workers & Pages → **Create** → **Import a repository** → `ralphrs/radar-tecnico`.
-2. **Project name**: `news` (igual ao `wrangler.jsonc`).
+2. **Project name**: `lookout` (igual ao `wrangler.jsonc`).
 3. **Build command**: vazio. **Deploy command**: `npx wrangler deploy`. **Preview command**: `npx wrangler preview`.
 4. **Deploy**.
 
@@ -31,11 +31,11 @@ SELECT data FROM docs WHERE collection = '_sistema' AND id = 'seed';
 
 **Pré-requisito:** o Zero Trust precisa estar ativado na conta (painel → Zero Trust). Sem isso, o botão do passo abaixo pode não aparecer ou não fazer nada. Na nossa conta ele já está ativo (equipe `bitter-mountain-e37c`, plano Zero Trust Free).
 
-1. Workers & Pages → `news` → aba **Domains** (em painéis mais antigos: **Settings → Domains & Routes**).
+1. Workers & Pages → `lookout` → aba **Domains** (em painéis mais antigos: **Settings → Domains & Routes**).
 2. Na linha do `workers.dev`, clique em **Enable Cloudflare Access**. Em algumas versões do painel o botão se chama **Protect this Worker behind Access**.
 3. Clique em **Manage Cloudflare Access** para abrir a aplicação criada.
 
-**Como saber se funcionou:** ao ativar, o Cloudflare cria sozinho uma aplicação no Access e uma política reutilizável chamada `news - Production`. Se em Zero Trust → Access controls → Applications não houver nenhuma aplicação, a ativação não concluiu: confira o pré-requisito do Zero Trust e clique de novo no botão.
+**Como saber se funcionou:** ao ativar, o Cloudflare cria sozinho uma aplicação no Access e uma política reutilizável chamada `lookout - Production`. Se em Zero Trust → Access controls → Applications não houver nenhuma aplicação, a ativação não concluiu: confira o pré-requisito do Zero Trust e clique de novo no botão.
 
 Observações:
 - O botão protege só o `workers.dev` e as Preview URLs. Um domínio próprio precisa de uma aplicação separada em Zero Trust → Access controls → Applications, com o hostname do domínio.
@@ -43,7 +43,7 @@ Observações:
 
 ## 3. Política: deixar qualquer pessoa fazer login
 
-Na política `news - Production`, troque a regra **Include** (que vem com o e-mail do dono da conta) por **Everyone** e salve.
+Na política `lookout - Production`, troque a regra **Include** (que vem com o e-mail do dono da conta) por **Everyone** e salve.
 
 Isso não abre o site: o Access só garante que a pessoa provou quem é. Quem decide quem entra é o Worker, pela lista de convidados do `/admin` (tabela `usuarios` no D1). Quem faz login sem estar na lista vê a tela "Este espaço é só para convidados". Assim existe uma lista só, gerenciada pela página.
 
@@ -59,11 +59,11 @@ Isso não abre o site: o Access só garante que a pessoa provou quem é. Quem de
      - Authorized redirect URIs: `https://bitter-mountain-e37c.cloudflareaccess.com/cdn-cgi/access/callback`
   5. Copie o **Client ID** e o **Client secret** (o secret é senha; não vai para o repositório).
   6. No Cloudflare: Zero Trust → **Integrations → Identity providers** → **Add new identity provider** → **Google** (não "Google Workspace", que é só para domínios do Workspace). Cole o Client ID no campo App ID e o secret, salve e clique em **Test**.
-  7. Como o app `news` está com **Accept all available identity providers** ligado, o botão do Google aparece sozinho na tela de login, ao lado do código por e-mail.
+  7. Como o app `lookout` está com **Accept all available identity providers** ligado, o botão do Google aparece sozinho na tela de login, ao lado do código por e-mail.
 
 ## 5. Variáveis do Worker
 
-Workers & Pages → `news` → Settings → **Variables and Secrets** → Add (tipo Text), depois **Deploy**:
+Workers & Pages → `lookout` → Settings → **Variables and Secrets** → Add (tipo Text), depois **Deploy**:
 
 | Nome | Valor |
 |---|---|
@@ -81,13 +81,13 @@ A documentação do Cloudflare recomenda validar no Worker o JWT que o Access en
 
 ## Tela de login do Lookout
 
-**Como está hoje (30/10/2026):** no app `news`, Authentication com **Accept all available identity providers** desligado, só **Google** marcado e **Apply instant authentication** ligado. Quem abre o site vai direto para a tela do Google, sem passar pela tela do Cloudflare. Não existe One-time PIN configurado: só entra quem tem conta Google.
+**Como está hoje (30/10/2026):** no app `lookout`, Authentication com **Accept all available identity providers** desligado, só **Google** marcado e **Apply instant authentication** ligado. Quem abre o site vai direto para a tela do Google, sem passar pela tela do Cloudflare. Não existe One-time PIN configurado: só entra quem tem conta Google.
 
 **Personalização simples (salva em 31/10/2026):** Custom pages → Access login page → Manage. Nome da organização `Lookout`; logo `https://cdn.jsdelivr.net/gh/ralphrs/radar-tecnico@main/public/favicon.svg` (o repositório é público; o próprio Worker não serve, porque fica atrás do login); texto do cabeçalho "De olho no que importa. Tecnologia, política e futebol, filtrados e atualizados ao longo do dia."; cor de fundo padrão, para o tema escuro continuar funcionando. Com a entrada instantânea ligada essa tela não aparece; ela só aparece se a entrada instantânea for desligada.
 
 **Página com a cara do Lookout:** o modelo está em `access/login.html` (HTML + Liquid, recurso lançado pelo Cloudflare em 27/10/2026), mas a conta ainda não tem a opção. Em Reusable components → Custom pages aparece só o "Access login page" antigo (nome, logo, cabeçalho, cor de fundo), e em Additional settings → Custom block pages não há a linha **Login page**. Quando o card **Access custom pages** aparecer:
 1. **Create custom page** → Name `Lookout login`, Type **Login**. Cole `access/login.html`, confira **Problems**, **Publish**.
-2. Applications → `news` → **Additional settings** → **Custom block pages** → **Login page**: **Custom page** → `Lookout login` → **Save**.
+2. Applications → `lookout` → **Additional settings** → **Custom block pages** → **Login page**: **Custom page** → `Lookout login` → **Save**.
 3. Desligue **Apply instant authentication**, senão a página nunca aparece.
 
 O `<cf-access-authbox>` é obrigatório e aparece uma vez só. A página não aceita JavaScript.
@@ -102,8 +102,25 @@ Quando a sessão expira com a página aberta, as chamadas à API passam a recebe
 
 | Sintoma | Causa | Solução |
 |---|---|---|
-| Deploy falha logo no começo | Project name diferente do `name` do `wrangler.jsonc` | Deixar os dois iguais (`news`) |
-| "Enable Cloudflare Access" não cria nada; Access sem aplicações e sem políticas | Zero Trust ainda não ativado, ou o clique não concluiu | Ativar o Zero Trust e clicar de novo; conferir se surgiu a política `news - Production` |
+| Deploy falha logo no começo | Project name diferente do `name` do `wrangler.jsonc` | Deixar os dois iguais (`lookout`) |
+| "Enable Cloudflare Access" não cria nada; Access sem aplicações e sem políticas | Zero Trust ainda não ativado, ou o clique não concluiu | Ativar o Zero Trust e clicar de novo; conferir se surgiu a política `lookout - Production` |
 | Site mostra "Falta ligar o login" | Faltam `ACCESS_TEAM_DOMAIN` ou `ACCESS_AUD` | Passo 5 |
 | Pessoa faz login e vê "só para convidados" | E-mail não está na lista | Adicionar em `/admin` |
 | Convidado não consegue nem chegar à tela de login do Lookout | Política do Access ainda restrita a e-mails específicos | Passo 3 (Include: Everyone) |
+
+## Troca de nome do Worker (news → lookout, 04/11/2026)
+
+O Worker nasceu como `news` e passou a se chamar `lookout`. Renomear não existe no painel: é um Worker novo com o mesmo código. O que muda e o que não muda:
+
+- Não muda: o D1 (`lookout`, mesmo id no `wrangler.jsonc`), o cron, o repositório.
+- Muda: o endereço (`lookout.ralph-renato.workers.dev`), o espelho (Durable Object novo, nasce vazio e se enche em 1 minuto), os secrets (ficam no Worker antigo; precisam ser colados de novo) e a aplicação do Access (é por hostname, então nasce outra, com `ACCESS_AUD` novo).
+
+Ordem que funciona:
+
+1. Push em `main` com `"name": "lookout"` no `wrangler.jsonc`. O build do projeto antigo (`news`) passa a falhar por nome diferente; o `news` continua servindo a última versão até ser apagado.
+2. Workers & Pages → **Create** → **Import a repository** → `ralphrs/radar-tecnico`, **Project name** `lookout`, deploy command `npx wrangler deploy`. O primeiro deploy sobe sem secrets: a página diz "Falta ligar o login". Normal.
+3. Workers & Pages → `lookout` → Settings → **Variables and Secrets**: colar os 8 (`ADMIN_EMAIL`, `ACCESS_TEAM_DOMAIN`, `BRAPI_TOKEN`, `FINNHUB_TOKEN`, `CARTEIRA_KEY`, `CF_API_TOKEN`, `CF_ACCOUNT_ID` e, por último, `ACCESS_AUD`, que só existe depois do passo 4). `CARTEIRA_KEY` tem de ser a mesma do `news`, senão as carteiras já gravadas ficam ilegíveis.
+4. `lookout` → Domains → **Enable Cloudflare Access** no `workers.dev`. Em Zero Trust → Applications surge `lookout`: repetir os passos 3 (Include: Everyone), 4 (só Google, instant authentication) e 6 (página de login `Lookout login`). Copiar o **Application Audience (AUD)** e colar como `ACCESS_AUD` no Worker, depois **Deploy**.
+5. Conferir: abrir o endereço novo, fazer login, ver o Início, o admin e o card de custos. No D1, `SELECT id FROM docs WHERE collection='meta' ORDER BY rowid DESC LIMIT 5` tem de mostrar gravação recente vinda do cron.
+6. Só então apagar o Worker `news` (Settings → Delete). Enquanto os dois existirem, os dois crons gravam no mesmo D1; a importação é idempotente, mas é gasto dobrado. Apagar o `news` apaga também o espelho antigo e a aplicação `news` do Access; nada disso faz falta.
+7. Domínio próprio, quando houver: `lookout` → Domains → **Add custom domain** → `lookout.<domínio>`; o Access ganha mais um hostname na mesma aplicação, o `ACCESS_AUD` não muda.
