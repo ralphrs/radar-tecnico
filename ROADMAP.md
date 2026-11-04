@@ -67,9 +67,26 @@ Investimentos
 - [ ] Ficha com os fundamentos completos: falta o Admin colar o `FINNHUB_TOKEN` (EUA) e o `BRAPI_TOKEN` (B3); conferir na `_sistema/sonda-brapi-quote` os campos que a brapi mandou de verdade
 - [ ] Token da brapi como secret do Worker (o Admin cria a conta e cola no painel); hoje só o Ibovespa depende dele
 
-## Depois: React com SSR
-- [ ] Reescrever a página em React, componente por componente, mantendo a API atual (`/api/*`)
-- [ ] Renderizar no servidor (SSR) no próprio Worker, para a primeira tela já vir com as notícias
+## Depois: front em SSR com backend (a grande mudança)
+Por que: hoje o `public/index.html` é um arquivo só, com toda a lógica e as chamadas à API no navegador. Com SSR e um backend na frente, a primeira tela chega pronta, as regras ficam no servidor, o navegador recebe só o que pode ver e os segredos e filtros por usuário param de depender do JS do cliente.
+
+Objetivos de segurança
+- Toda leitura por usuário (listas, carteira, prefs, leitura) resolvida no servidor com a identidade do Access; o HTML já vem filtrado
+- API interna não exposta: o navegador fala só com o backend (BFF), que fala com D1/espelho; `/api/*` público some ou vira só o que precisa ser público
+- Sem lógica de permissão no cliente; sem chave ou token em HTML/JS
+- Cabeçalhos: CSP sem inline, sem eval; cookies e sessão do Access conferidos a cada pedido
+
+Fases (uma por vez, cada uma no ar antes da próxima)
+- [ ] 0. Inventário: listar telas, widgets, chamadas `/api/*` e o que cada uma lê por usuário; medir o tamanho e o tempo da primeira tela hoje (base de comparação)
+- [ ] 1. Camada backend (BFF) no Worker: rotas por tela que montam o JSON pronto; a página atual passa a consumir essas rotas (sem mexer no visual)
+- [ ] 2. Shell SSR no Worker: layout, cabeçalho, navegação e Início renderizados no servidor; o resto ainda hidrata como hoje
+- [ ] 3. Componente por componente: cada widget migra para o framework, com os mesmos testes de tela (dois temas, celular, navegação sem beco)
+- [ ] 4. Cutover: `public/index.html` sai; `/api/*` restrito; medir de novo e comparar com a fase 0
+
+Decisão pendente: framework
+- Candidatos que rodam dentro do Worker, com assets: React Router 7 (modo framework, adaptador Cloudflare), Astro em SSR (adaptador Cloudflare, ilhas), Hono + hono/jsx (SSR mínimo, sem build além do esbuild do wrangler), SvelteKit ou Nuxt (Vue) com adaptador Cloudflare
+- Critérios: tamanho do JS que chega ao navegador, build no Workers Builds sem passo extra, Durable Object e D1 pelo `env` sem gambiarra, facilidade de migrar um widget por vez, testes com `node --test`
+- Decidir na fase 0, com um protótipo de uma tela (o Início) em dois candidatos
 - [ ] Build automático no Workers Builds a cada push
 - [ ] Trocar a versão atual pela nova só depois de conferir celular e desktop
 
