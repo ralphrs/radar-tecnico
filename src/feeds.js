@@ -184,6 +184,7 @@ export const FEEDS = [
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/copa-do-brasil/"],
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/rs/"],
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/campeonato-gaucho/"],
+  ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/"],
   ["esportes", "UOL Esporte", "BR", "https://rss.uol.com.br/feed/esporte.xml"],
   ["esportes", "Trivela", "BR", "https://trivela.com.br/feed/"],
   ["esportes", "Gazeta Esportiva", "BR", "https://www.gazetaesportiva.com/feed/"],
