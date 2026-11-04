@@ -42,7 +42,7 @@ export const WIDGETS = [
   // Esportes (src/esportes.js): rodada e tabela de cada competição e o próximo jogo do time que a pessoa acompanha.
   // O catálogo traz todas; a página só oferece as competições que a pessoa ligou em "Meus esportes". Fora do padrão.
   ...ESP.ORDEM_LIGAS.flatMap((l) => [
-    { id: "esportes-rodada-" + l, titulo: ESP.LIGAS[l].curto + " · rodada", tamanho: 1, secao: "esportes", liga: l },
+    { id: "esportes-rodada-" + l, titulo: ESP.LIGAS[l].curto + " · " + ESP.rodadaDe(l), tamanho: 1, secao: "esportes", liga: l },
     { id: "esportes-tabela-" + l, titulo: ESP.LIGAS[l].curto + " · tabela", tamanho: 1, secao: "esportes", liga: l },
   ]),
   { id: "esportes-meu-time", titulo: "Meu time · próximo jogo", tamanho: 1, secao: "esportes" },

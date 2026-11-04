@@ -4,14 +4,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { lerJogo, lerJogos, lerScoreboard, lerStandings, lerGe, blocosJson, escolherRodada, proximosDe, ultimosDe, vencidos, quente,
-  cronEsportes, cronSondaEsportes, atualizarLiga, ligasAtivas, listaSonda, novaFila, urlScoreboard, urlStandings, urlSchedule, diaSP, diasExtras } from "../src/esportes.js";
+  cronEsportes, cronSondaEsportes, atualizarLiga, ligasAtivas, listaSonda, novaFila, urlScoreboard, urlStandings, urlSchedule, urlSemana, diaSP, diasExtras } from "../src/esportes.js";
 import { catalogoDe, validarPainel, formatosDe, respostaPainel } from "../src/painel.js";
 import { FEEDS, SECOES_COM_FORUM } from "../src/feeds.js";
 import { REDDIT } from "../src/coleta.js";
 import "../public/esportes.js";
 import "../public/radar-filtro.js";
 import { d1Falso } from "./d1-falso.mjs";
-import { AGORA, T, scoreboardBra, scoreboardLib, standingsBra, standingsLib, scheduleInter, htmlGe, htmlGeTabela } from "./fixtures-esportes.mjs";
+import { AGORA, T, scoreboardBra, scoreboardLib, standingsBra, standingsLib, scheduleInter, htmlGe, htmlGeTabela,
+  scoreboardNba, standingsNba, scoreboardNfl, scoreboardNflAnterior, standingsNfl } from "./fixtures-esportes.mjs";
 
 const E = globalThis.Esportes;
 const RF = globalThis.RadarFiltro;
@@ -133,7 +134,7 @@ test("Meus esportes: validação contra LIGAS, padrão e ordem", () => {
   assert.deepEqual(ok.prefs.ordem.slice(0, 2), ["bra.camp.gaucho", "bra.1"]);
   assert.equal(ok.prefs.ordem.length, E.ORDEM_LIGAS.length, "a ordem guarda todas, ligadas ou não");
   assert.deepEqual(E.ligadas(ok.prefs), ["bra.camp.gaucho", "bra.1"]);
-  assert.match(E.validarPrefs({ competicoes: ["nba"] }).erro, /desconhecida/);
+  assert.match(E.validarPrefs({ competicoes: ["nhl"] }).erro, /desconhecida/);
   assert.match(E.validarPrefs({ competicoes: [], times: [{ liga: "x", id: "1", nome: "a" }] }).erro, /desconhecida/);
   assert.match(E.validarPrefs({ competicoes: [], times: [{ liga: "bra.1", id: "1;DROP", nome: "a" }] }).erro, /id de time/);
   assert.match(E.validarPrefs({ competicoes: [], times: [{ liga: "bra.1", id: "1", nome: "" }] }).erro, /Nome/);
@@ -146,6 +147,15 @@ test("Meus esportes: validação contra LIGAS, padrão e ordem", () => {
   assert.deepEqual(padrao.competicoes, ["bra.1", "conmebol.libertadores", "bra.copa_do_brasil"]);
   assert.deepEqual(padrao.times, []);
   assert.equal(padrao.esportes[0].id, "futebol");
+  assert.deepEqual(padrao.esportes.map((e) => e.nome), ["Futebol", "Outros esportes"]);
+  assert.deepEqual(padrao.esportes[1].ligas.map((l) => l.id), ["nba", "nfl"]);
+  assert.ok(!padrao.esportes[0].ligas.some((l) => ["nba", "nfl"].includes(l.id)), "NBA e NFL fora do grupo Futebol");
+  assert.ok(!padrao.competicoes.includes("nba") && !padrao.competicoes.includes("nfl") && !E.SEMPRE.includes("nba") && !E.SEMPRE.includes("nfl"), "ligadas só quando a pessoa marcar");
+  assert.deepEqual(E.validarPrefs({ competicoes: ["nba", "nfl"], times: [{ liga: "nba", id: "13", nome: "Lakers" }] }).prefs.competicoes, ["nba", "nfl"]);
+  // quem salvou antes das competições novas: elas entram no fim da ordem, desligadas
+  const velho = E.respostaPrefs({ competicoes: ["bra.1"], times: [], ordem: ["bra.1", "eng.1"] });
+  assert.deepEqual(velho.ordem.slice(-2), ["nba", "nfl"]);
+  assert.deepEqual(velho.competicoes, ["bra.1"]);
   assert.equal(E.respostaPrefs({ competicoes: ["inventada"] }).padrao, true, "salvo estragado vira o padrão");
   assert.deepEqual(E.respostaPrefs({ competicoes: ["eng.1"], times: [], ordem: [] }).competicoes, ["eng.1"]);
 });
@@ -176,6 +186,10 @@ test("Início: rodada e tabela por competição, próximo jogo do time; só para
   const titulos = Object.fromEntries(catalogoDe(null).map((w) => [w.id, w.titulo]));
   assert.equal(titulos["esportes-rodada-bra.1"], "Brasileirão · rodada");
   assert.equal(titulos["esportes-tabela-bra.1"], "Brasileirão · tabela");
+  assert.equal(titulos["esportes-rodada-nba"], "NBA · jogos");
+  assert.equal(titulos["esportes-rodada-nfl"], "NFL · semana");
+  assert.equal(titulos["esportes-tabela-nfl"], "NFL · tabela");
+  assert.deepEqual(formatosDe("esportes-tabela-nba"), ["1x1", "1x2"]);
   const semEsportes = ["tech", "negocios", "investimentos", "politica"];
   assert.ok(!catalogoDe(semEsportes).some((w) => w.id.startsWith("esportes-")));
   assert.match(validarPainel({ widgets: [{ id: "esportes-rodada-bra.1", formato: "1x1" }] }, semEsportes).erro, /não liberada/);
@@ -211,6 +225,10 @@ function ambiente({ ligasEspn = null, status = {} } = {}) {
     const js = (o) => new Response(JSON.stringify(o), { status: 200, headers: { "content-type": "application/json" } });
     if (u.includes("ge.globo.com/futebol/campeonato-gaucho")) return new Response(htmlGe(), { status: 200, headers: { "content-type": "text/html" } });
     if (u.includes("ge.globo.com/rss")) return new Response('<?xml version="1.0"?><rss><channel><item><title>Notícia</title><link>https://ge.globo.com/a</link><pubDate>Wed, 04 Nov 2026 10:00:00 GMT</pubDate></item></channel></rss>', { status: 200 });
+    if (u.includes("basketball/nba/scoreboard")) return js(scoreboardNba());
+    if (u.includes("basketball/nba/standings")) return js(standingsNba());
+    if (u.includes("football/nfl/scoreboard")) return js(u.includes("week=9") ? scoreboardNflAnterior() : scoreboardNfl());
+    if (u.includes("football/nfl/standings")) return js(standingsNfl());
     const m = /sports\/soccer\/([a-z0-9._]+)\//.exec(u);
     const liga = m && m[1];
     if (ligasEspn && liga && !ligasEspn.includes(liga)) return new Response('{"code":400,"message":"league not found"}', { status: 400 });
@@ -350,4 +368,172 @@ test("sonda: amostra crua (até 20 KB) de cada endpoint, com status, em lotes, u
   const n = pedidos.length;
   await cronSondaEsportes(env, { pausa: 0, agora: AGORA });
   assert.equal(pedidos.length, n, "pronta: não roda mais");
+});
+
+// ---------- NBA e NFL ----------
+test("NBA: placar inteiro, quarto e relógio, intervalo, prorrogação, fim de quarto; rodada é a noite de jogos", () => {
+  const sb = lerScoreboard(scoreboardNba(), "nba");
+  assert.equal(sb.temporada, 2027);
+  assert.equal(sb.tipoTemporada, 2);
+  assert.equal(sb.numero, null, "NBA não tem semana");
+  assert.equal(sb.calendario.length, 6, "calendário em dias");
+  const p = Object.fromEntries(sb.jogos.map((j) => [j.id, j]));
+  assert.deepEqual(p["401"].placar, [118, 112]);
+  assert.ok(Number.isInteger(p["402"].placar[0]) && Number.isInteger(p["402"].placar[1]));
+  assert.deepEqual([p["402"].mandante, p["402"].visitante, p["402"].siglas.join("-")], ["New York Knicks", "Miami Heat", "NY-MIA"]);
+  assert.equal(p["402"].minuto, "4º quarto · 5:32");
+  assert.equal(p["403"].minuto, "intervalo");
+  assert.equal(p["404"].minuto, "prorrogação · 2:10");
+  assert.equal(p["405"].minuto, "fim do 1º quarto");
+  assert.equal(p["406"].placar, null, "jogo que não começou: sem placar, mesmo com score \"0\"");
+  assert.deepEqual(p["406"].curtos, ["Lakers", "Warriors"], "nome curto da ESPN para o celular");
+  assert.ok(!("curtos" in lerScoreboard(scoreboardBra(), "bra.1").jogos[0]), "futebol sem nome curto");
+  // a rodada: os jogos até 12 h em volta do ao vivo (o de ontem e o de amanhã ficam fora)
+  const r = escolherRodada(sb.jogos, AGORA, sb.numero, E.LIGAS.nba.raioRodada);
+  assert.deepEqual(r.jogos.map((j) => j.id).sort(), ["402", "403", "404", "405", "406"]);
+  // o mesmo evento lido como futebol mantém o relógio da ESPN
+  assert.equal(lerJogo(scoreboardNba().events[1]).minuto, "5:32");
+});
+
+test("período: quartos, intervalo, prorrogações e relógio zerado", () => {
+  assert.equal(E.periodo(1, "12:00", "STATUS_IN_PROGRESS"), "1º quarto · 12:00");
+  assert.equal(E.periodo(4, "0.0", "STATUS_IN_PROGRESS"), "4º quarto");
+  assert.equal(E.periodo(2, "0:00", "STATUS_HALFTIME"), "intervalo");
+  assert.equal(E.periodo(5, "4:59", "STATUS_IN_PROGRESS"), "prorrogação · 4:59");
+  assert.equal(E.periodo(6, "1:00", ""), "2ª prorrogação · 1:00");
+  assert.equal(E.periodo(3, "0.0", "STATUS_END_PERIOD"), "fim do 3º quarto");
+  assert.equal(E.periodo(5, "0.0", "STATUS_END_PERIOD"), "fim da prorrogação");
+  assert.equal(E.periodo(null, "5:00", ""), "");
+  assert.equal(E.periodo(0, "", ""), "");
+});
+
+test("nomes de conferência e divisão em português", () => {
+  assert.equal(E.nomeGrupo("Eastern Conference", "East"), "Leste");
+  assert.equal(E.nomeGrupo("Western Conference"), "Oeste");
+  assert.equal(E.nomeGrupo("American Football Conference", "AFC"), "AFC");
+  assert.equal(E.nomeGrupo("National Football Conference"), "NFC");
+  assert.equal(E.nomeGrupo("AFC North"), "AFC Norte");
+  assert.equal(E.nomeGrupo("NFC South"), "NFC Sul");
+  assert.equal(E.nomeGrupo("Atlantic Division"), "Atlantic Division", "o resto fica como veio");
+  assert.equal(E.nomeGrupo("", "XYZ"), "XYZ");
+});
+
+test("NFL: semana do topo nos jogos, tipo de temporada, calendário por semanas fica de fora", () => {
+  const sb = lerScoreboard(scoreboardNfl(), "nfl");
+  assert.equal(sb.numero, 10);
+  assert.equal(sb.tipoTemporada, 2);
+  assert.equal(sb.temporada, 2026);
+  assert.deepEqual(sb.calendario, [], "blocos com entries não são dias de jogo");
+  assert.ok(sb.jogos.every((j) => j.rodada === 10), "o evento sem week leva a semana do topo");
+  const p = Object.fromEntries(sb.jogos.map((j) => [j.id, j]));
+  assert.equal(p["502"].minuto, "3º quarto · 8:41");
+  assert.deepEqual(p["502"].placar, [17, 14]);
+  assert.equal(p["503"].minuto, "intervalo");
+  assert.equal(escolherRodada(sb.jogos, AGORA, sb.numero).numero, 10);
+  assert.equal(urlScoreboard("nfl", ""), "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard");
+  assert.equal(urlSemana("nfl", 2026, 2, 9), "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=2026&seasontype=2&week=9");
+  assert.equal(urlStandings("nba"), "https://site.api.espn.com/apis/v2/sports/basketball/nba/standings");
+  assert.equal(urlScoreboard("nba", "20261104"), "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261104");
+  // no futebol a semana do topo não é carimbada nos jogos
+  const fut = lerScoreboard({ ...scoreboardBra(), week: { number: 33 } }, "bra.1");
+  assert.ok(fut.jogos.every((j) => j.rodada === undefined));
+});
+
+test("standings NBA: conferências como grupos, ordem e zona pelo seed, V, D, % e GB; sem seed vai para o fim", () => {
+  const { tabela, temporada } = lerStandings(standingsNba(), "nba");
+  assert.equal(temporada, 2027);
+  const leste = tabela.filter((l) => l.grupo === "Leste"), oeste = tabela.filter((l) => l.grupo === "Oeste");
+  assert.equal(leste.length, 11);
+  assert.equal(oeste.length, 4);
+  assert.deepEqual(leste.map((l) => l.pos), Array.from({ length: 11 }, (_, i) => i + 1), "pos é a posição no grupo");
+  assert.deepEqual(leste.slice(0, 3).map((l) => l.time), ["Boston Celtics", "Time A", "New York Knicks"]);
+  const bos = leste[0];
+  assert.deepEqual({ v: bos.v, d: bos.d, pct: bos.pct, gb: bos.gb, seed: bos.seed, e: bos.e, j: bos.j, sigla: bos.sigla, id: bos.id, curto: bos.curto }, { v: 6, d: 2, pct: 0.75, gb: 0, seed: 1, e: null, j: 8, sigla: "BOS", id: "2", curto: "Celtics" });
+  assert.deepEqual(leste.map((l) => l.zona), ["playoffs", "playoffs", "playoffs", "playoffs", "playoffs", "playoffs", "play-in", "play-in", "play-in", "play-in", ""]);
+  assert.equal(leste.find((l) => l.time === "Miami Heat").zona, "play-in", "seed 7");
+  assert.deepEqual(oeste.map((l) => l.time), ["Los Angeles Lakers", "Denver Nuggets", "Golden State Warriors", "Phoenix Suns"]);
+  assert.equal(oeste[3].seed, null);
+  assert.equal(oeste[3].pos, 4, "sem seed: depois dos que têm, pela %");
+  assert.equal(oeste[3].zona, "playoffs", "sem seed, a zona sai da posição (4º)");
+  assert.ok(tabela.every((l) => l.pts === null), "sem pontos");
+  assert.ok(tabela.every((l) => Object.keys(l).every((k) => l[k] !== undefined)));
+});
+
+test("standings NFL: empate (ties), líder de divisão 1 a 4 e wild card 5 a 7 pelo seed", () => {
+  const { tabela } = lerStandings(standingsNfl(), "nfl");
+  const afc = tabela.filter((l) => l.grupo === "AFC"), nfc = tabela.filter((l) => l.grupo === "NFC");
+  assert.deepEqual(afc.map((l) => [l.time, l.seed, l.zona]), [["Kansas City Chiefs", 1, "lider-divisao"], ["Buffalo Bills", 2, "lider-divisao"], ["Houston Texans", 5, "wild-card"], ["Baltimore Ravens", 8, ""]]);
+  assert.deepEqual(nfc.map((l) => l.zona), ["lider-divisao", "lider-divisao", "wild-card", ""]);
+  const det = nfc.find((l) => l.sigla === "DET");
+  assert.deepEqual([det.v, det.d, det.e, det.pct, det.j], [5, 2, 1, 0.688, 8]);
+  // por divisão (children dentro de children): cada divisão é um grupo, zona pelo seed da conferência
+  const div = { children: [{ name: "AFC", children: [{ name: "AFC West", standings: standingsNfl().children[0].standings }, { name: "AFC North", standings: { entries: [{ team: NFLt(), stats: [{ name: "wins", value: 1 }, { name: "losses", value: 7 }, { name: "playoffSeed", value: 15 }] }] } }] }] };
+  const t2 = lerStandings(div, "nfl").tabela;
+  assert.deepEqual(t2.map((l) => l.grupo + ":" + l.pos + ":" + l.zona), ["AFC Norte:1:", "AFC Oeste:1:lider-divisao", "AFC Oeste:2:lider-divisao", "AFC Oeste:3:wild-card", "AFC Oeste:4:"]);
+  assert.ok(!("grupo" in lerStandings({ children: [{ name: "AFC West", standings: standingsNfl().children[0].standings }] }, "nfl").tabela[0]), "um grupo só não leva o nome");
+  // winPercent ausente: calculado (empate conta meio)
+  const sem = { children: [{ standings: { entries: [{ team: NFLt(), stats: [{ name: "wins", value: 3 }, { name: "losses", value: 1 }, { name: "ties", value: 0 }] }] } }] };
+  assert.equal(lerStandings(sem, "nfl").tabela[0].pct, 0.75);
+});
+const NFLt = () => ({ id: "99", displayName: "Time", abbreviation: "TT" });
+
+test("colunas da tabela, nome da rodada e zonas de NBA e NFL", () => {
+  assert.deepEqual(E.colunasDe("nba"), ["v", "d", "pct", "gb"]);
+  assert.deepEqual(E.colunasDe("nfl"), ["v", "d", "e", "pct"]);
+  assert.deepEqual(E.colunasDe("bra.1"), ["j", "pts", "sg", "v", "e", "d", "gp", "gc"]);
+  assert.ok(!E.colunasDe("nba").some((c) => ["j", "e", "gp", "gc", "sg", "pts"].includes(c)), "NBA sem J, E, GP, GC, SG e Pts");
+  assert.ok(!E.colunasDe("nfl").some((c) => ["gp", "gc", "sg", "pts"].includes(c)));
+  assert.deepEqual([E.rodadaDe("bra.1"), E.rodadaDe("nba"), E.rodadaDe("nfl"), E.rodadaDe("x")], ["rodada", "jogos", "semana", "rodada"]);
+  assert.deepEqual(E.legendaDe("nba").map((l) => l.nome + " " + l.faixa), ["Playoffs 1º a 6º", "Play-in 7º a 10º"]);
+  assert.deepEqual(E.legendaDe("nfl").map((l) => l.nome + " " + l.faixa), ["Líder de divisão 1º a 4º", "Wild card 5º a 7º"]);
+  assert.deepEqual([6, 7, 10, 11].map((p) => E.zonaDe("nba", p)), ["playoffs", "play-in", "play-in", ""]);
+  assert.ok(E.legendaDe("nfl").every((l) => /^var\(--/.test(l.cor)));
+});
+
+test("cron com NBA e NFL ligadas: hoje e mais 2 dias na NBA; semana atual e anterior na NFL; docs gravados", async () => {
+  const { env, pedidos, doc, prefs } = ambiente();
+  prefs("a@x.dev", { competicoes: ["nba", "nfl"], times: [{ liga: "nba", id: "13", nome: "Lakers" }], ordem: [] });
+  env.DB.db.prepare("INSERT INTO docs (collection, id, data, coletado) VALUES ('_sistema', 'sonda-esportes', ?, '')").run(JSON.stringify({ fim: "teste", resultados: listaSonda(AGORA), pendentes: [] }));
+  const r = await cronEsportes(env, minuto(4), { pausa: 0, orcamento: 60 });
+  assert.ok(r.ligas.includes("nba") && r.ligas.includes("nfl"));
+  const nbaSb = pedidos.filter((u) => u.includes("nba/scoreboard")).map((u) => u.split("dates=")[1]);
+  assert.deepEqual(nbaSb, ["20261105", "20261104", "20261106"], "hoje, ontem e amanhã");
+  const nflSb = pedidos.filter((u) => u.includes("nfl/scoreboard"));
+  assert.deepEqual(nflSb, ["https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard", urlSemana("nfl", 2026, 2, 9)]);
+  const nba = doc("meta", "esportes-nba");
+  assert.equal(nba.nome, "NBA");
+  assert.ok(nba.rodada.jogos.some((j) => j.minuto === "4º quarto · 5:32"));
+  assert.equal(nba.tabela[0].zona, "playoffs");
+  assert.ok(nba.tabela.every((l) => l.grupo));
+  assert.ok(pedidos.some((u) => u.includes("basketball/nba/teams/13/schedule")), "schedule do time de interesse");
+  const nfl = doc("meta", "esportes-nfl");
+  assert.equal(nfl.rodada.numero, 10);
+  assert.ok(nfl.rodada.jogos.every((j) => j.rodada === 10));
+  assert.deepEqual(nfl.ultimos.slice(0, 3).map((j) => j.id), ["501", "492", "491"], "a semana anterior entra nos últimos");
+  assert.equal(nfl.tabela.find((l) => l.sigla === "DET").e, 1);
+  // semana anterior falhando: fica a atual e o erro fica anotado
+  const amb = ambiente({ status: { "week=9": 400 } });
+  await atualizarLiga(amb.env, "nfl", { fila: novaFila({ pausa: 0, orcamento: 10 }), agora: AGORA, forcar: { rodada: true, tabela: false, times: false }, erros: (globalThis.__e = {}) });
+  assert.ok(amb.doc("meta", "esportes-nfl").rodada.jogos.length);
+  assert.match(globalThis.__e["nfl:semana-anterior"], /HTTP 400/);
+});
+
+test("sonda pronta volta a andar só para as competições novas", async () => {
+  const { env, doc, pedidos } = ambiente();
+  // como estava em produção: pronta, sem NBA e NFL
+  const antiga = listaSonda(AGORA).filter((x) => !["nba", "nfl"].includes(x.liga)).map((x, i) => ({ ...x, n: i, status: 200 }));
+  env.DB.db.prepare("INSERT INTO docs (collection, id, data, coletado) VALUES ('_sistema', 'sonda-esportes', ?, '')").run(JSON.stringify({ inicio: "x", fim: "2026-11-04T15:00:00Z", pendentes: [], resultados: antiga }));
+  assert.equal(await cronSondaEsportes(env, { pausa: 0, agora: AGORA }), 4);
+  const s = doc("_sistema", "sonda-esportes");
+  assert.ok(s.fim && s.retomada);
+  const novos = s.resultados.slice(antiga.length);
+  assert.deepEqual(novos.map((x) => x.tipo + ":" + x.liga), ["scoreboard:nba", "scoreboard:nfl", "standings:nba", "standings:nfl"]);
+  assert.deepEqual(novos.map((x) => x.n), [antiga.length, antiga.length + 1, antiga.length + 2, antiga.length + 3], "amostras com número novo");
+  assert.equal(novos[1].url, "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard", "NFL: a semana atual, sem data");
+  assert.equal(novos[0].jogos, 7);
+  assert.equal(novos[2].comSeed, 14);
+  assert.ok(doc("_sistema", novos[3].amostra).amostra.includes("playoffSeed"));
+  const n = pedidos.length;
+  assert.equal(await cronSondaEsportes(env, { pausa: 0, agora: AGORA }), 0);
+  assert.equal(pedidos.length, n);
 });

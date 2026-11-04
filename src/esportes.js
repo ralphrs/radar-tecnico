@@ -13,11 +13,18 @@
 //
 // Conferido com a sonda de 04/11/2026 (_sistema/sonda-esportes): scoreboard por dia 200, faixa 400; standings 200 em todas
 // menos bra.copa_do_brasil (400, sem tabela); site.web.api.espn.com 403 (não usar); schedule do time 200.
+// NBA e NFL (04/11/2026) entraram sem amostra real: o ambiente de desenvolvimento não alcança a ESPN. O parser segue o
+// formato conhecido (score em texto, status.period e displayClock, standings com children por conferência, stats
+// wins, losses, ties, winPercent, gamesBehind, playoffSeed) e o que faltar vira null. A sonda pede as quatro URLs novas
+// mesmo já tendo terminado antes (ela completa a lista quando aparece competição nova).
+// NFL (`semana` em LIGAS): o scoreboard sem data devolve a semana atual inteira; a semana anterior vem por
+// ?dates=<ano>&seasontype=<tipo>&week=<n>. Falhou a anterior, fica só a atual e o erro vai para "nfl:semana-anterior".
 //
-// meta/esportes-<liga>: { atualizado, liga, nome, temporada, fonte, tabela: [{ pos, time, sigla, id, j, v, e, d, gp, gc, sg, pts, zona, grupo? }],
+// meta/esportes-<liga>: { atualizado, liga, nome, temporada, fonte, tabela: [{ pos, time, sigla, id, j, v, e, d, gp, gc, sg, pts, pct, gb, seed, zona, grupo? }],
 //   rodada: { numero, jogos: [jogo] }, proximos: [até 20], ultimos: [até 20], times: { <id>: { nome, proximos, ultimos } },
 //   rodadaEm, tabelaEm, timesEm, tentativas: { rodada, tabela, times } }
-// jogo: { id, data, mandante, visitante, siglas: [m, v], ids: [m, v], placar: [m, v] | null, estado: "pre"|"in"|"post", minuto, estadio, detalhe }
+// jogo: { id, data, mandante, visitante, siglas: [m, v], ids: [m, v], placar: [m, v] | null, estado: "pre"|"in"|"post", minuto, estadio, detalhe,
+//   rodada?, curtos?: [m, v] (NBA e NFL: "Lakers", "Eagles") }  linha da NBA e da NFL também leva curto
 //
 // Ritmo (cronEsportes, conferido a cada 5 min): rodada a cada 15 min quando há jogo ao vivo ou começando nas próximas
 // 2 h, senão 1x por hora; tabela 2x por dia; jogos dos times de interesse 1x por dia. Chamadas em fila, 400 ms entre
@@ -44,7 +51,9 @@ const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 
 // ---------- URLs ----------
 const caminhoDe = (liga) => (E.LIGAS[liga] ? E.LIGAS[liga].caminho : String(liga).includes("/") ? String(liga) : "soccer/" + liga);
-export const urlScoreboard = (liga, dia) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/scoreboard?dates=${dia}`;
+export const urlScoreboard = (liga, dia) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/scoreboard${dia ? "?dates=" + dia : ""}`;
+// Uma semana inteira (NFL): ano da temporada, tipo (1 pré, 2 regular, 3 playoffs) e número da semana
+export const urlSemana = (liga, ano, tipo, semana) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/scoreboard?dates=${ano}&seasontype=${tipo}&week=${semana}`;
 export const urlStandings = (liga) => `https://site.api.espn.com/apis/v2/sports/${caminhoDe(liga)}/standings`;
 export const urlSchedule = (liga, time, proximos) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/teams/${encodeURIComponent(time)}/schedule${proximos ? "?fixture=true" : ""}`;
 
@@ -56,7 +65,9 @@ export function diaSP(quando, dias = 0) {
 
 // ---------- ESPN: jogos ----------
 // Um evento do scoreboard ou do schedule. Devolve null quando falta o essencial (dois times com nome).
-export function lerJogo(ev) {
+// `liga` muda só o "minuto": no futebol o relógio da ESPN ("67'"); no basquete e no futebol americano o quarto e o
+// relógio ("4º quarto · 5:32", "intervalo", "prorrogação").
+export function lerJogo(ev, liga) {
   if (!ev || typeof ev !== "object") return null;
   const c = Array.isArray(ev.competitions) ? ev.competitions[0] : null;
   const comps = c && Array.isArray(c.competitors) ? c.competitors.filter((x) => x && typeof x === "object") : [];
@@ -72,32 +83,45 @@ export function lerJogo(ev) {
   const placarDe = (x) => { const s = x.score; return s && typeof s === "object" ? num(s.value ?? s.displayValue) : num(s); };
   const pm = placarDe(casa), pv = placarDe(fora);
   const intervalo = /HALFTIME/i.test(tipo.name || "") || /^(HT|intervalo)$/i.test(txt(tipo.shortDetail));
-  const minuto = estado !== "in" ? "" : intervalo ? "intervalo" : txt(st.displayClock || tipo.shortDetail, 12);
+  const futebol = !E.LIGAS[liga] || E.LIGAS[liga].esporte === "futebol";
+  const minuto = estado !== "in" ? "" : intervalo ? "intervalo"
+    : futebol ? txt(st.displayClock || tipo.shortDetail, 12)
+    : txt(E.periodo(st.period, st.displayClock, tipo.name) || tipo.shortDetail, 24);
   const adiado = /POSTPONED|CANCELED|CANCELLED|SUSPENDED|ABANDONED/i.test(tipo.name || "");
   const venue = (c && c.venue) || ev.venue || {};
+  // NBA e NFL: o nome curto da ESPN ("Lakers", "Eagles") para o celular e os cards do Início
+  const curtoDe = (x) => { const t = x.team || {}; return txt(t.shortDisplayName || t.name, 30); };
   const j = {
     id: txt(ev.id || (c && c.id), 20), data: iso(ev.date || (c && c.date)),
     mandante: m.nome, visitante: v.nome, siglas: [m.sigla, v.sigla], ids: [m.id, v.id],
     placar: estado === "pre" || pm === null || pv === null ? null : [pm, pv],
     estado, minuto, estadio: txt(venue.fullName || venue.name, 60), detalhe: adiado ? "adiado" : txt(tipo.shortDetail || tipo.description, 30),
   };
+  if (!futebol) { const cm = curtoDe(casa), cv = curtoDe(fora); if (cm && cv && (cm !== m.nome || cv !== v.nome)) j.curtos = [cm, cv]; }
   const sem = (ev.week && num(ev.week.number)) ?? null;
   if (sem !== null) j.rodada = sem;
   return j;
 }
 const porData = (a, b) => String(a.data).localeCompare(String(b.data));
-export function lerJogos(j) {
+export function lerJogos(j, liga) {
   const evs = j && Array.isArray(j.events) ? j.events : [];
-  return evs.map(lerJogo).filter(Boolean).sort(porData);
+  return evs.map((ev) => lerJogo(ev, liga)).filter(Boolean).sort(porData);
 }
-export function lerScoreboard(j) {
-  const liga = j && Array.isArray(j.leagues) ? j.leagues[0] : null;
+// calendar: no futebol e na NBA, uma lista de dias ("2026-11-04T08:00Z"); na NFL, blocos da temporada com `entries`
+// por semana (essas não são dias de jogo e ficam de fora).
+export function lerScoreboard(j, liga) {
+  const lg = j && Array.isArray(j.leagues) ? j.leagues[0] : null;
+  const numero = (j && j.week && num(j.week.number)) ?? null;
+  const jogos = lerJogos(j, liga);
+  // semana inteira (NFL): o número da semana do topo vale para os jogos que não trazem o seu
+  if (E.LIGAS[liga] && E.LIGAS[liga].semana && numero !== null) for (const x of jogos) if (x.rodada == null) x.rodada = numero;
+  const tipoT = (j && j.season && j.season.type) ?? (lg && lg.season && lg.season.type);
   return {
-    jogos: lerJogos(j),
-    numero: (j && j.week && num(j.week.number)) ?? null,
-    temporada: num((j && j.season && j.season.year) ?? (liga && liga.season && liga.season.year)),
-    nome: txt(liga && (liga.name || liga.abbreviation)),
-    calendario: liga && Array.isArray(liga.calendar) ? liga.calendar.map((d) => (typeof d === "string" ? d : d && d.startDate)).filter(Boolean) : [],
+    jogos, numero,
+    temporada: num((j && j.season && j.season.year) ?? (lg && lg.season && lg.season.year)),
+    tipoTemporada: num(tipoT && typeof tipoT === "object" ? tipoT.type ?? tipoT.id : tipoT),
+    nome: txt(lg && (lg.name || lg.abbreviation)),
+    calendario: lg && Array.isArray(lg.calendar) ? lg.calendar.map((d) => (typeof d === "string" ? d : d && !Array.isArray(d.entries) ? d.startDate : null)).filter(Boolean) : [],
   };
 }
 
@@ -116,8 +140,8 @@ export function diasExtras(calendario, agora = Date.now(), max = DIAS_EXTRA) {
 }
 
 // Rodada atual a partir dos jogos de uma janela de dias: o número de rodada do jogo ao vivo (ou do mais perto de agora),
-// quando a ESPN manda; sem número, os jogos até 2 dias em volta do jogo de referência.
-export function escolherRodada(jogos, agora = Date.now(), numero = null) {
+// quando a ESPN manda; sem número, os jogos até `raio` dias em volta do jogo de referência (NBA: meio dia, a noite de jogos).
+export function escolherRodada(jogos, agora = Date.now(), numero = null, raio = 2) {
   if (!jogos.length) return { numero, jogos: [] };
   const t = (x) => Date.parse(x.data) || 0;
   const ref = jogos.find((x) => x.estado === "in")
@@ -126,26 +150,31 @@ export function escolherRodada(jogos, agora = Date.now(), numero = null) {
     || jogos[0];
   if (ref.rodada != null) return { numero: ref.rodada, jogos: jogos.filter((x) => x.rodada === ref.rodada) };
   const meio = t(ref);
-  return { numero, jogos: jogos.filter((x) => Math.abs(t(x) - meio) <= 2 * 86_400_000) };
+  return { numero, jogos: jogos.filter((x) => Math.abs(t(x) - meio) <= raio * 86_400_000) };
 }
 export const proximosDe = (jogos, agora = Date.now(), n = 20) => jogos.filter((x) => x.estado !== "post" && (Date.parse(x.data) || 0) >= agora - 3 * HORA).sort(porData).slice(0, n);
 export const ultimosDe = (jogos, n = 20) => jogos.filter((x) => x.estado === "post").sort((a, b) => porData(b, a)).slice(0, n);
 
 // ---------- ESPN: tabela ----------
-// stats por nome (rank, points, gamesPlayed, wins, draws ou ties, losses, pointsFor, pointsAgainst, pointDifferential).
-// Grupos (Libertadores): um nó em children para cada grupo; cada linha leva o nome dele.
+// stats por nome (rank, points, gamesPlayed, wins, draws ou ties, losses, pointsFor, pointsAgainst, pointDifferential;
+// NBA e NFL: winPercent, gamesBehind, playoffSeed). Grupos (Libertadores, conferências da NBA e da NFL, divisões se a ESPN
+// mandar): cada nó em children com standings.entries é um grupo e cada linha leva o nome dele.
+// Liga com `porSeed`: dentro de cada grupo a ordem é a do playoffSeed (sem ele, % de vitórias e vitórias), pos é a
+// posição no grupo e a zona sai do seed (na NFL por divisão, o seed é o da conferência).
 export function lerStandings(j, liga) {
   const grupos = [];
   const visitar = (no, nome, prof = 0) => {
     if (!no || typeof no !== "object" || prof > 4) return;
     const ents = no.standings && Array.isArray(no.standings.entries) ? no.standings.entries : null;
-    if (ents) grupos.push({ nome: txt(no.name || no.abbreviation || nome || ""), entries: ents });
+    if (ents) grupos.push({ nome: txt(E.LIGAS[liga] && E.LIGAS[liga].esporte !== "futebol" ? E.nomeGrupo(no.name || nome, no.abbreviation) : no.name || no.abbreviation || nome || ""), entries: ents });
     if (Array.isArray(no.children)) no.children.forEach((ch) => visitar(ch, ch && ch.name, prof + 1));
   };
   visitar(j, "");
   const out = [];
   const varios = grupos.length > 1;
+  const porSeed = !!(E.LIGAS[liga] && E.LIGAS[liga].porSeed);
   for (const g of grupos) {
+    const grupoLinhas = [];
     g.entries.forEach((e, i) => {
       if (!e || typeof e !== "object") return;
       const t = e.team || {};
@@ -158,15 +187,34 @@ export function lerStandings(j, liga) {
       }
       const gp = s.pointsFor ?? null, gc = s.pointsAgainst ?? null;
       const pos = s.rank ?? num(e.position) ?? i + 1;
+      const v = s.wins ?? null, d = s.losses ?? null, emp = s.draws ?? s.ties ?? null;
+      // winPercent vem em fração (0.732); se vier em 0-100, divide
+      let pct = s.winPercent ?? s.winPct ?? null;
+      if (pct !== null && pct > 1) pct = pct / 100;
+      if (pct === null && v !== null && d !== null && v + d + (emp || 0) > 0) pct = (v + (emp || 0) / 2) / (v + d + (emp || 0));
       const linha = {
         pos, time: nome, sigla: txt(t.abbreviation, 4).toUpperCase(), id: t.id != null ? txt(t.id, 20) : slug(nome),
-        j: s.gamesPlayed ?? null, v: s.wins ?? null, e: s.draws ?? s.ties ?? null, d: s.losses ?? null,
+        j: s.gamesPlayed ?? (porSeed && v !== null && d !== null ? v + d + (emp || 0) : null), v, e: emp, d,
         gp, gc, sg: s.pointDifferential ?? (gp !== null && gc !== null ? gp - gc : null), pts: s.points ?? null,
         zona: E.zonaDe(liga, pos),
       };
+      if (porSeed) {
+        linha.pct = pct === null ? null : Math.round(pct * 1000) / 1000;
+        linha.gb = s.gamesBehind ?? null;
+        linha.seed = s.playoffSeed ?? null;
+        const curto = txt(t.shortDisplayName || t.name, 30);
+        if (curto && curto !== nome) linha.curto = curto;
+      }
       if (varios) linha.grupo = g.nome;
-      out.push(linha);
+      grupoLinhas.push(linha);
     });
+    if (porSeed) {
+      // ordem do grupo pelo seed; quem não tem seed vai depois, pela % e pelas vitórias
+      const chave = (l) => [l.seed ?? Infinity, -(l.pct ?? -1), -(l.v ?? -1)];
+      grupoLinhas.sort((a, b) => { const x = chave(a), y = chave(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; });
+      grupoLinhas.forEach((l, k) => { l.pos = k + 1; l.zona = E.zonaDe(liga, l.seed ?? l.pos); });
+    }
+    out.push(...grupoLinhas);
   }
   out.sort((a, b) => String(a.grupo || "").localeCompare(String(b.grupo || ""), "pt-BR", { numeric: true }) || a.pos - b.pos);
   const filho = j && Array.isArray(j.children) ? j.children[0] : null;
@@ -384,19 +432,28 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
   if (!viaGe) {
     if (v.rodada) {
       try {
-        const sb = lerScoreboard((await fila(urlScoreboard(liga, diaSP(agora)))).json);
+        // NFL: a semana atual inteira numa chamada, e a anterior para os resultados. Os outros: hoje e os dias com jogo.
+        const sb = lerScoreboard((await fila(urlScoreboard(liga, def.semana ? "" : diaSP(agora)))).json, liga);
         if (sb.temporada) doc.temporada = sb.temporada;
-        // os outros dias com jogo; se o orçamento acabar no meio, fica com o que veio
         const vistos = new Set(sb.jogos.map((x) => x.id));
-        for (const dia of diasExtras(sb.calendario, agora)) {
-          let outro;
-          try { outro = lerScoreboard((await fila(urlScoreboard(liga, dia))).json); }
-          catch (e) { if (e.limite) break; continue; }
-          for (const j of outro.jogos) if (!vistos.has(j.id)) { vistos.add(j.id); sb.jogos.push(j); }
-          if (sb.numero == null && outro.numero != null) sb.numero = outro.numero;
+        const juntar = (outro) => { for (const j of outro.jogos) if (!vistos.has(j.id)) { vistos.add(j.id); sb.jogos.push(j); } };
+        if (def.semana) {
+          if (sb.numero > 1 && sb.temporada && sb.tipoTemporada) {
+            try { juntar(lerScoreboard((await fila(urlSemana(liga, sb.temporada, sb.tipoTemporada, sb.numero - 1))).json, liga)); }
+            catch (e) { if (e.limite) throw e; erros[liga + ":semana-anterior"] = String((e && e.message) || e); }
+          }
+        } else {
+          // os outros dias com jogo; se o orçamento acabar no meio, fica com o que veio
+          for (const dia of diasExtras(sb.calendario, agora, def.diasExtras ?? DIAS_EXTRA)) {
+            let outro;
+            try { outro = lerScoreboard((await fila(urlScoreboard(liga, dia))).json, liga); }
+            catch (e) { if (e.limite) break; continue; }
+            juntar(outro);
+            if (sb.numero == null && outro.numero != null) sb.numero = outro.numero;
+          }
         }
         if (!sb.jogos.length && def.reserva === "ge" && !(antes.rodada && antes.rodada.jogos && antes.rodada.jogos.length)) espnFalhou = true;
-        doc.rodada = escolherRodada(sb.jogos, agora, sb.numero);
+        doc.rodada = escolherRodada(sb.jogos, agora, sb.numero, def.raioRodada ?? 2);
         doc.proximos = proximosDe(sb.jogos, agora);
         doc.ultimos = ultimosDe(sb.jogos);
         doc.rodadaEm = quandoIso; delete doc.tentativas.rodada;
@@ -434,8 +491,8 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
         let jogos;
         if (doc.fonte === "ge") jogos = (doc._jogosGe || [...(doc.ultimos || []), ...(doc.proximos || [])]).filter((x) => x.ids.includes(t.id) || x.mandante === t.nome || x.visitante === t.nome);
         else {
-          jogos = lerJogos((await fila(urlSchedule(liga, t.id))).json);
-          if (!proximosDe(jogos, agora).length) { try { jogos = jogos.concat(lerJogos((await fila(urlSchedule(liga, t.id, true))).json)); } catch (e) { if (e.limite) throw e; } }
+          jogos = lerJogos((await fila(urlSchedule(liga, t.id))).json, liga);
+          if (!proximosDe(jogos, agora).length) { try { jogos = jogos.concat(lerJogos((await fila(urlSchedule(liga, t.id, true))).json, liga)); } catch (e) { if (e.limite) throw e; } }
         }
         const vistos = new Set();
         jogos = jogos.filter((x) => { const k = x.id || x.data + x.mandante; if (vistos.has(k)) return false; vistos.add(k); return true; });
@@ -458,14 +515,15 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
 // ---------- sonda ----------
 // Na primeira execução monta a lista do que testar; anda 6 por minuto; cada resposta (até 20 KB) vai para
 // _sistema/sonda-esportes-aNN e o resumo (status, tamanho, tempo, o que o parser achou) para _sistema/sonda-esportes.
-// Depois de pronta não roda mais. Para rodar de novo, o Admin apaga os docs da sonda (por id).
-const SONDA_LIGAS = ["bra.1", "bra.copa_do_brasil", "conmebol.libertadores", "conmebol.sudamericana", "bra.camp.gaucho", "eng.1", "uefa.champions", "esp.1", "ita.1", "ger.1", "fra.1"];
+// Depois de pronta só volta a andar quando a lista ganha item novo (competição nova em SONDA_LIGAS): pede só os novos.
+// Para rodar tudo de novo, o Admin apaga os docs da sonda (por id).
+const SONDA_LIGAS = ["bra.1", "bra.copa_do_brasil", "conmebol.libertadores", "conmebol.sudamericana", "bra.camp.gaucho", "eng.1", "uefa.champions", "esp.1", "ita.1", "ger.1", "fra.1", "nba", "nfl"];
 const SONDA_RSS = ["https://ge.globo.com/rss/ge/", "https://ge.globo.com/rss/ge/futebol/times/internacional/", "https://ge.globo.com/rss/ge/rs/", "https://ge.globo.com/rss/ge/futebol/campeonato-gaucho/", "https://ge.globo.com/rss/ge/futebol/copa-do-brasil/", "https://ge.globo.com/rss/ge/futebol/libertadores/", "https://ge.globo.com/rss/ge/futebol/brasileirao-serie-a/"];
 const SONDA_POR_VEZ = 6;
 const AMOSTRA_MAX = 20_000;
 export function listaSonda(agora = Date.now()) {
   const l = [];
-  for (const liga of SONDA_LIGAS) l.push({ tipo: "scoreboard", liga, url: urlScoreboard(liga, diaSP(agora)) });
+  for (const liga of SONDA_LIGAS) l.push({ tipo: "scoreboard", liga, url: urlScoreboard(liga, E.LIGAS[liga] && E.LIGAS[liga].semana ? "" : diaSP(agora)) });
   for (const liga of SONDA_LIGAS) l.push({ tipo: "standings", liga, url: urlStandings(liga) });
   l.push({ tipo: "schedule", liga: "bra.1", url: "" }); // o id do time sai da tabela do bra.1, quando ela chegar
   for (const liga of Object.keys(E.LIGAS)) if (E.LIGAS[liga].ge) l.push({ tipo: "ge", liga, url: E.LIGAS[liga].ge });
@@ -476,8 +534,11 @@ export function listaSonda(agora = Date.now()) {
 function resumoSonda(x, r, agora) {
   const out = {};
   try {
-    if (x.tipo === "scoreboard") { const s = lerScoreboard(JSON.parse(r)); out.jogos = s.jogos.length; out.estados = [...new Set(s.jogos.map((j) => j.estado))]; out.numero = s.numero; out.temporada = s.temporada; out.diasNoCalendario = s.calendario.length; }
-    else if (x.tipo === "standings") { const s = lerStandings(JSON.parse(r), x.liga); out.linhas = s.tabela.length; out.grupos = [...new Set(s.tabela.map((l) => l.grupo || ""))].length; out.primeiro = s.tabela[0] ? s.tabela[0].time + " " + s.tabela[0].pts : ""; }
+    if (x.tipo === "scoreboard") { const s = lerScoreboard(JSON.parse(r), x.liga); out.jogos = s.jogos.length; out.estados = [...new Set(s.jogos.map((j) => j.estado))]; out.numero = s.numero; out.temporada = s.temporada; out.tipoTemporada = s.tipoTemporada; out.diasNoCalendario = s.calendario.length; const vivo = s.jogos.find((j) => j.minuto); if (vivo) out.minuto = vivo.minuto; }
+    else if (x.tipo === "standings") {
+      const s = lerStandings(JSON.parse(r), x.liga); out.linhas = s.tabela.length; out.grupos = [...new Set(s.tabela.map((l) => l.grupo || ""))].length; out.primeiro = s.tabela[0] ? s.tabela[0].time + " " + s.tabela[0].pts : "";
+      if (E.LIGAS[x.liga] && E.LIGAS[x.liga].porSeed) { const p = s.tabela[0] || {}; out.primeiro = p.time ? `${p.time} ${p.v}-${p.d} pct ${p.pct} gb ${p.gb} seed ${p.seed}` : ""; out.comSeed = s.tabela.filter((l) => l.seed != null).length; out.nomesGrupos = [...new Set(s.tabela.map((l) => l.grupo || ""))]; }
+    }
     else if (x.tipo === "schedule") { const s = lerJogos(JSON.parse(r)); out.jogos = s.length; out.proximos = proximosDe(s, agora).length; }
     else if (x.tipo === "ge") { const g = lerGe(r, x.liga, agora); out.linhas = g ? g.tabela.length : 0; out.jogos = g ? g.jogos.length : 0; }
     else if (x.tipo === "rss") { out.itens = lerFeed(r).length; }
@@ -486,7 +547,16 @@ function resumoSonda(x, r, agora) {
 }
 export async function cronSondaEsportes(env, { pausa = PAUSA, agora = Date.now() } = {}) {
   let s = await lerDoc(env, "_sistema", "sonda-esportes");
-  if (s && s.fim) return 0;
+  if (s && s.fim) {
+    // pronta: só volta se a lista ganhou item que ainda não tem resultado (competição nova)
+    const chave = (x) => x.tipo + "|" + (x.liga || "") + "|" + (x.tipo === "rss" || x.tipo === "ge" ? x.url : "");
+    const ja = new Set([...(s.resultados || []), ...(s.pendentes || [])].map(chave));
+    const novos = listaSonda(agora).filter((x) => !ja.has(chave(x)));
+    if (!novos.length) return 0;
+    let n = Math.max(-1, ...(s.resultados || []).map((x) => Number(x.n) || 0));
+    s.pendentes = novos.map((x) => ({ ...x, n: ++n }));
+    s.fim = null; s.retomada = new Date(agora).toISOString();
+  }
   if (!s) s = { inicio: new Date(agora).toISOString(), fim: null, pendentes: listaSonda(agora), resultados: [] };
   const lote = s.pendentes.slice(0, SONDA_POR_VEZ);
   for (const x of lote) {

@@ -4,8 +4,15 @@
  * Worker (src/esportes.js, src/painel.js) e os testes em Node importam pelo efeito e leem globalThis.Esportes.
  * Sem import nem export, nem nada do navegador ou do Worker.
  *
- * Competição (LIGAS): { id, nome, curto, esporte, caminho, pais, fonte, reserva?, zonas: [{ de, ate, id }] }
- *   id é o slug da ESPN (bra.1, conmebol.libertadores); caminho é o "<esporte>/<liga>" da URL dela.
+ * Competição (LIGAS): { id, nome, curto, esporte, caminho, pais, fonte, reserva?, zonas: [{ de, ate, id }], colunas,
+ *   rodada?, semana?, porSeed?, raioRodada?, diasExtras? }
+ *   id é o slug da ESPN (bra.1, conmebol.libertadores, nba, nfl); caminho é o "<esporte>/<liga>" da URL dela.
+ *   colunas: as da tabela além de Pos e Time, na ordem (futebol: J, Pts, SG, V, E, D, GP, GC; NBA: V, D, %, GB).
+ *   rodada: como a tela chama o conjunto de jogos atual ("rodada" no futebol, "jogos" na NBA, "semana" na NFL).
+ *   semana: a ESPN devolve a semana inteira no scoreboard sem data (NFL); o cron pede assim e a semana anterior.
+ *   porSeed: a posição e a zona saem do playoffSeed da standings (NBA e NFL), não do rank.
+ *   raioRodada: dias em volta do jogo de referência que contam como a mesma rodada quando não há número (padrão 2).
+ *   diasExtras: quantos dias do calendário além de hoje o cron busca (padrão 5).
  *   fonte "espn"; reserva "ge" quando a página do Globo Esporte entra se a ESPN não tiver a competição.
  *   zonas: faixas de posição da tabela. Mexer aqui muda a cor das linhas e a legenda, sem tocar no resto.
  *   Faixas de 2026; quando o regulamento mudar, é só trocar os números.
@@ -20,15 +27,19 @@
     libertadores: "Libertadores", "pre-libertadores": "Pré-Libertadores", "sul-americana": "Sul-Americana", rebaixamento: "Rebaixamento",
     champions: "Champions League", europa: "Liga Europa", conference: "Conference League", "playoff-rebaixamento": "Playoff de rebaixamento",
     oitavas: "Oitavas", playoff: "Playoff", classifica: "Classifica", "quartas": "Quartas de final",
+    playoffs: "Playoffs", "play-in": "Play-in", "lider-divisao": "Líder de divisão", "wild-card": "Wild card",
   };
   /* cor de cada zona: um token do design system (a página mistura com o fundo do card) */
   const ZONAS_COR = {
     libertadores: "var(--ok)", "pre-libertadores": "var(--info)", "sul-americana": "var(--brand-end)", rebaixamento: "var(--err)",
     champions: "var(--ok)", europa: "var(--brand-end)", conference: "var(--info)", "playoff-rebaixamento": "var(--warn)",
     oitavas: "var(--ok)", playoff: "var(--info)", classifica: "var(--ok)", quartas: "var(--ok)",
+    playoffs: "var(--ok)", "play-in": "var(--info)", "lider-divisao": "var(--ok)", "wild-card": "var(--info)",
   };
+  /* Colunas da tabela além de Pos e Time. Os ids são os campos da linha em meta/esportes-<liga>. */
+  const COLS_FUTEBOL = ["j", "pts", "sg", "v", "e", "d", "gp", "gc"];
 
-  const futebol = (id, nome, curto, pais, zonas, extra) => ({ id, nome, curto, esporte: "futebol", caminho: "soccer/" + id, pais, fonte: "espn", zonas, ...(extra || {}) });
+  const futebol = (id, nome, curto, pais, zonas, extra) => ({ id, nome, curto, esporte: "futebol", caminho: "soccer/" + id, pais, fonte: "espn", zonas, colunas: COLS_FUTEBOL, rodada: "rodada", ...(extra || {}) });
   const LISTA = [
     futebol("bra.1", "Brasileirão Série A", "Brasileirão", "BR", [Z(1, 6, "libertadores"), Z(7, 8, "pre-libertadores"), Z(9, 14, "sul-americana"), Z(17, 20, "rebaixamento")]),
     futebol("conmebol.libertadores", "Copa Libertadores", "Libertadores", "", [Z(1, 2, "classifica"), Z(3, 3, "sul-americana")], { grupos: true }),
@@ -41,12 +52,22 @@
     futebol("ita.1", "Serie A italiana", "Serie A", "IT", [Z(1, 4, "champions"), Z(5, 5, "europa"), Z(18, 20, "rebaixamento")]),
     futebol("ger.1", "Bundesliga", "Bundesliga", "DE", [Z(1, 4, "champions"), Z(5, 5, "europa"), Z(16, 16, "playoff-rebaixamento"), Z(17, 18, "rebaixamento")]),
     futebol("fra.1", "Ligue 1", "Ligue 1", "FR", [Z(1, 3, "champions"), Z(4, 4, "europa"), Z(16, 16, "playoff-rebaixamento"), Z(17, 18, "rebaixamento")]),
+    /* NBA: tabela por conferência (Leste e Oeste, cada uma um grupo), posição pelo playoffSeed; sem empate nem gols.
+       Joga quase todo dia: a "rodada" é a noite de jogos (12 h em volta do jogo de referência), ontem e amanhã no cron. */
+    { id: "nba", nome: "NBA", curto: "NBA", esporte: "basquete", caminho: "basketball/nba", pais: "US", fonte: "espn",
+      zonas: [Z(1, 6, "playoffs"), Z(7, 10, "play-in")], colunas: ["v", "d", "pct", "gb"], rodada: "jogos", grupos: true, porSeed: true, raioRodada: 0.5, diasExtras: 2 },
+    /* NFL: tabela por conferência (AFC e NFC; por divisão, se a ESPN mandar assim), zona pelo playoffSeed: 1 a 4 são
+       os líderes de divisão, 5 a 7 os wild cards. A rodada é a semana (week.number). */
+    { id: "nfl", nome: "NFL", curto: "NFL", esporte: "futebol-americano", caminho: "football/nfl", pais: "US", fonte: "espn",
+      zonas: [Z(1, 4, "lider-divisao"), Z(5, 7, "wild-card")], colunas: ["v", "d", "e", "pct"], rodada: "semana", grupos: true, porSeed: true, semana: true },
   ];
   const LIGAS = Object.fromEntries(LISTA.map((l) => [l.id, l]));
   const ORDEM_LIGAS = LISTA.map((l) => l.id);
-  /* Esportes da tela "Meus esportes". Basquete, futebol americano e F1 entram depois: o módulo do Worker já aceita
-     qualquer "<esporte>/<liga>" da ESPN, falta só pôr as competições aqui. */
-  const ESPORTES = [{ id: "futebol", nome: "Futebol", ligas: ORDEM_LIGAS.filter((id) => LIGAS[id].esporte === "futebol") }];
+  /* Grupos da tela "Meus esportes". F1 fica de fora: não tem tabela de times nem jogo de dois lados. */
+  const ESPORTES = [
+    { id: "futebol", nome: "Futebol", ligas: ORDEM_LIGAS.filter((id) => LIGAS[id].esporte === "futebol") },
+    { id: "outros", nome: "Outros esportes", ligas: ORDEM_LIGAS.filter((id) => LIGAS[id].esporte !== "futebol") },
+  ];
   /* Sempre coletadas, mesmo que ninguém tenha ligado */
   const SEMPRE = ["bra.1", "conmebol.libertadores"];
   const PADRAO = ["bra.1", "conmebol.libertadores", "bra.copa_do_brasil"];
@@ -60,6 +81,34 @@
     if (!l || !Number.isInteger(p)) return "";
     const z = l.zonas.find((x) => p >= x.de && p <= x.ate);
     return z ? z.id : "";
+  }
+  /* Colunas da tabela (além de Pos e Time) e o nome do conjunto de jogos atual */
+  const colunasDe = (liga) => (LIGAS[liga] && LIGAS[liga].colunas) || COLS_FUTEBOL;
+  const rodadaDe = (liga) => (LIGAS[liga] && LIGAS[liga].rodada) || "rodada";
+  /* Período de um jogo de basquete ou futebol americano em andamento: "4º quarto · 5:32", "intervalo", "prorrogação · 2:10",
+     "fim do 1º quarto". `nome` é o status.type.name da ESPN; period e displayClock vêm do status. */
+  function periodo(period, relogio, nome) {
+    const n = String(nome || "");
+    if (/HALFTIME/i.test(n)) return "intervalo";
+    const p = Number(period);
+    if (!Number.isInteger(p) || p < 1) return "";
+    const qual = p <= 4 ? p + "º quarto" : p === 5 ? "prorrogação" : (p - 4) + "ª prorrogação";
+    if (/END_PERIOD/i.test(n)) return (p <= 4 ? "fim do " : "fim da ") + qual;
+    const r = String(relogio == null ? "" : relogio).trim();
+    return r && !/^0+([:.]0+)*$/.test(r) ? qual + " · " + r : qual;
+  }
+  /* Nome de grupo da standings em português, curto para caber no celular, para as conferências e divisões de NBA e NFL
+     ("Eastern Conference" vira "Leste", "American Football Conference" vira "AFC", "AFC North" vira "AFC Norte").
+     O resto fica como veio. */
+  const PONTOS = { East: "Leste", West: "Oeste", North: "Norte", South: "Sul" };
+  function nomeGrupo(nome, sigla) {
+    const n = String(nome || "").trim(), s = String(sigla || "").trim();
+    let m = /^(Eastern|Western) Conference$/i.exec(n);
+    if (m) return /^e/i.test(m[1]) ? "Leste" : "Oeste";
+    if (/^(American|National) Football Conference$/i.test(n)) return /^a/i.test(n) ? "AFC" : "NFC";
+    m = /^(AFC|NFC) (East|West|North|South)$/i.exec(n);
+    if (m) return m[1].toUpperCase() + " " + PONTOS[m[2][0].toUpperCase() + m[2].slice(1).toLowerCase()];
+    return n || s;
   }
   /* Legenda: as zonas da competição, na ordem da tabela */
   const legendaDe = (liga) => ((LIGAS[liga] && LIGAS[liga].zonas) || []).map((z) => ({ id: z.id, nome: ZONAS_NOME[z.id] || z.id, cor: ZONAS_COR[z.id] || "var(--muted-foreground)", faixa: z.de === z.ate ? z.de + "º" : z.de + "º a " + z.ate + "º" }));
@@ -143,5 +192,5 @@
     return p.semana + " " + p.ddmm;
   }
 
-  raiz.Esportes = { LIGAS, ORDEM_LIGAS, ESPORTES, SEMPRE, PADRAO, MAX_TIMES, ZONAS_NOME, ZONAS_COR, slugLiga, zonaDe, legendaDe, padraoPrefs, ordemCompleta, ligadas, validarPrefs, respostaPrefs, fusoLocal, partesData, rotuloDia };
+  raiz.Esportes = { LIGAS, ORDEM_LIGAS, ESPORTES, SEMPRE, PADRAO, MAX_TIMES, ZONAS_NOME, ZONAS_COR, slugLiga, zonaDe, legendaDe, colunasDe, rodadaDe, periodo, nomeGrupo, padraoPrefs, ordemCompleta, ligadas, validarPrefs, respostaPrefs, fusoLocal, partesData, rotuloDia };
 })(typeof globalThis !== "undefined" ? globalThis : this);
