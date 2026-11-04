@@ -3815,7 +3815,7 @@ function abrirAtivo(x, aba = cotAba, ficha) {
     const fontes = h && Array.isArray(h.fontes) && h.fontes.length ? h.fontes.slice() : [];
     if (!fontes.length) fontes.push(us ? (eua && eua.fonte) || "Yahoo Finance" : "brapi");
     if (!us && !fontes.includes("brapi")) fontes.push("brapi (cotação da lista)");
-    d.append(el("p", { class: "nota" }, "Fontes: " + fontes.join(", ") + ". Dados com atraso" + (h ? ", ficha de " + fmtData(resp.data.atualizado) : "") + (us ? ", em dólar" : "") + ". Nada aqui é recomendação."));
+    d.append(el("p", { class: "nota" }, "Fontes: " + fontes.join(", ") + (h ? ". Ficha de " + fmtData(resp.data.atualizado) : "") + (us ? ". Valores em dólar" : "") + "."));
   }
   d.append(links);
   if (!d.open) d.showModal();
@@ -3878,7 +3878,7 @@ function renderMercado() {
   if (p && p.aguarde) { b.disabled = true; b.textContent = "Atualizado há pouco"; b.title = "Dá para pedir de novo em " + Math.ceil(p.aguarde / 60) + " min"; }
   b.addEventListener("click", atualizarMercado);
   pe.append(
-    el("span", {}, itensM.length ? (p.atualizado ? "Atualizado " + fmtRel(p.atualizado) + ". " : "") + (itensM.some((i) => i.pais === "US") ? "Cotações com atraso de até 30 min, fontes brapi, Banco Central e Yahoo Finance. Nada aqui é recomendação." : "Cotações com atraso de até 30 min, fonte brapi e Banco Central. Nada aqui é recomendação.") + (p.temBolsa ? "" : " Ibovespa e IFIX ainda não entram.") : "As cotações aparecem aqui depois da primeira consulta."),
+    el("span", {}, itensM.length ? (p.atualizado ? "Atualizado " + fmtRel(p.atualizado) + ". " : "") + (itensM.some((i) => i.pais === "US") ? "Fontes: brapi, Banco Central e Yahoo Finance." : "Fontes: brapi e Banco Central.") + (p.temBolsa ? "" : " Ibovespa e IFIX ainda não entram.") : "As cotações aparecem aqui depois da primeira consulta."),
     b);
   if (!itensM.length) box.hidden = true;
 }
@@ -6265,7 +6265,7 @@ function desenharGeral(box, j) {
     al.append(el("div", { class: "ct-linhas alertas" }, ...r.alertas.slice(0, 6).map((a) => el("div", {}, el("span", {}, ...textoAlerta(a))))));
     dir.append(al);
   } else dir.append((() => { const al = cardEl("Alertas", { sub: "nenhum agora", pin: "carteira-alertas" }); al.append(el("p", { class: "ct-nota" }, "Avisos de rendimento menor que o anterior, subscrição em carteira e papel com mais de 20% da carteira aparecem aqui.")); return al; })());
-  dir.append(el("div", { class: "ct-card suave" }, el("p", { class: "ct-nota" }, `Posições montadas a partir dos extratos da B3 (negociação, movimentação e proventos). Cotação do pregão do Lookout${j.cotacoes && j.cotacoes.b3 ? ", " + fmtRel(j.cotacoes.b3) : ""}, com atraso de até 30 min. Nada aqui é recomendação.`)));
+  if (j.cotacoes && j.cotacoes.b3) dir.append(el("p", { class: "ct-nota", title: "Cotações com atraso de até 30 min" }, "Cotações " + fmtRel(j.cotacoes.b3)));
   corpo.append(esq, dir);
   box.append(corpo);
   box.append(maisDaCarteira(j));
@@ -7333,7 +7333,7 @@ function desenharCentroRadar() {
     const comFicha = linhas.filter((l) => l.temFicha).length;
     pe.push(`P/L, P/VP e DY vêm das fichas de papel guardadas no Lookout (${comFicha} de ${linhas.length} ${f.classe === "eua" ? "ações americanas" : "ações"} têm ficha${fund ? "" : " por enquanto"}). Papel sem ficha fica de fora de critério que dependa delas; abrir a ficha busca os números. "Na meta" usa a média mensal dos dividendos de 12 meses.`);
   }
-  card.append(el("p", { class: "rd-pe" }, ...pe, " ", el("b", {}, "Nada aqui é recomendação: o filtro é seu, a escolha também.")));
+  card.append(el("p", { class: "rd-pe" }, ...pe));
   box.append(card, baixoRadar(f, linhas));
 }
 function baixoRadar(f, linhas) {
@@ -7353,7 +7353,7 @@ function cardLeitura() {
   const gerar = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "rd-gerar" }, rdGerando ? "Gerando…" : "Gerar agora");
   if (rdGerando) gerar.disabled = true;
   gerar.addEventListener("click", gerarLeituraAgora);
-  c.append(el("div", { class: "rd-pe-card" }, el("span", { class: "rd-fecho" }, "Só fatos. Nada aqui é recomendação."), gerar));
+  c.append(el("div", { class: "rd-pe-card" }, el("span", { class: "rd-fecho" }), gerar));
   if (rdAvisoLeit) c.append(el("p", { class: "ct-nota", role: "status" }, rdAvisoLeit));
   return c;
 }
@@ -7510,7 +7510,7 @@ corpos["leitura-dia"] = (d, fm = { c: 1, r: 1 }) => {
   if (!L) return [esqueleto(4)];
   if (L.desligada) return [vazioW("A Leitura do dia precisa da chave da carteira neste servidor.")];
   if (!L.existe || !Array.isArray(L.itens)) return [vazioW(L.erro ? "Não deu para abrir a leitura agora." : "A leitura de hoje sai às 7h40.")];
-  return [el("ul", { class: "wdg-leitura" }, ...L.itens.slice(0, fm.r > 1 ? 8 : fm.c > 1 ? 5 : 3).map((i) => el("li", {}, ...textoComPapeis(i.texto, i.papeis)))), el("span", { class: "wdg-fecho" }, "Só fatos. Nada aqui é recomendação.")];
+  return [el("ul", { class: "wdg-leitura" }, ...L.itens.slice(0, fm.r > 1 ? 8 : fm.c > 1 ? 5 : 3).map((i) => el("li", {}, ...textoComPapeis(i.texto, i.papeis))))];
 };
 corpos["carteira-contra-filtro"] = (d) => {
   if (!d || !d.cj || d.cj.vazia || !temCarteira()) return [vazioW("Importe seus extratos da B3 em Minha carteira.")];
@@ -7548,7 +7548,7 @@ function blocoMetaRadar(m) {
       corpo.append(el("p", { class: "ct-nota" }, `${rdMoeda(f.classe)}${fmtNum(aporte, 0)} ${f.classe === "fiis" ? "ao último rendimento" : "à média dos dividendos de 12 meses"}, só no que passa hoje no filtro "${f.nome}":`));
       corpo.append(el("div", { class: "ct-linhas" }, ...top.map((x) => el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " " + (x.classe === "fiis" ? `P/VP ${rdNum(x.pvp, 2)} · DY ${rdPct(x.dy)}` : `P/L ${rdNum(x.pl, 1)} · DY ${rdPct(x.dy)}`))), el("span", { class: "ct-mono" }, rdMeta(x.naMeta, x.classe))))));
     }
-    corpo.append(el("div", { class: "rd-pe-card" }, el("span", { class: "rd-fecho" }, "Conta aritmética, não recomendação."), el("a", { class: "ct-volta", href: "#investimentos/radar" }, "Abrir o radar")));
+    corpo.append(el("div", { class: "rd-pe-card" }, el("span", { class: "rd-fecho" }), el("a", { class: "ct-volta", href: "#investimentos/radar" }, "Abrir o radar")));
   })();
   return c;
 }
