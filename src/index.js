@@ -1,6 +1,6 @@
 import { emailDoAccess, accessConfigurado } from "./auth.js";
-import { coletar, limpar, garantirColunas, ehReddit, REDDIT } from "./coleta.js";
-import { FEEDS } from "./feeds.js";
+import { coletar, limpar, garantirColunas, ehReddit, REDDIT, juntarFontes } from "./coleta.js";
+import { FEEDS, SECOES_COM_FORUM } from "./feeds.js";
 import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
 import { cronEua } from "./eua.js";
 import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
@@ -23,7 +23,9 @@ const RF = globalThis.RadarFiltro;
 export { Espelho } from "./espelho.js";
 
 // Collections que a página pode ler. Tudo o mais é negado.
-const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos"]);
+// foruns-<radar>: posts de subreddit do bloco "Nos fóruns" (src/coleta.js), sem curadoria.
+const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos",
+  "foruns-tech", "foruns-negocios", "foruns-investimentos", "foruns-politica", "foruns-esportes"]);
 // hist: fichas de papel (src/papel.js), um doc por papel ("US:NVDA", "BR:PETR4"); a página lê pela /api/papel.
 const DOCS = new Set([...LISTAS, "meta", "hist"]);
 const CAMPOS_ORDEM = new Set(["coletado", "data", "publicado"]);
@@ -397,8 +399,8 @@ async function fichaPapel(url, env, quem) {
 
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Rendimento das fontes nos últimos 10 dias (o tempo que os candidatos ficam no banco).
-// semCandidatos: feeds de src/feeds.js que ainda não trouxeram nada (subreddit novo, feed bloqueado), com o estado deles.
+// Rendimento das fontes nos últimos 10 dias (o tempo que os candidatos ficam no banco). As linhas e semCandidatos saem de
+// juntarFontes (src/coleta.js), que junta as linhas de cada subreddit e soma os posts em foruns-<radar>.
 async function adminFontes(env) {
   await garantirColunas(env);
   const { results } = await env.DB.prepare(
@@ -410,14 +412,23 @@ async function adminFontes(env) {
      GROUP BY c.feed ORDER BY c.radar, publicados DESC`
   ).all();
   const { results: estados } = await env.DB.prepare("SELECT radar, fonte, url AS feed, erro, erros_seguidos, seguidos_403, ultima_checagem, ultimo_ok FROM feeds_estado").all();
-  const falhas = estados.filter((f) => f.erros_seguidos > 0).sort((a, b) => a.radar.localeCompare(b.radar) || a.fonte.localeCompare(b.fonte));
-  const comCandidatos = new Set(results.map((r) => r.feed));
-  const porUrl = new Map(estados.map((e) => [e.feed, e]));
-  const semCandidatos = FEEDS.filter(([, , , url]) => !comCandidatos.has(url)).map(([radar, fonte, , url, tipo]) => {
-    const e = porUrl.get(url) || {};
-    return { radar, fonte, feed: url, tipo: tipo || "rss", erro: e.erro || "", erros_seguidos: e.erros_seguidos || 0, seguidos_403: e.seguidos_403 || 0, ultima_checagem: e.ultima_checagem || "", ultimo_ok: e.ultimo_ok || "" };
-  });
-  return json({ fontes: results.map((r) => ({ ...r, tipo: ehReddit(r.feed) ? "reddit" : "rss" })), falhas, semCandidatos, bloqueio403: REDDIT.BLOQUEIO_403 });
+  // Posts em foruns-<radar> por subreddit: radar + "r/<sub>" é a mesma chave da fonte em src/feeds.js
+  const forum = new Map();
+  try {
+    const { results: fr } = await env.DB.prepare(
+      "SELECT substr(collection, 8) AS radar, json_extract(data, '$.sub') AS sub, count(*) AS n FROM docs WHERE collection IN ('foruns-tech', 'foruns-negocios', 'foruns-investimentos', 'foruns-politica', 'foruns-esportes') GROUP BY collection, sub"
+    ).all();
+    const nomes = new Map(FEEDS.filter((f) => f[4] === "reddit").map(([radar, fonte]) => [radar + "|" + fonte.toLowerCase(), fonte]));
+    for (const r of fr) {
+      const k = r.radar + "|" + (nomes.get(r.radar + "|r/" + String(r.sub || "").toLowerCase()) || "r/" + r.sub);
+      forum.set(k, (forum.get(k) || 0) + Number(r.n || 0));
+    }
+  } catch (e) {}
+  // URL antiga de subreddit (/new/, trocada por /top/?t=day) fica em feeds_estado, mas não é mais lida: sai dos alertas
+  const atuais = new Set(FEEDS.map((f) => f[3]));
+  const falhas = estados.filter((f) => f.erros_seguidos > 0 && !(ehReddit(f.feed) && !atuais.has(f.feed))).sort((a, b) => a.radar.localeCompare(b.radar) || a.fonte.localeCompare(b.fonte));
+  const { fontes, semCandidatos } = juntarFontes(results, FEEDS, estados, forum);
+  return json({ fontes, falhas, semCandidatos, bloqueio403: REDDIT.BLOQUEIO_403, diasForum: REDDIT.DIAS_FORUM });
 }
 
 async function adminUsuarios(request, env, email) {
@@ -497,7 +508,9 @@ export default {
       return pagina("Só por convite", `<h1>Este espaço é só para convidados</h1><p>Você entrou como <strong>${esc(quem.email)}</strong>, que ainda não está na lista.</p><p>Se recebeu um convite em outro e-mail, <a href="/cdn-cgi/access/logout">saia</a> e entre com ele.</p>`, 403);
     }
 
-    if (p === "/api/me") return json({ email: quem.email, nome: quem.nome, admin: quem.admin, secoes: quem.secoes ?? null, widgets: catalogoDe(quem.secoes ?? null).map((w) => w.id) });
+    // foruns: seções liberadas que têm subreddit (a página mostra "Nos fóruns" só nelas)
+    if (p === "/api/me") return json({ email: quem.email, nome: quem.nome, admin: quem.admin, secoes: quem.secoes ?? null, widgets: catalogoDe(quem.secoes ?? null).map((w) => w.id),
+      foruns: SECOES_COM_FORUM.filter((s) => libera(quem.secoes ?? null, s)) });
     if (p === "/api/q" && request.method === "GET") return consultar(url, env, quem, request);
     if (p === "/api/doc" && request.method === "GET") return lerDoc(url, env, quem, request);
     if (p === "/api/mercado/atualizar" && request.method === "POST") {

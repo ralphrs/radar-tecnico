@@ -161,7 +161,7 @@ textarea{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:inheri
 
   <section class="card">
     <h2>Rendimento das fontes</h2>
-    <p class="dica">Dos links que o robô trouxe nos últimos 10 dias, quantos a curadoria publicou e quantos descartou, por quê. Fonte que nunca emplaca nada é candidata a sair da lista.</p>
+    <p class="dica">Dos links que o robô trouxe nos últimos 10 dias, quantos a curadoria publicou e quantos descartou, por quê. Fonte que nunca emplaca nada é candidata a sair da lista. Subreddits aparecem só com os posts em Nos fóruns.</p>
     <div id="fontes" class="fontes"><p class="vazio">Carregando…</p></div>
   </section>
 
@@ -316,7 +316,7 @@ async function carregar() {
 async function carregarFontes() {
   const box = $("fontes");
   try {
-    const { fontes, falhas, semCandidatos = [], bloqueio403 = 3 } = await api("/api/admin/fontes");
+    const { fontes, falhas, semCandidatos = [], bloqueio403 = 3, diasForum = 3 } = await api("/api/admin/fontes");
     const NOME = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
     const pct = (a, b) => (b ? Math.round((100 * a) / b) + "%" : "–");
     // Status pelo feeds_estado: bloqueado (403 seguidos), esperando (429), falhando, ok ou ainda não lido
@@ -328,19 +328,24 @@ async function carregarFontes() {
     };
     const erroDe = (f) => (f.erros_seguidos ? `<td class="erro" title="${esc(f.erro || "")}">${esc(f.erro || "")}${f.erros_seguidos > 1 ? ` · ${f.erros_seguidos}×` : ""}</td>` : "<td></td>");
     const nomeDe = (f) => `<td title="${esc(f.feed)}">${esc(f.fonte)}${f.tipo === "reddit" ? ' <span class="mut">· Reddit</span>' : ""}</td>`;
-    let h = "<table><thead><tr><th>Aba</th><th>Fonte</th><th>Status</th><th>Lidos</th><th>Publicados</th><th>Taxa</th><th>Repetido</th><th>Promo</th><th>Fora do tema</th><th>Antigo</th><th>Raso</th><th>Na fila</th><th>Último erro</th></tr></thead><tbody>";
+    // Subreddit: "No fórum" são os posts que estão em "Nos fóruns" agora (últimos dias), fora da curadoria
+    const forumDe = (f) => (f.tipo === "reddit" ? `<td title="Posts deste subreddit em Nos fóruns (últimos ${esc(diasForum)} dias)">${f.forum || 0}</td>` : '<td class="mut">–</td>');
+    let h = `<table><thead><tr><th>Aba</th><th>Fonte</th><th>Status</th><th>Lidos</th><th>Publicados</th><th>Taxa</th><th>Repetido</th><th>Promo</th><th>Fora do tema</th><th>Antigo</th><th>Raso</th><th>Na fila</th><th title="Posts de subreddit em Nos fóruns">No fórum</th><th>Último erro</th></tr></thead><tbody>`;
     for (const f of fontes) {
+      // Subreddit não passa pela curadoria: só o estado e os posts em Nos fóruns
+      if (f.tipo === "reddit") { h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td>${nomeDe(f)}<td>${status(f)}</td><td colspan="9" class="mut" style="text-align:left">não passa pela curadoria</td>${forumDe(f)}${erroDe(f)}</tr>`; continue; }
       const avaliados = (f.publicados || 0) + (f.descartados || 0);
       const zero = avaliados >= 10 && !f.publicados;
-      h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td>${nomeDe(f)}<td>${status(f)}</td><td>${f.lidos}</td><td>${f.publicados || 0}</td><td class="${zero ? "zero" : ""}">${pct(f.publicados || 0, avaliados)}</td><td>${f.repetido || 0}</td><td>${f.promocional || 0}</td><td>${f.fora || 0}</td><td>${f.antigo || 0}</td><td>${f.raso || 0}</td><td>${f.fila || 0}</td>${erroDe(f)}</tr>`;
+      h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td>${nomeDe(f)}<td>${status(f)}</td><td>${f.lidos}</td><td>${f.publicados || 0}</td><td class="${zero ? "zero" : ""}">${pct(f.publicados || 0, avaliados)}</td><td>${f.repetido || 0}</td><td>${f.promocional || 0}</td><td>${f.fora || 0}</td><td>${f.antigo || 0}</td><td>${f.raso || 0}</td><td>${f.fila || 0}</td>${forumDe(f)}${erroDe(f)}</tr>`;
     }
     // Fontes da lista que ainda não trouxeram candidato (subreddit recém-entrado, feed bloqueado): aparecem com zero
     for (const f of semCandidatos) {
-      h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td>${nomeDe(f)}<td>${status(f)}</td><td>0</td><td>0</td><td>–</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>${erroDe(f)}</tr>`;
+      h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td>${nomeDe(f)}<td>${status(f)}</td><td>0</td><td>0</td><td>–</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>${forumDe(f)}${erroDe(f)}</tr>`;
     }
     h += "</tbody></table>";
     if (falhas.length) h += `<p class="dica"><strong>Feeds com erro:</strong> ${falhas.map((f) => esc(f.fonte) + " (" + esc(NOME[f.radar] || f.radar) + ", " + esc(f.erro) + ")").join(" · ")}</p>`;
-    h += '<p class="dica">"Taxa" conta só o que já foi avaliado pela curadoria nova; links de rodadas antigas aparecem como lidos sem destino. Subreddits são lidos um por minuto, cada um a cada 2 h.</p>';
+    h += '<p class="dica">"Taxa" conta só o que já foi avaliado pela curadoria nova; links de rodadas antigas aparecem como lidos sem destino. Subreddits são lidos um por minuto, cada um a cada 2 h (os mais votados do dia).</p>';
+    h += `<p class="dica">Subreddits não viram candidatos (post de fórum não é notícia e a curadoria descartava todos): cada post vai direto para o bloco Nos fóruns da seção. A coluna "No fórum" conta os que estão lá agora (ficam ${esc(diasForum)} dias).</p>`;
     box.innerHTML = h;
   } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
 }

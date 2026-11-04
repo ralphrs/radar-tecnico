@@ -87,7 +87,7 @@ function ambiente(reddit) {
   return { env, pedidos, doReddit: () => pedidos.filter((p) => ehReddit(p.url)) };
 }
 
-test("coleta: cada cron lê no máximo 1 subreddit, com o user-agent do Lookout, e guarda tipo e link externo", async () => {
+test("coleta: cada cron lê no máximo 1 subreddit, com o user-agent do Lookout; o post vai para foruns-<radar>, não para candidatos", async () => {
   const { env, doReddit } = ambiente(() => new Response(atomReddit(), { status: 200 }));
   const r1 = await coletar(env);
   assert.equal(r1.reddit, 1);
@@ -97,11 +97,12 @@ test("coleta: cada cron lê no máximo 1 subreddit, com o user-agent do Lookout,
   assert.equal(r2.reddit, 1);
   assert.equal(doReddit().length, 2);
   assert.notEqual(doReddit()[0].url, doReddit()[1].url, "o segundo cron pega outro subreddit");
-  const cand = env.DB.db.prepare("SELECT url, tipo, link_externo, fonte, length(trecho) AS n FROM candidatos ORDER BY url").all();
-  assert.equal(cand.length, 3, "mesmos posts nos dois subs de mentira: dedupe pela URL do post");
-  assert.ok(cand.every((c) => c.tipo === "reddit" && c.fonte.startsWith("r/")));
-  assert.equal(cand.find((c) => c.url === POSTS.link).link_externo, "https://www.databricks.com/blog/anuncio", "link externo sem utm");
-  assert.ok(cand.find((c) => c.url === POSTS.texto).n > 280);
+  assert.equal(env.DB.db.prepare("SELECT count(*) AS n FROM candidatos").get().n, 0, "post de subreddit não vira candidato");
+  const forum = env.DB.db.prepare("SELECT id, json_extract(data, '$.url') AS url, json_extract(data, '$.linkExterno') AS ext FROM docs WHERE collection = 'foruns-tech' ORDER BY id").all();
+  assert.equal(forum.length, 3, "mesmos posts nos dois subs de mentira: dedupe pelo id do post");
+  assert.equal(forum.find((c) => c.url === POSTS.link).ext, "https://www.databricks.com/blog/anuncio", "link externo sem utm");
+  const est = env.DB.db.prepare("SELECT novos_total FROM feeds_estado WHERE url = ?").get(doReddit()[0].url);
+  assert.equal(est.novos_total, 3, "novos_total conta os posts novos no fórum");
 });
 
 test("coleta: 429 registra, dobra a espera e o próximo cron vai para outro subreddit", async () => {

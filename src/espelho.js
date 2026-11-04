@@ -6,7 +6,7 @@
 // as mudanças para cá a cada minuto. Se o espelho falhar, demorar ou ainda estiver vazio, a leitura vai ao D1.
 //
 // O que fica aqui:
-// - docs: as collections que a página lê (itens, destaques, meta e hist), _sistema, e favs/<email>, listas/<email>, prefs/<email>
+// - docs: as collections que a página lê (itens, destaques, foruns-*, meta e hist), _sistema, e favs/<email>, listas/<email>, prefs/<email>
 //   carteira/<email> (a Minha carteira, copiada cifrada como está no D1) e leitura/<email> (a Leitura do dia, cifrada também);
 // - usuarios, grupos e usuario_grupo, inteiras, para conferir convite e seções;
 // - estado: última sincronia, duração, linhas, erro, as últimas medições de tempo, a trava da sincronia,
@@ -28,6 +28,8 @@ export const COLECOES_ESPELHO = [
   "items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes",
   "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos", "meta", "_sistema",
   "hist", // fichas de papel (src/papel.js): gravadas sob demanda no D1, com write-through para cá
+  // Nos fóruns: posts de subreddit gravados pela coleta (src/coleta.js), 3 dias no máximo
+  "foruns-tech", "foruns-negocios", "foruns-investimentos", "foruns-politica", "foruns-esportes",
 ];
 
 const LOTE = 90;              // ids por consulta ao D1, como na limpeza (coleta.js)

@@ -1,4 +1,4 @@
-// Atom do Reddit escrito à mão no formato de /r/<sub>/new/.rss (o proxy dos testes não chega ao reddit.com).
+// Atom do Reddit escrito à mão no formato de /r/<sub>/top/.rss?t=day, o mesmo de /new/ (o proxy dos testes não chega ao reddit.com).
 // Quatro posts: um com texto (e flair no título), um só com link externo, um fixado e uma imagem do próprio Reddit.
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 // HTML do post como o Reddit monta (o Atom leva esse HTML escapado dentro de <content type="html">)
@@ -16,7 +16,7 @@ function entrada({ id, titulo, url, conteudo, data, extra = "" }) {
 }
 export function atomReddit(agora = new Date()) {
   const d = (min) => new Date(agora.getTime() - min * 60000).toISOString().replace(/\.\d+Z$/, "+00:00");
-  return `<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/"><category term="databricks" label="r/databricks"/><updated>${d(0)}</updated><icon>https://www.redditstatic.com/icon.png/</icon><id>/r/databricks/new/.rss</id><link rel="self" href="https://www.reddit.com/r/databricks/new/.rss" type="application/atom+xml" /><link rel="alternate" href="https://www.reddit.com/r/databricks/new" type="text/html" /><subtitle>Comunidade</subtitle><title>newest submissions : databricks</title>`
+  return `<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/"><category term="databricks" label="r/databricks"/><updated>${d(0)}</updated><icon>https://www.redditstatic.com/icon.png/</icon><id>/r/databricks/top/.rss?t=day</id><link rel="self" href="https://www.reddit.com/r/databricks/top/.rss?t=day" type="application/atom+xml" /><link rel="alternate" href="https://www.reddit.com/r/databricks/top/?t=day" type="text/html" /><subtitle>Comunidade</subtitle><title>top scoring links : databricks</title>`
     + entrada({ id: "1abc01", titulo: "[P] Unity Catalog: permissões por schema &amp; grupos", url: POSTS.texto, data: d(10),
       conteudo: `<!-- SC_OFF --><div class="md"><p>${TEXTO_LONGO}</p><p>Alguém usa &quot;grants&quot; por tabela?</p></div><!-- SC_ON -->` + rodape(POSTS.texto, POSTS.texto) })
     + entrada({ id: "1abc02", titulo: "Databricks lança algo novo", url: POSTS.link, data: d(20),

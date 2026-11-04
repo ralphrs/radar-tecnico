@@ -1,5 +1,6 @@
 // Coleta sem IA: o cron lê os feeds de src/feeds.js, descarta o que já existe e guarda o resto em "candidatos".
 // Subreddits (tipo "reddit" em src/feeds.js) têm fila e ritmo próprios: veja REDDIT abaixo e docs/coleta.md.
+// Post de subreddit não vira candidato: vai só para foruns-<radar> (bloco "Nos fóruns" da página), sem curadoria.
 // A tarefa de curadoria (Claude) só lê os candidatos novos, escolhe, resume e grava os itens.
 // Aqui também fica a limpeza por idade, que antes era feita pelas tarefas.
 import { FEEDS } from "./feeds.js";
@@ -18,6 +19,8 @@ export const REDDIT = {
   ESPERA_MAX_MIN: 24 * 60, // erro dobra a espera (429 incluído) até 24 h
   BLOQUEIO_403: 3,        // 403 três vezes seguidas: feed marcado como bloqueado (tentado de novo só a cada 24 h)
   TRECHO: 600,
+  RESUMO_FORUM: 300,      // resumo guardado em foruns-<radar>
+  DIAS_FORUM: 3,          // foruns-* com mais de 3 dias saem na limpeza
   UA: "Lookout/1.0 (agregador pessoal de noticias; +https://news.ralph-renato.workers.dev)",
 };
 const COLECOES_ITENS = ["items", "items-politica", "items-esportes", "items-negocios", "items-investimentos", "sombra-items"];
@@ -86,10 +89,13 @@ export const ehReddit = (u) => { try { const h = new URL(u).hostname.toLowerCase
 // Hosts do próprio Reddit (post, imagem, vídeo, galeria): link para eles não é "link externo".
 const doReddit = (u) => { try { const h = new URL(u).hostname.toLowerCase(); return /(^|\.)(reddit\.com|redd\.it|redditmedia\.com|redditstatic\.com)$/.test(h); } catch { return true; } };
 
-// Cada <entry> do Atom de /r/<sub>/new/.rss vira { titulo, url, publicado, trecho, linkExterno, tipo: "reddit" }.
+// Cada <entry> do Atom de /r/<sub>/top/.rss?t=day (o mesmo formato de /new/) vira
+// { titulo, url, publicado, trecho, linkExterno, tipo: "reddit", idReddit, autor, sub }.
+// idReddit: o <id> sem o "t3_" (ou o trecho /comments/<id>/ da url); autor: o nome de usuário, sem "/u/" nem link;
+// sub: o subreddit tirado da url do post. O Atom não traz votos nem comentários.
 // title: o título do post como veio (prefixo de flair entre colchetes fica; a curadoria decide). url: o link do post.
 // content: HTML escapado; o texto do post é o <div class="md">, e o [link] do rodapé aponta para fora quando o post é
-// um link. Post fixado: o Atom do Reddit não marca e /new/ não lista os fixados; se alguma marca aparecer
+// um link. Post fixado: o Atom do Reddit não marca e /new/ e /top/ não listam os fixados; se alguma marca aparecer
 // (<stickied>true</stickied>, category "stickied" ou "pinned"), o post fica de fora.
 export function lerReddit(xml) {
   const blocos = String(xml || "").match(/<entry[\s>][\s\S]*?<\/entry>/gi) || [];
@@ -107,7 +113,12 @@ export function lerReddit(xml) {
     let linkExterno = "";
     const lk = [...html.matchAll(/<a\s[^>]*href="([^"]+)"[^>]*>\s*\[link\]\s*<\/a>/gi)].map((m) => decodificar(m[1]))[0] || "";
     if (!trecho && /^https?:\/\//.test(lk) && !doReddit(lk)) linkExterno = lk.slice(0, 1000);
-    out.push({ titulo, url, publicado: d && !isNaN(d) ? iso(d) : "", trecho, linkExterno, tipo: "reddit" });
+    const idTag = texto(tag(b, "id")).replace(/^t3_/i, "");
+    const idUrl = (url.match(/\/comments\/([a-z0-9]+)/i) || [])[1] || "";
+    const idReddit = (/^[a-z0-9]{1,16}$/i.test(idTag) ? idTag : idUrl).toLowerCase();
+    const autor = texto(tag(tag(b, "author") || "", "name")).replace(/^\/?u\//i, "").slice(0, 60);
+    const sub = (url.match(/\/r\/([A-Za-z0-9_]{1,50})\//) || [])[1] || "";
+    out.push({ titulo, url, publicado: d && !isNaN(d) ? iso(d) : "", trecho, linkExterno, tipo: "reddit", idReddit, autor, sub });
   }
   return out;
 }
@@ -221,6 +232,13 @@ async function lerUm(env, f) {
 
   const limite = Date.now() - JANELA_DIAS[f.radar] * 86_400_000;
   const recentes = lidos.slice(0, ITENS_POR_FEED).filter((i) => !i.publicado || Date.parse(i.publicado) >= limite);
+  // Reddit: o post vai só para foruns-<radar> (dedupe pelo id do post), nunca para candidatos: a curadoria descartava
+  // todos (141 de 141 em 04/11/2026) e isso custava token. novos_total do feeds_estado conta os posts novos no fórum.
+  if (reddit) {
+    const novosForum = await gravarForuns(env, f, recentes);
+    await registrar(env, f, true, "", lidos.length, novosForum, r.status);
+    return r.status;
+  }
   const itens = [];
   for (const i of recentes) {
     const url = urlCanonica(i.url);
@@ -246,10 +264,41 @@ async function lerUm(env, f) {
     const ins = env.DB.prepare(
       "INSERT OR IGNORE INTO candidatos (id, radar, url, titulo, fonte, pais, publicado, trecho, feed, visto, tipo, link_externo) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)"
     );
-    await env.DB.batch(novos.map((i) => ins.bind(i.id, f.radar, i.url, i.titulo, f.fonte, f.pais, i.publicado, i.trecho, f.url, t, reddit ? "reddit" : "", i.linkExterno ? urlCanonica(i.linkExterno) : "")));
+    // tipo e link_externo ficam vazios: desde 04/11/2026 só feeds comuns chegam aqui (candidatos reddit antigos saem em 10 dias)
+    await env.DB.batch(novos.map((i) => ins.bind(i.id, f.radar, i.url, i.titulo, f.fonte, f.pais, i.publicado, i.trecho, f.url, t, "", "")));
   }
   await registrar(env, f, true, "", lidos.length, novos.length, r.status);
   return r.status;
+}
+
+// ---------- Nos fóruns ----------
+
+export const colecaoForum = (radar) => "foruns-" + radar;
+const subDoFeed = (u) => (String(u).match(/\/r\/([A-Za-z0-9_]{1,50})\//) || [])[1] || "";
+
+// Doc de foruns-<radar>: id = id do post no Reddit. linkExterno sem utm, como no candidato. Sem votos (o Atom não traz).
+export function docForum(i, f, coletado) {
+  if (!i.idReddit) return null;
+  return {
+    id: i.idReddit,
+    data: {
+      titulo: i.titulo, url: i.url, linkExterno: i.linkExterno ? urlCanonica(i.linkExterno) : "",
+      sub: i.sub || subDoFeed(f.url), autor: i.autor || "", publicado: i.publicado || "",
+      resumo: String(i.trecho || "").slice(0, REDDIT.RESUMO_FORUM), coletado,
+    },
+  };
+}
+
+// Grava os posts em foruns-<radar>. Post que já está lá fica como está (ON CONFLICT DO NOTHING): o dedupe é pelo id.
+export async function gravarForuns(env, f, posts) {
+  const t = iso(agora());
+  const docs = posts.map((i) => docForum(i, f, t)).filter(Boolean);
+  if (!docs.length) return 0;
+  const ins = env.DB.prepare(
+    "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?1, ?2, ?3, ?4, ?4) ON CONFLICT(collection, id) DO NOTHING"
+  );
+  const r = await env.DB.batch(docs.map((d) => ins.bind(colecaoForum(f.radar), d.id, JSON.stringify(d.data), t)));
+  return r.reduce((s, x) => s + ((x && x.meta && x.meta.changes) || 0), 0);
 }
 
 // Devolve { feeds, reddit }: quantos feeds normais e quantos subreddits foram lidos neste minuto.
@@ -270,6 +319,27 @@ export async function coletar(env) {
   return { feeds: normais.length, reddit: lidosReddit };
 }
 
+// Card "Rendimento das fontes" do admin (/api/admin/fontes em src/index.js): results são as linhas de candidatos por feed.
+// semCandidatos: feeds comuns de src/feeds.js que ainda não trouxeram nada (feed novo ou bloqueado), com o estado deles.
+// Subreddits não passam pela curadoria (vão só para foruns-<radar>): cada um vira uma linha só, com o estado da URL de
+// hoje e `forum`, quantos posts dele estão em "Nos fóruns" agora (os últimos 3 dias). Linhas de candidatos reddit antigos
+// (de antes de 04/11/2026, apagados em 10 dias) ficam de fora.
+export function juntarFontes(results, feeds, estados, forum) {
+  const porUrl = new Map(estados.map((e) => [e.feed, e]));
+  const fontes = results.filter((r) => !ehReddit(r.feed)).map((r) => ({ ...r, tipo: "rss" }));
+  const comCandidatos = new Set(fontes.map((r) => r.feed));
+  const estadoDe = (url) => {
+    const e = porUrl.get(url) || {};
+    return { erro: e.erro || "", erros_seguidos: e.erros_seguidos || 0, seguidos_403: e.seguidos_403 || 0, ultima_checagem: e.ultima_checagem || "", ultimo_ok: e.ultimo_ok || "" };
+  };
+  for (const [radar, fonte, , url, tipo] of feeds) if (tipo === "reddit") fontes.push({ radar, fonte, feed: url, tipo: "reddit", forum: forum.get(radar + "|" + fonte) || 0, ...estadoDe(url) });
+  const semCandidatos = feeds.filter(([, , , url, tipo]) => tipo !== "reddit" && !comCandidatos.has(url))
+    .map(([radar, fonte, , url, tipo]) => ({ radar, fonte, feed: url, tipo: tipo || "rss", ...estadoDe(url) }));
+  // por aba; dentro dela, feeds comuns pelos publicados e subreddits no fim
+  fontes.sort((a, b) => a.radar.localeCompare(b.radar) || (a.tipo === "reddit") - (b.tipo === "reddit") || (b.publicados || 0) - (a.publicados || 0) || (b.forum || 0) - (a.forum || 0));
+  return { fontes, semCandidatos };
+}
+
 // ---------- limpeza por idade (antes feita pelas tarefas) ----------
 
 const DIA = 86_400_000;
@@ -287,6 +357,7 @@ const COLECOES = [
   { c: "items-negocios", radar: "negocios" },
   { c: "items-investimentos", radar: "investimentos" },
 ];
+const FORUNS = ["tech", "negocios", "investimentos", "politica", "esportes"].map(colecaoForum);
 const DESTAQUES = ["destaques", "destaques-politica", "destaques-esportes", "destaques-negocios", "destaques-investimentos", "sombra-destaques"];
 const LIMITE_EXCLUSOES = 60;
 
@@ -299,7 +370,16 @@ function vencido(radar, item, coletado, t) {
   return t - ref > dias * DIA;
 }
 
-// Só mexe nas collections de itens e destaques, em hist (fichas de papel) e em candidatos: favs/, listas/, prefs/ e carteira/ (de cada pessoa) ficam de fora; de leitura/ saem só os dias com mais de 30 dias.
+// Ids de foruns-* com mais de DIAS_FORUM dias: coletado da linha (ou o do doc, ou publicado) antes do corte.
+export async function forunsParaApagar(env, c, t = Date.now()) {
+  const corte = t - REDDIT.DIAS_FORUM * DIA;
+  const { results } = await env.DB.prepare(
+    "SELECT id, coletado, json_extract(data, '$.coletado') AS c2, json_extract(data, '$.publicado') AS publicado FROM docs WHERE collection = ?"
+  ).bind(c).all();
+  return results.filter((r) => { const ref = Date.parse(r.coletado || r.c2 || r.publicado || ""); return !isNaN(ref) && ref < corte; }).map((r) => r.id);
+}
+
+// Só mexe nas collections de itens e destaques, em foruns-*, em hist (fichas de papel) e em candidatos: favs/, listas/, prefs/ e carteira/ (de cada pessoa) ficam de fora; de leitura/ saem só os dias com mais de 30 dias.
 export async function limpar(env) {
   const t = Date.now();
   const relatorio = {};
@@ -314,6 +394,16 @@ export async function limpar(env) {
       await env.DB.prepare(`DELETE FROM docs WHERE collection = ?1 AND id IN (${parte.map((_, j) => `?${j + 2}`).join(",")})`).bind(c, ...parte).run();
     }
     relatorio[c] = fora.length;
+  }
+  // Nos fóruns: posts com mais de 3 dias (pela hora em que foram coletados), DELETE por lista de ids, em lotes de 90.
+  // Sem a trava dos 60: a collection é de passagem e a idade é a única regra.
+  for (const c of FORUNS) {
+    const fora = await forunsParaApagar(env, c, t);
+    for (let k = 0; k < fora.length; k += 90) {
+      const parte = fora.slice(k, k + 90);
+      await env.DB.prepare(`DELETE FROM docs WHERE collection = ?1 AND id IN (${parte.map((_, j) => `?${j + 2}`).join(",")})`).bind(c, ...parte).run();
+    }
+    if (fora.length) relatorio[c] = fora.length;
   }
   const corte = new Date(t - 7 * DIA).toISOString().slice(0, 10);
   for (const c of DESTAQUES) {

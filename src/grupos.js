@@ -19,6 +19,8 @@ const SECAO_DA_COLECAO = {
   "items-politica": "politica", "destaques-politica": "politica",
   "items-esportes": "esportes", "destaques-esportes": "esportes",
   hist: "investimentos",
+  // Nos fóruns (posts de subreddit, src/coleta.js): a seção do radar
+  "foruns-tech": "tech", "foruns-negocios": "negocios", "foruns-investimentos": "investimentos", "foruns-politica": "politica", "foruns-esportes": "esportes",
 };
 const SECAO_DO_META = {
   status: "tech", "status-negocios": "negocios", "status-investimentos": "investimentos", "status-politica": "politica", "status-esportes": "esportes",

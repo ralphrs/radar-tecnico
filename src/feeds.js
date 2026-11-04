@@ -185,16 +185,21 @@ export const FEEDS = [
   ["esportes", "BBC Sport", "GB", "https://feeds.bbci.co.uk/sport/football/rss.xml"],
   ["esportes", "Gazzetta dello Sport", "IT", "https://www.gazzetta.it/rss/home.xml"],
 
-  // Reddit: Atom de /new/ de cada subreddit, lido no ritmo próprio (src/coleta.js): no máximo 1 por minuto de cron,
-  // cada um a cada 120 min, user-agent do Lookout. A sonda de 03/11/2026 deu 200 com 25 posts, mas 4 pedidos no mesmo minuto deram 429.
-  ["tech", "r/opensource", "", "https://www.reddit.com/r/opensource/new/.rss", "reddit"],
-  ["tech", "r/databricks", "", "https://www.reddit.com/r/databricks/new/.rss", "reddit"],
-  ["tech", "r/MiniPCs", "", "https://www.reddit.com/r/MiniPCs/new/.rss", "reddit"],
-  ["tech", "r/hermesagent", "", "https://www.reddit.com/r/hermesagent/new/.rss", "reddit"],
-  ["tech", "r/antiai", "", "https://www.reddit.com/r/antiai/new/.rss", "reddit"],
-  ["negocios", "r/fintech", "", "https://www.reddit.com/r/fintech/new/.rss", "reddit"],
-  ["negocios", "r/FintechStartups", "", "https://www.reddit.com/r/FintechStartups/new/.rss", "reddit"],
-  ["negocios", "r/smallbusiness", "", "https://www.reddit.com/r/smallbusiness/new/.rss", "reddit"],
-  ["negocios", "r/TheFinanceCareer", "", "https://www.reddit.com/r/TheFinanceCareer/new/.rss", "reddit"],
-  ["politica", "r/EspacoPolitica", "BR", "https://www.reddit.com/r/EspacoPolitica/new/.rss", "reddit"],
+  // Reddit: Atom de /top/?t=day (os mais votados do dia) de cada subreddit, lido no ritmo próprio (src/coleta.js): no
+  // máximo 1 por minuto de cron, cada um a cada 120 min, user-agent do Lookout. Até 04/11/2026 era /new/ (o Atom é o mesmo).
+  // A sonda de 03/11/2026 deu 200 com 25 posts, mas 4 pedidos no mesmo minuto deram 429. Cada post vai só para
+  // foruns-<radar> (bloco "Nos fóruns" da página): não vira candidato nem passa pela curadoria.
+  ["tech", "r/opensource", "", "https://www.reddit.com/r/opensource/top/.rss?t=day", "reddit"],
+  ["tech", "r/databricks", "", "https://www.reddit.com/r/databricks/top/.rss?t=day", "reddit"],
+  ["tech", "r/MiniPCs", "", "https://www.reddit.com/r/MiniPCs/top/.rss?t=day", "reddit"],
+  ["tech", "r/hermesagent", "", "https://www.reddit.com/r/hermesagent/top/.rss?t=day", "reddit"],
+  ["tech", "r/antiai", "", "https://www.reddit.com/r/antiai/top/.rss?t=day", "reddit"],
+  ["negocios", "r/fintech", "", "https://www.reddit.com/r/fintech/top/.rss?t=day", "reddit"],
+  ["negocios", "r/FintechStartups", "", "https://www.reddit.com/r/FintechStartups/top/.rss?t=day", "reddit"],
+  ["negocios", "r/smallbusiness", "", "https://www.reddit.com/r/smallbusiness/top/.rss?t=day", "reddit"],
+  ["negocios", "r/TheFinanceCareer", "", "https://www.reddit.com/r/TheFinanceCareer/top/.rss?t=day", "reddit"],
+  ["politica", "r/EspacoPolitica", "BR", "https://www.reddit.com/r/EspacoPolitica/top/.rss?t=day", "reddit"],
 ];
+
+// Seções com pelo menos um subreddit: são as que têm o bloco "Nos fóruns" e o widget foruns-<secao> no Início.
+export const SECOES_COM_FORUM = [...new Set(FEEDS.filter((f) => f[4] === "reddit").map((f) => f[0]))];

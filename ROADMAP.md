@@ -14,6 +14,7 @@
 - [x] Rendimento das fontes no admin: lidos, publicados, descartados por motivo e feeds com erro, nos últimos 10 dias (01/11)
 - [x] Sonda de feeds no admin: cola as URLs, o cron testa 4 por minuto com o mesmo parser da coleta (01/11)
 - [x] Subreddits como fonte de candidatos (Tech, Negócios, Notícias e Política): um por minuto, cada um a cada 2 h, 429 dobra a espera, 403 três vezes marca bloqueado; texto do post e link externo no candidato (03/11)
+- [x] Reddit vira "Nos fóruns": a curadoria descartava todos os posts do Reddit (raso ou fora do tema). Os subreddits passam a ler os mais votados do dia (`/top/.rss?t=day`) e os posts vão só para `foruns-<radar>`, sem curadoria e sem passar por `candidatos`; bloco "Nos fóruns" na lateral de cada seção com subreddit (depois do feed no celular), widget Fóruns · <seção> no Início, limpeza de 3 dias e "No fórum" no Rendimento das fontes (04/11)
 - [x] Índice na URL dos itens: a coleta varria a tabela inteira a cada feed e estourou o limite diário de leituras do D1 (01/11)
 - [x] Cache de borda de 3 min nas leituras da API, para poupar o D1 (01/11)
 - [x] Espelho de leitura em São Paulo: Durable Object com SQLite copia do D1 o que a página lê, a cada minuto; Worker sem Smart Placement, D1 só nas gravações e no fallback (02/11)
@@ -57,8 +58,8 @@ Investimentos
 - [x] Listas de acompanhamento por pessoa, bem simples: nome da lista e papéis (sem quantidade nem preço médio), para espelhar o que cada um tem na própria instituição (01/11)
 - [x] Listas automáticas da carteira (FIIs, Ações, BDRs, ETFs, Subscrições), travadas, com "Copiar para lista minha"; mover e copiar papel entre listas pelo menu, botão direito, toque longo ou arrastando no desktop (03/11)
 - [x] Ficha do papel para ações da B3, BDRs e ações dos EUA: faixas do dia e de 52 semanas, gráfico de 1 ano (1M · 3M · 1A), estatísticas, perfil, listagem cruzada BDR e EUA, cache de 24 h em `hist` e renovação no cron do que foi aberto na semana (03/11)
-- [ ] Ficha com os fundamentos completos: falta o Ralph colar o `FINNHUB_TOKEN` (EUA) e o `BRAPI_TOKEN` (B3); conferir na `_sistema/sonda-brapi-quote` os campos que a brapi mandou de verdade
-- [ ] Token da brapi como secret do Worker (o Ralph cria a conta e cola no painel); hoje só o Ibovespa depende dele
+- [ ] Ficha com os fundamentos completos: falta o Admin colar o `FINNHUB_TOKEN` (EUA) e o `BRAPI_TOKEN` (B3); conferir na `_sistema/sonda-brapi-quote` os campos que a brapi mandou de verdade
+- [ ] Token da brapi como secret do Worker (o Admin cria a conta e cola no painel); hoje só o Ibovespa depende dele
 
 ## Depois: React com SSR
 - [ ] Reescrever a página em React, componente por componente, mantendo a API atual (`/api/*`)

@@ -7,6 +7,8 @@
 //
 // Este arquivo não importa nada do Worker (nem grupos.js, que puxa o espelho e "cloudflare:workers"),
 // para os testes rodarem no Node. As seções seguem a mesma lista e a mesma regra de grupos.js.
+// feeds.js é só a lista de feeds: dela sai quais seções têm subreddit (widget foruns-<secao>).
+import { SECOES_COM_FORUM } from "./feeds.js";
 
 const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes"];
 const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
@@ -20,7 +22,7 @@ const FORMATOS_DE = {
   "carteira-meta": ["2x1", "3x1"], "carteira-patrimonio": ["1x1", "2x1"], "carteira-proventos-mes": ["1x1"],
   "carteira-pagamentos": ["1x1", "1x2"], "carteira-agenda": ["1x1", "1x2"], "carteira-rentabilidade": ["1x1", "2x1"],
   "carteira-alertas": ["1x1", "1x2"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"],
-  "carteira-contra-filtro": ["1x1"],
+  "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"],
 };
 export const formatosDe = (id) => FORMATOS_DE[id] || FORMATOS_DE[String(id).replace(/-.*$/, "")] || ["1x1"];
 // Formato antigo (tamanho 1 ou 2) para o novo, sempre dentro do que o widget aceita
@@ -42,6 +44,8 @@ export const WIDGETS = [
   { id: "favoritos", titulo: "Favoritos", tamanho: 1, secao: null },
   ...SECOES.map((s) => ({ id: "destaques-" + s, titulo: "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   ...SECOES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  // Nos fóruns: posts de subreddit das últimas 24 h, só nas seções que têm subreddit em src/feeds.js. Fora do padrão.
+  ...SECOES.filter((s) => SECOES_COM_FORUM.includes(s)).map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   // Minha carteira (src/carteira.js): pessoais, leem /api/carteira uma vez só para todos; aparecem para quem importou
   // os extratos (a página esconde enquanto a carteira estiver vazia). Fora do padrão: a pessoa fixa pelo alfinete.
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },

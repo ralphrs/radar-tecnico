@@ -748,6 +748,13 @@ footer b { color: var(--foreground); font-weight: 500; }
 .bloco .ver-todos { align-self: flex-start; margin-top: var(--space-2); font-size: 13px; }
 .coleta { margin: 10px 0 0; font: 400 12px/1.6 var(--font-mono); color: var(--muted-foreground); }
 .coleta b { color: var(--foreground); font-weight: 500; }
+/* Nos fóruns: o link "fonte" (post que aponta para fora) é pequeno, na linha de baixo */
+.bloco li a.forum-fonte, .wdg-lista a.forum-fonte { display: inline; font: 400 11px/16px var(--font-mono); color: var(--primary); text-decoration: underline; text-underline-offset: 2px; -webkit-line-clamp: none; }
+.bloco li a.forum-fonte:hover, .wdg-lista a.forum-fonte:hover { color: var(--primary); }
+.bloco .ver-todos + .ver-todos { margin-top: 0; }
+#foruns-centro:empty { display: none; }
+#foruns-centro .bloco > h3 { font: 600 18px/1.25 var(--font-display); letter-spacing: -0.02em; text-transform: none; color: var(--foreground); }
+@media (min-width: 1200px) { #foruns-centro { display: none; } }
 
 @media (min-width: 900px) {
   .wrap { max-width: 1360px; padding-inline: var(--space-6); display: grid; grid-template-columns: 240px minmax(0, 720px); grid-template-areas: "topo topo" "nav centro"; justify-content: center; align-items: start; column-gap: var(--space-8); row-gap: var(--space-6); }
@@ -1458,6 +1465,7 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
   <main id="feed">
     <div class="vazio"><strong>Carregando o feed</strong>As notícias aparecem aqui, agrupadas por tema e resumidas em português.</div>
   </main>
+  <div id="foruns-centro"></div>
 
   <footer>
     <p id="total"></p>
@@ -3841,10 +3849,52 @@ function renderNavTipos() {
 /* Trilho direito (1200 px ou mais): destaques, novos da rodada, favoritos e status da coleta.
    Na visão Bolsa: listas, carrossel de destaques, notícias de hoje e coleta (os três primeiros têm render próprio). */
 const NOVOS_MAX = 8, FAVS_MAX = 5;
+/* Nos fóruns: posts dos subreddits da seção nas últimas 24 h (foruns-<radar>, gravados pela coleta, sem curadoria).
+   Só nas seções com subreddit (/api/me manda a lista em "foruns"). No trilho direito em tela larga, abaixo de "Notícias
+   de hoje" na Bolsa e de "Novos nesta rodada" nas outras; abaixo disso, depois do feed (#foruns-centro). */
+let secoesForum = null, foruns = null, forunsErro = false, forunsMais = false;
+const FORUNS_MAX = 6, FORUNS_MAIS = 20;
+const temForum = (r) => Array.isArray(secoesForum) && secoesForum.includes(r);
+const mostraForum = () => !inicio && !emRadar() && temForum(radar);
+/* corte de 24 h andando de 10 em 10 min, para a resposta caber no cache do Worker */
+const corteForum = () => new Date(Math.floor(Date.now() / 600000) * 600000 - 86400000).toISOString();
+async function lerForuns(db, sec, n) {
+  const s = await db.collection("foruns-" + sec).where("publicado", ">=", corteForum()).orderBy("publicado", "desc").limit(n).get();
+  return { d: s.docs.map((x) => ({ ...x.data(), _id: x.id })), marca: s._txt };
+}
+/* Uma linha de post: título (abre o Reddit), "r/<sub> · há X" e, se o post aponta para fora, o link "fonte" */
+function liForum(i) {
+  const sub = i.sub ? "r/" + i.sub : "Reddit";
+  return el("li", {},
+    el("a", { href: i.url, target: "_blank", rel: "noopener", title: i.resumo || i.titulo || "" }, i.titulo || i.url),
+    el("div", { class: "n" }, el("span", {}, sub + (i.publicado ? " · " + fmtRel(i.publicado) : "")),
+      i.linkExterno ? el("a", { class: "forum-fonte", href: i.linkExterno, target: "_blank", rel: "noopener", title: "Link original: " + (hostDe(i.linkExterno) || i.linkExterno) }, "fonte") : null));
+}
+function blocoForuns(idSec) {
+  const docs = foruns && foruns.radar === radar ? foruns.docs : null;
+  const sec = el("section", { class: "bloco", id: idSec }, el("h3", {}, "Nos fóruns", el("small", {}, "últimas 24 h")));
+  if (docs && docs.length) {
+    sec.append(el("ul", {}, ...docs.slice(0, forunsMais ? FORUNS_MAIS : FORUNS_MAX).map(liForum)));
+    if (docs.length > FORUNS_MAX) {
+      const b = el("button", { class: "dd-btn dd-btn--link ver-todos", type: "button", id: idSec + "-mais", "aria-expanded": String(forunsMais) }, forunsMais ? "Ver menos" : "Ver mais");
+      b.addEventListener("click", () => { forunsMais = !forunsMais; renderLateral(); const x = $(idSec + "-mais"); if (x) x.focus({ preventScroll: true }); });
+      sec.append(b);
+    }
+  } else sec.append(el("p", { class: "nota" }, forunsErro && !docs ? "Não deu para carregar os fóruns agora." : !docs ? "Carregando os fóruns…" : "Nada novo nos fóruns hoje."));
+  return sec;
+}
+function renderForunsCentro() {
+  const box = $("foruns-centro"); box.textContent = "";
+  if (MQ_LARGA.matches || !mostraForum()) return;
+  box.append(blocoForuns("centro-foruns"));
+}
+
 function renderLateral() {
   const box = $("lat-blocos"); box.textContent = "";
   const bolsa = emBolsa();
   renderHoje();
+  renderForunsCentro();
+  const forum = MQ_LARGA.matches && mostraForum() ? blocoForuns("lat-foruns") : null;
   const temaCurto = temaCurtoEl;
   const link = (url, titulo) => el("a", { href: url, target: "_blank", rel: "noopener" }, titulo || url);
 
@@ -3862,7 +3912,7 @@ function renderLateral() {
   } else col.append("Aguardando a primeira coleta");
   if (itens.length) col.append(" · ", el("b", {}, String(itens.length)), itens.length === 1 ? " item no feed" : " itens no feed");
   const bColeta = el("section", { class: "bloco", id: "lat-coleta" }, el("h3", {}, "Coleta"), col);
-  if (bolsa) { box.append(bColeta); return; }
+  if (bolsa) { if (forum) box.append(forum); box.append(bColeta); return; }
 
   const dest = destaque && Array.isArray(destaque.itens) ? destaque.itens.filter((d) => d && d.url) : [];
   if (dest.length) {
@@ -3882,6 +3932,7 @@ function renderLateral() {
     bNovos.append(ul);
   } else bNovos.append(el("p", { class: "nota" }, "Nada novo na última coleta."));
   box.append(bNovos);
+  if (forum) box.append(forum);
 
   const lista = Object.entries(favs).map(([id, f]) => ({ ...f, _id: id }))
     .sort((a, b) => String(b.favoritadoEm || "").localeCompare(String(a.favoritadoEm || "")));
@@ -4636,6 +4687,21 @@ function ligarRadar() {
   lerDestaques().catch(() => {});
   desligar.push(db.vigiar(ciclo));
   if (r.mercado) carregarListas();
+  /* Nos fóruns: espera /api/me dizer quais seções têm subreddit; depois, no mesmo ritmo das outras leituras */
+  foruns = null; forunsErro = false; forunsMais = false;
+  window.lookoutEu.then((me) => {
+    secoesForum = me && Array.isArray(me.foruns) ? me.foruns : secoesForum || [];
+    if (!vivo()) return;
+    if (!temForum(r.id)) { renderLateral(); return; }
+    desligar.push(db.vigiar(async () => {
+      try {
+        const x = await lerForuns(db, r.id, FORUNS_MAIS);
+        if (!vivo() || (foruns && foruns.radar === r.id && foruns.marca === x.marca)) return;
+        foruns = { radar: r.id, docs: x.d, marca: x.marca }; forunsErro = false;
+      } catch (e) { if (!vivo()) return; forunsErro = true; }
+      renderLateral();
+    }));
+  }, () => {});
 }
 /* ---------- Início: painel de widgets ----------
    Cada widget lê só o resumo da seção dele (uma chamada por widget, todas em paralelo, pelas mesmas leituras da página:
@@ -4654,6 +4720,8 @@ const CATALOGO_LOCAL = [
   { id: "favoritos", titulo: "Favoritos", tamanho: 1, secao: null },
   ...ORDEM_RADARES.map((s) => ({ id: "destaques-" + s, titulo: "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   ...ORDEM_RADARES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  /* Nos fóruns: as seções com subreddit hoje (src/feeds.js); o catálogo do servidor, que já vem filtrado, manda */
+  ...["tech", "negocios", "politica"].map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },
   { id: "carteira-patrimonio", titulo: "Patrimônio", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-proventos-mes", titulo: "Proventos do mês", tamanho: 1, secao: "investimentos", pessoal: true },
@@ -4668,7 +4736,7 @@ const CATALOGO_LOCAL = [
 /* Formatos de cada widget ("colunas x linhas"), os mesmos de src/painel.js; o primeiro é o padrão. O catálogo do servidor manda. */
 const FORMATOS_LOCAL = { hoje: ["1x1"], mercado: ["1x1", "1x2"], pregao: ["2x1", "3x1", "2x2"], fiis: ["1x1", "2x1"], eua: ["1x1", "2x1"], listas: ["1x1", "1x2", "2x1"], favoritos: ["1x1", "1x2"], destaques: ["1x1", "1x2"], ultimas: ["1x1", "1x2"],
   "carteira-meta": ["2x1", "3x1"], "carteira-patrimonio": ["1x1", "2x1"], "carteira-proventos-mes": ["1x1"], "carteira-pagamentos": ["1x1", "1x2"], "carteira-agenda": ["1x1", "1x2"], "carteira-rentabilidade": ["1x1", "2x1"],
-  "carteira-alertas": ["1x1", "1x2"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"], "carteira-contra-filtro": ["1x1"] };
+  "carteira-alertas": ["1x1", "1x2"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"], "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"] };
 const formatosW = (id) => { const d = (painelCat || []).find((w) => w.id === id); return (d && Array.isArray(d.formatos) && d.formatos.length ? d.formatos : null) || FORMATOS_LOCAL[id] || FORMATOS_LOCAL[String(id).replace(/-.*$/, "")] || ["1x1"]; };
 /* { id, formato } a partir do que veio (formato, ou o tamanho antigo 1 ou 2) */
 function comFormato(w) {
@@ -4696,6 +4764,7 @@ function destinoDe(id) {
   if (id === "destaques-investimentos" || id === "ultimas-investimentos") return "#investimentos/noticias";
   if (id.startsWith("destaques-")) return "#" + id.slice(10);
   if (id.startsWith("ultimas-")) return "#" + id.slice(8);
+  if (id.startsWith("foruns-")) return id === "foruns-investimentos" ? "#investimentos/noticias" : "#" + id.slice(7);
   if (id === "eua") return "#investimentos/eua";
   if (id === "mercado" || id === "pregao" || id === "fiis" || id === "listas") return "#investimentos";
   if (id === "carteira-meta") return "#carteira/meta";
@@ -4725,6 +4794,7 @@ const marcaDe = (...ds) => ds.map((d) => (d && d.atualizado) || (d === null ? "-
 function leitor(id) {
   if (id.startsWith("destaques-")) { const r = RADARES[id.slice(10)]; return async () => { const x = await lerFeedResumo(r.destaques, "data", 1); return x && { d: x.d[0] || null, marca: x.marca }; }; }
   if (id.startsWith("ultimas-")) { const r = RADARES[id.slice(8)]; return () => lerFeedResumo(r.items, "", 10); }
+  if (id.startsWith("foruns-")) return async () => { const db = await dbDoPainel(); return db ? lerForuns(db, id.slice(7), 10) : undefined; };
   if (id === "mercado") return async (f) => { const d = await lerMeta("mercado", f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
   if (id === "pregao") return async (f) => { const d = await lerB3Painel(f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
   if (id === "eua") return async (f) => { const d = await lerEuaPainel(f); return d === undefined ? undefined : { d, marca: marcaDe(d) }; };
@@ -4870,6 +4940,10 @@ const corpos = {
         el("div", { class: "wdg-rk" }, ol), l.papeis.length > MAX ? el("a", { class: "mais", href: "#lista/" + encodeURIComponent(l.id) }, `+${l.papeis.length - MAX} na lista`) : null);
     }))];
   },
+  foruns(l, fm = { c: 1, r: 1 }) {
+    if (!l || !l.length) return [vazioW("Nada novo nos fóruns hoje.")];
+    return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5 * fm.r).map(liForum))];
+  },
   favoritos(l, fm = { c: 1, r: 1 }) {
     if (!l || !l.length) return [vazioW("Nada por aqui ainda. Toque no coração ao lado de uma notícia para guardar.")];
     return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5 * fm.r).map((i) => el("li", {}, linkNoticia(i), el("div", { class: "n" }, el("b", {}, RADARES[radarDoFav(i._id)].aba), fonteEl(i)))))];
@@ -4882,7 +4956,7 @@ const corpos = {
       el("span", { class: "nome" }, NOME_SECAO[x.secao]), el("span", { class: "wdg-barra", "aria-hidden": "true" }, el("span", { class: x.n ? "" : "zero", style: `width:${(x.n / max) * 100}%` })), el("span", { class: "k" }, String(x.n))))))];
   },
 };
-const tipoDoWidget = (id) => (id.startsWith("destaques-") ? "destaques" : id.startsWith("ultimas-") ? "ultimas" : id);
+const tipoDoWidget = (id) => (id.startsWith("destaques-") ? "destaques" : id.startsWith("ultimas-") ? "ultimas" : id.startsWith("foruns-") ? "foruns" : id);
 /* Subtítulo (canto direito do cabeçalho) e rodapé, conforme o widget e os dados */
 function subtituloDe(id, x) {
   const d = x && x.estado === "ok" ? x.d : null;
@@ -4893,7 +4967,7 @@ function subtituloDe(id, x) {
     return d && d.atualizado ? "atualizado " + fmtRel(d.atualizado) : "";
   }
   if (t === "eua") return d ? horarioEua() : "";
-  if (t === "hoje") return "últimas 24 h";
+  if (t === "hoje" || t === "foruns") return "últimas 24 h";
   if (t === "favoritos") return d && d.length ? (d.length === 1 ? "1 guardado" : d.length + " guardados") : "";
   if (t === "radar-meu" && d && rdPrefs) { const n = radarDoPadrao().r.passam.length; return n === 1 ? "1 passa hoje" : n + " passam hoje"; }
   if (t === "leitura-dia" && rdLeit && rdLeit.existe) return horaH(rdLeit.geradaEm);
@@ -4995,7 +5069,7 @@ function maisRecenteDoPainel() {
     if (t === "hoje") (x.d.secoes || []).forEach((s) => ver(s.ultimaRodada));
     else if (t === "mercado" || t === "pregao" || t === "eua" || t === "fiis") ver(x.d.atualizado);
     else if (t === "destaques") ver(x.d.atualizado);
-    else if (t === "ultimas") x.d.forEach((i) => ver(i.coletado));
+    else if (t === "ultimas" || t === "foruns") x.d.forEach((i) => ver(i.coletado));
   });
   return m;
 }
