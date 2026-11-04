@@ -19,7 +19,8 @@ export const T = {
 
 export function scoreboardBra() {
   return {
-    leagues: [{ name: "Brazilian Serie A", abbreviation: "BRA.1", season: { year: 2026 } }],
+    // calendar: os dias com jogo (a ESPN manda assim); hoje (05/11 em SP), 03/11, 08/11, um de 30 dias atrás (fora da janela) e lixo
+    leagues: [{ name: "Brazilian Serie A", abbreviation: "BRA.1", season: { year: 2026 }, calendar: ["2026-11-05T08:00Z", "2026-11-03T08:00Z", "2026-11-08T08:00Z", "2026-10-06T08:00Z", "x"] }],
     season: { year: 2026 },
     events: [
       evento(701, h(-48), T.flamengo, T.santos, "post", { gm: 3, gv: 1 }),

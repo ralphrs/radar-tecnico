@@ -179,6 +179,11 @@ export const FEEDS = [
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/times/internacional/"],
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/brasileirao-serie-a/"],
   ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/"],
+  // conferidos pela sonda de esportes em 04/11/2026 (200 e com itens); o do Gauchão responde vazio fora da temporada
+  ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/libertadores/"],
+  ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/copa-do-brasil/"],
+  ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/rs/"],
+  ["esportes", "ge", "BR", "https://ge.globo.com/rss/ge/futebol/campeonato-gaucho/"],
   ["esportes", "UOL Esporte", "BR", "https://rss.uol.com.br/feed/esporte.xml"],
   ["esportes", "Trivela", "BR", "https://trivela.com.br/feed/"],
   ["esportes", "Gazeta Esportiva", "BR", "https://www.gazetaesportiva.com/feed/"],

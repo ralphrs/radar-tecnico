@@ -2,16 +2,17 @@
 //
 // Fontes:
 // - ESPN, endpoints públicos sem chave (JSON):
-//   site.api.espn.com/apis/site/v2/sports/<esporte>/<liga>/scoreboard?dates=AAAAMMDD-AAAAMMDD (jogos com placar e status),
-//   site.api.espn.com/apis/v2/sports/<esporte>/<liga>/standings (tabela; site.web.api.espn.com de reserva) e
+//   site.api.espn.com/apis/site/v2/sports/<esporte>/<liga>/scoreboard?dates=AAAAMMDD (jogos de UM dia com placar e status;
+//   faixa de datas devolve HTTP 400; a resposta traz leagues[0].calendar com os dias que têm jogo, usado para escolher
+//   quais dias buscar), site.api.espn.com/apis/v2/sports/<esporte>/<liga>/standings (tabela; copa do Brasil não tem) e
 //   site.api.espn.com/apis/site/v2/sports/<esporte>/<liga>/teams/<id>/schedule (jogos de um time).
 //   O caminho "<esporte>/<liga>" vem de public/esportes.js; qualquer um da ESPN serve (basketball/nba, racing/f1...).
-// - Globo Esporte: a página da competição (Gauchão), quando a ESPN não tiver. Parser tolerante: procura o JSON que a
-//   página traz embutido ("classificacao" e listas de jogos) e, sem ele, a tabela do HTML. Falhou: _sistema/esportes-erro.
+// - Globo Esporte: página de competição como reserva (`reserva: "ge"` em LIGAS), quando houver uma que responda. Parser
+//   tolerante: procura o JSON embutido e, sem ele, a tabela do HTML. Falhou: _sistema/esportes-erro. Hoje nenhuma liga usa:
+//   a página do Gauchão deu 404 na sonda e a ESPN cobre o Gauchão (bra.camp.gaucho) na temporada.
 //
-// O proxy do ambiente de desenvolvimento não alcança a ESPN nem o ge. Os parsers foram escritos pelo formato conhecido
-// e testados com JSON e HTML de exemplo (test/esportes.test.mjs). A sonda abaixo grava, no primeiro cron em produção,
-// uma amostra crua de cada endpoint em _sistema/sonda-esportes-aNN, para conferir os formatos reais e ajustar.
+// Conferido com a sonda de 04/11/2026 (_sistema/sonda-esportes): scoreboard por dia 200, faixa 400; standings 200 em todas
+// menos bra.copa_do_brasil (400, sem tabela); site.web.api.espn.com 403 (não usar); schedule do time 200.
 //
 // meta/esportes-<liga>: { atualizado, liga, nome, temporada, fonte, tabela: [{ pos, time, sigla, id, j, v, e, d, gp, gc, sg, pts, zona, grupo? }],
 //   rodada: { numero, jogos: [jogo] }, proximos: [até 20], ultimos: [até 20], times: { <id>: { nome, proximos, ultimos } },
@@ -20,7 +21,8 @@
 //
 // Ritmo (cronEsportes, conferido a cada 5 min): rodada a cada 15 min quando há jogo ao vivo ou começando nas próximas
 // 2 h, senão 1x por hora; tabela 2x por dia; jogos dos times de interesse 1x por dia. Chamadas em fila, 400 ms entre
-// elas, 8 s de limite cada; 429 dobra a espera e tenta de novo uma vez. No máximo 14 chamadas por passada.
+// elas, 8 s de limite cada; 429 dobra a espera e tenta de novo uma vez. No máximo 30 chamadas por passada (a rodada de
+// uma liga gasta até 1 + DIAS_EXTRA: o dia de hoje e os dias com jogo mais perto, entre 3 dias atrás e 10 à frente).
 
 import "../public/esportes.js";
 import { lerFeed } from "./coleta.js";
@@ -29,7 +31,9 @@ import { FEEDS } from "./feeds.js";
 const E = globalThis.Esportes;
 const TIMEOUT = 8000;
 const PAUSA = 400;
-const ORCAMENTO = 14;
+const ORCAMENTO = 30;
+const DIAS_EXTRA = 5;
+const JANELA = [-3, 10];
 const MIN = 60_000, HORA = 3_600_000;
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
@@ -40,9 +44,8 @@ const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 
 // ---------- URLs ----------
 const caminhoDe = (liga) => (E.LIGAS[liga] ? E.LIGAS[liga].caminho : String(liga).includes("/") ? String(liga) : "soccer/" + liga);
-export const urlScoreboard = (liga, de, ate) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/scoreboard?dates=${de}${ate ? "-" + ate : ""}&limit=200`;
+export const urlScoreboard = (liga, dia) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/scoreboard?dates=${dia}`;
 export const urlStandings = (liga) => `https://site.api.espn.com/apis/v2/sports/${caminhoDe(liga)}/standings`;
-export const urlStandingsWeb = (liga, temporada) => `https://site.web.api.espn.com/apis/v2/sports/${caminhoDe(liga)}/standings${temporada ? "?season=" + temporada : ""}`;
 export const urlSchedule = (liga, time, proximos) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/teams/${encodeURIComponent(time)}/schedule${proximos ? "?fixture=true" : ""}`;
 
 // AAAAMMDD em São Paulo, deslocado em dias
@@ -94,7 +97,22 @@ export function lerScoreboard(j) {
     numero: (j && j.week && num(j.week.number)) ?? null,
     temporada: num((j && j.season && j.season.year) ?? (liga && liga.season && liga.season.year)),
     nome: txt(liga && (liga.name || liga.abbreviation)),
+    calendario: liga && Array.isArray(liga.calendar) ? liga.calendar.map((d) => (typeof d === "string" ? d : d && d.startDate)).filter(Boolean) : [],
   };
+}
+
+// Dias (AAAAMMDD em São Paulo) a buscar além de hoje: os do calendário da ESPN dentro da janela, os mais perto de hoje
+// primeiro, no máximo `max`. Sem calendário, os vizinhos fixos (ontem, amanhã, depois...).
+export function diasExtras(calendario, agora = Date.now(), max = DIAS_EXTRA) {
+  const hoje = diaSP(agora);
+  const dias = new Set();
+  for (const c of calendario || []) { const t = Date.parse(c); if (!isNaN(t)) dias.add(diaSP(t)); }
+  let lista;
+  if (dias.size) {
+    const de = diaSP(agora, JANELA[0]), ate = diaSP(agora, JANELA[1]);
+    lista = [...dias].filter((d) => d !== hoje && d >= de && d <= ate).sort((a, b) => Math.abs(a - hoje) - Math.abs(b - hoje) || a - b);
+  } else lista = [-1, 1, 2, 3, -2].map((n) => diaSP(agora, n));
+  return lista.slice(0, max);
 }
 
 // Rodada atual a partir dos jogos de uma janela de dias: o número de rodada do jogo ao vivo (ou do mais perto de agora),
@@ -366,9 +384,17 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
   if (!viaGe) {
     if (v.rodada) {
       try {
-        const r = await fila(urlScoreboard(liga, diaSP(agora, -3), diaSP(agora, 10)));
-        const sb = lerScoreboard(r.json);
+        const sb = lerScoreboard((await fila(urlScoreboard(liga, diaSP(agora)))).json);
         if (sb.temporada) doc.temporada = sb.temporada;
+        // os outros dias com jogo; se o orçamento acabar no meio, fica com o que veio
+        const vistos = new Set(sb.jogos.map((x) => x.id));
+        for (const dia of diasExtras(sb.calendario, agora)) {
+          let outro;
+          try { outro = lerScoreboard((await fila(urlScoreboard(liga, dia))).json); }
+          catch (e) { if (e.limite) break; continue; }
+          for (const j of outro.jogos) if (!vistos.has(j.id)) { vistos.add(j.id); sb.jogos.push(j); }
+          if (sb.numero == null && outro.numero != null) sb.numero = outro.numero;
+        }
         if (!sb.jogos.length && def.reserva === "ge" && !(antes.rodada && antes.rodada.jogos && antes.rodada.jogos.length)) espnFalhou = true;
         doc.rodada = escolherRodada(sb.jogos, agora, sb.numero);
         doc.proximos = proximosDe(sb.jogos, agora);
@@ -377,12 +403,9 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
         if (!espnFalhou) doc.fonte = "espn";
       } catch (e) { if (e.limite) throw e; if (def.reserva === "ge" && e.status >= 400 && e.status < 500) espnFalhou = true; else erro("rodada", e); }
     }
-    if (v.tabela && !espnFalhou) {
+    if (v.tabela && !espnFalhou && !def.semTabela) {
       try {
-        let r;
-        try { r = await fila(urlStandings(liga)); }
-        catch (e) { if (e.limite) throw e; r = await fila(urlStandingsWeb(liga, doc.temporada || new Date(agora).getUTCFullYear())); }
-        const st = lerStandings(r.json, liga);
+        const st = lerStandings((await fila(urlStandings(liga))).json, liga);
         if (!st.tabela.length && def.reserva === "ge" && !(antes.tabela && antes.tabela.length)) espnFalhou = true;
         else { doc.tabela = st.tabela; if (st.temporada) doc.temporada = st.temporada; doc.tabelaEm = quandoIso; delete doc.tentativas.tabela; }
       } catch (e) { if (e.limite) throw e; if (def.reserva === "ge" && e.status >= 400 && e.status < 500) espnFalhou = true; else erro("tabela", e); }
@@ -437,17 +460,15 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
 // _sistema/sonda-esportes-aNN e o resumo (status, tamanho, tempo, o que o parser achou) para _sistema/sonda-esportes.
 // Depois de pronta não roda mais. Para rodar de novo, o Admin apaga os docs da sonda (por id).
 const SONDA_LIGAS = ["bra.1", "bra.copa_do_brasil", "conmebol.libertadores", "conmebol.sudamericana", "bra.camp.gaucho", "eng.1", "uefa.champions", "esp.1", "ita.1", "ger.1", "fra.1"];
-const SONDA_RSS = ["https://ge.globo.com/rss/ge/", "https://ge.globo.com/rss/ge/futebol/times/internacional/", "https://ge.globo.com/rss/ge/rs/", "https://ge.globo.com/rss/ge/futebol/campeonato-gaucho/", "https://ge.globo.com/rss/ge/futebol/copa-do-brasil/", "https://ge.globo.com/rss/ge/futebol/libertadores/"];
+const SONDA_RSS = ["https://ge.globo.com/rss/ge/", "https://ge.globo.com/rss/ge/futebol/times/internacional/", "https://ge.globo.com/rss/ge/rs/", "https://ge.globo.com/rss/ge/futebol/campeonato-gaucho/", "https://ge.globo.com/rss/ge/futebol/copa-do-brasil/", "https://ge.globo.com/rss/ge/futebol/libertadores/", "https://ge.globo.com/rss/ge/futebol/brasileirao-serie-a/"];
 const SONDA_POR_VEZ = 6;
 const AMOSTRA_MAX = 20_000;
 export function listaSonda(agora = Date.now()) {
   const l = [];
-  for (const liga of SONDA_LIGAS) l.push({ tipo: "scoreboard", liga, url: urlScoreboard(liga, diaSP(agora, -3), diaSP(agora, 10)) });
+  for (const liga of SONDA_LIGAS) l.push({ tipo: "scoreboard", liga, url: urlScoreboard(liga, diaSP(agora)) });
   for (const liga of SONDA_LIGAS) l.push({ tipo: "standings", liga, url: urlStandings(liga) });
-  l.push({ tipo: "standings", liga: "bra.1", url: urlStandingsWeb("bra.1", new Date(agora).getUTCFullYear()) });
-  l.push({ tipo: "scoreboard", liga: "bra.1", url: `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=${diaSP(agora)}` });
   l.push({ tipo: "schedule", liga: "bra.1", url: "" }); // o id do time sai da tabela do bra.1, quando ela chegar
-  l.push({ tipo: "ge", liga: "bra.camp.gaucho", url: E.LIGAS["bra.camp.gaucho"].ge });
+  for (const liga of Object.keys(E.LIGAS)) if (E.LIGAS[liga].ge) l.push({ tipo: "ge", liga, url: E.LIGAS[liga].ge });
   const ja = new Set(FEEDS.map((f) => f[3]));
   for (const u of SONDA_RSS) l.push({ tipo: "rss", url: u, jaNaColeta: ja.has(u) });
   return l.map((x, i) => ({ ...x, n: i }));
@@ -455,7 +476,7 @@ export function listaSonda(agora = Date.now()) {
 function resumoSonda(x, r, agora) {
   const out = {};
   try {
-    if (x.tipo === "scoreboard") { const s = lerScoreboard(JSON.parse(r)); out.jogos = s.jogos.length; out.estados = [...new Set(s.jogos.map((j) => j.estado))]; out.numero = s.numero; out.temporada = s.temporada; }
+    if (x.tipo === "scoreboard") { const s = lerScoreboard(JSON.parse(r)); out.jogos = s.jogos.length; out.estados = [...new Set(s.jogos.map((j) => j.estado))]; out.numero = s.numero; out.temporada = s.temporada; out.diasNoCalendario = s.calendario.length; }
     else if (x.tipo === "standings") { const s = lerStandings(JSON.parse(r), x.liga); out.linhas = s.tabela.length; out.grupos = [...new Set(s.tabela.map((l) => l.grupo || ""))].length; out.primeiro = s.tabela[0] ? s.tabela[0].time + " " + s.tabela[0].pts : ""; }
     else if (x.tipo === "schedule") { const s = lerJogos(JSON.parse(r)); out.jogos = s.length; out.proximos = proximosDe(s, agora).length; }
     else if (x.tipo === "ge") { const g = lerGe(r, x.liga, agora); out.linhas = g ? g.tabela.length : 0; out.jogos = g ? g.jogos.length : 0; }

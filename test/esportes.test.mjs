@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { lerJogo, lerJogos, lerScoreboard, lerStandings, lerGe, blocosJson, escolherRodada, proximosDe, ultimosDe, vencidos, quente,
-  cronEsportes, cronSondaEsportes, atualizarLiga, ligasAtivas, listaSonda, novaFila, urlScoreboard, urlStandings, urlSchedule, diaSP } from "../src/esportes.js";
+  cronEsportes, cronSondaEsportes, atualizarLiga, ligasAtivas, listaSonda, novaFila, urlScoreboard, urlStandings, urlSchedule, diaSP, diasExtras } from "../src/esportes.js";
 import { catalogoDe, validarPainel, formatosDe, respostaPainel } from "../src/painel.js";
 import { FEEDS, SECOES_COM_FORUM } from "../src/feeds.js";
 import { REDDIT } from "../src/coleta.js";
@@ -225,9 +225,14 @@ function ambiente({ ligasEspn = null, status = {} } = {}) {
 }
 const minuto = (m) => AGORA - (new Date(AGORA).getUTCMinutes() - m) * MIN; // mesmo horário, minuto m
 
-test("URLs da ESPN: scoreboard por intervalo de datas, standings e schedule; qualquer esporte/liga", () => {
+test("URLs da ESPN: scoreboard de um dia, standings e schedule; qualquer esporte/liga; dias extras pelo calendário", () => {
   assert.equal(diaSP(AGORA), "20261105");
-  assert.equal(urlScoreboard("bra.1", "20261102", "20261115"), "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=20261102-20261115&limit=200");
+  const sb = lerScoreboard(scoreboardBra());
+  assert.equal(sb.calendario.length, 5);
+  assert.deepEqual(diasExtras(sb.calendario, AGORA), ["20261103", "20261108"], "só os dias da janela, sem hoje, mais perto primeiro");
+  assert.deepEqual(diasExtras([], AGORA), ["20261104", "20261106", "20261107", "20261108", "20261103"], "sem calendário: vizinhos fixos");
+  assert.deepEqual(diasExtras(["2026-11-01T08:00Z", "2026-11-02T08:00Z", "2026-11-03T08:00Z", "2026-11-04T08:00Z", "2026-11-06T08:00Z", "2026-11-07T08:00Z", "2026-11-09T08:00Z", "2026-11-15T08:00Z", "2026-11-16T08:00Z"], AGORA, 5), ["20261104", "20261106", "20261103", "20261107", "20261102"], "no máximo 5");
+  assert.equal(urlScoreboard("bra.1", "20261102"), "https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=20261102");
   assert.equal(urlStandings("bra.1"), "https://site.api.espn.com/apis/v2/sports/soccer/bra.1/standings");
   assert.equal(urlSchedule("basketball/nba", "13"), "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/13/schedule");
 });
@@ -258,12 +263,17 @@ test("cron: grava meta/esportes-bra.1 e Libertadores (sempre), times de interess
   assert.deepEqual(bra.times["1936"].ultimos.map((j) => j.id), ["602", "601"]);
   assert.ok(bra.rodadaEm && bra.tabelaEm && bra.timesEm);
   assert.ok(doc("meta", "esportes-conmebol.libertadores").tabela.every((l) => l.grupo));
-  // Gauchão: a ESPN responde 400 e entra a página do ge
+  // Gauchão: a ESPN responde 400 (sem reserva do ge: a página deu 404 na sonda) → erro anotado, doc vazio, nada do ge
   const gau = doc("meta", "esportes-bra.camp.gaucho");
-  assert.equal(gau.fonte, "ge");
-  assert.equal(gau.tabela[0].time, "Internacional");
-  assert.ok(gau.espnFalhouEm);
-  assert.ok(pedidos.slice(antes).some((u) => u.includes("ge.globo.com/futebol/campeonato-gaucho")));
+  assert.equal(gau.fonte, "espn");
+  assert.deepEqual(gau.tabela, []);
+  assert.ok(gau.tentativas.rodada && gau.tentativas.tabela);
+  assert.match(doc("_sistema", "esportes-erro").porLiga["bra.camp.gaucho:rodada"].erro, /HTTP 400/);
+  assert.ok(!pedidos.slice(antes).some((u) => u.includes("ge.globo.com/futebol")));
+  // Brasileirão: hoje + os dias do calendário dentro da janela (03/11 e 08/11), um dia por chamada
+  const sbBra = pedidos.slice(antes).filter((u) => u.includes("bra.1/scoreboard")).map((u) => u.split("dates=")[1]);
+  assert.deepEqual(sbBra, ["20261105", "20261103", "20261108"]);
+  assert.ok(!pedidos.slice(antes).some((u) => u.includes("site.web.api.espn.com")), "sem o endpoint que dá 403");
   // ao vivo no Brasileirão: 15 min. 10 min depois não pede de novo; 15 min depois pede só a rodada
   // (a sonda pede as mesmas URLs: dá ela por terminada para contar só o cron)
   env.DB.db.prepare("UPDATE docs SET data = json_set(data, '$.fim', 'teste') WHERE collection = '_sistema' AND id = 'sonda-esportes'").run();
@@ -274,7 +284,7 @@ test("cron: grava meta/esportes-bra.1 e Libertadores (sempre), times de interess
   const novos = pedidos.slice(n1).filter((u) => u.includes("bra.1"));
   assert.ok(novos.some((u) => u.includes("/scoreboard")), "rodada de novo");
   assert.ok(!novos.some((u) => u.includes("/standings") || u.includes("/schedule")), "tabela 2x/dia e times 1x/dia");
-  // Gauchão no ge por 24 h: sem nova tentativa na ESPN
+  // Gauchão falhou há 15 min: espera 30 min antes de tentar de novo
   assert.ok(!pedidos.slice(n1).some((u) => u.includes("espn") && u.includes("bra.camp.gaucho")));
 });
 
@@ -296,7 +306,7 @@ test("cron: 429 dobra a espera e tenta de novo; falha vai para _sistema/esportes
   const { env, doc } = ambiente({ status: { "bra.1/scoreboard": () => (++vezes === 1 ? 429 : 200) } });
   const fila = novaFila({ pausa: 0, orcamento: 10 });
   await atualizarLiga(env, "bra.1", { fila, agora: AGORA, forcar: { rodada: true, tabela: false, times: false } });
-  assert.equal(vezes, 2, "429 uma vez, depois 200");
+  assert.equal(vezes, 4, "429 uma vez, depois 200 em hoje, 03/11 e 08/11");
   assert.ok(doc("meta", "esportes-bra.1").rodada.jogos.length);
   // agora a ESPN cai: o doc continua com a rodada de antes e o erro fica anotado
   const amb2 = ambiente({ status: { "/scoreboard": 503, "/standings": 503 } });
@@ -332,9 +342,10 @@ test("sonda: amostra crua (até 20 KB) de cada endpoint, com status, em lotes, u
   assert.equal(amostra.status, 200);
   assert.ok(amostra.amostra.length <= 20000);
   assert.equal(s.resultados.find((x) => x.tipo === "standings" && x.liga === "bra.camp.gaucho").status, 400);
+  assert.equal(sb.diasNoCalendario, 5);
   const sch = s.resultados.find((x) => x.tipo === "schedule");
   assert.match(sch.url, /teams\/\d+\/schedule/, "o id do time saiu da tabela do bra.1");
-  assert.equal(s.resultados.find((x) => x.tipo === "ge").linhas, 4);
+  assert.ok(!s.resultados.some((x) => x.tipo === "ge"), "nenhuma liga tem página do ge hoje");
   assert.ok(s.resultados.filter((x) => x.tipo === "rss").every((x) => x.itens === 1));
   const n = pedidos.length;
   await cronSondaEsportes(env, { pausa: 0, agora: AGORA });
