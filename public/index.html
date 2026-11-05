@@ -1267,6 +1267,69 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 .wdg-fecho { font: 400 11.5px/16px var(--font-mono); color: var(--muted-foreground); }
 /* Meta: onde o aporte rende mais */
 .mt-rd .ct-linhas > div > span:last-child { color: var(--ok); }
+/* Minha carteira: Reinvestir (pontuação de FIIs) */
+.rv .rv-bcrit { height: var(--control-h-sm); align-self: center; }
+.rv-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-size: 13px; color: var(--muted-foreground); margin-top: -4px; }
+.rv-status:empty { display: none; }
+.rv-painel { display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--secondary); }
+.rv-painel[hidden] { display: none; }
+.rv-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px 16px; }
+.rv-grade label.rotulo { display: block; margin-bottom: 6px; }
+.rv-grade .campo { display: flex; align-items: center; gap: 8px; }
+.rv-grade .campo .dd-input { width: 72px; height: var(--control-h-sm); }
+.rv-grade .campo span { font-size: 12.5px; color: var(--muted-foreground); white-space: nowrap; }
+.rv-faixa { display: block; margin-top: 4px; font-size: 12px; line-height: 1.4; color: var(--muted-foreground); }
+.rv-soma { flex: 1 1 260px; }
+.rv-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rv-item { border-top: 1px solid var(--border); }
+.rv-item:first-child { border-top: 0; }
+.rv-linha { display: grid; grid-template-columns: 22px minmax(0, 1.6fr) minmax(96px, 1fr) 72px 56px 112px 32px; align-items: center; gap: 12px; padding: 10px 0; cursor: pointer; }
+.rv-linha:hover .rv-seta { background: var(--accent); }
+.rv-pos { font-size: 13px; color: var(--muted-foreground); text-align: right; }
+.rv-papel { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; min-width: 0; }
+.rv-papel small { flex-basis: 100%; font-size: 12.5px; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-pts { display: flex; align-items: center; gap: 8px; }
+.rv-pts b { font: 600 20px/1 var(--font-mono); min-width: 2.2ch; text-align: right; }
+.rv-barra { position: relative; flex: 1 1 auto; height: 8px; border-radius: 999px; background: var(--secondary); box-shadow: inset 0 0 0 1px var(--border); overflow: hidden; }
+.rv-barra > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--primary); }
+.rv-barra.fina { height: 5px; }
+.rv-fatos { display: contents; }
+.rv-fato { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; min-width: 0; }
+.rv-fato small { font-size: 11.5px; color: var(--muted-foreground); white-space: nowrap; }
+.rv-renda .ct-mono { color: var(--ok); }
+.rv-seta { all: unset; box-sizing: border-box; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--muted-foreground); cursor: pointer; }
+.rv-seta:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.rv-seta svg { width: 16px; height: 16px; transition: transform .15s; }
+.rv-item.aberto .rv-seta svg { transform: rotate(180deg); }
+.rv-crit { list-style: none; margin: 0 0 12px 34px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; border-radius: var(--radius-lg); background: var(--secondary); }
+.rv-crit[hidden] { display: none; }
+.rv-crit li { display: grid; grid-template-columns: 150px minmax(0, 1fr) 70px 80px; align-items: center; gap: 12px; font-size: 13px; }
+.rv-crit .rv-cn { font-weight: 600; }
+.rv-crit .rv-nota { color: var(--muted-foreground); }
+.rv-crit .rv-cp { text-align: right; white-space: nowrap; }
+.rv-crit li.sem .rv-cn, .rv-crit li.sem .rv-cp { color: var(--muted-foreground); }
+.rv-crit li.rv-obs { display: block; font-size: 12.5px; color: var(--muted-foreground); }
+.rv-pe { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--border); padding-top: 10px; }
+.rv-pe .ct-nota { font-size: 12.5px; }
+.wdg-rv.ct-linhas > div { font-size: 13px; align-items: center; }
+.wdg-rv .rv-pos { display: inline-block; width: 1.4em; text-align: left; font-size: 12px; }
+.wdg-rv .ct-tag { font-size: 10.5px; line-height: 14px; padding: 0 6px; margin-left: 6px; }
+.wdg-rv .rv-w-dir { display: inline-flex; align-items: baseline; gap: 10px; }
+.wdg-rv .rv-w-fatos { font-size: 12px; color: var(--muted-foreground); }
+.wdg-rv b { font: 600 14px var(--font-mono); }
+@media (max-width: 899px) {
+  .rv-linha { grid-template-columns: 18px minmax(0, 1fr) minmax(96px, 120px) 32px; grid-template-areas: "pos papel pts seta" ". fatos fatos fatos"; row-gap: 6px; gap: 6px 10px; }
+  .rv-pos { grid-area: pos; align-self: start; padding-top: 2px; }
+  .rv-papel { grid-area: papel; }
+  .rv-pts { grid-area: pts; }
+  .rv-seta { grid-area: seta; }
+  .rv-fatos { grid-area: fatos; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .rv-fato { flex-direction: row; align-items: baseline; gap: 6px; }
+  .rv-crit { margin-left: 0; }
+  .rv-crit li { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; }
+  .rv-crit .rv-nota { grid-column: 1 / -1; grid-row: 2; }
+  .rv-crit .rv-barra { grid-column: 1 / -1; grid-row: 3; }
+}
 @media (max-width: 899px) {
   .rd-filtrobar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); }
   .rd-filtrobar > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -5085,6 +5148,7 @@ const CATALOGO_LOCAL = [
   { id: "carteira-rentabilidade", titulo: "Rentabilidade", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-alertas", titulo: "Alertas da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-simulacoes", titulo: "Minhas simulações", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-reinvestir", titulo: "Reinvestir: maior pontuação", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "radar-meu", titulo: "Meu radar", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "leitura-dia", titulo: "Leitura do dia", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-contra-filtro", titulo: "Carteira contra o filtro", tamanho: 1, secao: "investimentos", pessoal: true },
@@ -5181,6 +5245,14 @@ function leitor(id) {
   };
   if (id === "favoritos") return async () => { const l = favoritosRecentes(); return { d: l, marca: JSON.stringify(l.slice(0, 5)) + l.length }; };
   if (id === "radar-meu" || id === "leitura-dia" || id === "carteira-contra-filtro") return (f) => lerWidgetRadar(id, f);
+  if (id === "carteira-reinvestir") return async () => {
+    const j = await lerCarteira();
+    if (!j || j.erro) return undefined;
+    if (j.vazia || j.desligada) return { d: { cj: j, rv: null }, marca: j._marca };
+    const rv = await lerReinvestir();
+    if (!rv || rv.erro) return undefined;
+    return { d: { cj: j, rv }, marca: j._marca + "|" + JSON.stringify(rv.top.map((x) => [x.t, x.pontos])) + rv.universo };
+  };
   if (id.startsWith("carteira-")) return async () => {
     const j = await lerCarteira();
     if (!j || j.erro) return undefined;
@@ -5354,6 +5426,7 @@ function subtituloDe(id, x) {
   if (t === "radar-meu" && d && rdPrefs) { const n = radarDoPadrao().r.passam.length; return n === 1 ? "1 passa hoje" : n + " passam hoje"; }
   if (t === "leitura-dia" && rdLeit && rdLeit.existe) return horaH(rdLeit.geradaEm);
   if (t === "carteira-contra-filtro" && rdPrefs) return RF.filtroPadrao(rdPrefs).nome;
+  if (t === "carteira-reinvestir" && d && d.rv) return NOME_UNIV[d.rv.universo] || "";
   return "";
 }
 function rodapeDe(id, x) {
@@ -6117,6 +6190,7 @@ function lerCarteira(fresco) {
 const cartSemDados = () => !!(cartJ && (cartJ.vazia || cartJ.desligada));
 function invalidarCarteira() {
   cartJ = null; cartEm = 0;
+  limparReinvestir();
   [...wDados.keys()].forEach((k) => { if (k.startsWith("carteira-")) wDados.delete(k); });
 }
 async function apiCart(metodo, caminho, corpo) {
@@ -6374,7 +6448,7 @@ function desenharGeral(box, j) {
   const { faixa, fat, tot } = faixaClasses(r);
   const div = cardEl("Como está dividido", { sub: "por valor atual" });
   div.append(faixa, el("div", { class: "ct-legenda" }, ...fat.map(([k2, v2]) => el("span", {}, el("i", { class: "ct-c-" + k2 }), `${NOME_CLASSE[k2]} ${pc((v2 / tot) * 100)} · ${rs(v2)}`))));
-  esq.append(div, cardPosicoes(j));
+  esq.append(div, cardReinvestir(), cardPosicoes(j));
   // Lateral
   const pm = cardEl("Proventos por mês", { pin: "carteira-proventos-mes" });
   pm.append(...barrasMes(ultimos12(r), porMesMap(r), { destacarUltimo: true }), el("a", { href: "#carteira/proventos", class: "ct-volta" }, "Ver proventos"));
@@ -6433,6 +6507,160 @@ function cardPosicoes(j) {
   const pintar = () => { corpo.textContent = ""; corpo.append(...tabelaPosicoes(j, pintar)); };
   pintar();
   return c;
+}
+/* ---- Reinvestir: os 5 FIIs de maior pontuação pelos critérios da pessoa (GET/PUT /api/carteira/reinvestir) ----
+   A conta é do Worker (src/pontuacao-fii.js); aqui só o desenho. O card mostra a conta e os fatos: nenhum texto diz o
+   que fazer com o papel. rvJ guarda a última resposta por universo (60 s, como a carteira). */
+var rvJ = {}, rvLendo = {}, rvUniverso = null, rvAbertos = new Set(), rvPainel = false, rvMsg = "";
+function lerReinvestir(universo, fresco) {
+  const u = universo || rvUniverso || "";
+  const c = rvJ[u];
+  if (!fresco && c && Date.now() - c.em < 60000) return Promise.resolve(c.j);
+  if (rvLendo[u]) return rvLendo[u];
+  rvLendo[u] = (async () => {
+    try {
+      const j = await apiCart("GET", "/reinvestir" + (u ? "?universo=" + u : ""));
+      rvJ[u] = { em: Date.now(), j }; rvJ[j.universo] = { em: Date.now(), j };
+      if (!rvUniverso) rvUniverso = j.universo;
+      return j;
+    } catch (e) { return { erro: e.message }; }
+    finally { rvLendo[u] = null; }
+  })();
+  return rvLendo[u];
+}
+function limparReinvestir() { rvJ = {}; }
+const NOME_UNIV = { todos: "todos os FIIs", meus: "só os meus" };
+function cardReinvestir() {
+  const c = el("section", { class: "ct-card rv", id: "ct-reinvestir" });
+  const bCrit = el("button", { type: "button", class: "dd-btn dd-btn--outline rv-bcrit", "aria-expanded": String(rvPainel), "aria-controls": "rv-painel" }, "Critérios");
+  c.append(el("div", { class: "ct-tit" }, el("h3", {}, "Reinvestir: 5 com maior pontuação"), el("span", { class: "ct-esp" }), bCrit, pinBtn("carteira-reinvestir")));
+  const seg = el("div", { class: "seg", role: "group", "aria-label": "Universo da conta" });
+  const sub = el("div", { class: "rv-sub" }, el("span", {}, "pelos critérios que você definiu · universo:"), seg);
+  const painel = el("div", { class: "rv-painel", id: "rv-painel" });
+  painel.hidden = !rvPainel;
+  const corpo = el("div", { class: "rv-corpo" }, esqueleto(5));
+  const pe = el("div", { class: "rv-pe" });
+  const status = el("p", { class: "ct-nota rv-status", role: "status" }, rvMsg);
+  rvMsg = "";
+  c.append(sub, painel, status, corpo, pe);
+  bCrit.addEventListener("click", () => { rvPainel = !rvPainel; painel.hidden = !rvPainel; bCrit.setAttribute("aria-expanded", String(rvPainel)); if (rvPainel) { const i = painel.querySelector("input"); if (i) i.focus(); } });
+  const pintar = (j) => {
+    seg.textContent = "";
+    ["todos", "meus"].forEach((u) => {
+      const b = el("button", { type: "button", "aria-pressed": String(j.universo === u) }, NOME_UNIV[u]);
+      b.addEventListener("click", async () => {
+        if (j.universo === u) return;
+        rvUniverso = u; rvAbertos.clear();
+        corpo.textContent = ""; corpo.append(esqueleto(5));
+        seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        const novo = await lerReinvestir(u);
+        if (!novo.erro) pintar(novo);
+        /* o universo fica salvo com os pesos de agora; falha aqui não muda a tela */
+        apiCart("PUT", "/reinvestir", { pesos: novo.pesos || j.pesos, universo: u }).then(() => { delete rvJ[""]; wDados.delete("carteira-reinvestir"); }).catch(() => {});
+      });
+      seg.append(b);
+    });
+    painelCriterios(painel, j, status);
+    corpo.textContent = "";
+    if (!j.top.length) corpo.append(el("p", { class: "ct-nota rv-vazio" }, j.universo === "meus" && !j.excluidos ? "Nenhum FII da carteira com informe da CVM." : "Sem dado suficiente da CVM ainda."));
+    else {
+      const ol = el("ol", { class: "rv-lista" });
+      j.top.forEach((x, i) => ol.append(linhaReinvestir(x, i, j)));
+      corpo.append(ol);
+    }
+    pe.textContent = "";
+    const fatos = [`aporte do mês ${rs(j.aporte)} ${j.aporteOrigem === "meta" ? "(o da Meta)" : "(sem aporte na Meta, conta com R$ 1.000)"}`];
+    if (j.cdi != null) fatos.push(`CDI ${fmtNum(j.cdi, 2)}% a.a.`);
+    else fatos.push("sem CDI no painel de mercado");
+    fatos.push(`${j.total} ${j.total === 1 ? "FII avaliado" : "FIIs avaliados"}`);
+    if (j.excluidos) fatos.push(`${j.excluidos} fora por falta de dado`);
+    if (j.ref && j.ref.cvm) fatos.push("informe da CVM de " + mesL(j.ref.cvm));
+    pe.append(el("p", { class: "ct-nota" }, fatos.join(" · ")),
+      el("p", { class: "ct-nota" }, "Conta sobre os critérios acima, com dado da CVM e da brapi. Falta vacância e alavancagem, que entram com o informe trimestral."));
+  };
+  (async () => {
+    const j = await lerReinvestir(rvUniverso);
+    if (!c.isConnected) return;
+    if (j.erro) { corpo.textContent = ""; corpo.append(el("p", { class: "ct-nota" }, "Não deu para fazer a conta agora: " + j.erro)); return; }
+    pintar(j);
+  })();
+  return c;
+}
+function linhaReinvestir(x, i, j) {
+  const aberto = rvAbertos.has(x.t);
+  const li = el("li", { class: "rv-item" + (aberto ? " aberto" : "") });
+  const idc = "rv-c-" + x.t;
+  const seta = el("button", { type: "button", class: "rv-seta", "aria-expanded": String(aberto), "aria-controls": idc, "aria-label": (aberto ? "Fechar" : "Ver") + " os critérios de " + x.t, html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' });
+  const barra = el("span", { class: "rv-barra", "aria-hidden": "true" }, el("span", { style: `width:${Math.max(2, Math.min(100, x.pontos))}%` }));
+  const tenho = x.tenho ? tagEl("tenho" + (x.tenho.pct != null ? " " + pc(x.tenho.pct) : ""), "ok", "Peso do papel na carteira hoje") : null;
+  const linha = el("div", { class: "rv-linha" },
+    el("span", { class: "rv-pos ct-mono" }, String(i + 1)),
+    el("span", { class: "rv-papel" }, papelBtn(x.t, x.nome ? nomeBonito(x.nome) : ""), tenho, el("small", {}, x.segmento || "sem segmento")),
+    el("span", { class: "rv-pts", title: `${x.pontos} de 100 pontos` }, el("b", { class: "ct-mono" }, String(x.pontos)), barra),
+    el("span", { class: "rv-fatos" },
+      el("span", { class: "rv-fato" }, el("small", {}, "DY 12m"), el("span", { class: "ct-mono" }, pc(x.dy))),
+      el("span", { class: "rv-fato" }, el("small", {}, "P/VP"), el("span", { class: "ct-mono" }, x.pvp != null ? fmtNum(x.pvp, 2) : "–")),
+      el("span", { class: "rv-fato rv-renda", title: "Aporte do mês × DY 12m / 12" }, el("small", {}, "aporte rende"), el("span", { class: "ct-mono" }, x.rendaAporte != null ? rs(x.rendaAporte, true) + "/mês" : "–"))),
+    seta);
+  const crit = el("ul", { class: "rv-crit", id: idc });
+  crit.hidden = !aberto;
+  x.criterios.forEach((k) => {
+    const sem = k.pontos == null;
+    crit.append(el("li", { class: sem ? "sem" : "" },
+      el("span", { class: "rv-cn" }, k.nome),
+      el("span", { class: "rv-nota" }, k.nota + (sem ? " · fora da conta" : "")),
+      el("span", { class: "rv-cp ct-mono" }, sem ? "–" : `${fmtNum(k.pontos, Number.isInteger(k.pontos) ? 0 : 1)} de ${k.max}`),
+      el("span", { class: "rv-barra fina", "aria-hidden": "true" }, el("span", { style: `width:${sem ? 0 : Math.min(100, (k.pontos / k.max) * 100)}%` }))));
+  });
+  if (x.faltando.length) {
+    const com = x.criterios.filter((k) => k.pontos != null).reduce((s, k) => s + k.max, 0), tot = x.criterios.reduce((s, k) => s + k.max, 0);
+    crit.append(el("li", { class: "rv-obs" }, el("span", {}, `Pontuação sobre ${com} dos ${tot} de peso: critério sem dado fica fora da conta.`)));
+  }
+  const alternar = () => {
+    const ab = !rvAbertos.has(x.t);
+    if (ab) rvAbertos.add(x.t); else rvAbertos.delete(x.t);
+    li.classList.toggle("aberto", ab); crit.hidden = !ab;
+    seta.setAttribute("aria-expanded", String(ab)); seta.setAttribute("aria-label", (ab ? "Fechar" : "Ver") + " os critérios de " + x.t);
+  };
+  seta.addEventListener("click", (e) => { e.stopPropagation(); alternar(); });
+  linha.addEventListener("click", (e) => { if (e.target.closest(".cot-papel, .rv-seta")) return; alternar(); });
+  li.append(linha, crit);
+  return li;
+}
+function painelCriterios(painel, j, status) {
+  painel.textContent = "";
+  const campos = {};
+  const soma = el("span", { class: "ct-nota rv-soma" });
+  const somar = () => { const s = Object.values(campos).reduce((t, i) => t + (Campo.valor(i) || 0), 0); soma.textContent = `Soma dos pesos: ${s}. A conta divide pela soma dos pesos com dado, então só a proporção entre eles importa.`; };
+  const grade = el("div", { class: "rv-grade" });
+  j.criterios.forEach((k) => {
+    const id = "rv-p-" + k.id;
+    const inp = Campo.ligar(el("input", { class: "dd-input", id, value: String(j.pesos[k.id]), inputmode: "numeric" }), { tipo: "inteiro", min: 0, max: 50 });
+    inp.addEventListener("input", somar); inp.addEventListener("change", somar);
+    campos[k.id] = inp;
+    grade.append(el("div", {}, el("label", { class: "rotulo", for: id }, k.nome), el("div", { class: "campo" }, inp, el("span", {}, `padrão ${j.padrao[k.id]}`)), k.faixa ? el("small", { class: "rv-faixa" }, k.faixa) : null));
+  });
+  const bPadrao = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Padrão");
+  const bSalvar = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, "Salvar");
+  bPadrao.addEventListener("click", () => { j.criterios.forEach((k) => Campo.definir(campos[k.id], j.padrao[k.id])); somar(); status.textContent = "Pesos padrão no formulário. Salve para usar."; });
+  bSalvar.addEventListener("click", async () => {
+    const inv = Object.values(campos).find((i) => Campo.invalido(i));
+    if (inv) { status.textContent = "Use um inteiro de 0 a 50 em cada peso."; inv.focus(); return; }
+    const pesos = {};
+    for (const k of j.criterios) pesos[k.id] = Campo.valor(campos[k.id]) ?? 0;
+    if (!Object.values(pesos).some((v) => v > 0)) { status.textContent = "Deixe pelo menos um critério com peso acima de zero."; return; }
+    bSalvar.disabled = true; status.textContent = "Salvando…";
+    try {
+      await apiCart("PUT", "/reinvestir", { pesos, universo: j.universo });
+      limparReinvestir(); wDados.delete("carteira-reinvestir");
+      rvMsg = "Pesos salvos. A conta já usa os novos.";
+      const velho = document.getElementById("ct-reinvestir");
+      if (velho) velho.replaceWith(cardReinvestir());
+    } catch (e) { status.textContent = "Não deu para salvar: " + e.message; bSalvar.disabled = false; }
+  });
+  painel.append(el("p", { class: "ct-nota" }, "Cada critério dá de 0 a 1 e vale o peso que você escolher (inteiro de 0 a 50). Peso 0 tira o critério da conta."),
+    grade, el("div", { class: "ct-acoes" }, bPadrao, bSalvar, soma));
+  somar();
 }
 /* Posições, Encerradas e Pagamentos da carteira no helper de tabela (ids carteira-posicoes, carteira-encerradas, carteira-proventos).
    A classe (Todas, FIIs...) e a busca continuam por fora; ordem, filtro por coluna e página ficam na tabela. */
@@ -6719,6 +6947,7 @@ function desenharMeta(box, j) {
     try {
       const r = await apiCart("PUT", "/meta", { alvo, aporte: aporte || 0, yield: y ? Math.round(y * 1e6) / 1e8 : null, reinvestir: chk.checked });
       if (cartJ) cartJ.meta = r.meta;
+      limparReinvestir();
       [...wDados.keys()].forEach((k) => { if (k.startsWith("carteira-")) wDados.delete(k); });
       desenharCarteira(cartJ || { ...j, meta: r.meta });
       const a = $("carteira").querySelector('[role="status"]'); if (a) a.textContent = "Meta salva.";
@@ -7306,6 +7535,18 @@ corpos["carteira-simulacoes"] = (j, fm = { c: 1, r: 1 }) => {
   return [el("div", { class: "ct-linhas wdg-sim" }, ...l.map((s) => el("div", {},
     el("span", {}, el("a", { href: "#carteira/simulacoes/" + encodeURIComponent(s.id) }, s.nome), el("small", {}, ` até ${mesL(s.ate)}${fm.c > 1 ? " · " + rs(s.rendaFinal) + "/mês no fim" : ""}`)),
     pillSim(s))))];
+};
+
+/* Reinvestir: 1x1 com os 3 primeiros e a pontuação; 2x1 com os 5, DY 12m e P/VP */
+corpos["carteira-reinvestir"] = (d, fm = { c: 1, r: 1 }) => {
+  const v = semCartW(d && d.cj); if (v) return v;
+  const rv = d.rv;
+  if (!rv.top.length) return [vazioW("Sem dado suficiente da CVM ainda.")];
+  const largo = fm.c > 1;
+  return [el("div", { class: "ct-linhas wdg-rv" }, ...rv.top.slice(0, largo ? 5 : 3).map((x, i) => el("div", {},
+    el("span", {}, el("span", { class: "rv-pos ct-mono" }, String(i + 1)), papelBtn(x.t), x.tenho ? tagEl("tenho", "ok") : null),
+    el("span", { class: "rv-w-dir" }, largo ? el("span", { class: "ct-mono rv-w-fatos" }, `DY ${pc(x.dy)} · P/VP ${x.pvp != null ? fmtNum(x.pvp, 2) : "–"}`) : null, el("b", { class: "ct-mono", title: `${x.pontos} de 100 pontos` }, String(x.pontos)))))),
+    el("span", { class: "ct-nota wdg-fecho" }, "pontos pelos seus critérios, de 0 a 100")];
 };
 
 /* ---------- Radar de dividendos: #investimentos/radar ----------

@@ -57,6 +57,7 @@ export const WIDGETS = [
   { id: "carteira-rentabilidade", titulo: "Rentabilidade", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-alertas", titulo: "Alertas da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-simulacoes", titulo: "Minhas simulações", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-reinvestir", titulo: "Reinvestir: maior pontuação", tamanho: 1, secao: "investimentos", pessoal: true },
   // Radar de dividendos e Leitura do dia: pessoais também. A página só oferece para quem tem carteira ou filtro salvo
   // (carteira-contra-filtro, só para quem tem carteira).
   { id: "radar-meu", titulo: "Meu radar", tamanho: 1, secao: "investimentos", pessoal: true },

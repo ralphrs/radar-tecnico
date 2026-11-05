@@ -4,9 +4,11 @@
 //   manda só as que mudaram ({ tabelas: { <id>: estado | null } }) e o servidor junta com o que já havia, guardando as
 //   40 mexidas por último. Assim dois aparelhos abertos não apagam a tabela um do outro.
 // - doc "layout": colunas recolhidas ({ esq, dir }).
+// - doc "reinvestir": pesos e universo do card Reinvestir da Minha carteira (validarReinvestir, no fim do arquivo).
 // A conferência do estado é a mesma da página (public/tabela.js). Sem nada do Worker aqui, para os testes rodarem no Node.
 
 import "../public/tabela.js";
+import { IDS as IDS_REINV, PESOS_PADRAO as PESOS_REINV, PESO_MAX as PESO_MAX_REINV, UNIVERSOS as UNIVERSOS_REINV } from "./pontuacao-fii.js";
 const T = globalThis.Tabela;
 
 export const MAX_TABELAS = 40;
@@ -60,3 +62,29 @@ export function validarLayout(b) {
   return { layout: { esq: b.esq, dir: b.dir } };
 }
 export const respostaLayout = (salvo) => ({ esq: !!(salvo && salvo.esq), dir: !!(salvo && salvo.dir), salvo: !!salvo });
+
+// Doc "reinvestir": pesos dos critérios do card Reinvestir da Minha carteira e o universo ({ pesos, universo }).
+// Critérios, faixas e padrão em src/pontuacao-fii.js. Pesos inteiros de 0 a 50, pelo menos um acima de zero; critério
+// que não vier fica com o peso padrão.
+export function validarReinvestir(b) {
+  if (!b || typeof b !== "object" || Array.isArray(b)) return { erro: "corpo" };
+  for (const k of Object.keys(b)) if (k !== "pesos" && k !== "universo") return { erro: "campo " + String(k).slice(0, 20) };
+  const universo = b.universo === undefined ? "todos" : b.universo;
+  if (!UNIVERSOS_REINV.includes(universo)) return { erro: "Universo: use todos ou meus." };
+  const p = b.pesos === undefined ? {} : b.pesos;
+  if (!p || typeof p !== "object" || Array.isArray(p)) return { erro: "pesos" };
+  const pesos = { ...PESOS_REINV };
+  for (const [k, v] of Object.entries(p)) {
+    if (!IDS_REINV.includes(k)) return { erro: "Critério desconhecido: " + String(k).slice(0, 20) };
+    if (!Number.isInteger(v) || v < 0 || v > PESO_MAX_REINV) return { erro: `Peso de ${k}: use um inteiro de 0 a ${PESO_MAX_REINV}.` };
+    pesos[k] = v;
+  }
+  if (!Object.values(pesos).some((v) => v > 0)) return { erro: "Deixe pelo menos um critério com peso acima de zero." };
+  return { reinvestir: { pesos, universo } };
+}
+// O salvo (conferido de novo) ou o padrão.
+export function respostaReinvestir(salvo) {
+  const v = salvo ? validarReinvestir({ pesos: salvo.pesos, universo: salvo.universo }) : null;
+  if (v && v.reinvestir) return { ...v.reinvestir, salvo: true };
+  return { pesos: { ...PESOS_REINV }, universo: "todos", salvo: false };
+}

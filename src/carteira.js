@@ -18,6 +18,8 @@
 // Este arquivo não importa nada do Worker, para os testes rodarem no Node; as leituras e gravações chegam em `deps`.
 
 import { cifrar, decifrar, cofreLigado } from "./cofre.js";
+import { reinvestir, UNIVERSOS } from "./pontuacao-fii.js";
+import { validarReinvestir, respostaReinvestir } from "./prefs.js";
 
 // ---------- formato das linhas ----------
 
@@ -994,7 +996,12 @@ const IDS_SIM = ["simulacoes", "mensal"];
 const IDS_TODOS = [...IDS, ...IDS_SIM];
 const cacheGet = new Map(); // email -> { em, txt }
 const CACHE_MS = 60_000;
-export const limparCacheCarteira = (email) => (email ? cacheGet.delete(email) : cacheGet.clear());
+const cacheReinv = new Map(); // email|universo -> { em, txt }
+export const limparCacheCarteira = (email) => {
+  if (!email) { cacheGet.clear(); cacheReinv.clear(); return; }
+  cacheGet.delete(email);
+  for (const u of UNIVERSOS) cacheReinv.delete(email + "|" + u);
+};
 
 async function lerDocs(env, col, deps, doD1, ids = IDS) {
   let linhas;
@@ -1196,7 +1203,59 @@ async function rotaSimulacoes(request, env, quem, resto, deps) {
   return resp({ erro: "metodo" }, 405);
 }
 
-// caminho: "" | "importar" | "meta" | "importacoes/<id>" | "simulacoes" | "simulacoes/<id>" | "simulacoes/<id>/analisar"
+// Reinvestir (src/pontuacao-fii.js): os 5 FIIs de maior pontuação pelos critérios da pessoa. Pesos e universo em
+// prefs/<email>, doc "reinvestir" (JSON puro, sem cifra: não tem nada da carteira). GET ?universo=todos|meus (sem ele,
+// o universo salvo); PUT { pesos, universo }, corpo até 2 KB. O GET fica 60 s na memória por pessoa e universo.
+async function lerPrefsReinvestir(env, email, deps, doD1) {
+  try {
+    const r = doD1 ? await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = 'reinvestir'").bind("prefs/" + email).first()
+      : await deps.lerLinha(env, "prefs/" + email, "reinvestir");
+    return respostaReinvestir(r ? JSON.parse(r.data) : null);
+  } catch { return respostaReinvestir(null); }
+}
+async function montarReinvestir(env, quem, universo, prefs, deps) {
+  const col = "carteira/" + quem.email;
+  const docs = await lerDocs(env, col, deps, false);
+  const hoje = hojeDe(deps);
+  const [b3, fiiResumo, mercado] = await Promise.all([lerMetaDoc(env, "b3", deps), lerMetaDoc(env, "fii-resumo", deps), lerMetaDoc(env, "mercado", deps)]);
+  const vazia = !temLinhas(docs.extrato);
+  const calc = vazia ? null : calcular(docs.extrato, { b3, fiiResumo, importacoes: docs.importacoes, hoje });
+  const aporteMeta = docs.meta && docs.meta.aporte > 0 ? docs.meta.aporte : null;
+  const out = reinvestir({ b3, fiiResumo, mercado, posicoes: calc ? calc.posicoes : [], patrimonio: calc ? calc.resumo.patrimonio : 0, aporteMeta, pesos: prefs.pesos, universo });
+  return { ...out, vazia, salvo: prefs.salvo, universoSalvo: prefs.universo };
+}
+async function rotaReinvestir(request, env, quem, deps) {
+  const m = request.method;
+  if (m === "GET") {
+    const prefs = await lerPrefsReinvestir(env, quem.email, deps, false);
+    const pedido = new URL(request.url).searchParams.get("universo");
+    if (pedido && !UNIVERSOS.includes(pedido)) return resp({ erro: "Universo: use todos ou meus." }, 400);
+    const universo = pedido || prefs.universo;
+    const chave = quem.email + "|" + universo;
+    const c = cacheReinv.get(chave);
+    if (c && Date.now() - c.em < CACHE_MS) return new Response(c.txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" } });
+    const txt = JSON.stringify(await montarReinvestir(env, quem, universo, prefs, deps));
+    if (cacheReinv.size > 400) cacheReinv.clear();
+    cacheReinv.set(chave, { em: Date.now(), txt });
+    return new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" } });
+  }
+  if (m === "PUT") {
+    const { b, erro, status } = await lerCorpo(request, 2048);
+    if (erro) return resp({ erro }, status);
+    const v = validarReinvestir(b);
+    if (v.erro) return resp({ erro: v.erro }, 400);
+    const col = "prefs/" + quem.email, atualizado = new Date().toISOString();
+    const data = JSON.stringify({ ...v.reinvestir, atualizado });
+    await env.DB.prepare("INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, 'reinvestir', ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado")
+      .bind(col, data, atualizado).run();
+    deps.gravarNoEspelho(env, [{ collection: col, id: "reinvestir", data, coletado: "", atualizado }]);
+    limparCacheCarteira(quem.email);
+    return resp({ ok: true, ...v.reinvestir, salvo: true });
+  }
+  return resp({ erro: "metodo" }, 405);
+}
+
+// caminho: "" | "importar" | "meta" | "importacoes/<id>" | "simulacoes" | "simulacoes/<id>" | "simulacoes/<id>/analisar" | "reinvestir"
 export async function rotaCarteira(request, env, quem, caminho, deps) {
   if (!cofreLigado(env)) return resp({ erro: "carteira desligada" }, 503);
   const col = "carteira/" + quem.email;
@@ -1210,6 +1269,7 @@ export async function rotaCarteira(request, env, quem, caminho, deps) {
       cacheGet.set(quem.email, { em: Date.now(), txt });
       return new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" } });
     }
+    if (caminho === "reinvestir") return await rotaReinvestir(request, env, quem, deps);
     if (caminho === "simulacoes" || caminho.startsWith("simulacoes/")) return await rotaSimulacoes(request, env, quem, caminho.slice(10), deps);
     if (caminho === "" && m === "DELETE") {
       await env.DB.prepare(`DELETE FROM docs WHERE collection = ? AND id IN (${IDS_TODOS.map(() => "?").join(", ")})`).bind(col, ...IDS_TODOS).run();

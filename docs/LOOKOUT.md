@@ -373,11 +373,40 @@ Não entra: nome, CPF, conta, CNPJ, ISIN, a linha "Produto" inteira, a razão so
 
 **Meta.** Cada mês: renda = P × yield / 12; depois P += aporte (+ renda, se reinvestir). P inicial = renda média de 12 meses × 12 / yield (o patrimônio que, a esse yield, paga a renda de hoje); sem proventos, o custo. Mostra a data no ritmo atual, com o yield 2 pontos menor, o aporte para chegar em 10 anos (busca binária), marcos de R$ 500, 1.000, 2.500 e a meta, a trajetória (realizado: média móvel de 12 meses; projetado até a meta, limite de 40 anos) e o mês contra o plano (compras menos vendas do mês contra aporte planejado mais os proventos do mês, quando reinvestir). Abaixo dos marcos, o bloco "Onde o aporte rende mais, pelo seu filtro": os 4 papéis que passam hoje no filtro padrão do Radar com a maior renda mensal para o aporte da meta (aporte × último rendimento ÷ preço nos FIIs; média mensal dos dividendos de 12 meses nas ações), link "Abrir o radar" e o rodapé "Conta aritmética, não recomendação."
 
-**Widgets no Início.** `carteira-meta` (tamanho 2), `carteira-simulacoes`, `carteira-patrimonio` (em 2x1 acrescenta o resultado realizado na linha do "Sobre o custo"; o 1x1 não muda), `carteira-proventos-mes`, `carteira-pagamentos`, `carteira-agenda`, `carteira-rentabilidade` e `carteira-alertas`, todos `pessoal: true` no catálogo de `src/painel.js`, fora do padrão. Leem `/api/carteira` uma vez só (a mesma leitura das telas, 1 min na memória da página), levam a marca "seu" e só aparecem para quem importou extratos. No Personalizar ficam no grupo "Minha carteira". Cada bloco da carteira com widget equivalente tem o alfinete, que liga e desliga o widget em `/api/prefs/painel` (entra no topo da grade).
+**Widgets no Início.** `carteira-meta` (tamanho 2), `carteira-simulacoes`, `carteira-reinvestir` (abaixo), `carteira-patrimonio` (em 2x1 acrescenta o resultado realizado na linha do "Sobre o custo"; o 1x1 não muda), `carteira-proventos-mes`, `carteira-pagamentos`, `carteira-agenda`, `carteira-rentabilidade` e `carteira-alertas`, todos `pessoal: true` no catálogo de `src/painel.js`, fora do padrão. Leem `/api/carteira` uma vez só (a mesma leitura das telas, 1 min na memória da página), levam a marca "seu" e só aparecem para quem importou extratos. No Personalizar ficam no grupo "Minha carteira". Cada bloco da carteira com widget equivalente tem o alfinete, que liga e desliga o widget em `/api/prefs/painel` (entra no topo da grade).
+
+### Reinvestir (pontuação de FIIs)
+
+Card da Visão geral, logo acima de Posições: "Reinvestir: 5 com maior pontuação", "pelos critérios que você definiu · universo: todos os FIIs | só os meus". É uma conta sobre critérios e pesos que a própria pessoa escolhe; os textos dizem isso e nada ali diz o que fazer com o papel. Conta em `src/pontuacao-fii.js` (pura, testada no Node), rota em `src/carteira.js`, pesos em `src/prefs.js`.
+
+**Universo.** "todos": os FIIs do `meta/b3` que têm informe na CVM (`meta/fii-resumo`). "só os meus": os FIIs da carteira com informe na CVM; o que não está entre os mais negociados do `meta/b3` entra com o preço da posição e sem liquidez.
+
+**Critérios.** Cada um dá uma parcial de 0 a 1, multiplicada pelo peso. Pontos = soma(peso × parcial) / soma dos pesos dos critérios com dado × 100, arredondado. Peso 0 tira o critério da conta (e de `faltando`). FII com mais de 2 critérios sem dado fica fora e conta em `excluidos`. Empate: DY 12m, depois liquidez, depois o código.
+
+| Critério | Peso padrão | Faixa | Fonte |
+|---|---|---|---|
+| `pvp` | 20 | 1 entre 0,85 e 1,00; acima cai em linha reta até 0 em 1,25; abaixo cai 4 por unidade (0,70 = 0,4; 0,60 = 0), porque desconto grande costuma ter motivo | preço do `meta/b3` / VP da cota do último informe |
+| `dy` | 25 | spread do DY 12m sobre o CDI: 0 com DY no CDI ou abaixo, 1 com 4 pontos ou mais acima, linear no meio | r12 do `meta/fii-resumo` / preço; CDI do painel de mercado (`meta/mercado`, Banco Central 4389). Sem CDI, o critério falta para todos |
+| `regularidade` | 15 | meses com rendimento nos últimos 12: 12 = 1; 11 = 0,7; 10 = 0,4; menos = 0 | `pg` do `meta/fii-resumo`, a mesma fonte do "12 de 12 meses" do Radar: informes mensais da CVM com rendimento acima de zero. Fundo com menos de 12 informes conta só os que tem (a nota avisa) |
+| `rendimento` | 10 | último rendimento / média de 12 meses: na média ou acima = 1; linear até 0 com 30% abaixo | `rend` e r12 / 12 do `meta/fii-resumo` |
+| `liquidez` | 10 | R$ por dia: R$ 1 mi ou mais = 1; R$ 200 mil = 0,2 (linear, volume / R$ 1 mi); abaixo de R$ 100 mil = 0 | volume do último pregão × preço, do `meta/b3` (brapi), a mesma "liquidez do dia" do Radar. O Lookout não guarda média diária de um período |
+| `cotistas` | 10 | linear no log: 100 mil ou mais = 1; 10 mil = 0,3; a mesma reta chega a 0 perto de 3,7 mil | cotistas do último informe |
+| `carteira` | 10 | peso do papel na carteira depois do aporte do mês todo nele: até 10% = 1; 20% = 0,5; 30% ou mais = 0. FII que a pessoa não tem = 1 | posições de `calcular()`; aporte da Meta, ou R$ 1.000 sem aporte na Meta |
+
+Cada critério devolve `{ id, nome, valor, pontos, max, nota }` (`pontos` null quando falta dado). A nota é uma frase curta do que a conta viu ("P/VP 0,92: dentro da faixa de 0,85 a 1,00", "11 pagamentos em 12 meses").
+
+**Rotas** (login, seção investimentos):
+
+- `GET /api/carteira/reinvestir?universo=todos|meus` (sem `universo`, o salvo): `{ universo, pesos, padrao, criterios: [{ id, nome, faixa }], aporte, aporteOrigem: meta|padrao, cdi, cdiData, total, excluidos, top: [5 × { t, nome, segmento, pontos, criterios, faltando, dy, pvp, preco, liq, tenho: { valor, pct } | null, rendaAporte }], ref: { cvm, b3 }, vazia, salvo }`. `rendaAporte` = aporte × DY 12m / 12 (quanto o aporte do mês renderia por mês no papel ao DY de 12 meses; o bloco "Onde o aporte rende mais" da Meta usa o último rendimento). Lê `meta/b3`, `meta/fii-resumo`, `meta/mercado`, a carteira e os pesos; 60 s na memória do isolate por pessoa e universo, limpo em toda gravação da carteira.
+- `PUT /api/carteira/reinvestir` `{ pesos: { <id>: inteiro 0 a 50 }, universo }`: corpo até 2 KB, critério que não vier fica com o padrão, pelo menos um peso acima de zero. Grava `prefs/<email>`, doc `reinvestir` (`{ pesos, universo, atualizado }`, JSON puro: não leva nada da carteira).
+
+**Tela.** Cada linha: posição, papel (abre a ficha), segmento, "tenho X%" quando está na carteira, pontuação com barra, DY 12m, P/VP e quanto o aporte do mês renderia por mês. Clique na linha (ou na seta) abre os critérios com nota, pontos e barra. "Critérios" abre os pesos (campo inteiro de `public/campo.js`), com a faixa de cada um, "Padrão" e Salvar. O seletor de universo também salva o universo. Rodapé: aporte usado, CDI, quantos foram avaliados e quantos ficaram fora, o mês do informe da CVM e "Conta sobre os critérios acima, com dado da CVM e da brapi. Falta vacância e alavancagem, que entram com o informe trimestral." Sem FII com dado: "Sem dado suficiente da CVM ainda." Widget `carteira-reinvestir` no grupo da carteira: 1x1 com os 3 primeiros e a pontuação, 2x1 com os 5, DY 12m e P/VP.
+
+**O que falta.** NTN-B como referência do DY, quando o Tesouro entrar; vacância e alavancagem, que vêm do informe trimestral da CVM (o Lookout lê só o mensal); média de liquidez de um período no lugar do volume do último pregão.
 
 **Limites.** 20 mil linhas e 40 arquivos por chamada, 15 MB por arquivo na página, doc cifrado até 1,8 MB (um extrato de seis anos dá uns 250 KB de JSON, bem menos depois do gzip), 200 importações no histórico.
 
-**Testes.** `npm test` roda `test/carteira.test.mjs` (linhas sintéticas em `test/fixtures-carteira.mjs`), `test/cofre.test.mjs` e `test/radar.test.mjs` (filtro, avisos, No mês, Na meta, filtros salvos e templates da Leitura, com os FIIs inventados de `test/fixtures-radar.mjs`).
+**Testes.** `npm test` roda `test/carteira.test.mjs` (linhas sintéticas em `test/fixtures-carteira.mjs`), `test/cofre.test.mjs`, `test/pontuacao-fii.test.mjs` (cada critério nos limites, pesos zero, dado faltando, ordenação, universo e a rota do Reinvestir com o D1 falso) e `test/radar.test.mjs` (filtro, avisos, No mês, Na meta, filtros salvos e templates da Leitura, com os FIIs inventados de `test/fixtures-radar.mjs`).
 
 ## Simulador de reinvestimento
 
