@@ -4,10 +4,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mesclar, desfazer, calcular, projecao, twr, mesesAteAlvo, aporteNecessario, normalizarLinha, siglaCorretora, tipoMov, numero, dataIso, validarMeta } from "../src/carteira.js";
 
-import { XP, RICO, neg, mov, prov, arquivos, b3, fiiResumo } from "./fixtures-carteira.mjs";
+import { XP, RICO, neg, mov, prov, arquivos, arquivosSaidas, b3, fiiResumo } from "./fixtures-carteira.mjs";
 const HOJE = "2026-11-03";
-function montar() {
-  const m = mesclar(null, arquivos(), "imp1");
+function montar(arqs = arquivos()) {
+  const m = mesclar(null, arqs, "imp1");
   const importacoes = { lista: [{ id: "imp1", arquivos: m.porArquivo.map((a) => ({ tipo: a.tipo, de: a.de, ate: a.ate })) }] };
   return { m, importacoes, c: calcular(m.extrato, { b3, fiiResumo, importacoes, hoje: HOJE }) };
 }
@@ -107,4 +107,50 @@ test("projeção da meta, caso simples conferido à mão", () => {
   assert.ok(p.mesesAteAlvo > 0 && p.marcos.length === 4 && p.marcos[3].renda === 5000);
   assert.equal(p.patrimonioAlvo, 500000);
   assert.equal(validarMeta({ alvo: "x" }).erro, "Meta fora do intervalo.");
+});
+
+// Soma por papel: resultado em aberto das posições + realizado de cada papel (aberto ou encerrado)
+const somaPorPapel = (c) => c.posicoes.reduce((s, p) => s + p.resultado + p.realizado, 0) + c.resumo.encerradas.reduce((s, e) => s + e.resultado, 0);
+
+test("topo: só a venda de 2025, nenhuma retirada", () => {
+  const r = montar().c.resumo;
+  assert.equal(r.aberto, r.resultado);
+  assert.deepEqual(r.realizado, { total: 20, ano: 0, n: 1, nAno: 0 });
+  assert.deepEqual(r.saidas, { vendas: { total: 120, ano: 0, n: 1 }, retiradas: { total: 0, ano: 0, n: 0, tipos: {} } });
+  perto(r.aberto + r.realizado.total, somaPorPapel(montar().c), 0.02);
+});
+
+test("topo: venda parcial com lucro, venda com prejuízo, transferência de saída e amortização", () => {
+  const { c } = montar(arquivosSaidas());
+  const r = c.resumo;
+  const lucro = 700 - 50 * (1055 / 105);
+  // venda parcial: a posição continua com o mesmo PM e o lucro fica no realizado do papel
+  const a = pos(c, "ABCD3"); assert.equal(a.q, 55); perto(a.pm, 1055 / 105); perto(a.realizado, lucro, 0.005);
+  const m = pos(c, "MNOP3"); assert.equal(m.q, 60); perto(m.realizado, -80, 0.005);
+  // transferência de saída: tira da posição e o custo restante segue o PM
+  const i = pos(c, "IJKL3"); assert.equal(i.q, 70); perto(i.custo, 700);
+  // entre corretoras no mesmo dia: a quantidade fica, só muda de casa
+  const e = pos(c, "EFGH4"); assert.equal(e.q, 110); assert.deepEqual(e.corretoras, ["Rico", "XP"]);
+  // amortização: provento, a quantidade fica
+  assert.equal(pos(c, "QRST11").q, 110);
+  perto(r.meses.find((x) => x.mes === "2026-06").amort, 55);
+
+  perto(r.realizado.total, 20 + lucro - 80, 0.01);
+  perto(r.realizado.ano, lucro - 80, 0.01);
+  assert.equal(r.realizado.n, 3); assert.equal(r.realizado.nAno, 2);
+  assert.deepEqual(r.saidas.vendas, { total: 1140, ano: 1020, n: 3 });
+  assert.deepEqual(r.saidas.retiradas, { total: 300, ano: 300, n: 1, tipos: { transf: 300 } });
+  assert.equal(r.aberto, r.resultado);
+  perto(r.aberto + r.realizado.total, somaPorPapel(c), 0.02);
+});
+
+test("topo: retirada de custódia vale pelo PM da data, e uma compra depois não muda esse valor", () => {
+  const extra = [
+    { nome: "m.xlsx", tipo: "movimentacao", linhas: [["Debito", "02/03/2026", "Retirada de Custódia", "YZAB11 - FUNDO YZAB", XP, 5, "-", "-"], ["Credito", "14/04/2026", "Transferência - Liquidação", "YZAB11 - FUNDO YZAB", XP, 15, 30, 450]] },
+    { nome: "n.xlsx", tipo: "negociacao", linhas: [["10/04/2026", "Compra", "Mercado à Vista", "-", XP, "YZAB11", 15, 30, 450]] },
+  ];
+  const { c } = montar([...arquivos(), ...extra]);
+  const r = c.resumo;
+  assert.equal(pos(c, "YZAB11").q, 30);
+  assert.deepEqual(r.saidas.retiradas, { total: 100, ano: 100, n: 1, tipos: { retirada: 100 } }); // 5 × PM 20
 });

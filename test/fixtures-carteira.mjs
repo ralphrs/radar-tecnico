@@ -61,3 +61,22 @@ export const arquivos = () => [
 ];
 export const b3 = { acoes: [{ t: "ABCD3", preco: 12 }, { t: "EFGH4", preco: 25 }, { t: "IJKL3", preco: 11 }, { t: "MNOP3", preco: 9 }], fiis: [{ t: "QRST11", preco: 110 }, { t: "UVWX11", preco: 9 }, { t: "YZAB11", preco: 21 }], etfs: [], bdrs: [] };
 export const fiiResumo = { fundos: { QRST11: { n: "FUNDO QRST", s: "Logística", rend: 0.9 }, UVWX11: { n: "FUNDO UVWX", s: "Shoppings", rend: 0.1 }, YZAB11: { n: "FUNDO YZAB", s: "Outros", rend: 0.2 } } };
+// Saídas (topo da carteira): venda parcial com lucro, venda com prejuízo, transferência de saída, transferência entre
+// corretoras no mesmo dia (se anula) e amortização (provento, não mexe na quantidade). Entram por cima das linhas acima.
+export const negSaidas = [
+  ["10/02/2026", "Venda", "Mercado à Vista", "-", XP, "ABCD3", 50, 14, 700], // PM 1055/105: lucro de 700 − 50 × 10,0476
+  ["12/03/2026", "Venda", "Mercado à Vista", "-", XP, "MNOP3", 40, 8, 320], // PM 10: prejuízo de 80
+];
+export const movSaidas = [
+  ["Debito", "12/02/2026", "Transferência - Liquidação", "ABCD3 - EMPRESA ABCD S.A.", XP, 50, 14, 700],
+  ["Debito", "16/03/2026", "Transferência - Liquidação", "MNOP3 - EMPRESA MNOP", XP, 40, 8, 320],
+  ["Debito", "05/05/2026", "Transferência", "IJKL3 - EMPRESA IJKL", XP, 30, "-", "-"], // saiu da B3: 30 × PM 10
+  ["Debito", "06/05/2026", "Transferência", "EFGH4 - EMPRESA EFGH S.A.", XP, 20, "-", "-"],
+  ["Credito", "06/05/2026", "Transferência", "EFGH4 - EMPRESA EFGH S.A.", RICO, 20, "-", "-"],
+  ["Credito", "22/06/2026", "Amortização", "QRST11 - FUNDO QRST", XP, 110, 0.5, 55],
+];
+export const arquivosSaidas = () => [
+  ...arquivos(),
+  { nome: "negociacao-2026.xlsx", tipo: "negociacao", linhas: negSaidas },
+  { nome: "movimentacao-2026.xlsx", tipo: "movimentacao", linhas: movSaidas },
+];

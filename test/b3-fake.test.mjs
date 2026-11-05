@@ -75,6 +75,16 @@ test("posições abertas e encerradas batem com o README", () => {
   for (const t of ["KNIP12", "KNIP13", "TRXF12"]) assert.equal(pos(calc, t), undefined, t);
 });
 
+test("topo da carteira: aberto igual ao resultado, realizado bate com os papéis, transferência entre corretoras não é retirada", () => {
+  const { calc } = simularImportacao(g.arquivos, ATE);
+  const r = calc.resumo;
+  assert.equal(r.aberto, r.resultado);
+  const soma = calc.posicoes.reduce((s, p) => s + (p.resultado ?? 0) + p.realizado, 0) + r.encerradas.reduce((s, e) => s + e.resultado, 0);
+  assert.ok(Math.abs(r.aberto + r.realizado.total - soma) < 0.05);
+  assert.equal(r.saidas.vendas.n, r.realizado.n);
+  assert.equal(r.saidas.retiradas.n, 0);
+});
+
 test("bonificação e desdobro mantêm o custo; subscrição exercida entra no PM", () => {
   const { calc } = simularImportacao(g.arquivos, ATE);
   const neg = g.arquivos.find((a) => a.tipo === "negociacao").linhas;

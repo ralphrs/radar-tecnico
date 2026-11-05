@@ -422,7 +422,7 @@ export function calcular(extrato, ctx = {}) {
         L.q = Math.max(0, L.q + e.q);
         if (L.q <= 1e-9) { L.q = 0; L.custo = 0; }
       } else if (e.k === "zera") {
-        if (L.custo > 0) { L.realizado -= L.custo; vendasTodas.push({ d: e.d, b, valor: 0, custo: L.custo, res: -L.custo }); }
+        if (L.custo > 0) { L.realizado -= L.custo; vendasTodas.push({ d: e.d, b, valor: 0, custo: L.custo, res: -L.custo, zera: true }); }
         L.q = 0; L.custo = 0;
       } else if (e.k === "atual") {
         let resta = e.q;
@@ -436,7 +436,7 @@ export function calcular(extrato, ctx = {}) {
         }
         L.q += e.q;
       }
-      L.passos.push({ d: e.d, q: L.q });
+      L.passos.push({ d: e.d, q: L.q, pm: L.q > 1e-9 ? L.custo / L.q : null });
     }
     livro.set(b, L);
   }
@@ -661,12 +661,53 @@ export function calcular(extrato, ctx = {}) {
     ...aReceber.map((x) => ({ o: "pagamento", t: x.t, valor: x.valor, data: null, ref: x.ref })),
   ];
 
-  // 9. Resumo
+  // 9. Saídas: vendas e retiradas, e o realizado
+  // Venda: negociação de venda (ou liquidação de venda, sem Negociação), pelo valor da venda. "Não exercido" entra no
+  // realizado como perda, mas não é venda. Retirada: o que tira quantidade sem ser venda nem evento societário
+  // (transferência de saída, retirada de custódia, vencimento), pelo PM da data: sem cotação histórica, o custo é o que
+  // dá para afirmar. Transferência entre corretoras no mesmo dia se anula (saldo por papel e dia). Amortização e resgate
+  // não mexem na quantidade (efeitoMov) e a amortização já conta como provento: não entram aqui.
+  const anoCivil = hoje.slice(0, 4);
+  const realizado = { total: 0, ano: 0, n: 0, nAno: 0 };
+  for (const [, L] of livro) realizado.total += L.realizado;
+  const vendas = { total: 0, ano: 0, n: 0 };
+  for (const v of vendasTodas) {
+    const noAno = v.d.startsWith(anoCivil);
+    if (noAno) realizado.ano += v.res;
+    if (v.zera) continue;
+    vendas.total += v.valor; vendas.n++; realizado.n++;
+    if (noAno) { vendas.ano += v.valor; realizado.nAno++; }
+  }
+  const GRUPO_RET = { transf: "transf", "transf-sf": "transf", retirada: "retirada", venc: "venc" };
+  const saldoRet = new Map(); // base|data|grupo -> saldo
+  for (const [d, es, t, papel, q] of ex.mov) {
+    const g = GRUPO_RET[t];
+    if (!g) continue;
+    const k = baseDe(papel) + "|" + d + "|" + g;
+    saldoRet.set(k, (saldoRet.get(k) || 0) + (es === "C" ? q : -q));
+  }
+  const pmEm = (b, d) => { let pm = null; for (const s of (livro.get(b) || { passos: [] }).passos) { if (s.d > d) break; if (s.pm != null) pm = s.pm; } return pm; };
+  const retiradas = { total: 0, ano: 0, n: 0, tipos: {} };
+  for (const [k, saldo] of saldoRet) {
+    if (saldo > -1e-9) continue;
+    const [b, d, g] = k.split("|");
+    const valor = -saldo * (pmEm(b, d) || 0);
+    retiradas.total += valor; retiradas.n++;
+    retiradas.tipos[g] = (retiradas.tipos[g] || 0) + valor;
+    if (d.startsWith(anoCivil)) retiradas.ano += valor;
+  }
+
+  // 10. Resumo
   const corretoras = [...qCorr].map(([c, x]) => ({ corretora: c, papeis: x.papeis, valor: r2(x.valor), prov12: r2(prov12Corr.get(c) || 0) })).sort((a, b) => b.valor - a.valor);
   const mAnt = somarMeses(mesAtual, -1);
   const pegaMes = (m) => { const x = provMes.get(m); return { mes: m, total: r2(x ? x.total : 0), n: x ? x.n : 0 }; };
   const resumo = {
-    hoje, patrimonio: r2(patrimonio), custo: r2(custoTotal), resultado: r2(patrimonio - custoTotal),
+    hoje, patrimonio: r2(patrimonio), custo: r2(custoTotal), resultado: r2(patrimonio - custoTotal), aberto: r2(patrimonio - custoTotal),
+    realizado: { total: r2(realizado.total), ano: r2(realizado.ano), n: realizado.n, nAno: realizado.nAno },
+    saidas: {
+      vendas: { total: r2(vendas.total), ano: r2(vendas.ano), n: vendas.n },
+      retiradas: { total: r2(retiradas.total), ano: r2(retiradas.ano), n: retiradas.n, tipos: Object.fromEntries(Object.entries(retiradas.tipos).map(([k, v]) => [k, r2(v)])) },
+    },
     resultadoPct: custoTotal > 0 ? Math.round(((patrimonio - custoTotal) / custoTotal) * 1e4) / 100 : null,
     papeis: posicoes.length, corretoras: corretoras.map((c) => c.corretora), semCotacao,
     porClasse: Object.fromEntries(Object.entries(porClasse).map(([k, v]) => [k, r2(v)])), emprestado: r2(valorEmprestado),
