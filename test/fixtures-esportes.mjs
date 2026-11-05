@@ -96,26 +96,21 @@ export function htmlGeTabela() {
 ${tr(1, "Internacional", 25, 11, 8, 1, 2, 22, 9, 13)}${tr(2, "Juventude", 21, 11, 6, 3, 2, 15, 10, 5)}</tbody></table></body></html>`;
 }
 
-// ---------- NBA e NFL ----------
+// ---------- NBA ----------
 // Formato conhecido da ESPN (o proxy do ambiente não alcança a API; conferir com as amostras da sonda em produção):
 // score em texto, status com clock (número), displayClock (texto), period e type.name/state/shortDetail; standings
-// com um nó em children por conferência e stats por name (wins, losses, ties, winPercent em fração, gamesBehind,
+// com um nó em children por conferência e stats por name (wins, losses, winPercent em fração, gamesBehind,
 // playoffSeed) mais os de resumo, sem value (overall "8-2", Home, Road), que o parser ignora. Times reais, números
-// inventados. Os dois scoreboards seguem as datas pedidas (NBA em 04/11, NFL na semana 10, domingo 08/11).
+// inventados.
 const tUS = (id, local, nome, sigla) => ({ id: String(id), uid: "s:40~l:46~t:" + id, location: local, name: nome, abbreviation: sigla, displayName: local + " " + nome, shortDisplayName: nome, isActive: true });
 export const NBA = {
   lakers: tUS(13, "Los Angeles", "Lakers", "LAL"), celtics: tUS(2, "Boston", "Celtics", "BOS"), knicks: tUS(18, "New York", "Knicks", "NY"),
   heat: tUS(14, "Miami", "Heat", "MIA"), nuggets: tUS(7, "Denver", "Nuggets", "DEN"), warriors: tUS(9, "Golden State", "Warriors", "GS"),
   bucks: tUS(15, "Milwaukee", "Bucks", "MIL"), suns: tUS(21, "Phoenix", "Suns", "PHX"),
 };
-export const NFL = {
-  chiefs: tUS(12, "Kansas City", "Chiefs", "KC"), bills: tUS(2, "Buffalo", "Bills", "BUF"), ravens: tUS(33, "Baltimore", "Ravens", "BAL"),
-  texans: tUS(34, "Houston", "Texans", "HOU"), eagles: tUS(21, "Philadelphia", "Eagles", "PHI"), lions: tUS(8, "Detroit", "Lions", "DET"),
-  niners: tUS(25, "San Francisco", "49ers", "SF"), cowboys: tUS(6, "Dallas", "Cowboys", "DAL"),
-};
 const evUS = (id, quando, casa, fora, st, extra = {}) => ({
   id: String(id), uid: "s:40~e:" + id, date: quando, name: fora.displayName + " at " + casa.displayName, shortName: fora.abbreviation + " @ " + casa.abbreviation,
-  ...(extra.semana ? { week: { number: extra.semana }, season: { year: 2026, type: 2, slug: "regular-season" } } : { season: { year: 2027, type: 2, slug: "regular-season" } }),
+  season: { year: 2027, type: 2, slug: "regular-season" },
   competitions: [{ id: String(id), date: quando, attendance: 0, neutralSite: false, venue: { id: "1", fullName: extra.venue || "Arena Exemplo", address: { city: "Cidade", state: "UF" }, indoor: true },
     competitors: [
       { id: casa.id, homeAway: "home", order: 0, team: casa, score: extra.pc === undefined ? "0" : String(extra.pc), records: [{ name: "overall", type: "total", summary: "5-3" }] },
@@ -145,20 +140,19 @@ export function scoreboardNba() {
   };
 }
 // Linhas: [time, wins, losses, winPercent, gamesBehind, playoffSeed]. Entradas fora da ordem de seed, como a ESPN manda.
-const statsUS = (v, d, pct, gb, seed, ties) => [
+const statsUS = (v, d, pct, gb, seed) => [
   { name: "avgPointsAgainst", abbreviation: "OPP PPG", type: "avgpointsagainst", value: 110.4, displayValue: "110.4" },
   { name: "gamesBehind", abbreviation: "GB", type: "gamesbehind", value: gb, displayValue: gb ? String(gb) : "-" },
   { name: "losses", abbreviation: "L", type: "losses", value: d, displayValue: String(d) },
   { name: "playoffSeed", abbreviation: "PS", type: "playoffseed", value: seed, displayValue: String(seed) },
-  ...(ties === undefined ? [] : [{ name: "ties", abbreviation: "T", type: "ties", value: ties, displayValue: String(ties) }]),
   { name: "winPercent", abbreviation: "PCT", type: "winpercent", value: pct, displayValue: String(pct).replace(/^0/, "") },
   { name: "wins", abbreviation: "W", type: "wins", value: v, displayValue: String(v) },
   { name: "pointsFor", abbreviation: "PF", type: "pointsfor", value: 900 + v, displayValue: String(900 + v) },
   { id: "0", name: "overall", type: "total", summary: v + "-" + d, displayValue: v + "-" + d },
   { id: "1", name: "Home", type: "home", summary: "3-1", displayValue: "3-1" },
 ];
-const conf = (id, nome, sigla, linhas, ties) => ({ uid: "s:40~l:46~g:" + id, id: String(id), name: nome, abbreviation: sigla, isConference: true,
-  standings: { id: "0", name: nome, displayName: nome, season: 2027, seasonType: 2, seasonDisplayName: "2026-27", entries: linhas.map(([t, ...s]) => ({ team: t, stats: statsUS(...s, ...(ties ? [s[5] ?? 0] : [])) })) } });
+const conf = (id, nome, sigla, linhas) => ({ uid: "s:40~l:46~g:" + id, id: String(id), name: nome, abbreviation: sigla, isConference: true,
+  standings: { id: "0", name: nome, displayName: nome, season: 2027, seasonType: 2, seasonDisplayName: "2026-27", entries: linhas.map(([t, ...s]) => ({ team: t, stats: statsUS(...s) })) } });
 export function standingsNba() {
   // Leste com 11 times (para passar das zonas: 1-6 playoffs, 7-10 play-in, 11 fora); Oeste com 4 e um sem seed
   const leste = [
@@ -172,37 +166,66 @@ export function standingsNba() {
   return { uid: "s:40~l:46~g:9", id: "9", name: "National Basketball Association", abbreviation: "NBA",
     children: [conf(5, "Eastern Conference", "East", leste), o], links: [], seasons: [{ year: 2027, displayName: "2026-27" }] };
 }
-export function scoreboardNfl() {
+
+// ---------- Tênis ----------
+// Formato conhecido do tênis na ESPN (o ambiente não alcança a API; conferir com as amostras da sonda em produção):
+// events[] = torneios, groupings[] = chaves (simples e duplas), competitions[] = partidas com competitors[] (order,
+// winner, athlete.displayName/shortName, seed, curatedRank.current, linescores[].value), status.type.state/name,
+// status.period e round.displayName. Jogadores reais, placares inventados; datas relativas a AGORA.
+const atleta = (nome, curto) => ({ displayName: nome, shortName: curto, flag: { alt: "País" } });
+const jogador = (ordem, nome, curto, extra = {}) => ({ id: String(1000 + ordem + nome.length), order: ordem, type: "athlete", homeAway: ordem === 1 ? "home" : "away",
+  athlete: atleta(nome, curto), ...(extra.seed != null ? { seed: String(extra.seed) } : {}), ...(extra.rank != null ? { curatedRank: { current: extra.rank } } : {}),
+  ...(extra.sets ? { linescores: extra.sets.map((v) => ({ value: v })) } : {}), ...(extra.venceu != null ? { winner: extra.venceu } : {}) });
+const partida = (id, quando, estado, a, b, extra = {}) => ({
+  id: String(id), date: quando, ...(extra.rodada === null ? {} : { round: { id: "2", displayName: extra.rodada || "Round 2" } }),
+  ...(extra.notas ? { notes: extra.notas } : {}), venue: { court: extra.quadra || "Court Central" },
+  status: { period: extra.set ?? 0, type: { state: estado, completed: estado === "post", name: extra.nome || (estado === "post" ? "STATUS_FINAL" : estado === "in" ? "STATUS_IN_PROGRESS" : "STATUS_SCHEDULED"), description: extra.desc || "" } },
+  competitors: [a, b],
+});
+export function scoreboardAtp() {
   return {
-    leagues: [{ id: "28", name: "National Football League", abbreviation: "NFL", slug: "nfl",
-      season: { year: 2026, startDate: "2026-07-31T07:00Z", endDate: "2027-02-11T07:59Z", displayName: "2026", type: { id: "2", type: 2, name: "Regular Season", abbreviation: "reg" } },
-      calendarType: "list", calendarIsWhitelist: true,
-      calendar: [{ label: "Regular Season", value: "2", startDate: "2026-09-02T07:00Z", endDate: "2027-01-06T07:59Z", entries: [
-        { label: "Week 9", alternateLabel: "Wk 9", detail: "Oct 28-Nov 3", value: "9", startDate: "2026-10-28T07:00Z", endDate: "2026-11-04T07:59Z" },
-        { label: "Week 10", alternateLabel: "Wk 10", detail: "Nov 4-10", value: "10", startDate: "2026-11-04T08:00Z", endDate: "2026-11-11T07:59Z" }] }] }],
-    season: { type: 2, year: 2026 }, week: { number: 10 },
+    leagues: [{ id: "850", name: "ATP", abbreviation: "ATP", season: { year: 2026 }, calendar: [{ label: "Paris Masters", startDate: "2026-11-02T08:00Z", endDate: "2026-11-08T08:00Z" }] }],
+    season: { year: 2026 },
     events: [
-      evUS(501, h(-50), NFL.ravens, NFL.texans, "post", { pc: 27, pf: 24, semana: 10 }),
-      evUS(502, h(-0.8), NFL.chiefs, NFL.bills, "in", { pc: 17, pf: 14, periodo: 3, relogio: "8:41", semana: 10 }),
-      evUS(503, h(-0.7), NFL.eagles, NFL.cowboys, "in", { pc: 10, pf: 10, periodo: 2, relogio: "0:00", nome: "STATUS_HALFTIME", detalhe: "Halftime", semana: 10 }),
-      evUS(504, h(60), NFL.lions, NFL.niners, "pre", { semana: 10 }),
-      // sem week no evento: vale o número do topo
-      { ...evUS(505, h(70), NFL.niners, NFL.chiefs, "pre"), season: undefined },
+      { id: "713", name: "Rolex Paris Masters", shortName: "Paris", date: "2026-11-02T08:00Z", endDate: "2026-11-08T23:00Z", venue: { displayName: "Paris La Défense Arena", address: { city: "Paris", country: "França" } },
+        groupings: [
+          { grouping: { id: "1", slug: "mens-singles", displayName: "Men's Singles" }, competitions: [
+            // encerrada ontem, 3 sets, com cabeça de chave dos dois lados
+            partida(9101, h(-24), "post", jogador(1, "Jannik Sinner", "J. Sinner", { seed: 1, rank: 1, sets: [6, 3, 7], venceu: true }), jogador(2, "Ben Shelton", "B. Shelton", { seed: 6, rank: 7, sets: [4, 6, 6], venceu: false })),
+            // ao vivo no 2º set, sem seed de um lado (só ranking)
+            partida(9102, h(-1), "in", jogador(1, "Carlos Alcaraz", "C. Alcaraz", { seed: 2, rank: 2, sets: [6, 2] }), jogador(2, "João Fonseca", "J. Fonseca", { rank: 24, sets: [4, 3] }), { set: 2, rodada: "Round of 16" }),
+            // marcada para daqui a 2 h
+            partida(9103, h(2), "pre", jogador(1, "Alexander Zverev", "A. Zverev", { seed: 3, rank: 3 }), jogador(2, "Holger Rune", "H. Rune", { rank: 12 }), { rodada: "Round of 16" }),
+            // marcada para amanhã, rodada em notes, sem round
+            partida(9104, h(26), "pre", jogador(1, "Taylor Fritz", "T. Fritz", { seed: 4 }), jogador(2, "Jack Draper", "J. Draper"), { rodada: null, notas: [{ text: "Quarterfinal" }] }),
+            // desistência
+            partida(9105, h(-5), "post", jogador(1, "Casper Ruud", "C. Ruud", { sets: [3], venceu: false }), jogador(2, "Alex de Minaur", "A. de Minaur", { sets: [5], venceu: true }), { nome: "STATUS_RETIRED", desc: "Retired" }),
+            // sem nome de um lado: fica de fora
+            { id: "9106", date: h(3), competitors: [{ order: 1, athlete: {} }, { order: 2, athlete: atleta("Daniil Medvedev", "D. Medvedev") }], status: { type: { state: "pre" } } },
+            // ordem trocada no array (order manda) e sem status
+            { id: "9107", date: h(28), competitors: [jogador(2, "Grigor Dimitrov", "G. Dimitrov"), jogador(1, "Tommy Paul", "T. Paul")] },
+          ] },
+          // duplas: ficam de fora
+          { grouping: { id: "2", slug: "mens-doubles", displayName: "Men's Doubles" }, competitions: [
+            partida(9201, h(1), "pre", { order: 1, roster: { displayName: "Granollers / Zeballos" } }, { order: 2, roster: { displayName: "Arevalo / Pavic" } }),
+          ] },
+        ] },
+      // torneio sem venue e sem groupings, com competitions direto
+      { id: "714", name: "Moselle Open", date: "2026-11-02T08:00Z", endDate: "2026-11-08T23:00Z",
+        competitions: [partida(9301, h(-0.5), "in", jogador(1, "Arthur Fils", "A. Fils", { sets: [7, 0] }), jogador(2, "Ugo Humbert", "U. Humbert", { sets: [6, 1] }), { set: 0, rodada: "Quarterfinal", quadra: "Court 1" })] },
     ],
   };
 }
-// Semana anterior (ultimos): pedida por ?dates=2026&seasontype=2&week=9
-export function scoreboardNflAnterior() {
-  return { season: { type: 2, year: 2026 }, week: { number: 9 }, events: [
-    evUS(491, h(-150), NFL.bills, NFL.ravens, "post", { pc: 31, pf: 20, semana: 9 }),
-    evUS(492, h(-148), NFL.cowboys, NFL.lions, "post", { pc: 23, pf: 23, semana: 9, detalhe: "Final/OT" }),
-  ] };
+// Um dia (?dates=): a partida de ontem de novo (mesmo id, não repete) e uma de antes de ontem
+export function scoreboardAtpDia() {
+  return { events: [{ id: "713", name: "Rolex Paris Masters", groupings: [{ grouping: { slug: "mens-singles", displayName: "Men's Singles" }, competitions: [
+    partida(9101, h(-24), "post", jogador(1, "Jannik Sinner", "J. Sinner", { seed: 1, sets: [6, 3, 7], venceu: true }), jogador(2, "Ben Shelton", "B. Shelton", { seed: 6, sets: [4, 6, 6], venceu: false })),
+    partida(9100, h(-28), "post", jogador(1, "Lorenzo Musetti", "L. Musetti", { sets: [6, 6], venceu: true }), jogador(2, "Karen Khachanov", "K. Khachanov", { sets: [1, 2], venceu: false }), { rodada: "Round 1" }),
+  ] }] }] };
 }
-// Por conferência (AFC e NFC, 16 cada; aqui 4), stats com ties; seeds 1-4 líderes de divisão, 5-7 wild card
-export function standingsNfl() {
-  const afc = [[NFL.texans, 5, 3, 0.625, 2, 5], [NFL.chiefs, 7, 1, 0.875, 0, 1], [NFL.bills, 6, 2, 0.75, 1, 2], [NFL.ravens, 4, 4, 0.5, 3, 8]];
-  const nfc = [[NFL.eagles, 6, 2, 0.75, 0, 1], [NFL.lions, 5, 2, 0.688, 0.5, 2, 1], [NFL.niners, 5, 3, 0.625, 1, 6], [NFL.cowboys, 2, 6, 0.25, 4, 13]];
-  const c = (id, nome, sigla, ls) => ({ id: String(id), name: nome, abbreviation: sigla, isConference: true,
-    standings: { season: 2026, seasonType: 2, entries: ls.map(([t, v, d, pct, gb, seed, ties]) => ({ team: t, stats: statsUS(v, d, pct, gb, seed, ties ?? 0) })) } });
-  return { id: "9", name: "National Football League", abbreviation: "NFL", children: [c(8, "American Football Conference", "AFC", afc), c(7, "National Football Conference", "NFC", nfc)], seasons: [{ year: 2026 }] };
+export function scoreboardWta() {
+  return { events: [{ id: "800", name: "WTA Finals", venue: { fullName: "Riyadh" }, groupings: [{ grouping: { slug: "womens-singles", displayName: "Women's Singles" }, competitions: [
+    partida(9401, h(3), "pre", jogador(1, "Aryna Sabalenka", "A. Sabalenka", { seed: 1 }), jogador(2, "Iga Swiatek", "I. Swiatek", { seed: 2 }), { rodada: "Round Robin" }),
+    partida(9402, h(-0.4), "in", jogador(1, "Coco Gauff", "C. Gauff", { seed: 3, sets: [6, 5] }), jogador(2, "Beatriz Haddad Maia", "B. Haddad Maia", { seed: 8, sets: [7, 5] }), { set: 2, rodada: "Round Robin" }),
+  ] }] }] };
 }

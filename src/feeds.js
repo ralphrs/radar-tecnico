@@ -190,6 +190,11 @@ export const FEEDS = [
   ["esportes", "Gazeta Esportiva", "BR", "https://www.gazetaesportiva.com/feed/"],
   ["esportes", "BBC Sport", "GB", "https://feeds.bbci.co.uk/sport/football/rss.xml"],
   ["esportes", "Gazzetta dello Sport", "IT", "https://www.gazzetta.it/rss/home.xml"],
+  // Padel (05/11/2026): só notícias, porque resultados ainda não têm fonte pública. Conferido com itens no WebFetch:
+  // The Joy of Padel (podcast em inglês com jogadores do circuito, episódio novo em 04/11/2026). Os candidatos que não
+  // deram para abrir daqui (FIP, The Padel Paper, Padel Alto, Padel World Press, Padel Addict, Super Padel, Padel Clube)
+  // estão na sonda de esportes (SONDA_RSS em src/esportes.js).
+  ["esportes", "The Joy of Padel", "", "https://feeds.megaphone.fm/thejoyofpadel"],
 
   // Reddit: Atom de /top/?t=day (os mais votados do dia) de cada subreddit, lido no ritmo próprio (src/coleta.js): no
   // máximo 1 por minuto de cron, cada um a cada 120 min, user-agent do Lookout. Até 04/11/2026 era /new/ (o Atom é o mesmo).

@@ -6,30 +6,36 @@
 //   faixa de datas devolve HTTP 400; a resposta traz leagues[0].calendar com os dias que têm jogo, usado para escolher
 //   quais dias buscar), site.api.espn.com/apis/v2/sports/<esporte>/<liga>/standings (tabela; copa do Brasil não tem) e
 //   site.api.espn.com/apis/site/v2/sports/<esporte>/<liga>/teams/<id>/schedule (jogos de um time).
-//   O caminho "<esporte>/<liga>" vem de public/esportes.js; qualquer um da ESPN serve (basketball/nba, racing/f1...).
+//   O caminho "<esporte>/<liga>" vem de public/esportes.js; qualquer um da ESPN serve (basketball/nba, tennis/atp...).
+//   Tênis (ATP e WTA): o mesmo scoreboard, sem data (os torneios em andamento) e com ?dates= (um dia). Cada evento é um
+//   torneio com `groupings[]` (as chaves: simples, duplas) e, dentro, `competitions[]` = partidas (lerTenis).
 // - Globo Esporte: página de competição como reserva (`reserva: "ge"` em LIGAS), quando houver uma que responda. Parser
 //   tolerante: procura o JSON embutido e, sem ele, a tabela do HTML. Falhou: _sistema/esportes-erro. Hoje nenhuma liga usa:
 //   a página do Gauchão deu 404 na sonda e a ESPN cobre o Gauchão (bra.camp.gaucho) na temporada.
 //
 // Conferido com a sonda de 04/11/2026 (_sistema/sonda-esportes): scoreboard por dia 200, faixa 400; standings 200 em todas
 // menos bra.copa_do_brasil (400, sem tabela); site.web.api.espn.com 403 (não usar); schedule do time 200.
-// NBA e NFL (04/11/2026) entraram sem amostra real: o ambiente de desenvolvimento não alcança a ESPN. O parser segue o
-// formato conhecido (score em texto, status.period e displayClock, standings com children por conferência, stats
-// wins, losses, ties, winPercent, gamesBehind, playoffSeed) e o que faltar vira null. A sonda pede as quatro URLs novas
-// mesmo já tendo terminado antes (ela completa a lista quando aparece competição nova).
-// NFL (`semana` em LIGAS): o scoreboard sem data devolve a semana atual inteira; a semana anterior vem por
-// ?dates=<ano>&seasontype=<tipo>&week=<n>. Falhou a anterior, fica só a atual e o erro vai para "nfl:semana-anterior".
+// NBA (04/11/2026) entrou sem amostra real: o ambiente de desenvolvimento não alcança a ESPN. O parser segue o formato
+// conhecido (score em texto, status.period e displayClock, standings com children por conferência, stats wins, losses,
+// winPercent, gamesBehind, playoffSeed) e o que faltar vira null. A sonda pede as URLs novas mesmo já tendo terminado
+// antes (ela completa a lista quando aparece competição nova). A NFL saiu em 05/11/2026 por decisão do dono.
+// Tênis (05/11/2026), também sem amostra real: parser tolerante (campo que falta vira null), por conferir pela sonda.
 //
 // meta/esportes-<liga>: { atualizado, liga, nome, temporada, fonte, tabela: [{ pos, time, sigla, id, j, v, e, d, gp, gc, sg, pts, pct, gb, seed, zona, grupo? }],
 //   rodada: { numero, jogos: [jogo] }, proximos: [até 20], ultimos: [até 20], times: { <id>: { nome, proximos, ultimos } },
 //   rodadaEm, tabelaEm, timesEm, tentativas: { rodada, tabela, times } }
 // jogo: { id, data, mandante, visitante, siglas: [m, v], ids: [m, v], placar: [m, v] | null, estado: "pre"|"in"|"post", minuto, estadio, detalhe,
-//   rodada?, curtos?: [m, v] (NBA e NFL: "Lakers", "Eagles") }  linha da NBA e da NFL também leva curto
+//   curtos?: [m, v] (NBA: "Lakers") }  linha da NBA também leva curto
+// Tênis (meta/esportes-atp e -wta): rodada.jogos = partidas do dia (São Paulo) e as em andamento; proximos e ultimos de
+//   partidas; torneios: [{ id, nome, local, inicio, fim, rodada, aoVivo, partidas }]; sem tabela nem times.
+// partida: { id, data, torneio, torneioId, chave, rodada, jogadores: [a, b], curtos: [a, b], cabecas: [a, b], ranks: [a, b],
+//   sets: [[a, b], ...], vencedor: 0 | 1 | null, estado, minuto ("2º set"), quadra, detalhe }
 //
 // Ritmo (cronEsportes, conferido a cada 5 min): rodada a cada 15 min quando há jogo ao vivo ou começando nas próximas
 // 2 h, senão 1x por hora; tabela 2x por dia; jogos dos times de interesse 1x por dia. Chamadas em fila, 400 ms entre
 // elas, 8 s de limite cada; 429 dobra a espera e tenta de novo uma vez. No máximo 30 chamadas por passada (a rodada de
-// uma liga gasta até 1 + DIAS_EXTRA: o dia de hoje e os dias com jogo mais perto, entre 3 dias atrás e 10 à frente).
+// uma liga gasta até 1 + DIAS_EXTRA: o dia de hoje e os dias com jogo mais perto, entre 3 dias atrás e 10 à frente; no
+// tênis, 4: sem data, ontem, hoje e amanhã).
 
 import "../public/esportes.js";
 import { lerFeed } from "./coleta.js";
@@ -52,8 +58,6 @@ const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 // ---------- URLs ----------
 const caminhoDe = (liga) => (E.LIGAS[liga] ? E.LIGAS[liga].caminho : String(liga).includes("/") ? String(liga) : "soccer/" + liga);
 export const urlScoreboard = (liga, dia) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/scoreboard${dia ? "?dates=" + dia : ""}`;
-// Uma semana inteira (NFL): ano da temporada, tipo (1 pré, 2 regular, 3 playoffs) e número da semana
-export const urlSemana = (liga, ano, tipo, semana) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/scoreboard?dates=${ano}&seasontype=${tipo}&week=${semana}`;
 export const urlStandings = (liga) => `https://site.api.espn.com/apis/v2/sports/${caminhoDe(liga)}/standings`;
 export const urlSchedule = (liga, time, proximos) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/teams/${encodeURIComponent(time)}/schedule${proximos ? "?fixture=true" : ""}`;
 
@@ -65,8 +69,8 @@ export function diaSP(quando, dias = 0) {
 
 // ---------- ESPN: jogos ----------
 // Um evento do scoreboard ou do schedule. Devolve null quando falta o essencial (dois times com nome).
-// `liga` muda só o "minuto": no futebol o relógio da ESPN ("67'"); no basquete e no futebol americano o quarto e o
-// relógio ("4º quarto · 5:32", "intervalo", "prorrogação").
+// `liga` muda só o "minuto": no futebol o relógio da ESPN ("67'"); no basquete o quarto e o relógio ("4º quarto · 5:32",
+// "intervalo", "prorrogação").
 export function lerJogo(ev, liga) {
   if (!ev || typeof ev !== "object") return null;
   const c = Array.isArray(ev.competitions) ? ev.competitions[0] : null;
@@ -89,7 +93,7 @@ export function lerJogo(ev, liga) {
     : txt(E.periodo(st.period, st.displayClock, tipo.name) || tipo.shortDetail, 24);
   const adiado = /POSTPONED|CANCELED|CANCELLED|SUSPENDED|ABANDONED/i.test(tipo.name || "");
   const venue = (c && c.venue) || ev.venue || {};
-  // NBA e NFL: o nome curto da ESPN ("Lakers", "Eagles") para o celular e os cards do Início
+  // NBA: o nome curto da ESPN ("Lakers") para o celular e os cards do Início
   const curtoDe = (x) => { const t = x.team || {}; return txt(t.shortDisplayName || t.name, 30); };
   const j = {
     id: txt(ev.id || (c && c.id), 20), data: iso(ev.date || (c && c.date)),
@@ -98,8 +102,6 @@ export function lerJogo(ev, liga) {
     estado, minuto, estadio: txt(venue.fullName || venue.name, 60), detalhe: adiado ? "adiado" : txt(tipo.shortDetail || tipo.description, 30),
   };
   if (!futebol) { const cm = curtoDe(casa), cv = curtoDe(fora); if (cm && cv && (cm !== m.nome || cv !== v.nome)) j.curtos = [cm, cv]; }
-  const sem = (ev.week && num(ev.week.number)) ?? null;
-  if (sem !== null) j.rodada = sem;
   return j;
 }
 const porData = (a, b) => String(a.data).localeCompare(String(b.data));
@@ -107,21 +109,18 @@ export function lerJogos(j, liga) {
   const evs = j && Array.isArray(j.events) ? j.events : [];
   return evs.map((ev) => lerJogo(ev, liga)).filter(Boolean).sort(porData);
 }
-// calendar: no futebol e na NBA, uma lista de dias ("2026-11-04T08:00Z"); na NFL, blocos da temporada com `entries`
-// por semana (essas não são dias de jogo e ficam de fora).
+// calendar: no futebol e na NBA, uma lista de dias ("2026-11-04T08:00Z"), às vezes como objetos com startDate.
 export function lerScoreboard(j, liga) {
   const lg = j && Array.isArray(j.leagues) ? j.leagues[0] : null;
   const numero = (j && j.week && num(j.week.number)) ?? null;
   const jogos = lerJogos(j, liga);
-  // semana inteira (NFL): o número da semana do topo vale para os jogos que não trazem o seu
-  if (E.LIGAS[liga] && E.LIGAS[liga].semana && numero !== null) for (const x of jogos) if (x.rodada == null) x.rodada = numero;
   const tipoT = (j && j.season && j.season.type) ?? (lg && lg.season && lg.season.type);
   return {
     jogos, numero,
     temporada: num((j && j.season && j.season.year) ?? (lg && lg.season && lg.season.year)),
     tipoTemporada: num(tipoT && typeof tipoT === "object" ? tipoT.type ?? tipoT.id : tipoT),
     nome: txt(lg && (lg.name || lg.abbreviation)),
-    calendario: lg && Array.isArray(lg.calendar) ? lg.calendar.map((d) => (typeof d === "string" ? d : d && !Array.isArray(d.entries) ? d.startDate : null)).filter(Boolean) : [],
+    calendario: lg && Array.isArray(lg.calendar) ? lg.calendar.map((d) => (typeof d === "string" ? d : d && d.startDate)).filter(Boolean) : [],
   };
 }
 
@@ -155,12 +154,113 @@ export function escolherRodada(jogos, agora = Date.now(), numero = null, raio = 
 export const proximosDe = (jogos, agora = Date.now(), n = 20) => jogos.filter((x) => x.estado !== "post" && (Date.parse(x.data) || 0) >= agora - 3 * HORA).sort(porData).slice(0, n);
 export const ultimosDe = (jogos, n = 20) => jogos.filter((x) => x.estado === "post").sort((a, b) => porData(b, a)).slice(0, n);
 
+// ---------- ESPN: tênis ----------
+// Formato conhecido (sem amostra real ainda; conferir pela sonda): events[] = torneios (id, name, shortName, date,
+// endDate, venue?), cada um com groupings[] ({ grouping: { slug, displayName }, competitions[] }); cada competition é uma
+// partida com competitors[] (order, winner, athlete.displayName/shortName, seed, curatedRank.current, linescores[] por set
+// com value), status.type (state, name, description), status.period, round ou notes, date, venue.court. Campo que falta
+// vira null; partida sem os dois nomes sai. Só as chaves de simples entram (duplas ficam de fora nesta versão); evento
+// sem groupings mas com competitions[] direto também é lido.
+const CHAVES = { "mens-singles": "Simples masculino", "womens-singles": "Simples feminino", "mens-doubles": "Duplas masculinas", "womens-doubles": "Duplas femininas", "mixed-doubles": "Duplas mistas" };
+const ehSimples = (slug, nome) => { const t = (slug || "") + " " + (nome || ""); return !/doubles|duplas|dobles/i.test(t); };
+function nomeChave(g) {
+  const slug = txt(g && (g.slug || g.id), 40).toLowerCase(), nome = txt(g && (g.displayName || g.name), 40);
+  return CHAVES[slug] || (/women'?s singles/i.test(nome) ? CHAVES["womens-singles"] : /men'?s singles/i.test(nome) ? CHAVES["mens-singles"] : nome);
+}
+function localDe(v) {
+  if (!v || typeof v !== "object") return "";
+  const a = v.address || {};
+  const partes = [a.city, a.country || a.state].map((x) => txt(x, 40)).filter(Boolean);
+  return partes.length ? partes.join(", ") : txt(v.displayName || v.fullName || v.name, 60);
+}
+export function lerPartida(c, ev, chave, liga) {
+  if (!c || typeof c !== "object") return null;
+  const comps = (Array.isArray(c.competitors) ? c.competitors : []).filter((x) => x && typeof x === "object").slice().sort((a, b) => (num(a.order) ?? 9) - (num(b.order) ?? 9));
+  if (comps.length < 2) return null;
+  const [a, b] = comps;
+  const nome = (x) => { const at = x.athlete || {}; return txt(at.displayName || at.fullName || x.displayName || (x.roster && x.roster.displayName) || (x.team && x.team.displayName), 60); };
+  const curto = (x) => { const at = x.athlete || {}; return txt(at.shortName || at.shortDisplayName || (x.roster && x.roster.shortDisplayName) || "", 40); };
+  const ja = nome(a), jb = nome(b);
+  if (!ja || !jb) return null;
+  const st = c.status || {};
+  const tipo = st.type || {};
+  const estado = ["pre", "in", "post"].includes(tipo.state) ? tipo.state : tipo.completed ? "post" : "pre";
+  const ls = (x) => (Array.isArray(x.linescores) ? x.linescores : []).map((l) => (l && typeof l === "object" ? num(l.value ?? l.displayValue) : num(l)));
+  const la = ls(a), lb = ls(b);
+  const sets = [];
+  for (let i = 0; i < Math.max(la.length, lb.length); i++) if (la[i] != null || lb[i] != null) sets.push([la[i] ?? null, lb[i] ?? null]);
+  const vencedor = a.winner === true ? 0 : b.winner === true ? 1 : null;
+  const nomeSt = String(tipo.name || "") + " " + String(tipo.description || "");
+  const detalhe = /RETIRED|\bret\b/i.test(nomeSt) ? "desistência" : /WALKOVER|W\/O/i.test(nomeSt) ? "W.O." : /POSTPONED|CANCEL/i.test(nomeSt) ? "adiado" : /SUSPENDED|DELAYED/i.test(nomeSt) ? "suspenso" : "";
+  const per = num(st.period);
+  const setNo = Number.isInteger(per) && per >= 1 ? per : sets.length || null;
+  const notas = Array.isArray(c.notes) ? c.notes : [];
+  const rodadaTxt = (c.round && typeof c.round === "object" ? c.round.displayName || c.round.name || c.round.abbreviation : c.round)
+    || (notas[0] && (notas[0].text || notas[0].headline)) || "";
+  const venue = c.venue || {};
+  const seed = (x) => { const v = num(x.seed); return v != null && v > 0 ? v : null; };
+  const rank = (x) => { const v = num(x.curatedRank && typeof x.curatedRank === "object" ? x.curatedRank.current : x.curatedRank); return v != null && v > 0 && v < 99 ? v : null; };
+  const p = {
+    id: txt(c.id || "", 20) || txt((ev && ev.id) || "", 12) + "-" + slug(ja + "-" + jb), data: iso(c.date || c.startDate || (ev && ev.date)),
+    torneio: txt(ev && (ev.name || ev.shortName), 60), torneioId: txt(ev && ev.id, 20), chave: chave || "",
+    rodada: E.rodadaTenis(txt(rodadaTxt, 40)),
+    jogadores: [ja, jb], curtos: [curto(a) || ja, curto(b) || jb], cabecas: [seed(a), seed(b)], ranks: [rank(a), rank(b)],
+    sets, vencedor, estado, minuto: estado === "in" && setNo ? setNo + "º set" : "",
+    quadra: txt(venue.court || venue.fullName || venue.displayName, 40), detalhe,
+  };
+  return p;
+}
+// Devolve { partidas, torneios, temporada, chaves } (chaves: os nomes de todas as chaves vistas, para a sonda). Nunca lança.
+export function lerTenis(j, liga) {
+  const partidas = [], torneios = [], chaves = new Set();
+  try {
+    const evs = j && Array.isArray(j.events) ? j.events : [];
+    for (const ev of evs) {
+      if (!ev || typeof ev !== "object") continue;
+      const grupos = Array.isArray(ev.groupings) && ev.groupings.length ? ev.groupings
+        : Array.isArray(ev.competitions) ? [{ grouping: null, competitions: ev.competitions }] : [];
+      const daqui = [];
+      let localPartida = "";
+      for (const g of grupos) {
+        if (!g || typeof g !== "object") continue;
+        const gr = g.grouping || {};
+        const nome = nomeChave(gr);
+        if (nome) chaves.add(nome);
+        if (!ehSimples(gr.slug, gr.displayName || gr.name)) continue;
+        for (const c of Array.isArray(g.competitions) ? g.competitions : []) {
+          const p = lerPartida(c, ev, nome, liga);
+          if (p) { daqui.push(p); if (!localPartida && c.venue) localPartida = localDe(c.venue); }
+        }
+      }
+      partidas.push(...daqui);
+      // rodada atual: a da partida ao vivo; senão a da próxima marcada; senão a da última encerrada
+      const t = (x) => Date.parse(x.data) || 0;
+      const ref = daqui.find((x) => x.estado === "in") || daqui.filter((x) => x.estado === "pre").sort((x, y) => t(x) - t(y))[0] || daqui.filter((x) => x.estado === "post").sort((x, y) => t(y) - t(x))[0];
+      const nomeT = txt(ev.name || ev.shortName, 60);
+      if (!nomeT) continue;
+      torneios.push({ id: txt(ev.id, 20), nome: nomeT, local: localDe(ev.venue) || (typeof ev.location === "string" ? txt(ev.location, 60) : "") || localPartida,
+        inicio: iso(ev.date), fim: iso(ev.endDate), rodada: ref ? ref.rodada : "", aoVivo: daqui.some((x) => x.estado === "in"), partidas: daqui.length });
+    }
+  } catch (e) {}
+  partidas.sort(porData);
+  const lg = j && Array.isArray(j.leagues) ? j.leagues[0] : null;
+  const temporada = num((j && j.season && j.season.year) ?? (lg && lg.season && lg.season.year));
+  return { partidas, torneios, temporada, chaves: [...chaves] };
+}
+// Partidas do dia (em São Paulo) mais as em andamento, ao vivo primeiro e depois pela hora
+export function partidasDoDia(partidas, agora = Date.now()) {
+  const hoje = diaSP(agora);
+  const t = (x) => Date.parse(x.data) || 0;
+  return partidas.filter((x) => x.estado === "in" || (x.data && diaSP(t(x)) === hoje))
+    .sort((a, b) => Number(b.estado === "in") - Number(a.estado === "in") || t(a) - t(b));
+}
+
 // ---------- ESPN: tabela ----------
 // stats por nome (rank, points, gamesPlayed, wins, draws ou ties, losses, pointsFor, pointsAgainst, pointDifferential;
-// NBA e NFL: winPercent, gamesBehind, playoffSeed). Grupos (Libertadores, conferências da NBA e da NFL, divisões se a ESPN
-// mandar): cada nó em children com standings.entries é um grupo e cada linha leva o nome dele.
+// NBA: winPercent, gamesBehind, playoffSeed). Grupos (Libertadores, conferências da NBA): cada nó em children com
+// standings.entries é um grupo e cada linha leva o nome dele.
 // Liga com `porSeed`: dentro de cada grupo a ordem é a do playoffSeed (sem ele, % de vitórias e vitórias), pos é a
-// posição no grupo e a zona sai do seed (na NFL por divisão, o seed é o da conferência).
+// posição no grupo e a zona sai do seed.
 export function lerStandings(j, liga) {
   const grupos = [];
   const visitar = (no, nome, prof = 0) => {
@@ -374,7 +474,8 @@ export async function ligasAtivas(env) {
   try { ({ results } = await env.DB.prepare("SELECT data FROM docs WHERE collection >= 'prefs/' AND collection < 'prefs0' AND id = 'esportes'").all()); } catch (e) {}
   for (const r of results || []) {
     let p;
-    try { p = JSON.parse(r.data); } catch { continue; }
+    try { p = E.semRetiradas(JSON.parse(r.data)); } catch { continue; }
+    if (!p || typeof p !== "object") continue;
     const v = E.validarPrefs({ competicoes: p.competicoes, times: p.times, ordem: p.ordem });
     if (!v.prefs) continue;
     v.prefs.competicoes.forEach((l) => ligas.add(l));
@@ -420,8 +521,12 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
   const def = E.LIGAS[liga];
   if (!def) return null;
   const antes = (await lerDoc(env, "meta", idDoc(liga))) || {};
-  const v = forcar || vencidos(antes, times, agora);
+  const v = { ...(forcar || vencidos(antes, times, agora)) };
+  // sem tabela (Copa do Brasil, tênis): a tabela nunca vence, senão o doc seria regravado a cada passada sem motivo
+  if (def.semTabela) v.tabela = false;
+  if (def.tenis) v.times = false;
   if (!v.rodada && !v.tabela && !v.times) return null;
+  if (def.tenis) return atualizarTenis(env, liga, def, antes, { fila, agora, erros });
   const doc = { tabela: [], rodada: { numero: null, jogos: [] }, proximos: [], ultimos: [], times: {}, tentativas: {}, ...antes, liga, nome: def.nome, fonte: antes.fonte || def.fonte };
   doc.tentativas = { ...(antes.tentativas || {}) };
   const quandoIso = new Date(agora).toISOString();
@@ -432,25 +537,18 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
   if (!viaGe) {
     if (v.rodada) {
       try {
-        // NFL: a semana atual inteira numa chamada, e a anterior para os resultados. Os outros: hoje e os dias com jogo.
-        const sb = lerScoreboard((await fila(urlScoreboard(liga, def.semana ? "" : diaSP(agora)))).json, liga);
+        // hoje e os dias com jogo
+        const sb = lerScoreboard((await fila(urlScoreboard(liga, diaSP(agora)))).json, liga);
         if (sb.temporada) doc.temporada = sb.temporada;
         const vistos = new Set(sb.jogos.map((x) => x.id));
         const juntar = (outro) => { for (const j of outro.jogos) if (!vistos.has(j.id)) { vistos.add(j.id); sb.jogos.push(j); } };
-        if (def.semana) {
-          if (sb.numero > 1 && sb.temporada && sb.tipoTemporada) {
-            try { juntar(lerScoreboard((await fila(urlSemana(liga, sb.temporada, sb.tipoTemporada, sb.numero - 1))).json, liga)); }
-            catch (e) { if (e.limite) throw e; erros[liga + ":semana-anterior"] = String((e && e.message) || e); }
-          }
-        } else {
-          // os outros dias com jogo; se o orçamento acabar no meio, fica com o que veio
-          for (const dia of diasExtras(sb.calendario, agora, def.diasExtras ?? DIAS_EXTRA)) {
-            let outro;
-            try { outro = lerScoreboard((await fila(urlScoreboard(liga, dia))).json, liga); }
-            catch (e) { if (e.limite) break; continue; }
-            juntar(outro);
-            if (sb.numero == null && outro.numero != null) sb.numero = outro.numero;
-          }
+        // os outros dias com jogo; se o orçamento acabar no meio, fica com o que veio
+        for (const dia of diasExtras(sb.calendario, agora, def.diasExtras ?? DIAS_EXTRA)) {
+          let outro;
+          try { outro = lerScoreboard((await fila(urlScoreboard(liga, dia))).json, liga); }
+          catch (e) { if (e.limite) break; continue; }
+          juntar(outro);
+          if (sb.numero == null && outro.numero != null) sb.numero = outro.numero;
         }
         if (!sb.jogos.length && def.reserva === "ge" && !(antes.rodada && antes.rodada.jogos && antes.rodada.jogos.length)) espnFalhou = true;
         doc.rodada = escolherRodada(sb.jogos, agora, sb.numero, def.raioRodada ?? 2);
@@ -512,19 +610,61 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
   return doc;
 }
 
+// Tênis: o scoreboard sem data (torneios em andamento) e ontem, hoje e amanhã, cada um numa chamada; partidas juntadas
+// pelo id. Sem tabela e sem times. Se tudo falhar, fica o doc de antes e o erro vai para "<liga>:rodada".
+async function atualizarTenis(env, liga, def, antes, { fila, agora, erros }) {
+  const doc = { tabela: [], rodada: { numero: null, jogos: [] }, proximos: [], ultimos: [], torneios: [], times: {}, tentativas: {}, ...antes, liga, nome: def.nome, fonte: "espn" };
+  doc.tentativas = { ...(antes.tentativas || {}) };
+  const quandoIso = new Date(agora).toISOString();
+  const porId = new Map();
+  let torneios = null, ok = 0, ultimoErro = null;
+  for (const dia of ["", diaSP(agora, -1), diaSP(agora), diaSP(agora, 1)]) {
+    let r;
+    try { r = lerTenis((await fila(urlScoreboard(liga, dia))).json, liga); }
+    catch (e) { if (e.limite) { if (!ok) throw e; break; } ultimoErro = e; continue; }
+    ok++;
+    if (r.temporada) doc.temporada = r.temporada;
+    for (const p of r.partidas) if (!porId.has(p.id)) porId.set(p.id, p);
+    // os torneios vêm da chamada sem data; se ela falhar, dos dias
+    if (dia === "" && r.torneios.length) torneios = r.torneios;
+    else if (!torneios && r.torneios.length) torneios = r.torneios;
+  }
+  if (!ok) {
+    erros[liga + ":rodada"] = String((ultimoErro && ultimoErro.message) || ultimoErro || "sem resposta");
+    doc.tentativas.rodada = quandoIso;
+  } else {
+    const partidas = [...porId.values()].sort(porData);
+    doc.rodada = { numero: null, jogos: partidasDoDia(partidas, agora) };
+    doc.proximos = proximosDe(partidas, agora, 40);
+    doc.ultimos = ultimosDe(partidas, 30);
+    doc.torneios = torneios || [];
+    doc.rodadaEm = quandoIso; delete doc.tentativas.rodada;
+  }
+  doc.atualizado = quandoIso;
+  await gravar(env, "meta", idDoc(liga), doc);
+  return doc;
+}
+
 // ---------- sonda ----------
 // Na primeira execução monta a lista do que testar; anda 6 por minuto; cada resposta (até 20 KB) vai para
 // _sistema/sonda-esportes-aNN e o resumo (status, tamanho, tempo, o que o parser achou) para _sistema/sonda-esportes.
 // Depois de pronta só volta a andar quando a lista ganha item novo (competição nova em SONDA_LIGAS): pede só os novos.
 // Para rodar tudo de novo, o Admin apaga os docs da sonda (por id).
-const SONDA_LIGAS = ["bra.1", "bra.copa_do_brasil", "conmebol.libertadores", "conmebol.sudamericana", "bra.camp.gaucho", "eng.1", "uefa.champions", "esp.1", "ita.1", "ger.1", "fra.1", "nba", "nfl"];
-const SONDA_RSS = ["https://ge.globo.com/rss/ge/", "https://ge.globo.com/rss/ge/futebol/times/internacional/", "https://ge.globo.com/rss/ge/rs/", "https://ge.globo.com/rss/ge/futebol/campeonato-gaucho/", "https://ge.globo.com/rss/ge/futebol/copa-do-brasil/", "https://ge.globo.com/rss/ge/futebol/libertadores/", "https://ge.globo.com/rss/ge/futebol/brasileirao-serie-a/"];
+const SONDA_LIGAS = ["bra.1", "bra.copa_do_brasil", "conmebol.libertadores", "conmebol.sudamericana", "bra.camp.gaucho", "eng.1", "uefa.champions", "esp.1", "ita.1", "ger.1", "fra.1", "nba", "atp", "wta"];
+// RSS candidatos. Os de padel (05/11/2026) não deram para abrir do ambiente de desenvolvimento; os que vierem com 200 e
+// itens vão para src/feeds.js, seção esportes.
+const SONDA_RSS = ["https://ge.globo.com/rss/ge/", "https://ge.globo.com/rss/ge/futebol/times/internacional/", "https://ge.globo.com/rss/ge/rs/", "https://ge.globo.com/rss/ge/futebol/campeonato-gaucho/", "https://ge.globo.com/rss/ge/futebol/copa-do-brasil/", "https://ge.globo.com/rss/ge/futebol/libertadores/", "https://ge.globo.com/rss/ge/futebol/brasileirao-serie-a/",
+  "https://www.padelfip.com/feed/", "https://www.padelfip.com/es/feed/", "https://thepadelpaper.com/feed/", "https://padelalto.com/feed",
+  "https://www.padelworldpress.es/feed/", "https://www.padeladdict.com/feed/", "https://superpadel.com.br/feed/", "https://www.padelclube.com/blog-feed.xml"];
 const SONDA_POR_VEZ = 6;
 const AMOSTRA_MAX = 20_000;
 export function listaSonda(agora = Date.now()) {
   const l = [];
-  for (const liga of SONDA_LIGAS) l.push({ tipo: "scoreboard", liga, url: urlScoreboard(liga, E.LIGAS[liga] && E.LIGAS[liga].semana ? "" : diaSP(agora)) });
-  for (const liga of SONDA_LIGAS) l.push({ tipo: "standings", liga, url: urlStandings(liga) });
+  // tênis: o scoreboard sem data (torneios em andamento) e o de hoje; sem standings
+  const tenis = (liga) => !!(E.LIGAS[liga] && E.LIGAS[liga].tenis);
+  for (const liga of SONDA_LIGAS) l.push({ tipo: "scoreboard", liga, url: urlScoreboard(liga, tenis(liga) ? "" : diaSP(agora)) });
+  for (const liga of SONDA_LIGAS.filter(tenis)) l.push({ tipo: "scoreboard-dia", liga, url: urlScoreboard(liga, diaSP(agora)) });
+  for (const liga of SONDA_LIGAS.filter((x) => !tenis(x))) l.push({ tipo: "standings", liga, url: urlStandings(liga) });
   l.push({ tipo: "schedule", liga: "bra.1", url: "" }); // o id do time sai da tabela do bra.1, quando ela chegar
   for (const liga of Object.keys(E.LIGAS)) if (E.LIGAS[liga].ge) l.push({ tipo: "ge", liga, url: E.LIGAS[liga].ge });
   const ja = new Set(FEEDS.map((f) => f[3]));
@@ -534,7 +674,16 @@ export function listaSonda(agora = Date.now()) {
 function resumoSonda(x, r, agora) {
   const out = {};
   try {
-    if (x.tipo === "scoreboard") { const s = lerScoreboard(JSON.parse(r), x.liga); out.jogos = s.jogos.length; out.estados = [...new Set(s.jogos.map((j) => j.estado))]; out.numero = s.numero; out.temporada = s.temporada; out.tipoTemporada = s.tipoTemporada; out.diasNoCalendario = s.calendario.length; const vivo = s.jogos.find((j) => j.minuto); if (vivo) out.minuto = vivo.minuto; }
+    if ((x.tipo === "scoreboard" || x.tipo === "scoreboard-dia") && E.LIGAS[x.liga] && E.LIGAS[x.liga].tenis) {
+      const t = lerTenis(JSON.parse(r), x.liga), p = t.partidas;
+      Object.assign(out, { torneios: t.torneios.length, partidas: p.length, estados: [...new Set(p.map((j) => j.estado))], chaves: t.chaves,
+        comCabeca: p.filter((j) => j.cabecas.some((c) => c != null)).length, comRank: p.filter((j) => j.ranks.some((c) => c != null)).length,
+        comSets: p.filter((j) => j.sets.length).length, semData: p.filter((j) => !j.data).length, semRodada: p.filter((j) => !j.rodada).length,
+        primeiroTorneio: t.torneios[0] ? `${t.torneios[0].nome} · ${t.torneios[0].local || "sem local"} · ${t.torneios[0].rodada || "sem rodada"}` : "" });
+      const ex = p.find((j) => j.estado === "in") || p.find((j) => j.sets.length) || p[0];
+      if (ex) out.exemplo = `${ex.jogadores.join(" x ")} | ${E.placarSets(ex.sets) || "-"} | ${ex.estado}${ex.minuto ? " " + ex.minuto : ""} | ${ex.rodada || "-"} | ${ex.chave || "-"}`;
+    }
+    else if (x.tipo === "scoreboard") { const s = lerScoreboard(JSON.parse(r), x.liga); out.jogos = s.jogos.length; out.estados = [...new Set(s.jogos.map((j) => j.estado))]; out.numero = s.numero; out.temporada = s.temporada; out.tipoTemporada = s.tipoTemporada; out.diasNoCalendario = s.calendario.length; const vivo = s.jogos.find((j) => j.minuto); if (vivo) out.minuto = vivo.minuto; }
     else if (x.tipo === "standings") {
       const s = lerStandings(JSON.parse(r), x.liga); out.linhas = s.tabela.length; out.grupos = [...new Set(s.tabela.map((l) => l.grupo || ""))].length; out.primeiro = s.tabela[0] ? s.tabela[0].time + " " + s.tabela[0].pts : "";
       if (E.LIGAS[x.liga] && E.LIGAS[x.liga].porSeed) { const p = s.tabela[0] || {}; out.primeiro = p.time ? `${p.time} ${p.v}-${p.d} pct ${p.pct} gb ${p.gb} seed ${p.seed}` : ""; out.comSeed = s.tabela.filter((l) => l.seed != null).length; out.nomesGrupos = [...new Set(s.tabela.map((l) => l.grupo || ""))]; }

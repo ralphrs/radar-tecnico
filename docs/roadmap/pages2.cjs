@@ -280,7 +280,7 @@ pages.push({
     h2('esportes-pendente', 'Pendências'),
     `<div class="cards">${[
       card('Conferir as sondas em produção', `<p>Olhar as amostras de ${C('_sistema/sonda-esportes-aNN')} do primeiro cron e ajustar os parsers da ESPN e do ge ao formato real. O ambiente de desenvolvimento não alcança a ESPN nem o ge, então os parsers foram escritos pelo formato conhecido.</p>`, { k: 'warn', pills: [PILL.fila(12)] }),
-      card('NBA, NFL e F1', `<p>O módulo já aceita qualquer ${C('<esporte>/<liga>')} da ESPN. Falta pôr em ${C('LIGAS')} e na tela.</p>`, { k: 'warn', pills: [PILL.fila(12)] }),
+      card('NBA e tênis', `<p>NBA (04/11) e ATP e WTA (05/11) já estão em ${C('LIGAS')} e na tela; falta conferir o formato pelas amostras da sonda. NFL retirada em 05/11 e F1 fora, por decisão do dono. Padel só com notícias até haver fonte de resultados.</p>`, { k: 'warn', pills: [PILL.fila(12)] }),
       card('RSS do ge', `<p>Pôr em ${C('src/feeds.js')} os que a sonda achar com itens.</p>`, { k: 'warn', pills: [PILL.admin()] }),
     ].join('')}</div>`,
 
@@ -304,7 +304,7 @@ pages.push({
       card('Marcar como lido', `<p>Junto com esconder fonte.</p>`, { k: 'idea', pills: [PILL.ideia()] }),
       card('Atalhos de teclado', `<p>Na mesma linha de marcar como lido e esconder fonte.</p>`, { k: 'idea', pills: [PILL.ideia()] }),
       card('Job mensal de exportação', `<p>Extratos da B3 exportados pelo Chrome uma vez por mês. Já tem lugar na fila, no passo 11.</p>`, { k: 'warn', pills: [PILL.fila(11)] }),
-      card('Outras ligas', `<p>NBA, NFL e F1 pela ESPN. Passo 12 da fila.</p>`, { k: 'warn', pills: [PILL.fila(12)] }),
+      card('Outras ligas', `<p>Esportes fica em futebol, NBA, tênis e padel (só notícias). Passo 12 da fila.</p>`, { k: 'warn', pills: [PILL.fila(12)] }),
       card('Domínio próprio', `<p>Depende do nome da empresa. Veja <a href="#troca-de-nome">Troca de nome</a>.</p>`, { k: 'warn', pills: [PILL.admin()] }),
     ].join('')}</div>`,
     dec('Busca com IA só com acervo grande.',

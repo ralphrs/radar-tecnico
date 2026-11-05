@@ -116,8 +116,13 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Esportes: rodada, próximos jogos e tabela por competição configurável, pela ESPN (endpoints públicos) e pelo Globo Esporte no Gauchão quando a ESPN não tiver; `meta/esportes-<liga>`, cron a cada 15 min com jogo perto e 1x/hora sem, tabela 2x/dia, times 1x/dia; cartões acima do feed com Rodada, Próximos e Tabela com zonas coloridas; "Meus esportes" (`#esportes/config`, menu da conta) com competições, ordem e times; widgets de rodada, tabela e próximo jogo no Início (docs/LOOKOUT.md, "Esportes")
 - [x] Esportes conferido em produção (04/11, 15h14): Brasileirão com 9 próximos, 3 últimos e tabela de 20; Libertadores com tabela de 32 (mata-mata sem rodada); scoreboard da ESPN só aceita um dia por chamada, corrigido em c607db4
 - [x] Esportes: RSS do ge conferidos pela sonda (Libertadores, Copa do Brasil, RS, Gauchão e o geral `/rss/ge/`) em `src/feeds.js`; a página do Gauchão no ge deu 404, então o ge não serve de reserva (04/11)
-- [x] Esportes: NBA e NFL em `LIGAS` e na tela (grupo "Outros esportes" em Meus esportes, tabela com V, D, % e GB na NBA e V, D, E e % na NFL, zonas pelo seed, período "4º quarto · 5:32"); formato da ESPN ainda por conferir pela sonda em produção (docs/LOOKOUT.md, "NBA e NFL") (04/11)
-- [ ] Esportes: F1 (outro formato: corrida e classificação de pilotos, sem jogo de dois lados)
+- [x] Esportes: NBA e NFL em `LIGAS` e na tela (tabela com V, D, % e GB na NBA, zonas pelo seed, período "4º quarto · 5:32"); formato da ESPN ainda por conferir pela sonda em produção (docs/LOOKOUT.md, "NBA") (04/11). A NFL foi retirada em 05/11 por decisão do dono
+- [x] Esportes cobre só futebol, basquete (NBA), tênis e padel, por decisão do dono (05/11): NFL retirada (código, testes, fixtures, widgets e docs; quem tinha ligado fica com o resto); grupos de Meus esportes viram Futebol, Basquete, Tênis e Padel
+- [x] Esportes: tênis (ATP e WTA) pela ESPN, abas Jogos, Próximos e Torneios, jogadores acompanhados pelo nome, widgets "ATP · jogos" e "WTA · jogos"; formato da ESPN por conferir pela sonda em produção (docs/LOOKOUT.md, "Tênis") (05/11)
+- [x] Esportes: padel só como notícias (05/11): tema "Padel" no feed, The Joy of Padel em `src/feeds.js`, os outros candidatos de RSS na sonda, grupo "Padel" em Meus esportes com a nota de que ainda não há fonte de resultados (docs/LOOKOUT.md, "Padel")
+- [ ] Padel: resultados quando houver fonte (Premier Padel e FIP não expõem JSON público hoje)
+- [ ] Padel: avisar a curadoria de Esportes (`trig_01KPpFyECoH1eGqHKSzhg3Cq`) do tema `padel`; pôr em `src/feeds.js` os RSS de padel que a sonda aprovar
+- [x] ~~Esportes: F1~~ fora, por decisão do dono (05/11)
 - [x] Minhas listas: colunas Qtd e Valor e linha colorida pelo resultado da posição na lateral e no widget do Início, para quem tem o papel na carteira
 - [x] Nos fóruns em todas as seções: 28 subreddits novos (38 no total), Investimentos e Esportes com bloco e widget (docs/coleta.md)
 - [x] "Trocar de conta" no menu da conta (página e admin)
@@ -138,7 +143,7 @@ A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas
 - [ ] 9. SSR, fases 2 e 3: shell renderizado no servidor e widget por widget na stack nova; a sessão de telas grandes, tablet e celular acontece aqui, widget a widget, não como passo separado
 - [ ] 10. SSR, fase 4: cutover, `public/index.html` sai, `/api/*` restrito, medir e comparar com a fase 0
 - [ ] 11. Job mensal de exportação dos extratos pelo Chrome
-- [ ] 12. Esportes: NBA e NFL feitos em 04/11 (falta conferir as amostras da sonda em produção); F1 fica, outro formato; conferir sondas da ESPN e do ge em produção
+- [ ] 12. Esportes: futebol, NBA (04/11) e tênis (05/11) feitos; padel só com notícias; NFL retirada em 05/11 e F1 fora, por decisão do dono. Falta conferir as amostras da sonda em produção (NBA, ATP, WTA e os RSS de padel) e ajustar os parsers ao que vier
 - [ ] Troca de nome news → lookout (passo a passo em docs/cloudflare.md, "Troca de nome do Worker")
   - [x] Repositório todo em `lookout`: wrangler, custos, user-agent, docs, admin (04/11)
   - [ ] Worker `lookout` criado no Workers Builds, 8 secrets colados (CARTEIRA_KEY a mesma), Access ligado com AUD novo

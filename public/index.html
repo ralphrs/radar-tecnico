@@ -1469,8 +1469,26 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .esp-jogos { list-style: none; margin: 0; padding: 0; }
 .esp-jogo { display: grid; grid-template-columns: 150px minmax(0, 1fr) 58px minmax(0, 1fr); grid-template-areas: "q m p v"; align-items: center; gap: 2px 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .esp-jogo:first-child { border-top: 0; }
-/* basquete e futebol americano: placar de três dígitos e período mais longo ("ao vivo · 4º quarto · 5:32") */
-.esp-basquete .esp-jogo, .esp-futebol-americano .esp-jogo { grid-template-columns: 200px minmax(0, 1fr) 80px minmax(0, 1fr); }
+/* basquete: placar de três dígitos e período mais longo ("ao vivo · 4º quarto · 5:32") */
+.esp-basquete .esp-jogo { grid-template-columns: 200px minmax(0, 1fr) 80px minmax(0, 1fr); }
+/* tênis: uma partida por linha, os dois jogadores, a rodada embaixo e o placar por sets à direita */
+.esp-partida { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; grid-template-areas: "q j s"; align-items: center; gap: 2px 12px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.esp-partida:first-child { border-top: 0; }
+.esp-js { grid-area: j; min-width: 0; }
+.esp-js > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-js small { display: block; font-size: 12px; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-cab-chave { color: var(--muted-foreground); font: 400 11.5px var(--font-mono); }
+.esp-js .ganhou { font-weight: 600; }
+.esp-js .meu { color: var(--primary); font-weight: 600; }
+.esp-sets { grid-area: s; font: 600 13px/1.3 var(--font-mono); white-space: nowrap; text-align: right; }
+.esp-partida.pre .esp-sets { color: var(--muted-foreground); font-weight: 400; }
+.esp-partida.in .esp-sets { color: var(--err); }
+.esp-torneios { list-style: none; margin: 0; padding: 0; }
+.esp-torneio { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13.5px; }
+.esp-torneio:first-child { border-top: 0; }
+.esp-torneio b { font-weight: 600; }
+.esp-torneio small { display: block; font-size: 12px; color: var(--muted-foreground); }
+.esp-torneio .esp-rod { font-size: 12.5px; color: var(--muted-foreground); text-align: right; white-space: nowrap; }
 .esp-q { grid-area: q; font: 400 12px/1.3 var(--font-mono); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .esp-m { grid-area: m; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .esp-v { grid-area: v; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1487,8 +1505,12 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
   .esp-card { padding: 8px 12px 8px; }
   .esp-cab .seg { width: 100%; }
   .esp-cab .seg button { flex: 1 1 0; justify-content: center; }
-  .esp-jogo, .esp-basquete .esp-jogo, .esp-futebol-americano .esp-jogo { grid-template-columns: minmax(0, 1fr) 50px minmax(0, 1fr); grid-template-areas: "q q q" "m p v"; }
-  .esp-basquete .esp-jogo, .esp-futebol-americano .esp-jogo { grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr); }
+  .esp-jogo, .esp-basquete .esp-jogo { grid-template-columns: minmax(0, 1fr) 50px minmax(0, 1fr); grid-template-areas: "q q q" "m p v"; }
+  .esp-basquete .esp-jogo { grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr); }
+  .esp-partida { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "q q" "j s"; }
+  .esp-partida .esp-q { text-align: left; }
+  .esp-torneio { grid-template-columns: minmax(0, 1fr); }
+  .esp-torneio .esp-rod { text-align: left; }
   .esp-q { text-align: center; }
 }
 .esp-pe { display: flex; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted-foreground); }
@@ -1528,6 +1550,10 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .esp-times { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
 .esp-busca { position: relative; }
 .esp-busca .lst-sug { position: absolute; left: 0; right: 0; top: 100%; z-index: 2; }
+.esp-busca-jog { display: flex; gap: 8px; align-items: flex-start; }
+.esp-busca-jog .esp-busca { flex: 1 1 auto; min-width: 0; }
+.esp-busca-jog select { flex: none; width: auto; }
+.esp-cfg-nota { margin: 2px 0 6px; font-size: 13px; color: var(--muted-foreground); }
 .esp-erro { color: var(--err); font-size: 13px; margin: 0; }
 /* Widgets de Esportes no Início */
 .wdg-esp { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -1538,6 +1564,12 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .wdg-esp .esp-p { min-width: 40px; }
 .wdg-esp li.pre .esp-p { color: var(--muted-foreground); font-weight: 400; }
 .wdg-esp li.in .esp-p { color: var(--err); }
+.wdg-esp li.wdg-partida { grid-template-columns: minmax(0, 1fr) auto; }
+.wdg-esp .wdg-partida .esp-js, .wdg-esp .wdg-partida .esp-sets { grid-area: auto; }
+.wdg-esp .wdg-partida .esp-q { text-align: left; }
+.wdg-esp .wdg-partida .esp-sets { font-size: 12px; }
+.wdg-esp li.pre .esp-sets { color: var(--muted-foreground); font-weight: 400; }
+.wdg-esp li.in .esp-sets { color: var(--err); }
 @media (min-width: 700px) {
   .wdg[data-c="2"] .wdg-esp { display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px; }
   .wdg[data-c="2"] .wdg-esp li:nth-child(2) { border-top: 0; }
@@ -2001,6 +2033,8 @@ const TEMAS_ESPORTES = [
     subs: [{ id: "brasil", nome: "Mercado brasileiro" }, { id: "internacional", nome: "Mercado internacional" }, { id: "inter", nome: "Inter no mercado" }] },
   { id: "internacional", curto: "Futebol internacional", nome: "Futebol internacional", cor: G.set, temas: ["internacional"],
     subs: [{ id: "europa", nome: "Ligas da Europa" }, { id: "champions", nome: "Champions e copas europeias" }, { id: "selecoes", nome: "Seleções e Copa do Mundo" }, { id: "brasileiros", nome: "Brasileiros no exterior" }] },
+  /* Padel (05/11/2026): só notícias por enquanto; a curadoria grava tema "padel" */
+  { id: "padel", curto: "Padel", nome: "Padel", cor: G.dev, temas: ["padel"] },
 ];
 /* TEMAS, TIPOS e os mapas abaixo apontam para o radar aberto e são trocados em aplicarRadar() */
 let TEMAS = TEMAS_TECH, GRUPO_DE = {}, TEMA = {};
@@ -5016,10 +5050,11 @@ const CATALOGO_LOCAL = [
   ...ORDEM_RADARES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   /* Nos fóruns: as seções com subreddit hoje (src/feeds.js); o catálogo do servidor, que já vem filtrado, manda */
   ...ORDEM_RADARES.map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
-  /* Esportes (public/esportes.js): rodada e tabela de cada competição e o próximo jogo do time; só as ligadas aparecem */
+  /* Esportes (public/esportes.js): rodada e tabela de cada competição (tênis só a de jogos) e o próximo jogo do time;
+     só as ligadas aparecem */
   ...window.Esportes.ORDEM_LIGAS.flatMap((l) => [
     { id: "esportes-rodada-" + l, titulo: window.Esportes.LIGAS[l].curto + " · " + window.Esportes.rodadaDe(l), tamanho: 1, secao: "esportes", liga: l },
-    { id: "esportes-tabela-" + l, titulo: window.Esportes.LIGAS[l].curto + " · tabela", tamanho: 1, secao: "esportes", liga: l },
+    ...(window.Esportes.LIGAS[l].tenis ? [] : [{ id: "esportes-tabela-" + l, titulo: window.Esportes.LIGAS[l].curto + " · tabela", tamanho: 1, secao: "esportes", liga: l }]),
   ]),
   { id: "esportes-meu-time", titulo: "Meu time · próximo jogo", tamanho: 1, secao: "esportes" },
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },
@@ -8534,6 +8569,9 @@ const espLigadas = () => ES.ligadas(espPrefsOu());
 const espTimes = () => espPrefsOu().times || [];
 const espTimeDe = (liga) => espTimes().find((t) => t.liga === liga) || null;
 const espMeuTime = () => espTimes()[0] || null;
+/* jogadores de tênis acompanhados (nome digitado), por liga */
+const espJogadores = () => espPrefsOu().jogadores || [];
+const espJogadoresDe = (liga) => espJogadores().filter((x) => x.liga === liga);
 let espEstado = { aba: {}, fechados: [] };
 try { const s = JSON.parse(localStorage.getItem("radar-esportes") || "null"); if (s && typeof s === "object") espEstado = { aba: s.aba && typeof s.aba === "object" ? s.aba : {}, fechados: Array.isArray(s.fechados) ? s.fechados : [] }; } catch (e) {}
 const guardarEspEstado = () => { try { localStorage.setItem("radar-esportes", JSON.stringify(espEstado)); } catch (e) {} };
@@ -8588,7 +8626,7 @@ function quandoJogo(j) {
   return j.estado === "post" ? dia + " · encerrado" : dia + " · " + p.hora;
 }
 const ehMeu = (j, t) => !!t && (j.ids || []).includes(t.id);
-/* curto: sigla no lugar do nome (tela muito estreita, card 1x1); medio: o nome curto da ESPN quando houver (NBA e NFL no
+/* curto: sigla no lugar do nome (tela muito estreita, card 1x1); medio: o nome curto da ESPN quando houver (NBA no
    celular e no Início: "Lakers" em vez de "Los Angeles Lakers") */
 function jogoEl(j, t, curto, medio) {
   const p = ES.partesData(j.data);
@@ -8622,8 +8660,7 @@ const COLS_ESP = [
 /* % de vitórias (0.75 → "75,0") e jogos atrás do líder (1.5 → "1,5") */
 const fmtPctEsp = (v) => (v == null ? "–" : (v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 const fmtGbEsp = (v) => (v == null ? "–" : v.toLocaleString("pt-BR", { maximumFractionDigits: 1 }));
-/* Colunas da tabela de cada competição (public/esportes.js): futebol com J, Pts, SG, V, E, D, GP, GC; NBA com V, D, % e GB;
-   NFL com V, D, E e % */
+/* Colunas da tabela de cada competição (public/esportes.js): futebol com J, Pts, SG, V, E, D, GP, GC; NBA com V, D, % e GB */
 const colsDaLiga = (liga) => [COLS_ESP[0], COLS_ESP[1], ...ES.colunasDe(liga).map((id) => COLS_ESP.find((c) => c.id === id)).filter(Boolean)];
 const COL_GRUPO = { id: "grupo", rotulo: "Grupo", tipo: "texto", valor: (r) => r.grupo, filtravel: false, cls: "esp-esq" };
 function tabelaEsp(liga, d) {
@@ -8650,11 +8687,68 @@ function tabelaEsp(liga, d) {
   const leg = ES.legendaDe(liga);
   return [tab.el, leg.length ? el("ul", { class: "esp-leg", "aria-label": "Legenda das zonas" }, ...leg.map((z) => el("li", {}, el("i", { style: "--z:" + z.cor, "aria-hidden": "true" }), z.nome + " (" + z.faixa + ")"))) : null];
 }
-const ABAS_ESP = [["rodada", "Rodada"], ["proximos", "Próximos"], ["tabela", "Tabela"]];
-/* "Rodada" no futebol, "Jogos" na NBA, "Semana" na NFL */
-const maiuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-const abasDe = (liga) => ABAS_ESP.map(([id, nome]) => [id, id === "rodada" ? maiuscula(ES.rodadaDe(liga)) : nome]);
+/* Abas do cartão (public/esportes.js): "Rodada" no futebol, "Jogos" na NBA; no tênis, Jogos, Próximos e Torneios */
+const abasDe = (liga) => ES.abasDe(liga);
+
+/* ---- tênis: partidas (jogador contra jogador, placar por sets) e torneios ---- */
+/* jogador: nome (curto no celular), cabeça de chave entre parênteses, vencedor em negrito, acompanhado na cor primária */
+function nomeJogador(p, k, curto, seguidos) {
+  const nome = (curto && p.curtos && p.curtos[k]) || p.jogadores[k];
+  const meu = seguidos.some((x) => ES.ladoDoJogador(p, x.nome) === k);
+  const cls = [p.vencedor === k ? "ganhou" : "", meu ? "meu" : ""].filter(Boolean).join(" ");
+  const cab = p.cabecas && p.cabecas[k] != null ? el("span", { class: "esp-cab-chave", title: "Cabeça de chave " + p.cabecas[k] }, " (" + p.cabecas[k] + ")") : null;
+  return [cls ? el("span", { class: cls }, nome) : nome, cab];
+}
+function quandoPartida(p) {
+  if (p.estado === "in") return el("span", { class: "esp-vivo" }, "ao vivo" + (p.minuto ? " · " + p.minuto : ""));
+  if (p.detalhe === "adiado" || p.detalhe === "suspenso") return p.detalhe;
+  const pd = ES.partesData(p.data);
+  if (!pd) return p.estado === "post" ? "encerrada" : "a definir";
+  const dia = ES.rotuloDia(p.data);
+  return p.estado === "post" ? dia + " · encerrada" : dia + " · " + pd.hora;
+}
+function partidaEl(p, seguidos, curto, comTorneio) {
+  const meu = seguidos.some((x) => ES.ladoDoJogador(p, x.nome) >= 0);
+  const sets = ES.placarSets(p.sets);
+  const rotSets = p.estado === "pre" ? "a jogar" : (sets || "–") + (p.detalhe === "desistência" ? " (desistência)" : p.detalhe === "W.O." ? " (W.O.)" : "");
+  const sub = [comTorneio ? p.torneio : "", p.rodada, p.quadra && !curto ? p.quadra : ""].filter(Boolean).join(" · ");
+  const pd = ES.partesData(p.data);
+  const tit = p.jogadores.join(" × ") + (p.torneio ? " · " + p.torneio : "") + (pd ? " · " + pd.semana + " " + pd.ddmm + " " + pd.hora : "");
+  return el("li", { class: "esp-partida " + p.estado + (meu ? " meu" : ""), title: tit },
+    el("span", { class: "esp-q" }, quandoPartida(p)),
+    el("span", { class: "esp-js" }, el("span", {}, ...nomeJogador(p, 0, curto, seguidos), " × ", ...nomeJogador(p, 1, curto, seguidos)), sub ? el("small", {}, sub) : null),
+    el("span", { class: "esp-sets", "aria-label": p.estado === "pre" ? "a jogar" : "sets: " + (sets || "sem placar") }, rotSets));
+}
+const listaPartidas = (ps, seguidos, curto, comTorneio) => el("ul", { class: "esp-jogos" }, ...ps.map((p) => partidaEl(p, seguidos, curto, comTorneio)));
+/* "02/11 a 08/11" */
+function periodoTorneio(t) {
+  const a = ES.partesData(t.inicio), b = ES.partesData(t.fim);
+  return a && b ? (a.ddmm === b.ddmm ? a.ddmm : a.ddmm + " a " + b.ddmm) : a ? "desde " + a.ddmm : "";
+}
+function corpoTenis(liga, d, aba) {
+  const seguidos = espJogadoresDe(liga), curto = celular();
+  const varios = new Set([...((d.rodada && d.rodada.jogos) || []), ...(d.proximos || [])].map((p) => p.torneio)).size > 1;
+  if (aba === "torneios") {
+    const ts = d.torneios || [];
+    if (!ts.length) return [el("p", { class: "esp-vazio" }, "Nenhum torneio em andamento.")];
+    return [el("ul", { class: "esp-torneios" }, ...ts.map((t) => el("li", { class: "esp-torneio" },
+      el("span", {}, el("b", {}, t.nome), el("small", {}, [t.local, periodoTorneio(t)].filter(Boolean).join(" · ") || "Local não informado")),
+      t.aoVivo ? el("span", { class: "esp-vivo" }, "ao vivo" + (t.rodada ? " · " + t.rodada : "")) : el("span", { class: "esp-rod" }, t.rodada ? "rodada atual: " + t.rodada : ""))))];
+  }
+  if (aba === "proximos") {
+    const todos = (d.proximos || []).filter((p) => p.estado === "pre");
+    const deles = seguidos.length ? todos.filter((p) => seguidos.some((x) => ES.ladoDoJogador(p, x.nome) >= 0)) : [];
+    const ps = (deles.length ? deles : todos).slice(0, 12);
+    const nota = el("p", { class: "esp-nota" }, deles.length ? "Próximas partidas de " + seguidos.filter((x) => deles.some((p) => ES.ladoDoJogador(p, x.nome) >= 0)).map((x) => x.nome).join(", ") : "Próximas partidas marcadas");
+    return ps.length ? [nota, listaPartidas(ps, seguidos, curto, varios)] : [el("p", { class: "esp-vazio" }, "Nenhuma partida marcada por enquanto.")];
+  }
+  const ps = (d.rodada && d.rodada.jogos) || [];
+  if (!ps.length) return [el("p", { class: "esp-vazio" }, "Nenhuma partida hoje.")];
+  return [listaPartidas(ps, seguidos, curto, varios)];
+}
+
 function corpoEsp(liga, d, aba) {
+  if (ES.LIGAS[liga] && ES.LIGAS[liga].tenis) return corpoTenis(liga, d, aba);
   const t = espTimeDe(liga);
   const curto = window.matchMedia("(max-width: 359px)").matches, medio = celular();
   if (aba === "tabela") return tabelaEsp(liga, d);
@@ -8672,7 +8766,7 @@ function cartaoEsp(liga) {
   const def = ES.LIGAS[liga]; if (!def) return null;
   const s = ES.slugLiga(liga), d = espDocs.get(liga);
   const fechado = espEstado.fechados.includes(liga);
-  const aba = ABAS_ESP.some(([a]) => a === espEstado.aba[liga]) ? espEstado.aba[liga] : "rodada";
+  const aba = abasDe(liga).some(([a]) => a === espEstado.aba[liga]) ? espEstado.aba[liga] : "rodada";
   const vivo = d && ((d.rodada && d.rodada.jogos) || []).some((j) => j.estado === "in");
   const corpoId = "esp-corpo-" + s;
   const tit = el("button", { class: "esp-tit", type: "button", id: "esp-tit-" + s, "aria-expanded": String(!fechado), "aria-controls": corpoId, title: fechado ? "Mostrar" : "Recolher" });
@@ -8706,7 +8800,7 @@ function renderEsportes(forcar) {
   carregarEsportes();
   const ligas = espLigadas();
   /* render() roda a cada filtro do feed: os cartões só são refeitos quando o que eles mostram mudou */
-  const k = JSON.stringify([ligas, espTimes(), ligas.map((l) => { const d = espDocs.get(l); return d === undefined ? "?" : d ? d.atualizado : "-"; }), espEstado, window.innerWidth < 700, window.innerWidth < 360, Math.floor(Date.now() / 60000)]);
+  const k = JSON.stringify([ligas, espTimes(), espJogadores(), ligas.map((l) => { const d = espDocs.get(l); return d === undefined ? "?" : d ? d.atualizado : "-"; }), espEstado, window.innerWidth < 700, window.innerWidth < 360, Math.floor(Date.now() / 60000)]);
   if (!forcar && k === espVisto) return;
   espVisto = k;
   box.textContent = "";
@@ -8723,7 +8817,7 @@ var espP = null, espPAberto = false, espPAbridor = null, espArrasto = null;
 function abrirMeusEsportes() {
   if (!espLiberado()) return;
   const p = espPrefsOu();
-  espP = { on: new Set(p.competicoes || []), ordem: ES.ordemCompleta(p.ordem), times: (p.times || []).map((t) => ({ ...t })), busca: "", marcada: -1, erro: "", salvando: false };
+  espP = { on: new Set(p.competicoes || []), ordem: ES.ordemCompleta(p.ordem), times: (p.times || []).map((t) => ({ ...t })), jogadores: (p.jogadores || []).map((x) => ({ ...x })), busca: "", marcada: -1, buscaJ: "", marcadaJ: -1, ligaJ: "atp", erro: "", salvando: false };
   if (!espPAberto) {
     espPAberto = true; espPAbridor = document.activeElement;
     const html = document.documentElement, sb = window.innerWidth - html.clientWidth;
@@ -8734,7 +8828,7 @@ function abrirMeusEsportes() {
   desenharMeusEsportes();
   $("esp-folha").focus({ preventScroll: true });
   /* os times do autocompletar vêm das tabelas e dos jogos das competições ligadas */
-  lerPrefsEsportes().then(() => { if (espPAberto && espP && !espP.mexeu && espPrefs) { espP.on = new Set(espPrefs.competicoes); espP.ordem = ES.ordemCompleta(espPrefs.ordem); espP.times = espPrefs.times.map((t) => ({ ...t })); desenharMeusEsportes(); } });
+  lerPrefsEsportes().then(() => { if (espPAberto && espP && !espP.mexeu && espPrefs) { espP.on = new Set(espPrefs.competicoes); espP.ordem = ES.ordemCompleta(espPrefs.ordem); espP.times = espPrefs.times.map((t) => ({ ...t })); espP.jogadores = (espPrefs.jogadores || []).map((x) => ({ ...x })); desenharMeusEsportes(); } });
   Promise.all(ES.ORDEM_LIGAS.filter((l) => espP.on.has(l)).map((l) => (espDocs.has(l) ? null : lerEsp(l)))).then(() => { if (espPAberto) desenharMeusEsportes(); });
 }
 function fecharMeusEsportes() {
@@ -8747,10 +8841,10 @@ function fecharMeusEsportes() {
   const volta = espPAbridor && espPAbridor.isConnected ? espPAbridor : $("esp-config");
   if (volta && volta.focus) volta.focus({ preventScroll: true });
 }
-/* Times conhecidos: os das tabelas e dos jogos guardados de cada competição ligada */
+/* Times conhecidos: os das tabelas e dos jogos guardados de cada competição ligada (o tênis tem jogadores, não times) */
 function timesConhecidos() {
   const out = new Map();
-  ES.ORDEM_LIGAS.filter((l) => espP.on.has(l)).forEach((liga) => {
+  ES.ORDEM_LIGAS.filter((l) => espP.on.has(l) && !ES.LIGAS[l].tenis).forEach((liga) => {
     const d = espDocs.get(liga); if (!d) return;
     (d.tabela || []).forEach((r) => { if (r.id && r.time) out.set(liga + "|" + r.id, { liga, id: r.id, nome: r.time, sigla: r.sigla || "" }); });
     [...((d.rodada && d.rodada.jogos) || []), ...(d.proximos || []), ...(d.ultimos || [])].forEach((j) => [0, 1].forEach((k) => {
@@ -8767,6 +8861,25 @@ function sugerirTimes(q) {
   return timesConhecidos().filter((t) => !ja.has(t.liga + "|" + t.id) && (semAcento(t.nome).toLowerCase().includes(s) || t.sigla.toLowerCase() === s))
     .sort((a, b) => Number(!semAcento(b.nome).toLowerCase().startsWith(s)) - Number(!semAcento(a.nome).toLowerCase().startsWith(s)) || a.nome.localeCompare(b.nome, "pt-BR")).slice(0, 8);
 }
+/* Jogadores conhecidos: os das partidas guardadas de ATP e WTA ligadas (o nome digitado também vale, sem sugestão) */
+function jogadoresConhecidos() {
+  const out = new Map();
+  ES.ORDEM_LIGAS.filter((l) => espP.on.has(l) && ES.LIGAS[l].tenis).forEach((liga) => {
+    const d = espDocs.get(liga); if (!d) return;
+    [...((d.rodada && d.rodada.jogos) || []), ...(d.proximos || []), ...(d.ultimos || [])].forEach((p) => [0, 1].forEach((k) => {
+      const nome = p.jogadores && p.jogadores[k];
+      if (nome && !out.has(liga + "|" + nome)) out.set(liga + "|" + nome, { liga, nome });
+    }));
+  });
+  return [...out.values()];
+}
+function sugerirJogadores(q) {
+  const s = semAcento(q).toLowerCase().trim();
+  if (s.length < 2) return [];
+  const ja = new Set(espP.jogadores.map((x) => x.liga + "|" + semAcento(x.nome).toLowerCase()));
+  return jogadoresConhecidos().filter((x) => !ja.has(x.liga + "|" + semAcento(x.nome).toLowerCase()) && semAcento(x.nome).toLowerCase().includes(s))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).slice(0, 8);
+}
 function moverEsp(id, para) {
   const o = espP.ordem.filter((x) => x !== id);
   o.splice(Math.max(0, Math.min(para, o.length)), 0, id);
@@ -8781,6 +8894,8 @@ function desenharMeusEsportes(foco) {
   const r = espPrefsOu();
   (r.esportes || ES.ESPORTES).forEach((esp) => {
     corpo.append(el("h3", {}, esp.nome));
+    /* grupo sem competição (padel): só a nota */
+    if (!(esp.ligas || []).length) { if (esp.nota) corpo.append(el("p", { class: "esp-cfg-nota" }, esp.nota)); return; }
     const ids = espP.ordem.filter((id) => (esp.ligas || []).some((l) => (l.id || l) === id));
     const ul = el("ul", { class: "esp-cfg-lista" });
     ids.forEach((id, n) => {
@@ -8840,6 +8955,7 @@ function desenharMeusEsportes(foco) {
   corpo.append(el("div", { class: "esp-busca" }, inp, sug));
   const conhecidos = timesConhecidos().length;
   corpo.append(el("p", { class: "pers-dica" }, conhecidos ? "Os nomes vêm das tabelas e dos jogos das competições ligadas." : "Ligue uma competição e espere a primeira coleta: os times dela aparecem aqui."));
+  desenharJogadores(corpo);
   if (espP.erro) corpo.append(el("p", { class: "esp-erro", role: "alert" }, espP.erro));
   const cancelar = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "esp-cancelar" }, "Cancelar");
   cancelar.addEventListener("click", fecharMeusEsportes);
@@ -8850,9 +8966,59 @@ function desenharMeusEsportes(foco) {
   const f = ativo && $(ativo);
   if (f && f.focus) { f.focus({ preventScroll: true }); if (f === inp) { try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) {} } }
 }
+/* Jogadores de tênis: nome digitado (com sugestão pelos nomes das partidas de ATP e WTA ligadas) e a liga */
+function desenharJogadores(corpo) {
+  corpo.append(el("h3", {}, "Jogadores de tênis que eu acompanho"));
+  const chips = el("div", { class: "esp-times" });
+  espP.jogadores.forEach((x, n) => {
+    const b = el("button", { type: "button", class: "chip", id: "esp-jog-x-" + n, "aria-label": `Parar de acompanhar ${x.nome}`, title: "Tirar" }, el("span", {}, x.nome + " · " + nomeLiga(x.liga)), el("span", { "aria-hidden": "true" }, " ×"));
+    b.addEventListener("click", () => { espP.jogadores.splice(n, 1); espP.mexeu = true; desenharMeusEsportes(espP.jogadores.length ? "esp-jog-x-" + Math.min(n, espP.jogadores.length - 1) : "esp-jog-q"); });
+    chips.append(b);
+  });
+  if (!espP.jogadores.length) chips.append(el("span", { class: "pers-dica" }, "Nenhum jogador ainda. As partidas deles aparecem destacadas e primeiro em Próximos."));
+  corpo.append(chips);
+  const inp = el("input", { class: "dd-input", id: "esp-jog-q", placeholder: "Nome do jogador ou da jogadora", value: espP.buscaJ, autocomplete: "off", role: "combobox", "aria-expanded": "false", "aria-controls": "esp-jog-sug", "aria-autocomplete": "list", "aria-label": "Nome do jogador" });
+  const sel = el("select", { class: "dd-input", id: "esp-jog-liga", "aria-label": "Circuito" }, ...ES.ORDEM_LIGAS.filter((l) => ES.LIGAS[l].tenis).map((l) => { const o = el("option", { value: l }, ES.LIGAS[l].curto); if (l === espP.ligaJ) o.selected = true; return o; }));
+  sel.addEventListener("change", () => { espP.ligaJ = sel.value; });
+  const add = el("button", { type: "button", class: "dd-btn dd-btn--outline", id: "esp-jog-add" }, "Adicionar");
+  const sug = el("ul", { class: "lst-sug", id: "esp-jog-sug", role: "listbox", "aria-label": "Jogadores", hidden: "" });
+  let opcoes = [];
+  const escolher = (o) => {
+    const nome = String(o.nome || "").replace(/\s+/g, " ").trim().slice(0, 40);
+    if (nome.length < 2) { espP.erro = "Digite pelo menos 2 letras do nome."; desenharMeusEsportes("esp-jog-q"); return; }
+    if (espP.jogadores.length >= ES.MAX_JOGADORES) { espP.erro = `Dá para acompanhar até ${ES.MAX_JOGADORES} jogadores.`; desenharMeusEsportes("esp-jog-q"); return; }
+    if (!espP.jogadores.some((x) => x.liga === o.liga && semAcento(x.nome).toLowerCase() === semAcento(nome).toLowerCase())) espP.jogadores.push({ liga: o.liga, nome });
+    espP.buscaJ = ""; espP.mexeu = true; espP.erro = ""; desenharMeusEsportes("esp-jog-q");
+  };
+  const pintarSug = () => {
+    sug.textContent = "";
+    opcoes.forEach((o, n) => {
+      const b = el("button", { type: "button", role: "option", tabindex: "-1", id: "esp-jog-op" + n, "aria-selected": String(n === espP.marcadaJ) }, el("b", {}, o.nome), el("span", {}, nomeLiga(o.liga)));
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+      b.addEventListener("click", () => escolher(o));
+      sug.append(el("li", {}, b));
+    });
+    sug.hidden = !opcoes.length; inp.setAttribute("aria-expanded", String(!!opcoes.length));
+    if (espP.marcadaJ >= 0) inp.setAttribute("aria-activedescendant", "esp-jog-op" + espP.marcadaJ); else inp.removeAttribute("aria-activedescendant");
+  };
+  /* sem sugestão marcada, Enter e Adicionar usam o nome como foi digitado, na liga escolhida */
+  const atualizar = () => { espP.buscaJ = inp.value; opcoes = sugerirJogadores(inp.value); espP.marcadaJ = -1; pintarSug(); };
+  inp.addEventListener("input", atualizar);
+  inp.addEventListener("blur", () => { opcoes = []; pintarSug(); });
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" && opcoes.length) { e.preventDefault(); espP.marcadaJ = (espP.marcadaJ + 1) % opcoes.length; pintarSug(); }
+    else if (e.key === "ArrowUp" && opcoes.length) { e.preventDefault(); espP.marcadaJ = (espP.marcadaJ - 1 + opcoes.length) % opcoes.length; pintarSug(); }
+    else if (e.key === "Enter") { e.preventDefault(); escolher(espP.marcadaJ >= 0 && opcoes[espP.marcadaJ] ? opcoes[espP.marcadaJ] : { liga: sel.value, nome: inp.value }); }
+    else if (e.key === "Escape" && (opcoes.length || inp.value)) { e.preventDefault(); e.stopPropagation(); inp.value = ""; atualizar(); }
+  });
+  add.addEventListener("click", () => escolher({ liga: sel.value, nome: inp.value }));
+  corpo.append(el("div", { class: "esp-busca-jog" }, el("div", { class: "esp-busca" }, inp, sug), sel, add));
+  corpo.append(el("p", { class: "pers-dica" }, "Vale o nome como aparece na ESPN (“Sinner” acha “Jannik Sinner”). As sugestões vêm das partidas de ATP e WTA ligadas."));
+  if (espP.buscaJ) { opcoes = sugerirJogadores(espP.buscaJ); espP.marcadaJ = -1; pintarSug(); }
+}
 async function salvarMeusEsportes() {
   if (!espP || espP.salvando) return;
-  const corpo = { competicoes: espP.ordem.filter((id) => espP.on.has(id)), ordem: espP.ordem, times: espP.times };
+  const corpo = { competicoes: espP.ordem.filter((id) => espP.on.has(id)), ordem: espP.ordem, times: espP.times, jogadores: espP.jogadores };
   const v = ES.validarPrefs(corpo);
   if (v.erro) { espP.erro = v.erro; desenharMeusEsportes(); return; }
   espP.salvando = true; espP.erro = ""; desenharMeusEsportes("esp-salvar");
@@ -8904,15 +9070,15 @@ function leitorEsp(id) {
   if (!l) return null;
   return async (f) => { await lerPrefsEsportes(); const d = await lerEsp(l, f); return d === undefined ? undefined : { d, marca: marcaDe(d) + JSON.stringify(espTimeDe(l)) }; };
 }
-/* Com grupos (Libertadores, conferências da NBA e da NFL), o card de tabela mostra o grupo do time de interesse, senão o primeiro */
+/* Com grupos (Libertadores, conferências da NBA), o card de tabela mostra o grupo do time de interesse, senão o primeiro */
 function grupoTabEsp(d, liga) {
   const tab = (d && d.tabela) || [], t = espTimeDe(liga), doMeu = t && tab.find((r) => r.id === t.id);
   return (doMeu ? doMeu.grupo : tab[0] && tab[0].grupo) || "";
 }
-/* Hoje, se houver jogo hoje; senão a rodada */
+/* Hoje (e o que está em andamento, mesmo tendo começado antes da meia-noite), se houver; senão a rodada */
 function jogosDoCard(d) {
   const js = (d && d.rodada && d.rodada.jogos) || [];
-  const hoje = js.filter((j) => ES.rotuloDia(j.data) === "hoje");
+  const hoje = js.filter((j) => j.estado === "in" || ES.rotuloDia(j.data) === "hoje");
   return { js: hoje.length ? hoje : js, hoje: !!hoje.length };
 }
 const corposEsp = {
@@ -8920,6 +9086,13 @@ const corposEsp = {
     if (!d) return [vazioW("Sem dados desta competição ainda.")];
     const liga = ligaDoWidget(id), t = espTimeDe(liga);
     const { js } = jogosDoCard(d);
+    /* tênis: as partidas do dia, nome curto, placar por sets */
+    if (ES.LIGAS[liga] && ES.LIGAS[liga].tenis) {
+      if (!js.length) return [vazioW("Nenhuma partida hoje.")];
+      const n = fm.c > 1 ? 10 : 5 * fm.r, seg = espJogadoresDe(liga);
+      return [el("ul", { class: "wdg-esp" }, ...js.slice(0, n).map((p) => { const li = partidaEl(p, seg, true, false); li.className = "wdg-partida " + p.estado; li.querySelector("small")?.remove(); return li; })),
+        js.length > n ? el("p", { class: "wdg-vazio" }, `+${js.length - n} partidas hoje`) : null].filter(Boolean);
+    }
     if (!js.length) return [vazioW("Sem jogos nesta semana.")];
     const n = fm.c > 1 ? 10 : 5 * fm.r;
     return [el("ul", { class: "wdg-esp" }, ...js.slice(0, n).map((j) => { const li = jogoEl(j, t, fm.c === 1, true); li.className = j.estado; return li; })),
@@ -8933,7 +9106,7 @@ const corposEsp = {
     if (!linhas.length) return [vazioW("A tabela ainda não chegou.")];
     const n = fm.r > 1 ? 14 : 6;
     const topo = linhas.slice(0, n), meu = t && linhas.find((r) => r.id === t.id);
-    /* futebol: jogos e pontos; NBA e NFL: campanha (V-D, com E na NFL quando houver) e % */
+    /* futebol: jogos e pontos; NBA: campanha (V-D) e % */
     const futebol = !ES.LIGAS[liga] || ES.LIGAS[liga].esporte === "futebol";
     const campanha = (r) => (r.v == null || r.d == null ? "–" : r.v + "-" + r.d + (r.e ? "-" + r.e : ""));
     const tr = (r) => { const z = corZona(r.zona); return el("tr", { class: (z ? "esp-z" : "") + (t && r.id === t.id ? " esp-meu" : ""), ...(z ? { style: "--z:" + z } : {}) }, el("td", {}, String(r.pos ?? "–")), el("td", { title: r.time }, r.curto || r.time),

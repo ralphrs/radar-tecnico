@@ -1,9 +1,10 @@
 // Só para `wrangler dev` nos testes de Esportes, nunca para deploy: o mesmo Worker com o fetch trocado.
-// ESPN e ge respondem os exemplos de test/fixtures-esportes.mjs (o Gauchão dá 400 na ESPN e vem do ge); o resto, 503.
+// ESPN e ge respondem os exemplos de test/fixtures-esportes.mjs (o Gauchão dá 400 na ESPN e vem do ge; ATP e WTA, os de
+// tênis); o resto, 503.
 // O scheduled roda com a hora puxada para o minuto terminado em 4, quando o cron confere as competições.
 // GET /__falso devolve as URLs pedidas. Uso: npx wrangler dev test/dev-esportes.js --local --test-scheduled
 import worker from "../src/index.js";
-import { scoreboardBra, scoreboardLib, standingsBra, standingsLib, scheduleInter, htmlGe } from "./fixtures-esportes.mjs";
+import { scoreboardBra, scoreboardLib, standingsBra, standingsLib, scheduleInter, htmlGe, scoreboardAtp, scoreboardAtpDia, scoreboardWta } from "./fixtures-esportes.mjs";
 export { Espelho } from "../src/espelho.js";
 
 const pedidos = [];
@@ -14,6 +15,8 @@ globalThis.fetch = async (url, op) => {
   const js = (o) => new Response(JSON.stringify(o), { status: 200, headers: { "content-type": "application/json" } });
   if (/espn\.com|globo\.com/.test(u)) pedidos.push(u);
   if (u.includes("ge.globo.com/futebol/campeonato-gaucho")) return new Response(htmlGe(), { status: 200, headers: { "content-type": "text/html" } });
+  if (u.includes("tennis/atp/scoreboard")) return js(u.includes("dates=") ? scoreboardAtpDia() : scoreboardAtp());
+  if (u.includes("tennis/wta/scoreboard")) return js(u.includes("dates=") ? { events: [] } : scoreboardWta());
   const m = /sports\/soccer\/([a-z0-9._]+)\//.exec(u);
   const liga = m && m[1];
   if (liga === "bra.camp.gaucho") return new Response('{"code":400}', { status: 400 });

@@ -40,10 +40,11 @@ export const WIDGETS = [
   // Nos fóruns: posts de subreddit das últimas 24 h, só nas seções que têm subreddit em src/feeds.js. Fora do padrão.
   ...SECOES.filter((s) => SECOES_COM_FORUM.includes(s)).map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   // Esportes (src/esportes.js): rodada e tabela de cada competição e o próximo jogo do time que a pessoa acompanha.
-  // O catálogo traz todas; a página só oferece as competições que a pessoa ligou em "Meus esportes". Fora do padrão.
+  // Tênis (ATP e WTA) só tem o de jogos ("ATP · jogos"): não há tabela. O catálogo traz todas; a página só oferece as
+  // competições que a pessoa ligou em "Meus esportes". Fora do padrão.
   ...ESP.ORDEM_LIGAS.flatMap((l) => [
     { id: "esportes-rodada-" + l, titulo: ESP.LIGAS[l].curto + " · " + ESP.rodadaDe(l), tamanho: 1, secao: "esportes", liga: l },
-    { id: "esportes-tabela-" + l, titulo: ESP.LIGAS[l].curto + " · tabela", tamanho: 1, secao: "esportes", liga: l },
+    ...(ESP.LIGAS[l].tenis ? [] : [{ id: "esportes-tabela-" + l, titulo: ESP.LIGAS[l].curto + " · tabela", tamanho: 1, secao: "esportes", liga: l }]),
   ]),
   { id: "esportes-meu-time", titulo: "Meu time · próximo jogo", tamanho: 1, secao: "esportes" },
   // Minha carteira (src/carteira.js): pessoais, leem /api/carteira uma vez só para todos; aparecem para quem importou

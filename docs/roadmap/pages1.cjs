@@ -73,7 +73,7 @@ pages.push({
       step(9, 'SSR, fases 2 e 3', 'Shell renderizado no servidor e widget por widget na stack nova.', PILL.fila(9), 'a sessão de telas grandes, tablet e celular acontece aqui, widget a widget, e não como um passo separado.'),
       step(10, 'SSR, fase 4: cutover', C('public/index.html') + ' sai, ' + C('/api/*') + ' fica restrito, e a medição volta para comparar com a fase 0.', PILL.fila(10), 'só depois de todos os widgets migrados.'),
       step(11, 'Job mensal de exportação dos extratos pelo Chrome', 'Exportar os extratos da B3 uma vez por mês, sem passo manual.', PILL.fila(11), 'não depende do SSR e a importação manual já funciona enquanto isso.'),
-      step(12, 'Esportes: NBA, NFL e F1', 'Pôr as ligas na lista e na tela e conferir as sondas da ESPN e do ge em produção.', PILL.fila(12), 'o módulo já aceita outras ligas da ESPN; é acréscimo, sem pressa.'),
+      step(12, 'Esportes: futebol, NBA, tênis e padel', 'NBA (04/11) e tênis (05/11) na lista e na tela; padel só com notícias; NFL retirada em 05/11 e F1 fora, por decisão do dono. Falta conferir as sondas da ESPN e do ge em produção.', PILL.fila(12), 'o módulo já aceita outras ligas da ESPN; é acréscimo, sem pressa.'),
     ].join('')}</ol>`,
 
     h2('fila-decisoes', 'Decisões da ordem'),

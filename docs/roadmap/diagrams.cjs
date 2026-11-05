@@ -50,7 +50,7 @@ D.fila = () => {
     box(X[4], yB, 10, 'Cutover', 'index.html sai'),
     box(X[0], yC, 11, 'Job de extratos', 'mensal, pelo Chrome'),
     box(X[3], yC, 8, 'Renda fixa', 'relatório Posição'),
-    box(X[4], yC, 12, 'Esportes', 'NBA, NFL e F1'),
+    box(X[4], yC, 12, 'Esportes', 'NBA, tênis e padel'),
     ar('M166,224 H222'), ar('M376,224 H432'), ar('M586,224 H642'), ar('M796,224 H852'),
     ar('M301,256 V366 H642'), lbl(470, 366, 'usa as rotas do BFF'),
     ar('M721,334 V260'), lbl(721, 300, 'migra junto'),
@@ -69,7 +69,7 @@ D.fila = () => {
      ['Cutover', 'public/index.html sai, /api/* fica restrito, medir e comparar com a fase 0.'],
      ['Job mensal de extratos', 'Exportação dos extratos pelo Chrome, uma vez por mês.'],
      ['Renda fixa e Tesouro', 'Importação e cálculo contra o BFF, tela simples.'],
-     ['Esportes', 'NBA, NFL e F1, mais a conferência das sondas em produção.']],
+     ['Esportes', 'NBA, tênis e padel (só notícias), mais a conferência das sondas em produção.']],
     'Diagrama da fila em três faixas. No HTML de hoje: passos 0 a 4, sem dependência entre si. Stack nova: SSR fase 0, fase 1, Administração 2.0, fases 2 e 3 e cutover, em sequência. Fora do caminho do SSR: job de extratos, renda fixa e esportes. A renda fixa depende da fase 1 e migra junto nas fases 2 e 3.', 880);
 };
 
