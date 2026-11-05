@@ -18,7 +18,7 @@
 // Este arquivo não importa nada do Worker, para os testes rodarem no Node; as leituras e gravações chegam em `deps`.
 
 import { cifrar, decifrar, cofreLigado } from "./cofre.js";
-import { reinvestir, UNIVERSOS } from "./pontuacao-fii.js";
+import { reinvestir, UNIVERSOS, APORTE_PADRAO } from "./pontuacao-fii.js";
 import { validarReinvestir, respostaReinvestir } from "./prefs.js";
 
 // ---------- formato das linhas ----------
@@ -996,11 +996,11 @@ const IDS_SIM = ["simulacoes", "mensal"];
 const IDS_TODOS = [...IDS, ...IDS_SIM];
 const cacheGet = new Map(); // email -> { em, txt }
 const CACHE_MS = 60_000;
-const cacheReinv = new Map(); // email|universo -> { em, txt }
+const cacheReinv = new Map(); // email|universo|aporte (vazio = o sugerido) -> { em, txt }
 export const limparCacheCarteira = (email) => {
   if (!email) { cacheGet.clear(); cacheReinv.clear(); return; }
   cacheGet.delete(email);
-  for (const u of UNIVERSOS) cacheReinv.delete(email + "|" + u);
+  for (const k of [...cacheReinv.keys()]) if (k.startsWith(email + "|")) cacheReinv.delete(k);
 };
 
 async function lerDocs(env, col, deps, doD1, ids = IDS) {
@@ -1205,7 +1205,8 @@ async function rotaSimulacoes(request, env, quem, resto, deps) {
 
 // Reinvestir (src/pontuacao-fii.js): os 5 FIIs de maior pontuação pelos critérios da pessoa. Pesos e universo em
 // prefs/<email>, doc "reinvestir" (JSON puro, sem cifra: não tem nada da carteira). GET ?universo=todos|meus (sem ele,
-// o universo salvo); PUT { pesos, universo }, corpo até 2 KB. O GET fica 60 s na memória por pessoa e universo.
+// o universo salvo) e &aporte=<número> para simular (de 0 a 10 milhões, não fica salvo; sem ele ou inválido, o sugerido
+// de aporteSugerido); PUT { pesos, universo }, corpo até 2 KB. O GET fica 60 s na memória por pessoa, universo e aporte.
 async function lerPrefsReinvestir(env, email, deps, doD1) {
   try {
     const r = doD1 ? await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = 'reinvestir'").bind("prefs/" + email).first()
@@ -1213,15 +1214,35 @@ async function lerPrefsReinvestir(env, email, deps, doD1) {
     return respostaReinvestir(r ? JSON.parse(r.data) : null);
   } catch { return respostaReinvestir(null); }
 }
-async function montarReinvestir(env, quem, universo, prefs, deps) {
+// Aporte sugerido do Reinvestir: o da Meta; sem ele, a média de compras menos vendas dos 3 meses fechados antes do mês
+// de hoje (o mês corrente ainda está pela metade); média zero ou negativa, ou sem carteira, R$ 1.000.
+export function aporteSugerido(meta, calc, hoje) {
+  if (meta && meta.aporte > 0) return { valor: r2(meta.aporte), origem: "meta" };
+  if (calc && calc.fluxoMes) {
+    const atual = ym(hoje);
+    let soma = 0;
+    for (let k = 1; k <= 3; k++) { const f = calc.fluxoMes.get(somarMeses(atual, -k)) || { compras: 0, vendas: 0 }; soma += f.compras - f.vendas; }
+    if (soma / 3 >= 0.01) return { valor: r2(soma / 3), origem: "media3" };
+  }
+  return { valor: APORTE_PADRAO, origem: "padrao" };
+}
+export const APORTE_MAX = 10000000;
+// ?aporte= da URL: número de 0 a 10 milhões (ponto decimal); qualquer outra coisa vale como ausente.
+export function aporteDaUrl(txt) {
+  if (txt == null || !/^\d{1,8}(\.\d{1,2})?$/.test(txt.trim())) return null;
+  const v = Number(txt);
+  return Number.isFinite(v) && v >= 0 && v <= APORTE_MAX ? v : null;
+}
+async function montarReinvestir(env, quem, universo, prefs, deps, aporteSim = null) {
   const col = "carteira/" + quem.email;
   const docs = await lerDocs(env, col, deps, false);
   const hoje = hojeDe(deps);
   const [b3, fiiResumo, mercado] = await Promise.all([lerMetaDoc(env, "b3", deps), lerMetaDoc(env, "fii-resumo", deps), lerMetaDoc(env, "mercado", deps)]);
   const vazia = !temLinhas(docs.extrato);
   const calc = vazia ? null : calcular(docs.extrato, { b3, fiiResumo, importacoes: docs.importacoes, hoje });
-  const aporteMeta = docs.meta && docs.meta.aporte > 0 ? docs.meta.aporte : null;
-  const out = reinvestir({ b3, fiiResumo, mercado, posicoes: calc ? calc.posicoes : [], patrimonio: calc ? calc.resumo.patrimonio : 0, aporteMeta, pesos: prefs.pesos, universo });
+  const sugerido = aporteSugerido(docs.meta, calc, hoje);
+  const aporte = aporteSim == null ? sugerido : { valor: aporteSim, origem: "simulado" };
+  const out = reinvestir({ b3, fiiResumo, mercado, posicoes: calc ? calc.posicoes : [], patrimonio: calc ? calc.resumo.patrimonio : 0, aporte, sugerido, pesos: prefs.pesos, universo });
   return { ...out, vazia, salvo: prefs.salvo, universoSalvo: prefs.universo };
 }
 async function rotaReinvestir(request, env, quem, deps) {
@@ -1231,10 +1252,11 @@ async function rotaReinvestir(request, env, quem, deps) {
     const pedido = new URL(request.url).searchParams.get("universo");
     if (pedido && !UNIVERSOS.includes(pedido)) return resp({ erro: "Universo: use todos ou meus." }, 400);
     const universo = pedido || prefs.universo;
-    const chave = quem.email + "|" + universo;
+    const aporteSim = aporteDaUrl(new URL(request.url).searchParams.get("aporte"));
+    const chave = quem.email + "|" + universo + "|" + (aporteSim == null ? "" : aporteSim);
     const c = cacheReinv.get(chave);
     if (c && Date.now() - c.em < CACHE_MS) return new Response(c.txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" } });
-    const txt = JSON.stringify(await montarReinvestir(env, quem, universo, prefs, deps));
+    const txt = JSON.stringify(await montarReinvestir(env, quem, universo, prefs, deps, aporteSim));
     if (cacheReinv.size > 400) cacheReinv.clear();
     cacheReinv.set(chave, { em: Date.now(), txt });
     return new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" } });

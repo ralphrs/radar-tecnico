@@ -1271,6 +1271,12 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 .rv .rv-bcrit { height: var(--control-h-sm); align-self: center; }
 .rv-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-size: 13px; color: var(--muted-foreground); margin-top: -4px; }
 .rv-status:empty { display: none; }
+.rv-aporte { display: grid; grid-template-columns: auto 132px; grid-template-rows: auto auto; align-items: center; gap: 2px 8px; }
+.rv-aporte .rotulo { margin: 0; }
+.rv-aporte .dd-input { width: 132px; height: var(--control-h-sm); font-family: var(--font-mono); }
+.rv-aporte .rv-ap-orig, .rv-aporte .campo-msg { grid-column: 2; font-size: 11.5px; line-height: 1.3; color: var(--muted-foreground); white-space: nowrap; }
+.rv-ap-volta { all: unset; cursor: pointer; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+.rv-ap-volta:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 2px; }
 .rv-painel { display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--secondary); }
 .rv-painel[hidden] { display: none; }
 .rv-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px 16px; }
@@ -6510,32 +6516,66 @@ function cardPosicoes(j) {
 }
 /* ---- Reinvestir: os 5 FIIs de maior pontuação pelos critérios da pessoa (GET/PUT /api/carteira/reinvestir) ----
    A conta é do Worker (src/pontuacao-fii.js); aqui só o desenho. O card mostra a conta e os fatos: nenhum texto diz o
-   que fazer com o papel. rvJ guarda a última resposta por universo (60 s, como a carteira). */
-var rvJ = {}, rvLendo = {}, rvUniverso = null, rvAbertos = new Set(), rvPainel = false, rvMsg = "";
-function lerReinvestir(universo, fresco) {
+   que fazer com o papel. rvJ guarda a última resposta por universo e aporte (60 s, como a carteira).
+   rvAporte: o aporte digitado no cabeçalho do card, só para simular (não vai para a Meta nem para o servidor como
+   gravação); null = o sugerido que o Worker devolve. O widget do Início sempre lê o sugerido. */
+var rvJ = {}, rvLendo = {}, rvUniverso = null, rvAporte = null, rvAbertos = new Set(), rvPainel = false, rvMsg = "";
+function lerReinvestir(universo, fresco, aporte) {
   const u = universo || rvUniverso || "";
-  const c = rvJ[u];
+  const a = aporte == null ? "" : String(aporte);
+  const k = u + "|" + a;
+  const c = rvJ[k];
   if (!fresco && c && Date.now() - c.em < 60000) return Promise.resolve(c.j);
-  if (rvLendo[u]) return rvLendo[u];
-  rvLendo[u] = (async () => {
+  if (rvLendo[k]) return rvLendo[k];
+  rvLendo[k] = (async () => {
     try {
-      const j = await apiCart("GET", "/reinvestir" + (u ? "?universo=" + u : ""));
-      rvJ[u] = { em: Date.now(), j }; rvJ[j.universo] = { em: Date.now(), j };
+      const q = [u ? "universo=" + u : "", a ? "aporte=" + a : ""].filter(Boolean).join("&");
+      const j = await apiCart("GET", "/reinvestir" + (q ? "?" + q : ""));
+      rvJ[k] = { em: Date.now(), j }; rvJ[j.universo + "|" + a] = { em: Date.now(), j };
       if (!rvUniverso) rvUniverso = j.universo;
       return j;
     } catch (e) { return { erro: e.message }; }
-    finally { rvLendo[u] = null; }
+    finally { rvLendo[k] = null; }
   })();
-  return rvLendo[u];
+  return rvLendo[k];
 }
 function limparReinvestir() { rvJ = {}; }
 const NOME_UNIV = { todos: "todos os FIIs", meus: "só os meus" };
+const ORIGEM_AP = { meta: "da Meta", media3: "média de 3 meses", padrao: "padrão" };
+const PE_AP = { meta: "(o da Meta)", media3: "(média de compras menos vendas dos últimos 3 meses)", padrao: "(sem aporte na Meta nem compras nos últimos 3 meses, conta com R$ 1.000)" };
 function cardReinvestir() {
   const c = el("section", { class: "ct-card rv", id: "ct-reinvestir" });
   const bCrit = el("button", { type: "button", class: "dd-btn dd-btn--outline rv-bcrit", "aria-expanded": String(rvPainel), "aria-controls": "rv-painel" }, "Critérios");
   c.append(el("div", { class: "ct-tit" }, el("h3", {}, "Reinvestir: 5 com maior pontuação"), el("span", { class: "ct-esp" }), bCrit, pinBtn("carteira-reinvestir")));
   const seg = el("div", { class: "seg", role: "group", "aria-label": "Universo da conta" });
-  const sub = el("div", { class: "rv-sub" }, el("span", {}, "pelos critérios que você definiu · universo:"), seg);
+  /* Aporte: começa no sugerido; ao sair do campo ou com Enter, a lista refaz com o valor digitado (só simulação) */
+  const inpAp = Campo.ligar(el("input", { class: "dd-input", id: "rv-aporte", placeholder: "R$ 1.000,00", "aria-describedby": "rv-ap-orig" }), { tipo: "moeda", min: 0, max: 10000000 });
+  const origem = el("small", { class: "rv-ap-orig", id: "rv-ap-orig" });
+  const apBox = el("div", { class: "rv-aporte" }, el("label", { class: "rotulo", for: "rv-aporte" }, "Aporte"), inpAp, origem);
+  const sub = el("div", { class: "rv-sub" }, el("span", {}, "pelos critérios que você definiu · universo:"), seg, apBox);
+  let atual = null, vez = 0;
+  const refazer = async () => {
+    const minha = ++vez;
+    rvAbertos.clear();
+    corpo.textContent = ""; corpo.append(esqueleto(5));
+    const novo = await lerReinvestir(rvUniverso, false, rvAporte);
+    if (minha !== vez || !c.isConnected) return;
+    if (novo.erro) { corpo.textContent = ""; corpo.append(el("p", { class: "ct-nota" }, "Não deu para fazer a conta agora: " + novo.erro)); return; }
+    pintar(novo);
+  };
+  const aplicarAporte = () => {
+    if (!atual || Campo.invalido(inpAp)) return;
+    const v = Campo.valor(inpAp);
+    const sug = atual.sugerido ? atual.sugerido.valor : null;
+    /* campo vazio ou igual ao sugerido: volta ao sugerido */
+    const novo = v == null || Math.round(v * 100) / 100 === sug ? null : Math.round(v * 100) / 100;
+    if (v == null && sug != null) Campo.definir(inpAp, sug);
+    if (novo === rvAporte) return;
+    rvAporte = novo; refazer();
+  };
+  /* depois do blur e do Enter do Campo (que formata e limita) */
+  inpAp.addEventListener("blur", () => { if (inpAp.isConnected) aplicarAporte(); });
+  inpAp.addEventListener("keydown", (e) => { if (e.key === "Enter") aplicarAporte(); });
   const painel = el("div", { class: "rv-painel", id: "rv-painel" });
   painel.hidden = !rvPainel;
   const corpo = el("div", { class: "rv-corpo" }, esqueleto(5));
@@ -6545,6 +6585,14 @@ function cardReinvestir() {
   c.append(sub, painel, status, corpo, pe);
   bCrit.addEventListener("click", () => { rvPainel = !rvPainel; painel.hidden = !rvPainel; bCrit.setAttribute("aria-expanded", String(rvPainel)); if (rvPainel) { const i = painel.querySelector("input"); if (i) i.focus(); } });
   const pintar = (j) => {
+    atual = j;
+    if (document.activeElement !== inpAp) Campo.definir(inpAp, j.aporte.valor);
+    origem.textContent = "";
+    if (j.aporte.origem === "simulado") {
+      const volta = el("button", { type: "button", class: "rv-ap-volta", title: `Volta a ${rs(j.sugerido.valor)} (${ORIGEM_AP[j.sugerido.origem] || ""})` }, "voltar ao sugerido");
+      volta.addEventListener("click", () => { rvAporte = null; Campo.definir(inpAp, j.sugerido.valor); refazer(); });
+      origem.append("simulação · ", volta);
+    } else origem.textContent = ORIGEM_AP[j.aporte.origem] || "";
     seg.textContent = "";
     ["todos", "meus"].forEach((u) => {
       const b = el("button", { type: "button", "aria-pressed": String(j.universo === u) }, NOME_UNIV[u]);
@@ -6553,10 +6601,10 @@ function cardReinvestir() {
         rvUniverso = u; rvAbertos.clear();
         corpo.textContent = ""; corpo.append(esqueleto(5));
         seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-        const novo = await lerReinvestir(u);
+        const novo = await lerReinvestir(u, false, rvAporte);
         if (!novo.erro) pintar(novo);
         /* o universo fica salvo com os pesos de agora; falha aqui não muda a tela */
-        apiCart("PUT", "/reinvestir", { pesos: novo.pesos || j.pesos, universo: u }).then(() => { delete rvJ[""]; wDados.delete("carteira-reinvestir"); }).catch(() => {});
+        apiCart("PUT", "/reinvestir", { pesos: novo.pesos || j.pesos, universo: u }).then(() => { Object.keys(rvJ).forEach((k) => { if (k.startsWith("|")) delete rvJ[k]; }); wDados.delete("carteira-reinvestir"); }).catch(() => {});
       });
       seg.append(b);
     });
@@ -6569,7 +6617,8 @@ function cardReinvestir() {
       corpo.append(ol);
     }
     pe.textContent = "";
-    const fatos = [`aporte do mês ${rs(j.aporte)} ${j.aporteOrigem === "meta" ? "(o da Meta)" : "(sem aporte na Meta, conta com R$ 1.000)"}`];
+    const ap = j.aporte, sg = j.sugerido;
+    const fatos = [`aporte do mês ${rs(ap.valor)} ${ap.origem === "simulado" ? `(simulação, não fica salvo; o sugerido é ${rs(sg.valor)}, ${ORIGEM_AP[sg.origem] || ""})` : PE_AP[ap.origem] || ""}`];
     if (j.cdi != null) fatos.push(`CDI ${fmtNum(j.cdi, 2)}% a.a.`);
     else fatos.push("sem CDI no painel de mercado");
     fatos.push(`${j.total} ${j.total === 1 ? "FII avaliado" : "FIIs avaliados"}`);
@@ -6600,7 +6649,7 @@ function linhaReinvestir(x, i, j) {
     el("span", { class: "rv-fatos" },
       el("span", { class: "rv-fato" }, el("small", {}, "DY 12m"), el("span", { class: "ct-mono" }, pc(x.dy))),
       el("span", { class: "rv-fato" }, el("small", {}, "P/VP"), el("span", { class: "ct-mono" }, x.pvp != null ? fmtNum(x.pvp, 2) : "–")),
-      el("span", { class: "rv-fato rv-renda", title: "Aporte do mês × DY 12m / 12" }, el("small", {}, "aporte rende"), el("span", { class: "ct-mono" }, x.rendaAporte != null ? rs(x.rendaAporte, true) + "/mês" : "–"))),
+      el("span", { class: "rv-fato rv-renda", title: `Aporte de ${rs(j.aporte.valor)} × DY 12m / 12` }, el("small", {}, "aporte rende"), el("span", { class: "ct-mono" }, x.rendaAporte != null ? rs(x.rendaAporte, true) + "/mês" : "–"))),
     seta);
   const crit = el("ul", { class: "rv-crit", id: idc });
   crit.hidden = !aberto;
@@ -6947,7 +6996,7 @@ function desenharMeta(box, j) {
     try {
       const r = await apiCart("PUT", "/meta", { alvo, aporte: aporte || 0, yield: y ? Math.round(y * 1e6) / 1e8 : null, reinvestir: chk.checked });
       if (cartJ) cartJ.meta = r.meta;
-      limparReinvestir();
+      limparReinvestir(); rvAporte = null;
       [...wDados.keys()].forEach((k) => { if (k.startsWith("carteira-")) wDados.delete(k); });
       desenharCarteira(cartJ || { ...j, meta: r.meta });
       const a = $("carteira").querySelector('[role="status"]'); if (a) a.textContent = "Meta salva.";

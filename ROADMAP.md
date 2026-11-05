@@ -132,6 +132,7 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Tabelas: ocultar colunas por tabela, salvo por pessoa (05/11)
 - [x] Carteira: topo separa resultado em aberto, realizado e saídas (vendas e retiradas) (05/11)
 - [x] Carteira: card Reinvestir com os 5 FIIs de maior pontuação pelos critérios da pessoa (05/11)
+- [x] Reinvestir: aporte sugerido e editável no cabeçalho do card, só para simular (05/11)
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

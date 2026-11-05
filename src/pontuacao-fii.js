@@ -124,6 +124,7 @@ function notaCotistas(c) {
 }
 function notaCarteira(peso, tem, aporte) {
   if (!tem) return "fora da carteira hoje";
+  if (!(aporte > 0)) return `sem aporte, está em ${pct1(peso * 100)} da carteira`;
   return `com ${fmtMi(aporte)} do aporte aqui, ficaria em ${pct1(peso * 100)} da carteira`;
 }
 
@@ -154,7 +155,7 @@ export const pesosDe = (salvos) => ({ ...PESOS_PADRAO, ...((salvos && typeof sal
 export function pontuar(linhas, opts = {}) {
   const cdi = num(opts.cdi);
   const pesos = pesosDe(opts.pesos);
-  const aporte = num(opts.aporte) > 0 ? opts.aporte : APORTE_PADRAO;
+  const aporte = num(opts.aporte) != null && opts.aporte >= 0 ? opts.aporte : APORTE_PADRAO;
   const porPapel = (opts.carteira && opts.carteira.porPapel) || {};
   const total = num(opts.carteira && opts.carteira.total) || 0;
   const ativos = CRITERIOS.filter((c) => num(pesos[c.id]) > 0);
@@ -195,7 +196,9 @@ export function pontuar(linhas, opts = {}) {
   return { avaliados, excluidos, aporte, cdi };
 }
 
-// Tudo que a rota devolve. ctx: { b3, fiiResumo, mercado, posicoes, patrimonio, aporteMeta, pesos, universo }.
+// Tudo que a rota devolve. ctx: { b3, fiiResumo, mercado, posicoes, patrimonio, aporte: { valor, origem }, sugerido:
+// { valor, origem }, pesos, universo }. origem: meta | media3 | padrao, ou simulado quando veio digitado na tela.
+// Sem ctx.aporte vale ctx.aporteMeta (número) e, sem ele, R$ 1.000.
 export function reinvestir(ctx) {
   const universo = UNIVERSOS.includes(ctx.universo) ? ctx.universo : "todos";
   const posicoes = ctx.posicoes || [];
@@ -204,12 +207,15 @@ export function reinvestir(ctx) {
   const cdiItem = ((ctx.mercado && ctx.mercado.itens) || []).find((i) => i && i.id === "cdi");
   const cdi = cdiItem ? num(cdiItem.valor) : null;
   const aporteMeta = num(ctx.aporteMeta) > 0 ? ctx.aporteMeta : null;
+  const okAp = (a) => a && num(a.valor) != null && a.valor >= 0 && typeof a.origem === "string";
+  const sugerido = okAp(ctx.sugerido) ? { valor: ctx.sugerido.valor, origem: ctx.sugerido.origem } : aporteMeta ? { valor: aporteMeta, origem: "meta" } : { valor: APORTE_PADRAO, origem: "padrao" };
+  const aporte = okAp(ctx.aporte) ? { valor: ctx.aporte.valor, origem: ctx.aporte.origem } : sugerido;
   const linhas = linhasUniverso({ b3: ctx.b3, fiiResumo: ctx.fiiResumo, posicoes, universo });
   const pesos = pesosDe(ctx.pesos);
-  const r = pontuar(linhas, { cdi, carteira: { porPapel, total: num(ctx.patrimonio) || 0 }, aporte: aporteMeta || APORTE_PADRAO, pesos });
+  const r = pontuar(linhas, { cdi, carteira: { porPapel, total: num(ctx.patrimonio) || 0 }, aporte: aporte.valor, pesos });
   return {
     universo, pesos, padrao: PESOS_PADRAO, criterios: CRITERIOS.map(({ id, nome, faixa }) => ({ id, nome, faixa })),
-    aporte: r.aporte, aporteOrigem: aporteMeta ? "meta" : "padrao", cdi, cdiData: cdiItem ? cdiItem.data || null : null,
+    aporte, sugerido, cdi, cdiData: cdiItem ? cdiItem.data || null : null,
     total: r.avaliados.length, excluidos: r.excluidos.length, top: r.avaliados.slice(0, TOP),
     ref: { cvm: (ctx.fiiResumo && ctx.fiiResumo.ref) || null, b3: (ctx.b3 && ctx.b3.atualizado) || null },
   };

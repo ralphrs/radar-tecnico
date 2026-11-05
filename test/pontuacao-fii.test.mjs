@@ -9,7 +9,7 @@ import {
   pontuar, linhasUniverso, reinvestir, PESOS_PADRAO, CRITERIOS, APORTE_PADRAO,
 } from "../src/pontuacao-fii.js";
 import { validarReinvestir, respostaReinvestir } from "../src/prefs.js";
-import { rotaCarteira, limparCacheCarteira } from "../src/carteira.js";
+import { rotaCarteira, limparCacheCarteira, aporteSugerido, aporteDaUrl } from "../src/carteira.js";
 import { d1Falso, espelhoFalso } from "./d1-falso.mjs";
 import { fiiResumo, b3 } from "./fixtures-radar.mjs";
 import * as FC from "./fixtures-carteira.mjs";
@@ -118,7 +118,7 @@ test("universo: todos os FIIs com dado da CVM, ou só os da carteira", () => {
   assert.deepEqual(meus.map((l) => l.t), ["TENH11", "PASB11"], "FORA11 não tem informe na CVM; ação não entra");
   const r = reinvestir({ b3, fiiResumo, mercado: MERCADO, posicoes: POS, patrimonio: 19200, aporteMeta: 500, universo: "meus" });
   assert.equal(r.universo, "meus"); assert.equal(r.total, 2); assert.equal(r.excluidos, 0);
-  assert.equal(r.aporte, 500); assert.equal(r.aporteOrigem, "meta"); assert.equal(r.cdi, 11);
+  assert.deepEqual(r.aporte, { valor: 500, origem: "meta" }); assert.deepEqual(r.sugerido, r.aporte); assert.equal(r.cdi, 11);
   assert.ok(r.top.every((x) => x.tenho));
   assert.equal(r.top[0].t, "PASB11", "TENH11 perde os pontos de peso na carteira");
 });
@@ -126,7 +126,7 @@ test("universo: todos os FIIs com dado da CVM, ou só os da carteira", () => {
 test("reinvestir com o universo todos: 5 primeiros, total, excluídos e ordenação", () => {
   const r = reinvestir({ b3, fiiResumo, mercado: MERCADO, posicoes: POS, patrimonio: 19200, universo: "todos" });
   assert.equal(r.top.length, 5);
-  assert.equal(r.aporteOrigem, "padrao"); assert.equal(r.aporte, 1000);
+  assert.deepEqual(r.aporte, { valor: 1000, origem: "padrao" });
   // SEMN11 (sem preço): sem P/VP, sem DY, sem liquidez => fora
   assert.equal(r.excluidos, 1);
   assert.equal(r.total, 19);
@@ -195,4 +195,100 @@ test("rota /api/carteira/reinvestir com o D1 falso: GET, PUT, cache e universo",
   assert.equal(r.j.pesos.pvp, 20);
   assert.equal((await chamar("DELETE", "reinvestir")).status, 405);
   for (const x of r.j.top) for (const c of x.criterios) assert.doesNotMatch(c.nota, PROIBIDO);
+});
+
+test("aporte simulado: muda rendaAporte e o peso na carteira, sem mexer no sugerido", () => {
+  const base = reinvestir({ b3, fiiResumo, mercado: MERCADO, posicoes: POS, patrimonio: 19200, aporteMeta: 500, universo: "meus" });
+  const sim = reinvestir({ b3, fiiResumo, mercado: MERCADO, posicoes: POS, patrimonio: 19200, aporte: { valor: 20000, origem: "simulado" }, sugerido: { valor: 500, origem: "meta" }, universo: "meus" });
+  assert.deepEqual(sim.aporte, { valor: 20000, origem: "simulado" }); assert.deepEqual(sim.sugerido, { valor: 500, origem: "meta" });
+  const b = base.top.find((x) => x.t === "PASB11"), s = sim.top.find((x) => x.t === "PASB11");
+  assert.ok(Math.abs(s.rendaAporte - (20000 * s.dy) / 100 / 12) < 0.5, "dy da linha vem arredondado");
+  assert.ok(s.rendaAporte > b.rendaAporte * 39);
+  // PASB11: 900 de 19.200; com 500 fica em 7,2% (máximo); com 20.000 fica em 53,7% (zero)
+  const cb = b.criterios.find((c) => c.id === "carteira"), cs = s.criterios.find((c) => c.id === "carteira");
+  assert.equal(cb.pontos, 10); assert.equal(cs.pontos, 0); assert.ok(cs.valor > 50);
+  assert.ok(s.pontos < b.pontos);
+  // aporte zero vale: renda zero e o peso de hoje
+  const zero = reinvestir({ b3, fiiResumo, mercado: MERCADO, posicoes: POS, patrimonio: 19200, aporte: { valor: 0, origem: "simulado" }, universo: "meus" });
+  const z = zero.top.find((x) => x.t === "PASB11");
+  assert.equal(z.rendaAporte, 0); assert.match(z.criterios.find((c) => c.id === "carteira").nota, /^sem aporte, está em 4,7% da carteira$/);
+});
+
+test("aporte sugerido: Meta, média de 3 meses fechados, padrão; aporte da URL", () => {
+  const fluxo = (o) => ({ fluxoMes: new Map(Object.entries(o)) });
+  assert.deepEqual(aporteSugerido({ aporte: 1500 }, fluxo({ "2026-10": { compras: 9000, vendas: 0 } }), "2026-11-05"), { valor: 1500, origem: "meta" });
+  // agosto, setembro e outubro; novembro (pela metade) fica fora
+  const f = fluxo({ "2026-08": { compras: 1000, vendas: 0 }, "2026-09": { compras: 2500, vendas: 500 }, "2026-10": { compras: 0, vendas: 0 }, "2026-11": { compras: 50000, vendas: 0 } });
+  assert.deepEqual(aporteSugerido({ aporte: 0 }, f, "2026-11-05"), { valor: 1000, origem: "media3" });
+  assert.deepEqual(aporteSugerido(null, fluxo({ "2026-09": { compras: 100, vendas: 0 } }), "2026-11-05"), { valor: 33.33, origem: "media3" });
+  assert.deepEqual(aporteSugerido(null, fluxo({ "2026-10": { compras: 100, vendas: 900 } }), "2026-11-05"), { valor: APORTE_PADRAO, origem: "padrao" }, "média negativa");
+  assert.deepEqual(aporteSugerido(null, null, "2026-11-05"), { valor: APORTE_PADRAO, origem: "padrao" });
+  // janeiro olha para outubro, novembro e dezembro do ano anterior
+  assert.equal(aporteSugerido(null, fluxo({ "2025-10": { compras: 300, vendas: 0 } }), "2026-01-10").origem, "media3");
+  assert.equal(aporteDaUrl("2500"), 2500); assert.equal(aporteDaUrl("0"), 0); assert.equal(aporteDaUrl("1234.5"), 1234.5); assert.equal(aporteDaUrl("10000000"), 10000000);
+  for (const x of [null, "", "-5", "10000001", "abc", "1e5", "1.234,50", "Infinity", "NaN", "12.345"]) assert.equal(aporteDaUrl(x), null, x);
+});
+
+test("rota /api/carteira/reinvestir com aporte na URL: simulado, origem e cache por aporte", async () => {
+  const env = { DB: d1Falso(), CARTEIRA_KEY: Buffer.alloc(32, 9).toString("base64") };
+  const ins = env.DB.db.prepare("INSERT INTO docs (collection, id, data) VALUES ('meta', ?, ?)");
+  ins.run("b3", JSON.stringify({ ...b3, acoes: FC.b3.acoes, fiis: [...FC.b3.fiis.map((x) => ({ ...x, vol: 50000 })), ...b3.fiis] }));
+  ins.run("fii-resumo", JSON.stringify({ ...fiiResumo, fundos: { ...fiiResumo.fundos, ...FC.fiiResumo.fundos } }));
+  ins.run("mercado", JSON.stringify(MERCADO));
+  const esp = espelhoFalso();
+  const email = "ap@x.com";
+  const chamar = async (metodo, caminho, corpo, limpar = true) => {
+    if (limpar) limparCacheCarteira(email);
+    const r = await rotaCarteira(new Request("https://x/api/carteira/" + caminho, { method: metodo, headers: { "content-type": "application/json" }, body: corpo === undefined ? undefined : JSON.stringify(corpo) }), env, { email }, caminho.split("?")[0], { ...esp, hoje: "2026-11-05" });
+    return { status: r.status, j: await r.json() };
+  };
+  // sem carteira e sem Meta: padrão
+  let r = await chamar("GET", "reinvestir");
+  assert.deepEqual(r.j.aporte, { valor: 1000, origem: "padrao" }); assert.deepEqual(r.j.sugerido, r.j.aporte);
+  // carteira com compras em agosto, setembro e outubro de 2026: média de 3 meses
+  const arqs = FC.arquivos();
+  arqs[0] = { ...arqs[0], linhas: [...arqs[0].linhas, ["10/08/2026", "Compra", "Mercado à Vista", "-", FC.XP, "QRST11", 10, 110, 1100], ["10/09/2026", "Compra", "Mercado à Vista", "-", FC.XP, "QRST11", 10, 110, 1100], ["12/10/2026", "Compra", "Mercado à Vista", "-", FC.XP, "UVWX11", 100, 9, 900]] };
+  assert.equal((await chamar("POST", "importar", { arquivos: arqs })).j.gravado, true);
+  r = await chamar("GET", "reinvestir");
+  assert.deepEqual(r.j.aporte, { valor: 1033.33, origem: "media3" });
+  const base = r.j;
+  // com a Meta: o da Meta
+  assert.equal((await chamar("PUT", "meta", { alvo: 3000, aporte: 1500, yield: null, reinvestir: true })).status, 200);
+  r = await chamar("GET", "reinvestir");
+  assert.deepEqual(r.j.aporte, { valor: 1500, origem: "meta" });
+  const meta = r.j;
+  // aporte na URL: simulado; rendaAporte e o critério carteira mudam; o sugerido segue o da Meta e nada é gravado
+  r = await chamar("GET", "reinvestir?universo=todos&aporte=30000");
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.j.aporte, { valor: 30000, origem: "simulado" }); assert.deepEqual(r.j.sugerido, { valor: 1500, origem: "meta" });
+  const x = r.j.top[0], x0 = meta.top.find((y) => y.t === x.t) || base.top.find((y) => y.t === x.t);
+  assert.ok(Math.abs(x.rendaAporte - (30000 * x.dy) / 100 / 12) < 0.5);
+  if (x0) assert.notEqual(x.rendaAporte, x0.rendaAporte);
+  for (const y of r.j.top) assert.match(y.criterios.find((c) => c.id === "carteira").nota, /fora da carteira hoje|R\$ 30 mil do aporte aqui/);
+  const linhas = () => env.DB.db.prepare("SELECT collection, id, atualizado FROM docs ORDER BY collection, id").all();
+  const antes = JSON.stringify(linhas());
+  await chamar("GET", "reinvestir?aporte=777");
+  assert.equal(JSON.stringify(linhas()), antes, "simular não grava nada");
+  // só o peso na carteira, universo só os meus: os FIIs da carteira entram e a pontuação muda com o aporte
+  assert.equal((await chamar("PUT", "reinvestir", { pesos: { pvp: 0, dy: 0, regularidade: 0, rendimento: 0, liquidez: 0, cotistas: 0, carteira: 50 }, universo: "meus" })).status, 200);
+  const m0 = (await chamar("GET", "reinvestir")).j, m1 = (await chamar("GET", "reinvestir?aporte=50000")).j;
+  assert.equal(m0.universo, "meus"); assert.ok(m0.top.length >= 1);
+  const kc = (x) => x.criterios.find((c) => c.id === "carteira");
+  for (const q0 of m0.top) { const q1 = m1.top.find((y) => y.t === q0.t); assert.ok(kc(q1).valor > kc(q0).valor, `${q0.t}: peso depois do aporte ${kc(q0).valor} -> ${kc(q1).valor}`); }
+  const menor = m0.top.reduce((a, b) => (kc(b).valor < kc(a).valor ? b : a));
+  const q1 = m1.top.find((y) => y.t === menor.t), k1 = kc(q1);
+  assert.ok(q1.pontos < menor.pontos, `${menor.t}: pontos ${menor.pontos} -> ${q1.pontos}`);
+  assert.match(k1.nota, /R\$ 50 mil do aporte aqui/);
+  // aporte inválido: cai no sugerido (sem erro)
+  for (const q of ["-10", "abc", "20000000", "1,5"]) {
+    r = await chamar("GET", "reinvestir?aporte=" + encodeURIComponent(q));
+    assert.equal(r.status, 200, q); assert.deepEqual(r.j.aporte, { valor: 1500, origem: "meta" }, q);
+  }
+  // cache por pessoa, universo e aporte: um aporte novo não sai do cache do anterior
+  await chamar("GET", "reinvestir?aporte=2000");
+  const c1 = await chamar("GET", "reinvestir?aporte=3000", undefined, false);
+  assert.equal(c1.j.aporte.valor, 3000);
+  const c2 = await chamar("GET", "reinvestir?aporte=2000", undefined, false);
+  assert.equal(c2.j.aporte.valor, 2000);
+  for (const y of c1.j.top) for (const c of y.criterios) assert.doesNotMatch(c.nota, PROIBIDO);
 });
