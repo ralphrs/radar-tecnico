@@ -128,6 +128,9 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] "Trocar de conta" no menu da conta (página e admin)
 - [x] Internacional aparece como "Inter" no selo de clube e no título do grupo, para não confundir com o filtro Nacional/Internacional
 
+## Pedidos de 05/11
+- [x] Tabelas: ocultar colunas por tabela, salvo por pessoa (05/11)
+
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
 - [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)

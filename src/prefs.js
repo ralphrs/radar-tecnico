@@ -1,6 +1,6 @@
 // Preferências de tela por pessoa, em prefs/<email>:
-// - doc "tabelas": estado de cada tabela da página (ordenação, filtros por coluna, página, linhas por página), por id
-//   da tabela, mais as Minhas listas automáticas ("lista-<id>"), cujo PUT de lista é recusado. Até 40 tabelas; o PUT
+// - doc "tabelas": estado de cada tabela da página (ordenação, filtros por coluna, página, linhas por página e colunas
+//   ocultas, até 30), por id da tabela, mais as Minhas listas automáticas ("lista-<id>"), cujo PUT de lista é recusado. Até 40 tabelas; o PUT
 //   manda só as que mudaram ({ tabelas: { <id>: estado | null } }) e o servidor junta com o que já havia, guardando as
 //   40 mexidas por último. Assim dois aparelhos abertos não apagam a tabela um do outro.
 // - doc "layout": colunas recolhidas ({ esq, dir }).

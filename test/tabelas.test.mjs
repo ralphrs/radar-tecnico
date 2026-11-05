@@ -178,3 +178,66 @@ test("Minhas listas: ordem no doc da lista, conferida", () => {
   assert.ok(validarLista({ nome: "Renda", papeis: [], ordem: [{ c: "liq", d: -1 }] }).erro);
   assert.ok(validarLista({ nome: "Renda", papeis: [], ordem: [{ c: "dy", d: 0 }] }).erro);
 });
+
+test("colunas ocultas: salvas no estado e lidas de volta", () => {
+  const e = { ordem: [{ c: "dy", d: -1 }], filtros: {}, pagina: 1, porPagina: 25, ocultas: ["seg", "corr", "seg"] };
+  const txt = T.serializar(e);
+  assert.deepEqual(JSON.parse(txt).ocultas, ["seg", "corr"]); // repetida sai
+  assert.deepEqual(T.lerEstado(txt).ocultas, ["seg", "corr"]);
+  assert.equal("ocultas" in JSON.parse(T.serializar({ ocultas: [] })), false); // vazia nem vai para o estado
+  for (const ruim of [{ ocultas: "seg" }, { ocultas: ["a b"] }, { ocultas: [1] }, { ocultas: Array.from({ length: T.MAX_OCULTAS + 1 }, (_, i) => "c" + i) }])
+    assert.ok(T.validarEstado(ruim).erro, JSON.stringify(ruim));
+});
+
+test("colunas ocultas: a obrigatória não some e a inexistente é ignorada", () => {
+  assert.deepEqual([...T.obrigatorias(COLS)], ["t"]); // sem marcação, a primeira
+  const comMarca = [{ ...COLS[0], obrigatoria: false }, { ...COLS[1], obrigatoria: true }, ...COLS.slice(2)];
+  assert.deepEqual([...T.obrigatorias(comMarca)], ["seg"]);
+  assert.deepEqual(T.ocultasValidas(COLS, ["t", "pvp", "sumiu"]), ["pvp"]);
+  assert.deepEqual(T.colunasVisiveis(COLS, ["t", "pvp", "sumiu"]).map((c) => c.id), ["t", "seg", "dy", "d", "corr"]);
+  assert.deepEqual(T.alternarOculta(COLS, [], "t", false), []); // obrigatória: nada muda
+  assert.deepEqual(T.alternarOculta(COLS, ["sumiu"], "pvp", false), ["sumiu", "pvp"]); // a de outra tela fica guardada
+  assert.deepEqual(T.alternarOculta(COLS, ["sumiu", "pvp"], "pvp", true), ["sumiu"]);
+  assert.deepEqual(T.alternarOculta(COLS, [], "nada", false), []);
+  // tabela com menos de 5 colunas não tem o controle: nada fica escondido
+  assert.deepEqual(T.ocultasValidas(COLS.slice(0, 4), ["pvp"]), []);
+  // regra de largura do CSS continua valendo e aparece no painel
+  assert.equal(T.larguraMin({ cls: "so-xl" }), 1200);
+  assert.equal(T.larguraMin({ cls: "col-pais so-largo" }), 640);
+  assert.equal(T.larguraMin({}), 0);
+});
+
+test("colunas ocultas: ordenação e filtro da coluna escondida ficam suspensos e voltam", () => {
+  const ordem = [{ c: "pvp", d: 1 }, { c: "dy", d: -1 }], filtros = { pvp: { max: 1 }, seg: { vals: ["Logística"] } };
+  const oc = T.ocultasValidas(COLS, ["pvp"]);
+  assert.deepEqual(T.ordemEfetiva(ordem, oc), [{ c: "dy", d: -1 }]);
+  assert.deepEqual(T.filtrosEfetivos(filtros, oc), { seg: { vals: ["Logística"] } });
+  // com P/VP escondido, a tabela ordena por DY e ignora o filtro de P/VP
+  const vis = T.ordenar(T.filtrar(L, COLS, T.filtrosEfetivos(filtros, oc)), COLS, T.ordemEfetiva(ordem, oc));
+  assert.deepEqual(ts(vis), ["AAAA11", "CCCC11"]);
+  // a pessoa troca o sentido do DY vendo só ele: P/VP continua guardado no primeiro lugar
+  const nova = T.juntarOrdem(T.cliqueOrdem(T.ordemEfetiva(ordem, oc), "dy", false, -1), ordem, oc);
+  assert.deepEqual(nova, [{ c: "pvp", d: 1 }, { c: "dy", d: 1 }]);
+  // mostrou de novo: a ordenação de antes volta inteira
+  assert.deepEqual(T.ordemEfetiva(nova, T.ocultasValidas(COLS, [])), nova);
+  assert.deepEqual(ts(T.ordenar(T.filtrar(L, COLS, filtros), COLS, ordem)), ["CCCC11", "AAAA11"]);
+  // estado salvo com ocultas passa pelo /api/prefs/tabelas
+  const s = T.lerEstado(T.serializar({ ordem, filtros, ocultas: oc }));
+  assert.deepEqual(s.ordem, ordem);
+  assert.deepEqual(s.filtros.pvp, { max: 1 });
+});
+
+test("/api/prefs/tabelas: ocultas conferidas e devolvidas", () => {
+  const v = validarTabelas({ tabelas: { "cot-fiis": { ordem: [], ocultas: ["man", "cot"] } } });
+  assert.deepEqual(v.tabelas["cot-fiis"].ocultas, ["man", "cot"]);
+  assert.ok(validarTabelas({ tabelas: { "cot-fiis": { ocultas: ["<b>"] } } }).erro);
+  assert.ok(validarTabelas({ tabelas: { "cot-fiis": { ocultas: Array.from({ length: 31 }, (_, i) => "c" + i) } } }).erro);
+  const m = mesclarTabelas(null, v.tabelas, "2026-11-05T10:00:00Z");
+  assert.deepEqual(respostaTabelas({ tabelas: m }).tabelas["cot-fiis"].ocultas, ["man", "cot"]);
+  // 40 tabelas com 30 ocultas de 24 caracteres cabem no limite de 40.000 do PUT
+  const cheia = {};
+  for (let k = 0; k < MAX_TABELAS; k++) cheia["lista-" + String(k).padStart(20, "0")] = { ordem: [{ c: "dy", d: -1 }], ocultas: Array.from({ length: 30 }, (_, i) => "c".repeat(22) + String(i).padStart(2, "0")) };
+  const vc = validarTabelas({ tabelas: cheia });
+  assert.ok(!vc.erro);
+  assert.ok(JSON.stringify(vc).length < 40000);
+});

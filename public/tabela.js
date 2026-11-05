@@ -6,14 +6,19 @@
  *
  * Coluna: { id, rotulo, tipo: "texto" | "num" | "data", valor(linha), valores?(linha) (texto com vários valores, como
  *   as corretoras), cls, ordenavel (padrão true), filtravel (padrão true), dir (primeiro sentido: 1 ou -1),
- *   fmt(v) (como o número aparece no chip), unidade ("%", "R$"...) }
- * Estado: { ordem: [{ c, d }], filtros: { <col>: { q, vals } | { min, max } | { de, ate } }, pagina, porPagina }
+ *   fmt(v) (como o número aparece no chip), unidade ("%", "R$"...), obrigatoria (não pode ser escondida; sem nenhuma
+ *   marcada, a primeira coluna é a obrigatória), aPartirDe (largura mínima de tela em px; sem ela, "so-largo" no cls vale
+ *   640 e "so-xl" vale 1200, regras que continuam no CSS da página) }
+ * Estado: { ordem: [{ c, d }], filtros: { <col>: { q, vals } | { min, max } | { de, ate } }, pagina, porPagina, ocultas?: [col] }
+ *   Coluna oculta sai do cabeçalho e das linhas; a ordenação e o filtro dela ficam guardados, suspensos, e voltam
+ *   quando a coluna volta. Ocultas que não existem mais na tabela são ignoradas (e ficam guardadas: a página da lista,
+ *   por exemplo, só mostra as colunas que têm dado, e o celular mostra menos colunas).
  */
 (function (raiz) {
   "use strict";
 
   const POR_PAGINA = [25, 50, 100];
-  const MAX_ORDEM = 5, MAX_SUGESTOES = 12, MAX_VALS = 12;
+  const MAX_ORDEM = 5, MAX_SUGESTOES = 12, MAX_VALS = 12, MAX_OCULTAS = 30, MIN_COLUNAS = 5;
   const ID_OK = /^[a-z0-9-]{1,80}$/, COL_OK = /^[A-Za-z0-9_]{1,24}$/, DATA_OK = /^\d{4}-\d{2}-\d{2}$/;
   const vazio = (v) => v === null || v === undefined || v === "" || (typeof v === "number" && !Number.isFinite(v));
   const semAcento = (s) => String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -110,6 +115,46 @@
     if (n) o[i] = n; else o.splice(i, 1);
     return o;
   }
+  /* ---- colunas ocultas ---- */
+  /* ids das colunas que não podem ser escondidas: as marcadas como obrigatórias, ou a primeira */
+  function obrigatorias(colunas) {
+    const m = (colunas || []).filter((c) => c.obrigatoria).map((c) => c.id);
+    return new Set(m.length ? m : colunas && colunas.length ? [colunas[0].id] : []);
+  }
+  /* Ocultas que valem nesta tabela: só colunas que existem e não são obrigatórias. Tabela com menos de 5 colunas
+     não tem o controle, então nada fica escondido nela. */
+  function ocultasValidas(colunas, ocultas) {
+    if (!colunas || colunas.length < MIN_COLUNAS) return [];
+    const ob = obrigatorias(colunas), ids = new Set(colunas.map((c) => c.id));
+    return [...new Set(ocultas || [])].filter((c) => ids.has(c) && !ob.has(c));
+  }
+  const colunasVisiveis = (colunas, ocultas) => { const oc = new Set(ocultasValidas(colunas, ocultas)); return colunas.filter((c) => !oc.has(c.id)); };
+  /* Ordenação e filtros que valem com as ocultas de fora (o estado guardado não muda) */
+  const ordemEfetiva = (ordem, ocultas) => { const oc = new Set(ocultas || []); return (ordem || []).filter((o) => !oc.has(o.c)); };
+  function filtrosEfetivos(filtros, ocultas) {
+    const oc = new Set(ocultas || []), out = {};
+    for (const [c, f] of Object.entries(filtros || {})) if (!oc.has(c)) out[c] = f;
+    return out;
+  }
+  /* A pessoa mexeu na ordenação vendo só as colunas visíveis (nova). Os critérios de colunas ocultas que estavam em
+     "antiga" voltam para a posição que tinham, para reaparecerem quando a coluna voltar. */
+  function juntarOrdem(nova, antiga, ocultas) {
+    const oc = new Set(ocultas || []);
+    const out = (nova || []).filter((o) => !oc.has(o.c)).map((o) => ({ ...o }));
+    (antiga || []).forEach((o, i) => { if (oc.has(o.c) && !out.some((x) => x.c === o.c)) out.splice(Math.min(i, out.length), 0, { ...o }); });
+    return out.slice(0, MAX_ORDEM);
+  }
+  /* Mostra ou esconde uma coluna. Obrigatória ou inexistente: nada muda. Devolve a lista nova de ocultas. */
+  function alternarOculta(colunas, ocultas, c, mostrar) {
+    const atual = [...new Set(ocultas || [])];
+    if (!colunas.some((x) => x.id === c) || obrigatorias(colunas).has(c)) return atual;
+    const s = atual.filter((x) => x !== c);
+    if (!mostrar) s.push(c);
+    return s.slice(-MAX_OCULTAS);
+  }
+  /* Largura de tela a partir da qual o CSS da página mostra a coluna (0 = sempre) */
+  const larguraMin = (col) => col.aPartirDe || (/\bso-xl\b/.test(col.cls || "") ? 1200 : /\bso-largo\b/.test(col.cls || "") ? 640 : 0);
+
   const numOk = (v) => v === null || (typeof v === "number" && Number.isFinite(v) && Math.abs(v) < 1e15);
   /* Confere um estado (do localStorage, do servidor ou de um PUT). Devolve { estado } ou { erro }. */
   function validarEstado(e) {
@@ -143,6 +188,10 @@
     }
     if (e.pagina !== undefined) { if (!Number.isInteger(e.pagina) || e.pagina < 1 || e.pagina > 10000) return { erro: "pagina" }; out.pagina = e.pagina; }
     if (e.porPagina !== undefined) { if (!POR_PAGINA.includes(e.porPagina)) return { erro: "porPagina" }; out.porPagina = e.porPagina; }
+    if (e.ocultas !== undefined) {
+      if (!Array.isArray(e.ocultas) || e.ocultas.length > MAX_OCULTAS || e.ocultas.some((c) => typeof c !== "string" || !COL_OK.test(c))) return { erro: "ocultas" };
+      if (e.ocultas.length) out.ocultas = [...new Set(e.ocultas)];
+    }
     return { estado: out };
   }
   const serializar = (estado) => JSON.stringify(validarEstado(estado).estado || estadoVazio());
@@ -176,7 +225,8 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  const Tabela = { POR_PAGINA, MAX_ORDEM, ID_OK, estadoVazio, comparar, ordenar, filtrar, sugestoes, paginas, paginar, cliqueOrdem, validarEstado, serializar, lerEstado, textoFiltro, numBr, ativo };
+  const Tabela = { POR_PAGINA, MAX_ORDEM, MAX_OCULTAS, MIN_COLUNAS, ID_OK, estadoVazio, comparar, ordenar, filtrar, sugestoes, paginas, paginar, cliqueOrdem, validarEstado, serializar, lerEstado, textoFiltro, numBr, ativo,
+    obrigatorias, ocultasValidas, colunasVisiveis, ordemEfetiva, filtrosEfetivos, juntarOrdem, alternarOculta, larguraMin };
   raiz.Tabela = Tabela;
   if (typeof document === "undefined") return;
 
@@ -193,6 +243,7 @@
   };
   const FUNIL = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/></svg>';
   const SETAS = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg>';
+  const COLUNAS = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></svg>';
   const celular = () => window.matchMedia("(max-width: 699px)").matches;
 
   /* ---- estado salvo: localStorage pinta primeiro, /api/prefs/tabelas manda ---- */
@@ -223,6 +274,9 @@
       await fetch("/api/prefs/tabelas", { method: "PUT", keepalive: true, credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({ tabelas: corpo }) });
     } catch (e) {}
   }
+  /* trocar de seção pelo Voltar ou pelo logotipo fecha o painel aberto: ele não fica preso numa tabela que saiu */
+  window.addEventListener("hashchange", () => fecharPop(false));
+  window.addEventListener("popstate", () => fecharPop(false));
   window.addEventListener("pagehide", () => { if (Object.keys(pendentes).length) { clearTimeout(tPut); enviar(); } });
   /* Uma leitura por abertura. Tabela viva que a pessoa ainda não mexeu troca para o estado do servidor. */
   function carregarServidor() {
@@ -252,7 +306,7 @@
   /* avisa quando o estado do servidor chegar (quem já leu depois disso já recebe o do servidor em estadoDe) */
   const aoChegarServidor = (f) => { if (!servidor) ouvintesServidor.add(f); };
 
-  /* ---- popover (funil e painel Ordenar): perto do botão no desktop, folha de baixo no celular ---- */
+  /* ---- popover (funil e painéis Ordenar e Colunas): perto do botão no desktop, folha de baixo no celular ---- */
   let pop = null;
   function fecharPop(devolver) {
     if (!pop) return;
@@ -262,6 +316,7 @@
     if (p.volta) p.volta.setAttribute("aria-expanded", "false");
     document.removeEventListener("pointerdown", p.fora, true);
     window.removeEventListener("resize", p.posicionar);
+    window.removeEventListener("scroll", p.aoRolar, true);
     if (devolver && p.volta && p.volta.isConnected) p.volta.focus({ preventScroll: true });
     if (p.aoFechar) p.aoFechar();
   }
@@ -277,20 +332,28 @@
     const posicionar = () => {
       if (folha) return;
       const r = volta.getBoundingClientRect();
+      caixa.style.maxHeight = "";
       const w = caixa.offsetWidth, h = caixa.offsetHeight;
       const x = Math.max(8, Math.min(r.left, innerWidth - w - 8));
-      const y = r.bottom + 6 + h > innerHeight - 8 ? Math.max(8, r.top - 6 - h) : r.bottom + 6;
+      /* abaixo do botão; se não couber, acima; se não couber em nenhum, no lado com mais espaço, com rolagem dentro
+         (o painel nunca cobre o botão que o abriu) */
+      const abaixo = innerHeight - r.bottom - 14, acima = r.top - 14;
+      let y;
+      if (h <= abaixo || abaixo >= acima) { y = r.bottom + 6; if (h > abaixo) caixa.style.maxHeight = Math.max(160, abaixo) + "px"; }
+      else { if (h > acima) caixa.style.maxHeight = acima + "px"; y = r.top - 6 - Math.min(h, acima); }
       caixa.style.left = x + "px"; caixa.style.top = y + "px";
     };
     posicionar();
     const fora = (e) => { if (!caixa.contains(e.target) && !volta.contains(e.target)) fecharPop(false); };
-    pop = { caixa, veu, volta, fora, posicionar, aoFechar };
+    /* a página rolou: o painel acompanha o botão (a rolagem dentro do próprio painel não conta) */
+    const aoRolar = (e) => { if (e.target instanceof Node && caixa.contains(e.target)) return; posicionar(); };
+    pop = { caixa, veu, volta, fora, posicionar, aoRolar, aoFechar };
     volta.setAttribute("aria-expanded", "true");
     fechar.addEventListener("click", () => fecharPop(true));
     if (veu) veu.addEventListener("click", () => fecharPop(true));
     caixa.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); fecharPop(true); } });
-    setTimeout(() => { document.addEventListener("pointerdown", fora, true); window.addEventListener("resize", posicionar); }, 0);
-    const primeiro = caixa.querySelector("input, select, button:not(.tb-pop-x)");
+    setTimeout(() => { document.addEventListener("pointerdown", fora, true); window.addEventListener("resize", posicionar); window.addEventListener("scroll", aoRolar, { capture: true, passive: true }); }, 0);
+    const primeiro = caixa.querySelector("input:not(:disabled), select, button:not(.tb-pop-x):not(:disabled)");
     (primeiro || caixa).focus({ preventScroll: true });
     return caixa;
   }
@@ -323,7 +386,10 @@
     const conta = el("span", { class: "tb-conta", role: "status", "aria-live": "polite" });
     const btnOrdenar = el("button", { type: "button", class: "dd-btn dd-btn--outline tb-btn-ordenar", "aria-haspopup": "dialog", "aria-expanded": "false", id: "tb-ordenar-" + id, html: SETAS + "<span>Ordenar</span>" });
     const chips = el("div", { class: "tb-chips" });
-    barra.append(conta, chips, btnOrdenar);
+    /* Colunas: só em tabela com 5 colunas ou mais */
+    const temColunas = colunas.length >= MIN_COLUNAS;
+    const btnColunas = temColunas ? el("button", { type: "button", class: "dd-btn dd-btn--outline tb-btn-colunas", "aria-haspopup": "dialog", "aria-expanded": "false", id: "tb-colunas-" + id }) : null;
+    barra.append(conta, chips, el("div", { class: "tb-acoes" }, btnOrdenar, btnColunas));
     const caixa = el("div", { class: op.classeCaixa || "cot-caixa" });
     const tabela = el("table", { class: (op.classeTabela || "cot-tab") + " tb-tab" });
     const thead = el("thead"), tbody = el("tbody");
@@ -341,7 +407,12 @@
       pintar();
       if (op.aoMudar) op.aoMudar(estado, visiveis);
     };
-    const ordenarPor = (col, shift) => mudar({ ordem: cliqueOrdem(estado.ordem, col.id, shift, col.dir || (col.tipo === "texto" ? 1 : -1)) });
+    /* ocultas que valem agora e as colunas que aparecem */
+    const oc = () => ocultasValidas(colunas, estado.ocultas);
+    const visCols = () => colunasVisiveis(colunas, estado.ocultas);
+    /* mexer na ordenação só vê as colunas visíveis; os critérios das ocultas ficam guardados no lugar deles */
+    const novaOrdem = (nova) => juntarOrdem(nova, estado.ordem, oc());
+    const ordenarPor = (col, shift) => mudar({ ordem: novaOrdem(cliqueOrdem(ordemEfetiva(estado.ordem, oc()), col.id, shift, col.dir || (col.tipo === "texto" ? 1 : -1))) });
 
     function funil(col) {
       const f = estado.filtros[col.id];
@@ -421,12 +492,12 @@
       const corpo = el("div", { class: "tb-ordem" });
       const desenhar = () => {
         corpo.textContent = "";
-        const ord = estado.ordem;
+        const ord = ordemEfetiva(estado.ordem, oc());
         if (!ord.length) corpo.append(el("p", { class: "tb-nota" }, op.semOrdem || "Na ordem padrão. Escolha uma coluna para ordenar."));
         const ol = el("ol", { class: "tb-crit" });
         ord.forEach((o, i) => {
           const col = colunas.find((c) => c.id === o.c); if (!col) return;
-          const mexe = (nova) => { mudar({ ordem: nova }); desenhar(); };
+          const mexe = (nova) => { mudar({ ordem: novaOrdem(nova) }); desenhar(); };
           const sobe = el("button", { type: "button", class: "dd-btn dd-btn--outline dd-btn--icon", "aria-label": `Subir ${col.rotulo}`, disabled: i === 0 }, "↑");
           sobe.addEventListener("click", () => { const n = ord.slice(); [n[i - 1], n[i]] = [n[i], n[i - 1]]; mexe(n); const b = corpo.querySelectorAll(".tb-crit li")[i - 1]; if (b) b.querySelector("button").focus(); });
           const desce = el("button", { type: "button", class: "dd-btn dd-btn--outline dd-btn--icon", "aria-label": `Descer ${col.rotulo}`, disabled: i === ord.length - 1 }, "↓");
@@ -442,15 +513,17 @@
           ol.append(el("li", {}, el("span", { class: "tb-crit-n" }, String(i + 1)), el("span", { class: "tb-crit-nome" }, col.rotulo), sentido, el("span", { class: "tb-crit-setas" }, sobe, desce, tirar)));
         });
         if (ord.length) corpo.append(ol);
-        const resto = colunas.filter((c) => c.ordenavel !== false && !ord.some((o) => o.c === c.id));
+        const resto = visCols().filter((c) => c.ordenavel !== false && !ord.some((o) => o.c === c.id));
         if (resto.length && ord.length < MAX_ORDEM) {
           const sel = el("select", { class: "dd-input", id: `tb-add-${id}`, "aria-label": ord.length ? "Acrescentar critério" : "Ordenar por" },
             el("option", { value: "" }, ord.length ? "Acrescentar critério…" : "Ordenar por…"), ...resto.map((c) => el("option", { value: c.id }, c.rotulo)));
-          sel.addEventListener("change", () => { const c = colunas.find((x) => x.id === sel.value); if (!c) return; mudar({ ordem: [...ord, { c: c.id, d: c.dir || (c.tipo === "texto" ? 1 : -1) }] }); desenhar(); const s = document.getElementById(`tb-add-${id}`); if (s) s.focus(); });
+          sel.addEventListener("change", () => { const c = colunas.find((x) => x.id === sel.value); if (!c) return; mudar({ ordem: novaOrdem([...ord, { c: c.id, d: c.dir || (c.tipo === "texto" ? 1 : -1) }]) }); desenhar(); const s = document.getElementById(`tb-add-${id}`); if (s) s.focus(); });
           corpo.append(sel);
         }
+        const susp = estado.ordem.filter((o) => oc().includes(o.c)).map((o) => (colunas.find((c) => c.id === o.c) || {}).rotulo).filter(Boolean);
+        if (susp.length) corpo.append(el("p", { class: "tb-nota" }, `Ordenação por ${susp.join(", ")} suspensa: ${susp.length > 1 ? "as colunas estão ocultas" : "a coluna está oculta"}. Volta quando ${susp.length > 1 ? "elas voltarem" : "ela voltar"}.`));
         const ordPadrao = (padrao.ordem || []).map((o) => ({ ...o }));
-        if (JSON.stringify(ord) !== JSON.stringify(ordPadrao)) {
+        if (JSON.stringify(estado.ordem) !== JSON.stringify(ordPadrao)) {
           const lp = el("button", { type: "button", class: "dd-btn dd-btn--link" }, ordPadrao.length || op.semOrdem ? "Voltar à ordem padrão" : "Limpar ordenação");
           lp.addEventListener("click", () => { mudar({ ordem: ordPadrao }); desenhar(); });
           corpo.append(el("div", { class: "tb-pop-pe" }, lp));
@@ -461,14 +534,56 @@
     }
     btnOrdenar.addEventListener("click", () => { if (pop && pop.volta === btnOrdenar) fecharPop(true); else abrirOrdenar(); });
 
+    /* Painel Colunas: uma caixa por coluna (marcada = visível), Todas e Padrão */
+    function abrirColunas() {
+      const corpo = el("div", { class: "tb-cols" });
+      const ob = obrigatorias(colunas);
+      const padraoOc = () => ocultasValidas(colunas, padrao.ocultas);
+      const desenhar = (focoId) => {
+        corpo.textContent = "";
+        const o = oc();
+        const lista = el("div", { class: "tb-cols-lista", role: "group", "aria-label": "Colunas visíveis" });
+        colunas.forEach((col) => {
+          const cid = `tbc-${id}-${col.id}`, fixa = ob.has(col.id), oculta = o.includes(col.id);
+          const cb = el("input", { type: "checkbox", id: cid, checked: !oculta, disabled: fixa });
+          cb.addEventListener("change", () => { mudar({ ocultas: alternarOculta(colunas, estado.ocultas, col.id, cb.checked) }, { voltar: false }); desenhar(cid); });
+          const notas = [];
+          if (fixa) notas.push("sempre visível");
+          else {
+            const w = larguraMin(col);
+            if (w) notas.push(`só em tela de ${w} px ou mais`);
+            if (oculta && estado.ordem.some((x) => x.c === col.id)) notas.push("ordenação suspensa");
+            if (oculta && ativo(estado.filtros[col.id])) notas.push("filtro suspenso");
+          }
+          lista.append(el("label", { for: cid, class: "tb-op" + (fixa ? " fixa" : "") }, cb, el("span", {}, col.rotulo), el("small", {}, notas.join(" · "))));
+        });
+        corpo.append(lista);
+        const todas = el("button", { type: "button", class: "dd-btn dd-btn--outline", id: `tbc-${id}-todas`, disabled: !o.length }, "Todas");
+        todas.addEventListener("click", () => { mudar({ ocultas: (estado.ocultas || []).filter((c) => !colunas.some((x) => x.id === c)) }, { voltar: false }); desenhar(`tbc-${id}-todas`); });
+        const ehPadrao = JSON.stringify([...o].sort()) === JSON.stringify([...padraoOc()].sort());
+        const pad = el("button", { type: "button", class: "dd-btn dd-btn--outline", id: `tbc-${id}-padrao`, disabled: ehPadrao, title: "As colunas que a tabela mostra de início" }, "Padrão");
+        pad.addEventListener("click", () => { mudar({ ocultas: [...(estado.ocultas || []).filter((c) => !colunas.some((x) => x.id === c)), ...padraoOc()] }, { voltar: false }); desenhar(`tbc-${id}-padrao`); });
+        corpo.append(el("p", { class: "tb-nota" }, "Coluna oculta sai da tabela e leva junto a ordenação e o filtro dela, que voltam quando ela voltar. Fica salvo nesta tabela."),
+          el("div", { class: "tb-pop-pe tb-cols-pe" }, todas, pad));
+        if (focoId) { const f = document.getElementById(focoId); (f && !f.disabled ? f : corpo.querySelector("input:not(:disabled)") || corpo).focus({ preventScroll: true }); }
+      };
+      desenhar();
+      abrirPop(btnColunas, "Colunas", corpo);
+    }
+    if (btnColunas) btnColunas.addEventListener("click", () => { if (pop && pop.volta === btnColunas) fecharPop(true); else abrirColunas(); });
+
     /* Largura mínima de cada coluna enquanto a tabela está na tela: ao ordenar ou trocar de página as colunas não
        encolhem, a largura total não diminui e a rolagem horizontal fica exatamente onde estava. */
     const largMin = new Map();
-    function pintarCabecalho() {
-      thead.querySelectorAll("th[data-col]").forEach((th) => { const w = th.getBoundingClientRect().width; if (w > (largMin.get(th.dataset.col) || 0)) largMin.set(th.dataset.col, w); });
+    let chaveCols = "", colsMudaram = false;
+    function pintarCabecalho(cols, ordem) {
+      /* mudou o conjunto de colunas (alguém escondeu ou mostrou uma): as larguras recalculam do zero */
+      const chave = cols.map((c) => c.id).join(",");
+      if (chave !== chaveCols) { if (chaveCols) colsMudaram = true; largMin.clear(); chaveCols = chave; }
+      else thead.querySelectorAll("th[data-col]").forEach((th) => { const w = th.getBoundingClientRect().width; if (w > (largMin.get(th.dataset.col) || 0)) largMin.set(th.dataset.col, w); });
       const tr = el("tr");
-      colunas.forEach((col) => {
-        const th = cabecalho(col, estado.ordem, ordenarPor, col.filtravel === false ? null : funil(col));
+      cols.forEach((col) => {
+        const th = cabecalho(col, ordem, ordenarPor, col.filtravel === false ? null : funil(col));
         th.dataset.col = col.id;
         const w = largMin.get(col.id); if (w) th.style.minWidth = Math.ceil(w) + "px";
         tr.append(th);
@@ -478,20 +593,24 @@
     function pintar() {
       /* guarda a rolagem: só o tbody, o cabeçalho e o rodapé mudam, mas a altura da página pode mudar */
       const sl = caixa.scrollLeft || (memoria.get(id) || {}).scrollLeft || 0, sy = window.scrollY;
-      const filtradas = filtrar(linhas, colunas, estado.filtros);
-      const ordenadas = ordenar(filtradas, colunas, estado.ordem);
+      const o = oc(), cols = visCols();
+      const filtrosVale = filtrosEfetivos(estado.filtros, o), ordemVale = ordemEfetiva(estado.ordem, o);
+      const filtradas = filtrar(linhas, colunas, filtrosVale);
+      const ordenadas = ordenar(filtradas, colunas, ordemVale);
       const pg = paginar(ordenadas.length, estado.pagina, estado.porPagina);
       estado.pagina = pg.pagina; estado.porPagina = pg.porPagina;
       visiveis = ordenadas.slice(pg.ini, pg.fim);
-      pintarCabecalho();
-      tbody.replaceChildren(...visiveis.map((l) => { const tr = el("tr", op.attrsLinha ? op.attrsLinha(l) : {}, ...colunas.map((c) => op.celula(c, l))); return tr; }));
+      pintarCabecalho(cols, ordemVale);
+      /* a coluna oculta não entra no DOM (nem célula escondida): a largura da tabela recalcula */
+      tabela.classList.toggle("tb-2-oculta", colunas.length > 1 && o.includes(colunas[1].id));
+      tbody.replaceChildren(...visiveis.map((l) => { const tr = el("tr", op.attrsLinha ? op.attrsLinha(l) : {}, ...cols.map((c) => op.celula(c, l))); return tr; }));
       if (cel) cel.replaceChildren(...visiveis.map(op.cel));
       const m = total != null ? total : linhas.length;
       conta.textContent = `${ordenadas.length.toLocaleString("pt-BR")} de ${m.toLocaleString("pt-BR")}`;
       if (op.rotuloConta) conta.textContent += " " + op.rotuloConta;
       /* chips dos filtros ativos */
       chips.textContent = "";
-      const ativos = Object.entries(estado.filtros).map(([c, f]) => [colunas.find((x) => x.id === c), f]).filter(([c, f]) => c && ativo(f));
+      const ativos = Object.entries(filtrosVale).map(([c, f]) => [colunas.find((x) => x.id === c), f]).filter(([c, f]) => c && ativo(f));
       ativos.forEach(([col, f]) => {
         const t = textoFiltro(col, f);
         const b = el("button", { type: "button", class: "chip tb-chip", "aria-label": `Tirar o filtro ${t}`, title: "Tirar este filtro" }, el("span", {}, t), el("span", { "aria-hidden": "true" }, "×"));
@@ -500,10 +619,16 @@
       });
       if (ativos.length) {
         const lp = el("button", { type: "button", class: "dd-btn dd-btn--link tb-limpar" }, "Limpar filtros");
-        lp.addEventListener("click", () => { mudar({ filtros: {} }); btnOrdenar.focus({ preventScroll: true }); });
+        /* os filtros suspensos (de colunas ocultas) ficam guardados */
+        lp.addEventListener("click", () => { mudar({ filtros: Object.fromEntries(Object.entries(estado.filtros).filter(([c]) => o.includes(c))) }); btnOrdenar.focus({ preventScroll: true }); });
         chips.append(lp);
       }
-      btnOrdenar.classList.toggle("on", estado.ordem.length > 0);
+      btnOrdenar.classList.toggle("on", ordemVale.length > 0);
+      if (btnColunas) {
+        btnColunas.classList.toggle("on", o.length > 0);
+        btnColunas.innerHTML = COLUNAS + "<span>Colunas</span>" + (o.length ? `<span class="tb-cols-n"> · ${o.length} ${o.length === 1 ? "oculta" : "ocultas"}</span>` : "");
+        btnColunas.setAttribute("aria-label", o.length ? `Colunas, ${o.length} ${o.length === 1 ? "oculta" : "ocultas"}` : "Colunas");
+      }
       /* vazio */
       const nada = !ordenadas.length;
       caixa.hidden = nada; if (cel) cel.hidden = nada;
@@ -536,12 +661,14 @@
         dir.append(sel);
       }
       pe.append(dir);
-      caixa.scrollLeft = sl;
+      /* colunas mudaram: a tabela tem outra largura e a rolagem lateral volta ao começo */
+      caixa.scrollLeft = colsMudaram ? 0 : sl;
+      if (colsMudaram) { colsMudaram = false; memoria.set(id, { scrollLeft: 0 }); }
       if (Math.abs(window.scrollY - sy) > 1) window.scrollTo({ top: sy });
     }
 
     const inst = {
-      el: raizEl, caixa, get estado() { return estado; }, get visiveis() { return visiveis; },
+      el: raizEl, caixa, get estado() { return estado; }, get visiveis() { return visiveis; }, get colunas() { return visCols(); },
       vivo: () => raizEl.isConnected,
       aplicar(novo) { estado = lerEstado(JSON.stringify(novo), padrao); pintar(); if (op.aoMudar) op.aoMudar(estado, visiveis); },
       /* troca as linhas (busca ou dados novos); voltarPagina: a busca mudou e a página volta à 1 */
