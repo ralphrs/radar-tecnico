@@ -80,3 +80,63 @@ export const arquivosSaidas = () => [
   { nome: "negociacao-2026.xlsx", tipo: "negociacao", linhas: negSaidas },
   { nome: "movimentacao-2026.xlsx", tipo: "movimentacao", linhas: movSaidas },
 ];
+// Conferência da carteira por lote (FIFO), usada em carteira.test.mjs e b3-fake.test.mjs. Para cada papel (aberto ou
+// encerrado): a soma dos lotes é a quantidade da posição, nada precisou de acerto e o custo que entrou nos lotes fecha
+// com o que sobrou mais o que saiu em venda e em transferência, retirada ou vencimento. Com `comprado` (papel -> R$),
+// o que entrou nos lotes bate também com o total comprado contado à parte. Devolve a lista de problemas (vazia = ok).
+export function conferirLotes(calc, comprado = null) {
+  const erros = [];
+  const papeis = [
+    ...calc.posicoes.map((p) => ({ t: p.t, q: p.q, lotes: p.lotes, f: p.fifo })),
+    ...calc.resumo.encerradas.map((e) => ({ t: e.t, q: 0, lotes: [], f: e.fifo })),
+  ];
+  let realizado = 0;
+  for (const p of papeis) {
+    const sq = p.lotes.reduce((s, l) => s + l.q, 0);
+    if (Math.abs(sq - p.q) > 1e-6) erros.push(`${p.t}: lotes somam ${sq}, a posição tem ${p.q}`);
+    if (p.f.acerto) erros.push(`${p.t}: acerto de ${p.f.acerto}`);
+    const conta = p.f.custo + p.f.baixadoVendas + p.f.baixadoOutros;
+    if (Math.abs(conta - p.f.entrou) > 0.03) erros.push(`${p.t}: sobrou ${p.f.custo} + vendido ${p.f.baixadoVendas} + saiu ${p.f.baixadoOutros} != entrou ${p.f.entrou}`);
+    if (comprado && Math.abs(p.f.entrou - (comprado[p.t] || 0)) > 0.03) erros.push(`${p.t}: entrou ${p.f.entrou}, comprado ${comprado[p.t] || 0}`);
+    const somaLotes = p.lotes.reduce((s, l) => s + l.custo, 0);
+    if (Math.abs(somaLotes - p.f.custo) > 0.03 * Math.max(1, p.lotes.length)) erros.push(`${p.t}: custo dos lotes ${somaLotes} != ${p.f.custo}`);
+    realizado += p.f.realizado;
+  }
+  if (Math.abs(realizado - calc.resumo.fifo.realizado) > 0.05) erros.push(`realizado por lote: papéis ${realizado}, resumo ${calc.resumo.fifo.realizado}`);
+  return erros;
+}
+// Total comprado por papel, contado direto no extrato (compras da Negociação, fracionário junto, mais a subscrição
+// exercida, que vai para o papel da mesma raiz). Bonificação sem valor e transferência entre corretoras não entram.
+export function compradoPorPapel(extrato, papeis) {
+  const out = {};
+  for (const [, cv, t, q, p] of extrato.neg) if (cv === "C") { const b = t.replace(/F$/, ""); out[b] = (out[b] || 0) + q * p; }
+  for (const [, , tipo, t, q, p] of extrato.mov) {
+    if (tipo !== "dir-exe" || !(p > 0)) continue;
+    const dono = papeis.find((x) => x.slice(0, 4) === t.slice(0, 4) && /11$/.test(x));
+    if (dono) out[dono] = (out[dono] || 0) + q * p;
+  }
+  return out;
+}
+// Por lote (FIFO), para os prints da tela: compras do mesmo papel a preços diferentes e vendas que atravessam lotes.
+// Entram por cima de arquivosSaidas(); os testes antigos não usam. QWER3 é o caso de 1 a 10, 1 a 9, 1 a 5 e venda a 7
+// (aqui em lotes de 100), sem Movimentação; ABCD3 ganha duas compras e uma venda que baixa três lotes.
+export const negLotes = [
+  ["12/08/2025", "Compra", "Mercado à Vista", "-", XP, "ABCD3", 40, 13, 520],
+  ["15/01/2026", "Compra", "Mercado à Vista", "-", XP, "ABCD3", 30, 9.5, 285],
+  ["15/09/2026", "Venda", "Mercado à Vista", "-", XP, "ABCD3", 60, 12.5, 750],
+  ["03/02/2025", "Compra", "Mercado à Vista", "-", XP, "QWER3", 100, 10, 1000],
+  ["03/03/2025", "Compra", "Mercado à Vista", "-", XP, "QWER3", 100, 9, 900],
+  ["01/04/2025", "Compra", "Mercado à Vista", "-", XP, "QWER3", 100, 5, 500],
+  ["04/05/2026", "Venda", "Mercado à Vista", "-", XP, "QWER3", 100, 7, 700],
+];
+export const movLotes = [
+  ["Credito", "14/08/2025", "Transferência - Liquidação", "ABCD3 - EMPRESA ABCD S.A.", XP, 40, 13, 520],
+  ["Credito", "19/01/2026", "Transferência - Liquidação", "ABCD3 - EMPRESA ABCD S.A.", XP, 30, 9.5, 285],
+  ["Debito", "17/09/2026", "Transferência - Liquidação", "ABCD3 - EMPRESA ABCD S.A.", XP, 60, 12.5, 750],
+];
+export const b3Lotes = [{ t: "QWER3", nome: "EMPRESA QWER", preco: 6 }];
+export const arquivosLotes = () => [
+  ...arquivosSaidas(),
+  { nome: "negociacao-lotes.xlsx", tipo: "negociacao", linhas: negLotes },
+  { nome: "movimentacao-lotes.xlsx", tipo: "movimentacao", linhas: movLotes },
+];

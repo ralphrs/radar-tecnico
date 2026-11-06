@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mesclar, desfazer, calcular, projecao, twr, mesesAteAlvo, aporteNecessario, normalizarLinha, siglaCorretora, tipoMov, numero, dataIso, validarMeta } from "../src/carteira.js";
 
-import { XP, RICO, neg, mov, prov, arquivos, arquivosSaidas, b3, fiiResumo } from "./fixtures-carteira.mjs";
+import { XP, RICO, neg, mov, prov, arquivos, arquivosSaidas, b3, fiiResumo, conferirLotes, compradoPorPapel, arquivosLotes } from "./fixtures-carteira.mjs";
 const HOJE = "2026-11-03";
 function montar(arqs = arquivos()) {
   const m = mesclar(null, arqs, "imp1");
@@ -179,4 +179,111 @@ test("Paguei × hoje contando proventos e vendas (resumo.total)", () => {
   perto(s.patrimonio, 17690, 0.005);
   perto(s.total.hoje, 17690 + 535.75 + 1140, 0.005);
   perto(s.total.ganho, s.total.hoje - s.total.pago, 0.005);
+});
+
+// ---------- carteira por lote (FIFO) ----------
+// negs: [data ISO, "C"|"V", papel, q, preço]; movs: [C|D, data ISO, tipo como a B3 escreve, papel, q, preço | null].
+// comMov: a Movimentação traz a liquidação de cada negócio (a quantidade da posição passa a vir dela).
+const br = (iso) => iso.split("-").reverse().join("/");
+function carteiraDe(negs, { movs = [], cot = {}, comMov = movs.length > 0 } = {}) {
+  const neg = negs.map(([d, cv, t, q, p]) => [br(d), cv === "C" ? "Compra" : "Venda", "Mercado à Vista", "-", XP, t, q, p, q * p]);
+  const mv = comMov ? [
+    ...negs.map(([d, cv, t, q, p]) => [cv === "C" ? "Credito" : "Debito", br(d), "Transferência - Liquidação", t + " - EMPRESA", XP, q, p, q * p]),
+    ...movs.map(([es, d, tipo, t, q, p]) => [es === "C" ? "Credito" : "Debito", br(d), tipo, t + " - EMPRESA", XP, q, p ?? "-", p != null ? q * p : "-"]),
+  ] : [];
+  const arqs = [{ nome: "n", tipo: "negociacao", linhas: neg }];
+  if (mv.length) arqs.push({ nome: "m", tipo: "movimentacao", linhas: mv });
+  const m = mesclar(null, arqs, "x");
+  const c = calcular(m.extrato, { b3: { acoes: Object.entries(cot).map(([t, preco]) => ({ t, preco })), fiis: [], etfs: [], bdrs: [] }, fiiResumo: { fundos: {} }, importacoes: { lista: [] }, hoje: HOJE });
+  return { c, ex: m.extrato };
+}
+const lotesDe = (p) => p.lotes.map((l) => [l.d, l.q, l.preco, l.origem]);
+
+test("por lote: três compras a preços diferentes e uma venda baixa o lote mais antigo", () => {
+  // 1 a 10, 1 a 9, 1 a 5; vende 1 a 7. Preço médio 8: −1. Por lote sai o de 10: −3. Sobram o de 9 e o de 5.
+  const { c, ex } = carteiraDe([["2025-02-03", "C", "LOTE3", 1, 10], ["2025-03-03", "C", "LOTE3", 1, 9], ["2025-04-01", "C", "LOTE3", 1, 5], ["2026-05-04", "V", "LOTE3", 1, 7]], { cot: { LOTE3: 6 } });
+  const p = pos(c, "LOTE3");
+  assert.equal(p.q, 2); perto(p.pm, 8); perto(p.custo, 16); perto(p.realizado, -1); // o preço médio não muda
+  assert.deepEqual(lotesDe(p), [["2025-03-03", 1, 9, "compra"], ["2025-04-01", 1, 5, "compra"]]);
+  assert.deepEqual(p.lotes.map((l) => [l.hoje, l.diferenca, l.pct]), [[6, -3, -33.33], [6, 1, 20]]);
+  assert.deepEqual(p.vendas, [{ d: "2026-05-04", q: 1, precoVenda: 7, valor: 7, lotes: [{ dLote: "2025-02-03", q: 1, precoLote: 10, resultado: -3 }], semLote: 0, resultado: -3, resultadoPm: -1 }]);
+  assert.deepEqual({ custo: p.fifo.custo, resultado: p.fifo.resultado, pct: p.fifo.pct, realizado: p.fifo.realizado }, { custo: 14, resultado: -2, pct: -14.29, realizado: -3 });
+  const r = c.resumo;
+  assert.deepEqual(r.fifo, { custo: 14, aberto: -2, pct: -14.29, realizado: -3, realizadoAno: -3 });
+  assert.equal(r.aberto, -4); assert.equal(r.realizado.total, -1);
+  // os dois jeitos de contar dão o mesmo no total: só muda o que é aberto e o que é realizado
+  perto(r.fifo.aberto + r.fifo.realizado, r.aberto + r.realizado.total);
+  assert.deepEqual(conferirLotes(c, compradoPorPapel(ex, ["LOTE3"])), []);
+});
+
+test("por lote: venda que atravessa dois lotes", () => {
+  const { c } = carteiraDe([["2025-01-10", "C", "DOIS3", 10, 10], ["2025-02-10", "C", "DOIS3", 10, 12], ["2025-06-10", "V", "DOIS3", 15, 15]], { cot: { DOIS3: 14 } });
+  const p = pos(c, "DOIS3");
+  assert.deepEqual(p.vendas[0].lotes, [{ dLote: "2025-01-10", q: 10, precoLote: 10, resultado: 50 }, { dLote: "2025-02-10", q: 5, precoLote: 12, resultado: 15 }]);
+  assert.equal(p.vendas[0].resultado, 65); perto(p.vendas[0].resultadoPm, 15 * 15 - 15 * 11, 0.005);
+  assert.deepEqual(lotesDe(p), [["2025-02-10", 5, 12, "compra"]]);
+  assert.equal(c.resumo.fifo.realizadoAno, 0); // venda de 2025
+  assert.deepEqual(conferirLotes(c), []);
+});
+
+test("por lote: desdobro antes da venda divide quantidade e preço de cada lote", () => {
+  const { c } = carteiraDe([["2025-01-10", "C", "DESD3", 10, 100], ["2025-02-10", "C", "DESD3", 10, 50], ["2025-06-10", "V", "DESD3", 15, 30]],
+    { movs: [["C", "2025-03-20", "Desdobro", "DESD3", 20, null]], cot: { DESD3: 28 } });
+  const p = pos(c, "DESD3");
+  assert.equal(p.q, 25); perto(p.pm, 37.5); perto(p.realizado, 450 - 15 * 37.5);
+  assert.deepEqual(p.vendas[0].lotes, [{ dLote: "2025-01-10", q: 15, precoLote: 50, resultado: -300 }]);
+  assert.deepEqual(lotesDe(p), [["2025-01-10", 5, 50, "compra"], ["2025-02-10", 20, 25, "compra"]]);
+  assert.deepEqual(conferirLotes(c), []);
+});
+
+test("por lote: bonificação vira lote a custo zero (ou ao valor que o extrato traz) e o preço médio fica como era", () => {
+  const sem = carteiraDe([["2025-01-10", "C", "BONI3", 100, 20]], { movs: [["C", "2025-03-20", "Bonificação em Ativos", "BONI3", 10, null]], cot: { BONI3: 21 } }).c;
+  const a = pos(sem, "BONI3");
+  assert.equal(a.q, 110); perto(a.pm, 2000 / 110);
+  assert.deepEqual(lotesDe(a), [["2025-01-10", 100, 20, "compra"], ["2025-03-20", 10, 0, "bonificacao"]]);
+  assert.deepEqual(a.lotes.map((l) => l.pct), [5, null]);
+  assert.equal(a.fifo.custo, 2000);
+  const com = carteiraDe([["2025-01-10", "C", "BONI3", 100, 20]], { movs: [["C", "2025-03-20", "Bonificação em Ativos", "BONI3", 10, 5]], cot: { BONI3: 21 } }).c;
+  const b = pos(com, "BONI3");
+  perto(b.pm, 2000 / 110); // o preço médio não usa o valor da bonificação
+  assert.deepEqual(lotesDe(b)[1], ["2025-03-20", 10, 5, "bonificacao"]);
+  assert.equal(b.fifo.entrou, 2050); assert.equal(b.fifo.custo, 2050);
+  assert.deepEqual(conferirLotes(sem), []); assert.deepEqual(conferirLotes(com), []);
+});
+
+test("por lote: transferência de saída baixa do mais antigo; a de entrada entra pelo preço médio da data", () => {
+  const { c, ex } = carteiraDe([["2025-01-10", "C", "TRAN3", 10, 10], ["2025-02-10", "C", "TRAN3", 10, 20]],
+    { movs: [["D", "2025-05-05", "Transferência", "TRAN3", 5, null], ["C", "2025-07-01", "Transferência", "TRAN3", 4, null],
+      // entre corretoras no mesmo dia: se anula e não mexe nos lotes
+      ["D", "2025-08-01", "Transferência", "TRAN3", 3, null], ["C", "2025-08-01", "Transferência", "TRAN3", 3, null]], cot: { TRAN3: 16 } });
+  const p = pos(c, "TRAN3");
+  assert.equal(p.q, 19); perto(p.pm, 15); perto(p.custo, 19 * 15); // preço médio como era
+  assert.deepEqual(lotesDe(p), [["2025-01-10", 5, 10, "compra"], ["2025-02-10", 10, 20, "compra"], ["2025-07-01", 4, 15, "transferencia"]]);
+  assert.deepEqual([p.fifo.entrou, p.fifo.baixadoVendas, p.fifo.baixadoOutros, p.fifo.custo], [360, 0, 50, 310]);
+  assert.deepEqual(p.vendas, []);
+  // contando à parte: comprado 300, mais as 4 que entraram por transferência a R$ 15
+  const comprado = compradoPorPapel(ex, ["TRAN3"]); comprado.TRAN3 += 4 * 15;
+  assert.deepEqual(conferirLotes(c, comprado), []);
+});
+
+test("por lote: invariantes nas linhas de teste, com vendas, grupamento, desdobro, subscrição e transferência", () => {
+  for (const arqs of [arquivos(), arquivosSaidas(), arquivosLotes()]) {
+    const { m, c } = montar(arqs);
+    assert.deepEqual(conferirLotes(c, compradoPorPapel(m.extrato, [...c.posicoes, ...c.resumo.encerradas].map((p) => p.t))), []);
+  }
+  const { c } = montar(arquivosSaidas());
+  // a subscrição exercida é um lote ao preço do exercício; a transferência de saída tirou 30 do lote de IJKL3
+  assert.deepEqual(lotesDe(pos(c, "QRST11")), [["2025-03-06", 100, 100, "compra"], ["2025-05-20", 10, 95, "subscricao"]]);
+  assert.deepEqual(lotesDe(pos(c, "IJKL3")), [["2025-03-04", 70, 10, "compra"]]);
+  assert.equal(pos(c, "IJKL3").fifo.baixadoOutros, 300);
+  // a venda parcial de ABCD3 sai do lote de 100 a R$ 10 (o fracionário a R$ 11 fica)
+  const v = pos(c, "ABCD3").vendas[0];
+  assert.deepEqual(v.lotes, [{ dLote: "2025-01-02", q: 50, precoLote: 10, resultado: 200 }]);
+  perto(v.resultadoPm, 700 - 50 * (1055 / 105), 0.005);
+  assert.deepEqual(lotesDe(pos(c, "ABCD3")), [["2025-01-02", 50, 10, "compra"], ["2025-01-02", 5, 11, "compra"]]);
+  assert.equal(c.resumo.fifo.realizadoAno, 200 - 80);
+  // a venda de 60 de ABCD3 em set/2026 (as linhas dos prints) baixa três lotes: o resto do de 100, o fracionário e parte do de 13
+  const l = pos(montar(arquivosLotes()).c, "ABCD3");
+  assert.deepEqual(l.vendas[1].lotes.map((x) => [x.dLote, x.q, x.precoLote, x.resultado]), [["2025-01-02", 50, 10, 125], ["2025-01-02", 5, 11, 7.5], ["2025-08-12", 5, 13, -2.5]]);
+  assert.deepEqual(lotesDe(l), [["2025-08-12", 35, 13, "compra"], ["2026-01-15", 30, 9.5, "compra"]]);
 });

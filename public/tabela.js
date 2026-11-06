@@ -10,7 +10,8 @@
  *   marcada, a primeira coluna é a obrigatória), aPartirDe (largura mínima de tela em px; sem ela, "so-largo" no cls vale
  *   640 e "so-xl" vale 1200, regras que continuam no CSS da página) }
  * Opcional: rodape(colunasVisiveis, linhasFiltradas) devolve as <td> de uma linha de totais no <tfoot> (todas as páginas,
- *   com os filtros); rodapeCel(linhasFiltradas) faz o mesmo na lista do celular.
+ *   com os filtros); rodapeCel(linhasFiltradas) faz o mesmo na lista do celular. depois(linha, colunasVisiveis) devolve
+ *   uma <tr> que entra logo abaixo da linha (detalhe aberto), ou null.
  * Estado: { ordem: [{ c, d }], filtros: { <col>: { q, vals } | { min, max } | { de, ate } }, pagina, porPagina, ocultas?: [col] }
  *   Coluna oculta sai do cabeçalho e das linhas; a ordenação e o filtro dela ficam guardados, suspensos, e voltam
  *   quando a coluna volta. Ocultas que não existem mais na tabela são ignoradas (e ficam guardadas: a página da lista,
@@ -605,7 +606,8 @@
       pintarCabecalho(cols, ordemVale);
       /* a coluna oculta não entra no DOM (nem célula escondida): a largura da tabela recalcula */
       tabela.classList.toggle("tb-2-oculta", colunas.length > 1 && o.includes(colunas[1].id));
-      tbody.replaceChildren(...visiveis.map((l) => { const tr = el("tr", op.attrsLinha ? op.attrsLinha(l) : {}, ...cols.map((c) => op.celula(c, l))); return tr; }));
+      /* depois(linha, colunas): uma <tr> opcional logo abaixo da linha (o detalhe que abre, como os lotes da carteira) */
+      tbody.replaceChildren(...visiveis.flatMap((l) => { const tr = el("tr", op.attrsLinha ? op.attrsLinha(l) : {}, ...cols.map((c) => op.celula(c, l))); const x = op.depois ? op.depois(l, cols) : null; return x ? [tr, x] : [tr]; }));
       if (cel) cel.replaceChildren(...visiveis.map(op.cel));
       /* rodapé de totais (opcional): soma das linhas que passam no filtro, de todas as páginas */
       if (op.rodape) {

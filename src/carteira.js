@@ -325,6 +325,87 @@ function referencias({ b3, fiiResumo }) {
   };
 }
 
+// Carteira por lote (FIFO), ao lado do preço médio (que continua sendo o oficial, o da Receita). Cada entrada vira um
+// lote { d, q, preco, origem }: compra ("compra", preço do negócio), subscrição que virou cota ("subscricao", preço do
+// exercício), bonificação ("bonificacao", o valor que o extrato trouxer ou zero), transferência de entrada
+// ("transferencia", o preço médio na data, por falta de dado melhor), fração em ativos ("fracao", zero; quando sai,
+// sai ela mesma) e o resto que soma quantidade sem preço ("ajuste", zero). Desdobro e grupamento mudam q e preço de todos os lotes na proporção. Venda, transferência de saída, retirada
+// e vencimento baixam do lote mais antigo. Conta: entrou = baixadoVendas + baixadoOutros + custo dos lotes que sobram.
+function filaFifo(evs, L, ano) {
+  const lotes = [], vendas = [];
+  const c = { entrou: 0, baixadoVendas: 0, baixadoOutros: 0, realizado: 0, realizadoAno: 0, acerto: 0 };
+  const custoDe = (ls) => ls.reduce((s, l) => s + l.q * l.preco, 0);
+  const entrar = (d, q, preco, origem) => { if (!(q > 1e-9)) return; lotes.push({ d, q, preco, origem }); c.entrou += q * preco; };
+  // Baixa do mais antigo. A fração que sai (Fração em Ativos no Débito) é a mesma que entrou: sai antes do lote de fração.
+  const consumir = (q, origem) => {
+    const usados = [];
+    let resta = q;
+    const tirar = (i) => {
+      const l = lotes[i], usa = Math.min(l.q, resta);
+      usados.push({ d: l.d, q: usa, preco: l.preco });
+      l.q -= usa; resta -= usa;
+      if (l.q <= 1e-9) lotes.splice(i, 1);
+    };
+    if (origem) for (let i = lotes.length - 1; i >= 0 && resta > 1e-9; i--) if (lotes[i].origem === origem) tirar(i);
+    while (resta > 1e-9 && lotes.length) tirar(0);
+    return { usados, resta: resta > 1e-9 ? resta : 0 };
+  };
+  const pmNaData = (d) => { let pm = null; for (const s of L.passos) { if (s.d > d) break; if (s.pm != null) pm = s.pm; } return pm != null ? pm : L.q > 1e-9 && L.custo > 0 ? L.custo / L.q : 0; };
+  const perda = (d, v) => { c.realizado -= v; if (d.startsWith(ano)) c.realizadoAno -= v; };
+  for (const e of evs) {
+    if (e.k === "C") entrar(e.d, e.q, e.p, "compra");
+    else if (e.k === "V") {
+      const { usados, resta } = consumir(e.q);
+      const custo = custoDe(usados), valor = e.q * e.p, res = valor - custo;
+      c.baixadoVendas += custo; c.realizado += res;
+      if (e.d.startsWith(ano)) c.realizadoAno += res;
+      vendas.push({
+        d: e.d, q: r8(e.q), precoVenda: r8(e.p), valor: r2(valor),
+        lotes: usados.map((u) => ({ dLote: u.d, q: r8(u.q), precoLote: r8(u.preco), resultado: r2(u.q * (e.p - u.preco)) })),
+        semLote: r8(resta), resultado: r2(res), resultadoPm: r2(e.resPm ?? res),
+      });
+    } else if (e.k === "ajuste" || e.k === "transf") {
+      const origem = e.k === "transf" ? "transferencia" : e.t === "fracao" ? "fracao" : "ajuste";
+      if (e.q >= 0) entrar(e.d, e.q, e.k === "transf" ? pmNaData(e.d) : 0, origem);
+      else c.baixadoOutros += custoDe(consumir(-e.q, origem === "fracao" ? "fracao" : null).usados);
+    } else if (e.k === "proporcao") {
+      if (e.t === "bonif" && e.q > 0) { entrar(e.d, e.q, e.p > 0 ? e.p : 0, "bonificacao"); continue; }
+      const tot = lotes.reduce((s, l) => s + l.q, 0);
+      if (tot <= 1e-9) continue;
+      const f = (tot + e.q) / tot;
+      if (f <= 1e-9) { c.baixadoOutros += custoDe(lotes); lotes.length = 0; continue; }
+      for (const l of lotes) { l.q *= f; l.preco /= f; }
+    } else if (e.k === "zera") {
+      const v = custoDe(lotes);
+      c.baixadoOutros += v;
+      if (v > 0) perda(e.d, v);
+      lotes.length = 0;
+    } else if (e.k === "atual") {
+      const v = e.custoAtual || 0;
+      entrar(e.d, e.q, e.q > 0 ? v / e.q : 0, v > 0 ? "subscricao" : "ajuste");
+    }
+  }
+  // A quantidade que vale é a da posição (Movimentação). Se a fila não bate com ela, acerta e anota em `acerto`.
+  const acertar = (q, d) => {
+    const tot = lotes.reduce((s, l) => s + l.q, 0);
+    if (tot > q + 1e-6) { c.acerto += tot - q; c.baixadoOutros += custoDe(consumir(tot - q).usados); }
+    else if (tot < q - 1e-6) { c.acerto += q - tot; entrar(d, q - tot, pmNaData(d), "ajuste"); }
+  };
+  return { lotes, vendas, c, acertar, custo: () => custoDe(lotes) };
+}
+
+// Os lotes que sobram numa posição aberta, contra a cotação de hoje (sem cotação: valor pelo preço médio, sem diferença).
+const pct2 = (a, b) => (b > 0 ? Math.round((a / b) * 1e4) / 100 : null);
+function lotesDaPosicao(F, preco, precoUsado, valor, contaFifo) {
+  if (!F) return { lotes: [], fifo: null, vendas: [] };
+  const lotes = F.lotes.map((l) => {
+    const custo = l.q * l.preco, hojeL = precoUsado != null ? l.q * precoUsado : null;
+    return { d: l.d, q: r8(l.q), preco: r8(l.preco), origem: l.origem, custo: r2(custo), hoje: hojeL == null ? null : r2(hojeL), diferenca: preco == null ? null : r2(hojeL - custo), pct: preco == null ? null : pct2(hojeL - custo, custo) };
+  });
+  const fc = F.custo();
+  return { lotes, fifo: { custo: r2(fc), resultado: preco == null ? null : r2(valor - fc), pct: preco == null ? null : pct2(valor - fc, fc), ...contaFifo() }, vendas: F.vendas };
+}
+
 // Tudo que a página mostra, a partir do extrato decifrado. ctx: { b3, fiiResumo, importacoes, meta, hoje: "AAAA-MM-DD" }.
 export function calcular(extrato, ctx = {}) {
   const ex = extrato || extratoVazio();
@@ -383,8 +464,8 @@ export function calcular(extrato, ctx = {}) {
   const addEv = (b, e) => { if (!eventos.has(b)) eventos.set(b, []); eventos.get(b).push(e); };
   for (const [d, es, t, papel, q, p] of movs) {
     const b = baseDe(papel);
-    if (["bonif", "desdobro", "grupamento"].includes(t)) addEv(b, { d, k: "proporcao", q: es === "C" ? q : -q });
-    else if (["fracao", "retirada", "venc"].includes(t)) addEv(b, { d, k: "ajuste", q: es === "C" ? q : -q });
+    if (["bonif", "desdobro", "grupamento"].includes(t)) addEv(b, { d, k: "proporcao", q: es === "C" ? q : -q, t, p });
+    else if (["fracao", "retirada", "venc"].includes(t)) addEv(b, { d, k: "ajuste", q: es === "C" ? q : -q, t });
     else if (t === "dir") addEv(b, { d, k: "ajuste", q: es === "C" ? q : -q });
     else if (t === "dir-nexe") addEv(b, { d, k: "zera" });
     else if (t === "dir-exe") { addEv(b, { d, k: "ajuste", q: -q }); if (p != null && p > 0) addEv("#sub:" + raizDe(b), { d, k: "subPreco", q, p }); }
@@ -393,6 +474,15 @@ export function calcular(extrato, ctx = {}) {
   }
   for (const [k, l] of eventos) if (k.startsWith("#sub:")) subPreco.set(k.slice(5), l.sort((a, b) => (a.d < b.d ? -1 : 1)).map((x) => ({ ...x })));
 
+  // Transferência por papel e dia (saldo: entre corretoras no mesmo dia se anula), só para os lotes
+  const transfDia = new Map(); // base -> Map(d -> saldo)
+  for (const [d, es, t, papel, q] of ex.mov) {
+    if (t !== "transf" && t !== "transf-sf") continue;
+    const b = baseDe(papel);
+    if (!transfDia.has(b)) transfDia.set(b, new Map());
+    const m = transfDia.get(b);
+    m.set(d, (m.get(d) || 0) + (es === "C" ? q : -q));
+  }
   const bases = new Set([...trades.keys(), ...[...eventos.keys()].filter((k) => !k.startsWith("#")), ...qMov.keys()]);
   const livro = new Map(); // base -> { q, custo, realizado, vendas: [], porMes: Map(mes -> q), primeiro, ultimo, compras }
   const vendasTodas = []; // { d, b, valor, custo }
@@ -410,6 +500,7 @@ export function calcular(extrato, ctx = {}) {
         const valor = e.q * e.p;
         const res = valor - baixa;
         L.realizado += res; L.recebido += valor;
+        e.resPm = res; // para a venda por lote mostrar os dois resultados lado a lado
         vendasTodas.push({ d: e.d, b, valor, custo: baixa, res });
         somaFluxo(ym(e.d), "vendas", valor);
         L.q -= e.q; L.custo -= baixa;
@@ -429,17 +520,22 @@ export function calcular(extrato, ctx = {}) {
       } else if (e.k === "atual") {
         let resta = e.q;
         const fila = subPreco.get(raizDe(b)) || [];
+        e.custoAtual = 0;
         for (const s of fila) {
           if (resta <= 0) break;
           if (s.d > e.d || s.q <= 0) continue;
           const usa = Math.min(s.q, resta);
           L.custo += usa * s.p; L.pago += usa * s.p; somaFluxo(ym(e.d), "compras", usa * s.p);
+          e.custoAtual += usa * s.p;
           s.q -= usa; resta -= usa;
         }
         L.q += e.q;
       }
       L.passos.push({ d: e.d, q: L.q, pm: L.q > 1e-9 ? L.custo / L.q : null });
     }
+    // Por lote (FIFO): os mesmos eventos e as transferências da Movimentação, que o preço médio não usa
+    const transf = [...(transfDia.get(b) || [])].filter(([, s]) => Math.abs(s) > 1e-9).map(([d, s]) => ({ d, k: "transf", q: s, ord: 2 }));
+    L.fifo = filaFifo(transf.length ? [...evs, ...transf].sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : x.ord - y.ord)) : evs, L, hoje.slice(0, 4));
     livro.set(b, L);
   }
 
@@ -487,6 +583,7 @@ export function calcular(extrato, ctx = {}) {
   const posicoes = [], encerradas = [];
   const qCorr = new Map(); // corr -> { papeis, valor }
   let patrimonio = 0, custoTotal = 0, valorEmprestado = 0, semCotacao = 0;
+  const fifoReal = { total: 0, ano: 0 }, fifoAberto = { custo: 0, aberto: 0 };
   const porClasse = {}, porSegmento = {};
   for (const b of bases) {
     const L = livro.get(b) || { q: 0, custo: 0, realizado: 0 };
@@ -502,12 +599,16 @@ export function calcular(extrato, ctx = {}) {
     if (q < -1e-6) avisar("negativa");
     q = Math.max(0, Math.round(q * 1e6) / 1e6);
     const cls = classe(b);
+    const F = L.fifo;
+    if (F) { F.acertar(q, L.ultimo || hoje); fifoReal.total += F.c.realizado; fifoReal.ano += F.c.realizadoAno; }
+    const contaFifo = () => ({ realizado: r2(F.c.realizado), entrou: r2(F.c.entrou), baixadoVendas: r2(F.c.baixadoVendas), baixadoOutros: r2(F.c.baixadoOutros), acerto: r8(F.c.acerto) });
     if (q <= 1e-9) {
       const hist = (trades.get(b) || []).length || (eventos.get(b) || []).length;
       if (hist && (cls !== "subscricao" || Math.abs(L.realizado) > 0.005)) {
         const d0 = L.primeiro || "", d1 = L.ultimo || ultimoMov.get(b) || "";
         const pr = provTotPapel.get(b) || 0;
-        encerradas.push({ t: b, nome: nomeDe(b), classe: cls, de: d0, ate: d1, resultado: r2(L.realizado), proventos: r2(pr), total: r2(L.realizado + pr), pago: r2(L.pago || 0), recebido: r2(L.recebido || 0) });
+        encerradas.push({ t: b, nome: nomeDe(b), classe: cls, de: d0, ate: d1, resultado: r2(L.realizado), proventos: r2(pr), total: r2(L.realizado + pr), pago: r2(L.pago || 0), recebido: r2(L.recebido || 0),
+          vendas: F ? F.vendas : [], fifo: F ? { custo: 0, ...contaFifo() } : null });
       }
       continue;
     }
@@ -529,7 +630,13 @@ export function calcular(extrato, ctx = {}) {
       prov12: r2(p12), yoc: custo ? Math.round((p12 / custo) * 1e4) / 100 : null,
       corretoras: corrList, emprestadas: empAtivo || 0, semCotacao: preco == null, realizado: r2(L.realizado),
       proventos: r2(provTotPapel.get(b) || 0), // tudo o que o papel pagou desde o começo (a coluna "Com proventos")
+      ...lotesDaPosicao(F, preco, precoUsado, valor, contaFifo),
     });
+    if (F) {
+      const fc = F.custo();
+      fifoAberto.custo += fc;
+      if (preco != null) fifoAberto.aberto += valor - fc;
+    }
     patrimonio += valor; if (custo != null) custoTotal += custo;
     const empValor = empAtivo && precoUsado != null ? empAtivo * precoUsado : 0;
     valorEmprestado += empValor;
@@ -722,6 +829,7 @@ export function calcular(extrato, ctx = {}) {
       vendas: { total: r2(vendas.total), ano: r2(vendas.ano), n: vendas.n },
       retiradas: { total: r2(retiradas.total), ano: r2(retiradas.ano), n: retiradas.n, tipos: Object.fromEntries(Object.entries(retiradas.tipos).map(([k, v]) => [k, r2(v)])) },
     },
+    fifo: { custo: r2(fifoAberto.custo), aberto: r2(fifoAberto.aberto), pct: pct2(fifoAberto.aberto, fifoAberto.custo), realizado: r2(fifoReal.total), realizadoAno: r2(fifoReal.ano) },
     resultadoPct: custoTotal > 0 ? Math.round(((patrimonio - custoTotal) / custoTotal) * 1e4) / 100 : null,
     papeis: posicoes.length, corretoras: corretoras.map((c) => c.corretora), semCotacao,
     porClasse: Object.fromEntries(Object.entries(porClasse).map(([k, v]) => [k, r2(v)])), emprestado: r2(valorEmprestado),

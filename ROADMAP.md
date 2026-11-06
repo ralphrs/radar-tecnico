@@ -136,6 +136,7 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 
 ## Pedidos de 06/11
 - [x] Minha carteira reorganizada em 6 abas (Visão geral enxuta, Posições, Proventos, Meta e reinvestimento, Simulações, Mais) e card Paguei × hoje com ganho contando proventos e vendas (06/11)
+- [x] Carteira por lote (FIFO): lotes por posição, lotes consumidos por venda, resultado por lote ao lado do preço médio (06/11)
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
@@ -153,6 +154,7 @@ A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas
 - [ ] 10. SSR, fase 4: cutover, `public/index.html` sai, `/api/*` restrito, medir e comparar com a fase 0
 - [ ] 11. Job mensal de exportação dos extratos pelo Chrome
 - [ ] 12. Esportes: futebol, NBA (04/11) e tênis (05/11) feitos; padel só com notícias; NFL retirada em 05/11 e F1 fora, por decisão do dono. Falta conferir as amostras da sonda em produção (NBA, ATP, WTA e os RSS de padel) e ajustar os parsers ao que vier
+- [ ] Carteira: cotação de todo papel que a pessoa tem, não só dos mais negociados de `meta/b3` (hoje papéis como RECT11, JGPX11, RBRF11, VIFI11, OIAG11, TASA4 ficam "sem cotação" e fora dos totais)
 - [ ] Reinvestir: NTN-B como referência do DY quando o Tesouro entrar; vacância e alavancagem com o informe trimestral
 - [ ] Troca de nome news → lookout (passo a passo em docs/cloudflare.md, "Troca de nome do Worker")
   - [x] Repositório todo em `lookout`: wrangler, custos, user-agent, docs, admin (04/11)

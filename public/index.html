@@ -1014,6 +1014,42 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
 .ct-enc[aria-pressed="true"] { background: color-mix(in srgb, var(--primary) 12%, var(--card)); border-color: color-mix(in srgb, var(--primary) 45%, transparent); color: var(--primary); }
 .ct-enc { height: var(--control-h-sm); }
 .ct-tab tfoot td { border-top: 2px solid var(--border); border-bottom: 0; font-weight: 600; padding-top: 10px; }
+/* Por lote (FIFO): o botão que abre os lotes, a lista de lotes (grade na tabela, blocos no celular) e a seção Vendas */
+.ct-lotes-bt { all: unset; box-sizing: border-box; flex: none; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--muted-foreground); cursor: pointer; vertical-align: middle; margin-right: 4px; }
+.ct-lotes-bt:hover { background: var(--accent); color: var(--foreground); }
+.ct-lotes-bt:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ct-lotes-bt svg { width: 15px; height: 15px; transition: transform .15s; }
+.ct-lotes-bt[aria-expanded="true"] { color: var(--primary); }
+.ct-lotes-bt[aria-expanded="true"] svg { transform: rotate(180deg); }
+.ct-tab tr.ct-lotes-tr > td { padding: 2px 10px 14px 40px; white-space: normal; text-align: left; background: color-mix(in srgb, var(--secondary) 60%, var(--card)); }
+.ct-lotes { display: grid; grid-template-columns: minmax(170px, auto) repeat(5, minmax(88px, auto)); justify-content: start; font-size: 13px; }
+.ct-lote { display: contents; }
+.ct-lote > span { padding: 7px 0 7px 24px; border-top: 1px solid var(--border); text-align: right; white-space: nowrap; }
+.ct-lote > span:first-child { text-align: left; padding-left: 0; }
+.ct-lote.cab > span { border-top: 0; padding: 8px 0 4px; font: 600 11px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.ct-lote-d { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.ct-lote-d i { width: 7px; height: 7px; border-radius: 50%; background: var(--border); flex: none; }
+.ct-lote.ganha .ct-lote-d i { background: var(--ok); } .ct-lote.perde .ct-lote-d i { background: var(--err); }
+.ct-lote-d .ct-tag { font-family: var(--font-sans); }
+.ct-rot { display: none; }
+.ct-lin-lotes { grid-column: 1 / -1; padding: 4px 0 2px; }
+.ct-lin > span:first-child { display: inline-flex; align-items: center; min-width: 0; }
+.ct-modo button { height: 24px; }
+.ct-paguei .pg-l3 { font-size: 12px; color: var(--muted-foreground); }
+.ct-paguei .pg-l3 .ct-mono { font-size: 12px; white-space: nowrap; }
+.vd-lista { display: flex; flex-direction: column; }
+.vd-cab, .vd-linha { display: grid; grid-template-columns: 96px minmax(120px, 1.4fr) minmax(56px, .6fr) minmax(100px, 1fr) minmax(104px, 1fr) minmax(120px, 1fr) minmax(112px, 1fr) 28px; gap: 4px 14px; align-items: center; }
+.vd-cab { padding: 0 0 8px; font: 600 11.5px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.vd-cab > span:nth-child(n+3):not(:last-child), .vd-linha > span:nth-child(n+3) { text-align: right; }
+.vd-item { border-top: 1px solid var(--border); }
+.vd-linha { padding: 9px 0; font-size: 13.5px; cursor: pointer; }
+.vd-linha:hover .vd-seta { background: var(--accent); }
+.vd-linha .ct-mono { font-size: 13px; white-space: nowrap; }
+.vd-papel { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.vd-det { list-style: none; margin: 0 0 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--secondary) 60%, var(--card)); }
+.vd-det[hidden] { display: none; }
+.vd-det .ct-mono { white-space: nowrap; }
+.ct-vendas > div:last-of-type .dd-btn--link { padding-left: 0; }
 .ct-lin-total { border-top: 2px solid var(--border) !important; font-weight: 600; }
 .ct-kpi .v2 { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; color: var(--muted-foreground); }
 .ct-kpi .v2 > span { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 8px; }
@@ -1208,6 +1244,24 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
   .ct-rodape { text-align: left; }
   .ct-posicoes .ct-caixa { display: none; }
   .ct-posicoes .ct-lista-cel { display: flex; }
+  .ct-lotes { display: flex; flex-direction: column; gap: 6px; }
+  .ct-lote.cab { display: none; }
+  .ct-lote { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; padding: 8px 10px; border: 1px solid var(--border); border-left-width: 3px; border-radius: var(--radius-md); background: var(--card); }
+  .ct-lote.ganha { border-left-color: var(--ok); } .ct-lote.perde { border-left-color: var(--err); }
+  .ct-lote > span { border-top: 0; padding: 0; display: flex; justify-content: space-between; gap: 8px; text-align: left; }
+  .ct-lote > span:first-child { grid-column: 1 / -1; padding-bottom: 2px; }
+  .ct-lote-d i { display: none; }
+  .ct-rot { display: inline; font: 400 12px var(--font-sans); color: var(--muted-foreground); }
+  .vd-cab { display: none; }
+  .vd-linha { grid-template-columns: repeat(2, minmax(0, 1fr)) 28px; gap: 3px 12px; }
+  .vd-linha > span { display: flex; justify-content: space-between; gap: 8px; }
+  .vd-linha > span:nth-child(n+3) { text-align: left; }
+  .vd-linha > .vd-data { grid-column: 1; grid-row: 1; }
+  .vd-linha > .vd-papel { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+  .vd-linha > .vd-seta { grid-column: 3; grid-row: 1; }
+  .vd-linha > span:nth-child(3), .vd-linha > span:nth-child(5) { grid-column: 1; }
+  .vd-linha > span:nth-child(4) { grid-column: 2; }
+  .vd-linha > span:nth-child(6), .vd-linha > span:nth-child(7) { grid-column: 1 / 3; }
   .ct-ferr .dd-input { width: 100%; }
   .ct-ferr .seg { flex-wrap: wrap; max-width: 100%; }
   .ct-ferr label { flex: 1 1 100%; }
@@ -6457,6 +6511,12 @@ function desenharCarteira(j) {
 /* Visão geral: os números do topo, a faixa da Meta e quatro cards (Alertas e Agenda à esquerda; Como está dividido e
    Movimentos recentes à direita). Card sem dado não aparece. */
 let ctFiltro = "todas", ctCorretora = "", ctEnc = false, ctBusca = "", ctAlertasTodos = false;
+/* Preço médio | Por lote (FIFO): a chave da aba Posições, salva neste navegador. Os lotes abertos e as vendas abertas
+   ficam só na memória da página. */
+let ctModo = "pm";
+try { if (localStorage.getItem("carteira-modo") === "lote") ctModo = "lote"; } catch (e) {}
+const ctLotesAbertos = new Set(), ctVendasAbertas = new Set();
+let ctVendasTodas = false;
 const kpiEl = (rot, val, cls, desc, pin) => el("div", { class: "ct-card ct-kpi" }, el("div", { class: "r" }, el("span", { class: "rotulo" }, rot), pin ? pinBtn(pin) : null), el("span", { class: "v " + (cls || "") }, val), el("span", { class: "d" }, desc));
 const rsPc = (v, p) => rsS(v) + (p == null ? "" : ` (${pc(p, true)})`);
 const verTudo = (href, txt = "ver tudo") => el("a", { href, class: "ct-volta" }, txt);
@@ -6467,6 +6527,11 @@ function kpiPaguei(r) {
     el("span", { class: "pg-l1" }, el("span", {}, "Paguei ", el("b", {}, rs(r.custo)), " · Hoje ", el("b", {}, rs(r.patrimonio))), el("span", { class: "v " + clsS(r.aberto) }, rsPc(r.aberto, r.resultadoPct))));
   const t = r.total;
   if (t) a.append(el("span", { class: "pg-l2" }, el("span", {}, el("span", { class: "pg-rot" }, "Contando proventos e vendas: "), "entrou ", el("b", {}, rs(t.pago)), " · tenho ou recebi ", el("b", {}, rs(t.hoje))), el("b", { class: "pg-v " + clsS(t.ganho) }, rsPc(t.ganho, t.pct))));
+  /* por lote: só quando dá diferente do preço médio no que aparece (reais inteiros) */
+  const f = r.fifo, re = r.realizado || { total: 0 };
+  if (f && (Math.abs(f.aberto - r.aberto) >= 0.5 || Math.abs(f.realizado - re.total) >= 0.5))
+    a.append(el("span", { class: "pg-l3", title: "Cada compra é um lote e a venda baixa do mais antigo. O preço médio é o que vale para o imposto." },
+      "por lote (FIFO): ", el("span", { class: "ct-mono " + clsS(f.aberto) }, rsPc(f.aberto, f.custo > 0 ? (f.aberto / f.custo) * 100 : null)), " em aberto · realizado ", el("span", { class: "ct-mono " + clsS(f.realizado) }, rsS(f.realizado))));
   return a;
 }
 // Resultado realizado (vendas); retiradas de custódia só aparecem no subtexto
@@ -6598,8 +6663,21 @@ function desenharPosicoes(box, j) {
   const busca = el("input", { class: "dd-input", type: "search", placeholder: "papel ou nome", "aria-label": "Buscar papel", autocomplete: "off" });
   busca.value = ctBusca;
   busca.addEventListener("input", () => { ctBusca = busca.value; pintar(); });
+  /* Preço médio | Por lote: muda Pago, Diferença e Com proventos (e o total); nas encerradas não aparece */
+  const modo = el("div", { class: "seg ct-modo", role: "group", "aria-label": "Como contar o que foi pago" });
+  [["pm", "Preço médio"], ["lote", "Por lote"]].forEach(([id, n]) => {
+    const b = el("button", { type: "button", "aria-pressed": String(ctModo === id), "data-modo": id }, n);
+    b.addEventListener("click", () => {
+      if (ctModo === id) return;
+      ctModo = id;
+      try { localStorage.setItem("carteira-modo", id); } catch (e) {}
+      modo.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      if (ctTabAtual && ctTabAtual.vivo()) ctTabAtual.repintar();
+    });
+    modo.append(b);
+  });
   c.append(el("div", { class: "ct-ferr" }, el("h3", {}, ctEnc ? "Encerradas" : "Posições"), seg,
-    el("label", {}, el("span", {}, "Corretora"), sel), bEnc, el("span", { class: "ct-esp", style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Buscar"), busca)));
+    el("label", {}, el("span", {}, "Corretora"), sel), bEnc, ctEnc ? null : modo, el("span", { class: "ct-esp", style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Buscar"), busca)));
   const corpo = el("div", { style: "display:contents" });
   c.append(corpo);
   const pintar = () => {
@@ -6607,7 +6685,8 @@ function desenharPosicoes(box, j) {
     corpo.textContent = ""; corpo.append(...tabelaPosicoes(j));
   };
   pintar();
-  box.append(c, el("div", { class: "ct-mais dois" }, cardRentab(r), cardPorCorretora(r)));
+  const vendas = cardVendas(j);
+  box.append(c, ...(vendas ? [vendas] : []), el("div", { class: "ct-mais dois" }, cardRentab(r), cardPorCorretora(r)));
   const nota = notaCotacoes(j); if (nota) box.append(nota);
 }
 /* ---- Reinvestir: os 5 FIIs de maior pontuação pelos critérios da pessoa (GET/PUT /api/carteira/reinvestir) ----
@@ -6829,18 +6908,22 @@ const COLS_ENC = [
   { id: "total", rotulo: "Total", tipo: "num", unidade: "R$", valor: (e) => e.total },
 ];
 // "Com proventos": a diferença de hoje mais tudo o que o papel já pagou. DY 12m: proventos de 12 meses sobre o valor de hoje.
-const difPos = (p) => (p.custo == null ? null : p.valor - p.custo);
-const comProvPos = (p) => (p.custo == null ? null : p.valor - p.custo + (p.proventos || 0));
+/* Na chave "Por lote", Pago é a soma dos lotes que sobram e a diferença sai deles (p.fifo); a conta é a mesma */
+const porLote = (p) => ctModo === "lote" && !!p.fifo;
+const custoPos = (p) => (porLote(p) ? p.fifo.custo : p.custo);
+const difPos = (p) => (custoPos(p) == null ? null : p.valor - custoPos(p));
+const pctPos = (p) => (porLote(p) ? p.fifo.pct : p.resPct);
+const comProvPos = (p) => (custoPos(p) == null ? null : p.valor - custoPos(p) + (p.proventos || 0));
 const dyPos = (p) => (p.valor > 0 && p.prov12 > 0 ? (p.prov12 / p.valor) * 100 : null);
 const pesoPos = (p) => (cartJ && cartJ.resumo.patrimonio > 0 ? (p.valor / cartJ.resumo.patrimonio) * 100 : null);
 const COLS_POS = [
   { id: "t", rotulo: "Papel", tipo: "texto", cls: "e", valor: (p) => p.t, obrigatoria: true },
   { id: "classe", rotulo: "Classe", tipo: "texto", cls: "e", valor: (p) => CLASSE_UM[p.classe] || "Outro" },
   { id: "q", rotulo: "Qtd", tipo: "num", valor: (p) => p.q },
-  { id: "custo", rotulo: "Pago", tipo: "num", unidade: "R$", valor: (p) => p.custo },
+  { id: "custo", rotulo: "Pago", tipo: "num", unidade: "R$", valor: custoPos },
   { id: "valor", rotulo: "Hoje", tipo: "num", unidade: "R$", valor: (p) => p.valor },
   { id: "dif", rotulo: "Diferença R$", tipo: "num", unidade: "R$", valor: difPos },
-  { id: "resPct", rotulo: "Diferença %", tipo: "num", unidade: "%", valor: (p) => p.resPct },
+  { id: "resPct", rotulo: "Diferença %", tipo: "num", unidade: "%", valor: (p) => (p.semCotacao ? null : pctPos(p)) },
   { id: "comProv", rotulo: "Com proventos", tipo: "num", unidade: "R$", valor: comProvPos },
   { id: "dy", rotulo: "DY 12m", tipo: "num", unidade: "%", valor: dyPos },
   { id: "pm", rotulo: "Preço médio", tipo: "num", unidade: "R$", valor: (p) => p.pm },
@@ -6856,17 +6939,17 @@ function celulaPos(c, p) {
   const mono = (txt, cls) => el("td", { class: "mono" + (cls ? " " + cls : "") }, txt);
   if (c === "t") {
     const nome = nomeDoPapel(p);
-    const td = el("td", { class: "e" }, papelBtn(p.t, nome), nome ? el("span", { class: "ct-nome", title: nome }, nome) : null);
+    const td = el("td", { class: "e" }, porLote(p) ? botaoLotes(p) : null, papelBtn(p.t, nome), nome ? el("span", { class: "ct-nome", title: nome }, nome) : null);
     if (p.emprestadas) td.append(" ", tagEl("em empréstimo", "", `${qtd(p.emprestadas)} emprestadas; continuam suas`));
     if (p.semCotacao) td.append(" ", tagEl("sem cotação", "", "Fora das tabelas do pregão do Lookout; o valor usa o preço médio"));
     return td;
   }
   if (c === "classe") return el("td", { class: "e" }, CLASSE_UM[p.classe] || "Outro");
   if (c === "q") return mono(qtd(p.q));
-  if (c === "custo") return mono(p.custo == null ? "–" : rs(p.custo));
+  if (c === "custo") return mono(custoPos(p) == null ? "–" : rs(custoPos(p)));
   if (c === "valor") return mono(rs(p.valor));
   if (c === "dif") { const v = p.semCotacao ? null : difPos(p); return mono(v == null ? "–" : rsS(v), clsS(v)); }
-  if (c === "resPct") return mono(pc(p.resPct, true), clsS(p.resPct));
+  if (c === "resPct") { const v = p.semCotacao ? null : pctPos(p); return mono(pc(v, true), clsS(v)); }
   if (c === "comProv") { const v = comProvPos(p); return mono(v == null ? "–" : rsS(v), clsS(v)); }
   if (c === "dy") return mono(dyPos(p) == null ? "–" : pc(dyPos(p)));
   if (c === "pm") return mono(p.pm == null ? "–" : rs(p.pm, true));
@@ -6885,7 +6968,7 @@ function celulaEnc(c, e) {
 }
 function somaPos(ls) {
   const s = { custo: 0, valor: 0, prov: 0, prov12: 0 };
-  for (const p of ls) { s.valor += p.valor; s.custo += p.custo != null ? p.custo : p.valor; s.prov += p.proventos || 0; s.prov12 += p.prov12 || 0; }
+  for (const p of ls) { const c = custoPos(p); s.valor += p.valor; s.custo += c != null ? c : p.valor; s.prov += p.proventos || 0; s.prov12 += p.prov12 || 0; }
   s.dif = s.valor - s.custo; s.pct = s.custo > 0 ? (s.dif / s.custo) * 100 : null; s.comProv = s.dif + s.prov;
   return s;
 }
@@ -6923,19 +7006,116 @@ function tabelaPosicoes(j) {
     total: enc ? (j.resumo.encerradas || []).length : j.posicoes.length, rotuloConta: enc ? "encerradas" : "posições",
     padrao: enc ? { ordem: [], filtros: {}, pagina: 1, porPagina: 25 } : { ordem: [{ c: "valor", d: -1 }], filtros: {}, pagina: 1, porPagina: 25, ocultas: OCULTAS_POS },
     celula: (c, x) => (enc ? celulaEnc(c.id, x) : celulaPos(c.id, x)), classeTabela: "ct-tab", classeCaixa: "ct-caixa",
+    depois: enc ? null : (p, cols) => (porLote(p) && ctLotesAbertos.has(p.t) ? el("tr", { class: "ct-lotes-tr" }, el("td", { colspan: String(cols.length) }, lotesEl(p))) : null),
     rodape: enc ? rodapeEnc : rodapePos,
     rodapeCel: enc
       ? (ls) => { const s = ls.reduce((a, e) => ({ pago: a.pago + e.pago, total: a.total + e.total }), { pago: 0, total: 0 }); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length}`), el("span", { class: "ct-mono " + clsS(s.total) }, rsS(s.total)), el("small", {}, "pago " + rs(s.pago)), el("small", {})); }
       : (ls) => { const s = somaPos(ls); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length} ${ls.length === 1 ? "papel" : "papéis"}`), el("span", { class: "ct-mono" }, rs(s.valor)), el("small", {}, `pago ${rs(s.custo)} · com proventos `, el("span", { class: clsS(s.comProv) }, rsS(s.comProv))), el("small", { class: "ct-mono " + clsS(s.dif) }, rsPc(s.dif, s.pct))); },
     cel: enc
       ? (e) => el("div", { class: "ct-lin" }, papelBtn(e.t, e.nome), el("span", { class: "ct-mono " + clsS(e.total) }, rsS(e.total)), el("small", {}, `${periodo(e.de, e.ate)} · pago ${rs(e.pago)} · recebido ${rs(e.recebido)} · proventos ${rs(e.proventos)}`), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)))
-      : (p) => el("div", { class: "ct-lin" }, papelBtn(p.t, nomeDoPapel(p)), el("span", { class: "ct-mono" }, rs(p.valor)),
-        el("small", {}, `${qtd(p.q)} ${UNID_CLASSE(p.classe)} · pago ${p.custo == null ? "–" : rs(p.custo)}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(difPos(p)) }, p.semCotacao ? "sem cotação" : rsPc(difPos(p), p.resPct))),
+      : (p) => el("div", { class: "ct-lin" }, el("span", {}, porLote(p) ? botaoLotes(p) : null, papelBtn(p.t, nomeDoPapel(p))), el("span", { class: "ct-mono" }, rs(p.valor)),
+        el("small", {}, `${qtd(p.q)} ${UNID_CLASSE(p.classe)} · pago ${custoPos(p) == null ? "–" : rs(custoPos(p))}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(difPos(p)) }, p.semCotacao ? "sem cotação" : rsPc(difPos(p), pctPos(p))),
+        porLote(p) && ctLotesAbertos.has(p.t) ? el("div", { class: "ct-lin-lotes" }, lotesEl(p)) : null),
     vazio: (comFiltro) => el("p", { class: "ct-nota" }, comFiltro ? "Nenhuma linha com esses filtros." : ctBusca ? "Nenhum papel com essa busca." : enc ? "Nenhuma posição encerrada." : "Nenhuma posição com esses filtros."),
-    nota: () => el("span", {}, enc ? "Posições vendidas por inteiro: o que foi pago, o que voltou na venda, o resultado e os proventos que pagaram." : "Pago é o preço médio vezes a quantidade. Com proventos soma à diferença tudo o que o papel já pagou. Clique no papel para abrir a ficha."),
+    nota: () => el("span", {}, enc ? "Posições vendidas por inteiro: o que foi pago, o que voltou na venda, o resultado e os proventos que pagaram."
+      : ctModo === "lote" ? "Por lote: cada compra é um lote e a venda baixa do mais antigo (FIFO). O preço médio é o que vale para o imposto. A seta ao lado do papel abre os lotes."
+      : "Pago é o preço médio vezes a quantidade. Com proventos soma à diferença tudo o que o papel já pagou. Clique no papel para abrir a ficha."),
   });
   ctTabAtual = t;
   return [t.el];
+}
+/* ---- Por lote (FIFO): o botão que abre os lotes, a lista de lotes de um papel e a seção Vendas ---- */
+const SETA_BAIXO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const ORIGEM_LOTE = { subscricao: "subscrição", bonificacao: "bonificação", transferencia: "transferência", fracao: "fração", ajuste: "ajuste" };
+const TITULO_ORIGEM = {
+  subscricao: "Subscrição que virou cota, ao preço do exercício",
+  bonificacao: "Bonificação: entra a custo zero quando o extrato não traz o valor",
+  transferencia: "Entrou por transferência; sem o preço de origem, usa o preço médio da data",
+  fracao: "Fração em ativos, sem custo",
+  ajuste: "Entrou sem preço no extrato",
+};
+function botaoLotes(p) {
+  const ab = ctLotesAbertos.has(p.t), n = p.lotes.length;
+  const b = el("button", { type: "button", class: "ct-lotes-bt", "data-lotes": p.t, "aria-expanded": String(ab), "aria-controls": "ct-lotes-" + p.t,
+    "aria-label": `${ab ? "Fechar" : "Ver"} os ${n} ${n === 1 ? "lote" : "lotes"} de ${p.t}`, title: `${n} ${n === 1 ? "lote" : "lotes"}`, html: SETA_BAIXO });
+  b.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (ctLotesAbertos.has(p.t)) ctLotesAbertos.delete(p.t); else ctLotesAbertos.add(p.t);
+    if (ctTabAtual && ctTabAtual.vivo()) ctTabAtual.repintar();
+    /* o botão foi refeito: o foco volta para o novo, na tabela ou na lista do celular, o que estiver na tela */
+    const novo = [...document.querySelectorAll(`#ct-posicoes .ct-lotes-bt[data-lotes="${p.t}"]`)].find((x) => x.offsetParent);
+    if (novo) novo.focus({ preventScroll: true });
+  });
+  return b;
+}
+function lotesEl(p) {
+  const box = el("div", { class: "ct-lotes", id: "ct-lotes-" + p.t, role: "table", "aria-label": "Lotes de " + p.t });
+  box.append(el("div", { class: "ct-lote cab", role: "row" }, ...["Lote", "Qtd", "Preço pago", "Hoje", "Diferença R$", "%"].map((h) => el("span", { role: "columnheader" }, h))));
+  const rot = (t) => el("small", { class: "ct-rot" }, t);
+  p.lotes.forEach((l) => {
+    const cls = clsS(l.diferenca);
+    box.append(el("div", { class: "ct-lote " + (cls === "ct-pos" ? "ganha" : cls === "ct-neg" ? "perde" : ""), role: "row" },
+      el("span", { class: "ct-lote-d", role: "cell" }, el("i", { "aria-hidden": "true" }), dataBr(l.d), l.origem !== "compra" ? tagEl(ORIGEM_LOTE[l.origem] || l.origem, "", TITULO_ORIGEM[l.origem]) : null),
+      el("span", { class: "ct-mono", role: "cell" }, rot("Qtd"), qtd(l.q)),
+      el("span", { class: "ct-mono", role: "cell" }, rot("Preço pago"), rs(l.preco, true)),
+      el("span", { class: "ct-mono", role: "cell" }, rot("Hoje"), rs(l.hoje)),
+      el("span", { class: "ct-mono " + cls, role: "cell" }, rot("Diferença"), l.diferenca == null ? "–" : rsS(l.diferenca, true)),
+      el("span", { class: "ct-mono " + cls, role: "cell" }, rot("%"), pc(l.pct, true))));
+  });
+  if (!p.lotes.length) box.append(el("p", { class: "ct-nota" }, "Nenhum lote com quantidade."));
+  return box;
+}
+/* Vendas: cada venda (parcial ou a que encerrou o papel), da mais recente, com o resultado pelo preço médio e pelo lote */
+function vendasDe(j) {
+  const l = [];
+  const de = (x, enc) => (x.vendas || []).forEach((v, i) => l.push({ ...v, t: x.t, nome: nomeDoPapel(x), enc, id: x.t + "-" + v.d + "-" + i }));
+  j.posicoes.forEach((p) => de(p, false));
+  (j.resumo.encerradas || []).forEach((e) => de(e, true));
+  return l.sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : a.t < b.t ? -1 : 1));
+}
+function cardVendas(j) {
+  const todas = vendasDe(j);
+  if (!todas.length) return null;
+  const n = todas.length, LIM = 8;
+  const c = cardEl("Vendas", { sub: `${n} ${n === 1 ? "venda" : "vendas"} · a mais recente primeiro`, cls: "ct-vendas", id: "ct-vendas" });
+  const lista = el("div", { class: "vd-lista", role: "list" });
+  lista.append(el("div", { class: "vd-cab", "aria-hidden": "true" }, ...["Data", "Papel", "Qtd", "Preço de venda", "Recebido", "Pelo preço médio", "Por lote", ""].map((h) => el("span", {}, h))));
+  const rot = (t) => el("small", { class: "ct-rot" }, t);
+  (ctVendasTodas ? todas : todas.slice(0, LIM)).forEach((v) => {
+    const ab = ctVendasAbertas.has(v.id), idd = "vd-" + v.id;
+    const seta = el("button", { type: "button", class: "ct-lotes-bt vd-seta", "aria-expanded": String(ab), "aria-controls": idd, "aria-label": `${ab ? "Fechar" : "Ver"} os lotes da venda de ${v.t} em ${dataBr(v.d)}`, html: SETA_BAIXO });
+    const linha = el("div", { class: "vd-linha" },
+      el("span", { class: "ct-mono vd-data" }, dataBr(v.d)),
+      el("span", { class: "vd-papel" }, papelBtn(v.t, v.nome), v.enc ? tagEl("encerrada", "", "Esta venda zerou o papel") : null),
+      el("span", { class: "ct-mono" }, rot("Qtd"), qtd(v.q)),
+      el("span", { class: "ct-mono" }, rot("Preço de venda"), rs(v.precoVenda, true)),
+      el("span", { class: "ct-mono" }, rot("Recebido"), rs(v.valor, true)),
+      el("span", { class: "ct-mono " + clsS(v.resultadoPm) }, rot("Pelo preço médio"), rsS(v.resultadoPm, true)),
+      el("span", { class: "ct-mono " + clsS(v.resultado) }, rot("Por lote"), rsS(v.resultado, true)),
+      seta);
+    const det = el("ul", { class: "vd-det", id: idd });
+    det.hidden = !ab;
+    v.lotes.forEach((x) => det.append(el("li", {}, `${qtd(x.q)} do lote de ${dataBr(x.dLote)} a ${rs(x.precoLote, true)} → `, el("span", { class: "ct-mono " + clsS(x.resultado) }, rsS(x.resultado, true)))));
+    if (v.semLote > 0) det.append(el("li", {}, `${qtd(v.semLote)} sem compra no extrato, contadas a custo zero → `, el("span", { class: "ct-mono " + clsS(v.semLote * v.precoVenda) }, rsS(v.semLote * v.precoVenda, true))));
+    const item = el("div", { class: "vd-item" + (ab ? " aberto" : ""), role: "listitem" }, linha, det);
+    const alternar = () => {
+      const a2 = !ctVendasAbertas.has(v.id);
+      if (a2) ctVendasAbertas.add(v.id); else ctVendasAbertas.delete(v.id);
+      det.hidden = !a2; item.classList.toggle("aberto", a2);
+      seta.setAttribute("aria-expanded", String(a2)); seta.setAttribute("aria-label", `${a2 ? "Fechar" : "Ver"} os lotes da venda de ${v.t} em ${dataBr(v.d)}`);
+    };
+    seta.addEventListener("click", (e) => { e.stopPropagation(); alternar(); });
+    linha.addEventListener("click", (e) => { if (e.target.closest(".cot-papel, .vd-seta")) return; alternar(); });
+    lista.append(item);
+  });
+  c.append(lista);
+  if (n > LIM) {
+    const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, ctVendasTodas ? "Mostrar menos" : `Ver as ${n}`);
+    b.addEventListener("click", () => { ctVendasTodas = !ctVendasTodas; const velho = document.getElementById("ct-vendas"); if (velho) velho.replaceWith(cardVendas(cartJ)); });
+    c.append(el("div", {}, b));
+  }
+  c.append(el("p", { class: "ct-nota" }, "Pelo preço médio, a venda baixa o custo médio de todas as compras; por lote, baixa das compras mais antigas primeiro. A seta abre os lotes que saíram. O preço médio é o que vale para o imposto."));
+  return c;
 }
 function periodo(de, ate) { if (!de) return "–"; const a = de.slice(0, 4), b = ate ? ate.slice(0, 4) : a; return a === b ? mesC(ate.slice(0, 7)) : `${a} – ${mesC(ate.slice(0, 7))}`; }
 /* Cards que mudaram de aba: Rentabilidade e Por corretora (Posições), Renda por classe e segmento (Proventos),

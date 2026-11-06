@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { mesclar, calcular, chaveLinha } from "../src/carteira.js";
 import { gerar, manifesto, diferenca, escreverXlsx, lerXlsx, linhasDaPagina, simularImportacao, reduzirLinha } from "./fixtures/b3-fake/gerar.mjs";
 import { ESPERADO, refCalculo } from "./fixtures/b3-fake/cenarios.mjs";
+import { conferirLotes, compradoPorPapel } from "./fixtures-carteira.mjs";
 
 const ATE = "2026-11-04";
 const GERADOR = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures/b3-fake/gerar.mjs");
@@ -95,6 +96,27 @@ test("bonificação e desdobro mantêm o custo; subscrição exercida entra no P
   const exe = mov.find((l) => l[2] === "Direitos de Subscrição - Exercido");
   const knip = pos(calc, "KNIP11");
   assert.ok(Math.abs(knip.q * knip.pm - (custo("KNIP11") + exe[5] * exe[6])) < 0.01);
+});
+
+test("por lote (FIFO): lotes somam a quantidade, o custo fecha com o comprado e o preço médio não muda", () => {
+  const { m, calc } = simularImportacao(g.arquivos, ATE);
+  const papeis = [...calc.posicoes, ...calc.resumo.encerradas].map((p) => p.t);
+  assert.deepEqual(conferirLotes(calc, compradoPorPapel(m.extrato, papeis)), []);
+  // cada venda baixa do lote mais antigo, e as encerradas trazem as vendas também
+  for (const p of [...calc.posicoes, ...calc.resumo.encerradas]) for (const v of p.vendas) {
+    assert.ok(Math.abs(v.lotes.reduce((s, l) => s + l.q, 0) + v.semLote - v.q) < 1e-6, p.t);
+    assert.deepEqual(v.lotes.map((l) => l.dLote), [...v.lotes.map((l) => l.dLote)].sort(), p.t);
+  }
+  assert.ok(calc.resumo.encerradas.every((e) => e.vendas.length > 0));
+  // sem transferência de saída nem retirada nos dados falsos, aberto + realizado é o mesmo nos dois jeitos, papel a
+  // papel. A exceção é B3SA3: a fração que saiu baixa pelo preço médio num e, no outro, é o próprio lote de fração (zero).
+  const total = (p) => ({ pm: (p.resultado ?? 0) + p.realizado, lote: (p.preco != null ? p.valor - p.fifo.custo : 0) + p.fifo.realizado });
+  for (const p of calc.posicoes) { const x = total(p); if (p.t === "B3SA3") assert.ok(Math.abs(x.pm - x.lote - 0.65 * p.pm) < 0.01); else assert.ok(Math.abs(x.pm - x.lote) < 0.02, p.t); }
+  for (const e of calc.resumo.encerradas) assert.ok(Math.abs(e.resultado - e.fifo.realizado) < 0.02, e.t);
+  // a bonificação de ITSA4 e a de B3SA3 são lotes a custo zero; a fração de B3SA3 entrou e saiu ela mesma
+  assert.ok(pos(calc, "ITSA4").lotes.some((l) => l.origem === "bonificacao" && l.preco === 0));
+  assert.ok(!pos(calc, "B3SA3").lotes.some((l) => l.origem === "fracao"));
+  assert.ok(pos(calc, "KNIP11").lotes.some((l) => l.origem === "subscricao"));
 });
 
 test("reimportar os mesmos arquivos dá 0 novos; duas compras iguais no mesmo dia entram as duas", () => {
