@@ -154,3 +154,29 @@ test("topo: retirada de custódia vale pelo PM da data, e uma compra depois não
   assert.equal(pos(c, "YZAB11").q, 30);
   assert.deepEqual(r.saidas.retiradas, { total: 100, ano: 100, n: 1, tipos: { retirada: 100 } }); // 5 × PM 20
 });
+
+test("Paguei × hoje contando proventos e vendas (resumo.total)", () => {
+  // compras: 16.055 na Negociação + 950 da subscrição exercida; proventos 110 (Movimentação de 07/2025) + 370,75; venda 120
+  const r = montar().c.resumo;
+  perto(r.total.pago, 17005, 0.005);
+  perto(r.total.proventos, 480.75, 0.005);
+  assert.equal(r.total.vendas, 120);
+  perto(r.patrimonio, 18980, 0.005);
+  perto(r.total.hoje, 18980 + 480.75 + 120, 0.005);
+  perto(r.total.ganho, 19580.75 - 17005, 0.005);
+  assert.equal(r.total.pct, 15.15);
+  // a coluna "Com proventos" usa os proventos de cada papel desde o começo
+  const c = montar().c;
+  perto(c.posicoes.reduce((s, p) => s + p.proventos, 0), 480.75, 0.005);
+  perto(pos(c, "QRST11").proventos, 429, 0.005);
+
+  // com vendas, amortização e uma transferência de saída: vendas e amortização entram, a retirada (300) não
+  const s = montar(arquivosSaidas()).c.resumo;
+  assert.equal(s.saidas.retiradas.total, 300);
+  perto(s.total.pago, 17005, 0.005);
+  assert.equal(s.total.vendas, 1140);
+  perto(s.total.proventos, 535.75, 0.005);
+  perto(s.patrimonio, 17690, 0.005);
+  perto(s.total.hoje, 17690 + 535.75 + 1140, 0.005);
+  perto(s.total.ganho, s.total.hoje - s.total.pago, 0.005);
+});

@@ -957,7 +957,8 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .pers-item input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--primary); }
 .pers-item.oculto label { color: var(--muted-foreground); }
 .pers .painel-pe .dd-btn { height: 40px; }
-/* Minha carteira (#carteira, #carteira/proventos, #carteira/meta, #carteira/importar): pessoal, abre pelo menu da conta.
+/* Minha carteira (#carteira, #carteira/posicoes, #carteira/proventos, #carteira/meta, #carteira/simulacoes, #carteira/mais;
+   #carteira/importar é a mesma Mais): pessoal, abre pelo menu da conta.
    Usa o mesmo modo do Início (uma coluna, sem laterais) com a seção #carteira no lugar da grade. */
 .cart { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .ct-cab { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; }
@@ -986,7 +987,34 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .ct-kpi .r .rotulo { flex: 1; }
 .ct-kpi .v { font: 500 26px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-kpi .d { font-size: 13px; color: var(--muted-foreground); }
-.ct-kpis--6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* Visão geral: cinco números numa grade de 6 (Paguei × hoje ocupa 2); abaixo de 1100 px, 2 colunas e ele a linha toda */
+.ct-kpis--geral { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-flow: row dense; }
+.ct-kpis--geral .ct-paguei { grid-column: span 2; }
+a.ct-paguei { color: inherit; text-decoration: none; cursor: pointer; transition: border-color 120ms ease; }
+a.ct-paguei:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+a.ct-paguei:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ct-paguei .ct-seta { color: var(--muted-foreground); font-size: 14px; }
+a.ct-paguei:hover .ct-seta { color: var(--primary); }
+.ct-paguei .pg-l1 { display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: var(--muted-foreground); }
+.ct-paguei b { font: 500 13px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--foreground); white-space: nowrap; }
+.ct-paguei .pg-l2 { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--muted-foreground); }
+.ct-paguei .pg-rot { color: var(--foreground); font-weight: 500; }
+.ct-paguei .pg-l2 .pg-v { font-size: 13.5px; }
+.ct-paguei .pg-v.ct-pos { color: var(--ok); } .ct-paguei .pg-v.ct-neg { color: var(--err); }
+.ct-geral { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.ct-div { display: flex; flex-direction: column; font-size: 14px; }
+.ct-div > div { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(118px, auto); gap: 4px 16px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--border); }
+.ct-div > div.cab { border-top: 0; padding-top: 0; font: 600 11px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.ct-div > div > span:not(:first-child) { text-align: right; white-space: nowrap; }
+.ct-div .n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-div .n i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: -1px; }
+.ct-div small { color: var(--muted-foreground); font: 400 12px var(--font-mono); }
+.ct-rodape { text-align: right; }
+.ct-n { font: 500 11.5px var(--font-mono); color: var(--muted-foreground); }
+.ct-enc[aria-pressed="true"] { background: color-mix(in srgb, var(--primary) 12%, var(--card)); border-color: color-mix(in srgb, var(--primary) 45%, transparent); color: var(--primary); }
+.ct-enc { height: var(--control-h-sm); }
+.ct-tab tfoot td { border-top: 2px solid var(--border); border-bottom: 0; font-weight: 600; padding-top: 10px; }
+.ct-lin-total { border-top: 2px solid var(--border) !important; font-weight: 600; }
 .ct-kpi .v2 { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; color: var(--muted-foreground); }
 .ct-kpi .v2 > span { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 8px; }
 .ct-kpi .v2 b { font: 500 18px/1.3 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--foreground); white-space: nowrap; }
@@ -1162,7 +1190,7 @@ html.no-inicio .conta-btn { margin-left: auto; }
 .wdg-cart { display: flex; flex-direction: column; gap: 8px; }
 .pers-grupo { list-style: none; margin: 12px 0 2px; padding: 8px 0 0; border-top: 1px solid var(--border); font: 600 12px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); }
 .pers-grupo small { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12.5px; margin-top: 2px; }
-@media (max-width: 1099px) { .ct-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ct-corpo, .ct-dois { grid-template-columns: minmax(0, 1fr); } .ct-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1099px) { .ct-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ct-kpis--geral .ct-paguei { grid-column: 1 / -1; } .ct-corpo, .ct-dois, .ct-geral { grid-template-columns: minmax(0, 1fr); } .ct-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 699px) {
   .cart { gap: 14px; }
   .ct-cab h2 { font-size: 22px; }
@@ -1174,6 +1202,10 @@ html.no-inicio .conta-btn { margin-left: auto; }
   .ct-cen { grid-template-columns: minmax(0, 1fr); }
   .ct-form { grid-template-columns: minmax(0, 1fr); }
   .ct-ir { grid-template-columns: minmax(0, 1fr); }
+  .ct-div > div { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+  .ct-div > div > span:nth-child(3) { grid-column: 2; }
+  .ct-div > div.cab > span:nth-child(3) { display: none; }
+  .ct-rodape { text-align: left; }
   .ct-posicoes .ct-caixa { display: none; }
   .ct-posicoes .ct-lista-cel { display: flex; }
   .ct-ferr .dd-input { width: 100%; }
@@ -1855,7 +1887,7 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
   <div class="conta-sep" role="separator"></div>
   <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira" id="conta-carteira"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18M7 6V4h10v2"/></svg>Minha carteira</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira/meta" id="conta-meta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Minha meta</a>
-  <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira/importar" id="conta-importar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Importar extratos</a>
+  <a class="conta-item" role="menuitem" tabindex="-1" href="#carteira/mais" id="conta-importar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Importar extratos</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="#listas" id="conta-listas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>Minhas listas</a>
   <div class="conta-sep" role="separator" id="conta-sep-cart"></div>
   <a class="conta-item" role="menuitem" tabindex="-1" href="#esportes/config" id="conta-esportes" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m12 7 4 3-1.5 4.5h-5L8 10z"/><path d="M12 3v4M21 10l-5 0M18 19l-3-4.5M6 19l3-4.5M3 10h5"/></svg>Meus esportes</a>
@@ -5214,6 +5246,8 @@ function destinoDe(id) {
   if (id === "carteira-simulacoes") return "#carteira/simulacoes";
   if (id === "radar-meu" || id === "leitura-dia" || id === "carteira-contra-filtro") return "#investimentos/radar";
   if (id === "carteira-proventos-mes" || id === "carteira-pagamentos") return "#carteira/proventos";
+  if (id === "carteira-rentabilidade") return "#carteira/posicoes";
+  if (id === "carteira-reinvestir") return "#carteira/meta";
   if (id.startsWith("carteira-")) return "#carteira";
   if (id === "favoritos") { const f = favoritosRecentes()[0]; return "#" + (f ? radarDoFav(f._id) : radaresVisiveis()[0] || "tech"); }
   return null;
@@ -6123,14 +6157,16 @@ function cancelarArrasto() {
   if (a.comecou) { a.el.classList.remove("arrastando", "redimensionando"); montarGrade(); }
 }
 
-/* ---------- Minha carteira: #carteira, #carteira/proventos, #carteira/meta, #carteira/simulacoes(/<id>), #carteira/importar (e #carteira/mais) ----------
+/* ---------- Minha carteira, em seis abas: #carteira (Visão geral), #carteira/posicoes, #carteira/proventos, #carteira/meta
+   (Meta e reinvestimento), #carteira/simulacoes(/<id>) e #carteira/mais (importar extratos, IR, apagar; o endereço antigo
+   #carteira/importar abre a mesma aba) ----------
    Pessoal: abre pelo menu da conta, sem aba na barra de seções. Roda no modo do Início (inicio = true, nenhuma seção
    assinada), com a seção #carteira no lugar da grade. Os dados vêm de /api/carteira, uma leitura só por minuto,
    compartilhada pelas telas e pelos widgets da carteira no Início. Os .xlsx da B3 são lidos aqui no navegador
    (SheetJS, carregado só na tela de importar); o servidor recebe só as linhas, e o nome da empresa fica por aqui. */
 var carteiraVista = null;
-const VISTAS_CART = { "": "geral", mais: "geral", proventos: "proventos", meta: "meta", simulacoes: "simulacoes", importar: "importar" };
-const TITULOS_CART = { geral: "Minha carteira", proventos: "Proventos", meta: "Minha meta", simulacoes: "Simulações", importar: "Importar extratos da B3" };
+const VISTAS_CART = { "": "geral", posicoes: "posicoes", proventos: "proventos", meta: "meta", simulacoes: "simulacoes", mais: "mais", importar: "mais" };
+const TITULOS_CART = { geral: "Minha carteira", posicoes: "Posições", proventos: "Proventos", meta: "Meta e reinvestimento", simulacoes: "Simulações", mais: "Mais da carteira" };
 /* Uma simulação aberta é a vista "sim:<id>" (#carteira/simulacoes/<id>) */
 const ehVistaSim = (v) => String(v || "").startsWith("sim:");
 const tituloCart = (v) => (ehVistaSim(v) ? TITULOS_CART.simulacoes : TITULOS_CART[v] || "Minha carteira");
@@ -6162,8 +6198,7 @@ function irCarteira(vista, porHash) {
   render();
   renderCarteira();
   if (!prefsPedidas) { prefsPedidas = true; carregarPrefs(); }
-  const mais = partesDoHash()[1] === "mais";
-  if (veio !== vista || mais) requestAnimationFrame(() => { const a = mais && $("ct-mais"); if (a) a.scrollIntoView({ block: "start" }); else window.scrollTo({ top: 0 }); });
+  if (veio !== vista) requestAnimationFrame(() => window.scrollTo({ top: 0 }));
 }
 function ajustarMenuCarteira() {
   const ok = !secoesLiberadas || secoesLiberadas.includes("investimentos");
@@ -6362,14 +6397,14 @@ function cabCarteira(j) {
   const cab = el("div", { class: "ct-cab" });
   cab.append(el("h2", { id: "ct-titulo" }, tituloCart(v)));
   const nav = el("nav", { class: "seg ct-nav", "aria-label": "Partes da carteira" });
-  [["geral", "Visão geral", "#carteira"], ["proventos", "Proventos", "#carteira/proventos"], ["meta", "Meta", "#carteira/meta"], ["simulacoes", "Simulações", "#carteira/simulacoes"], ["importar", "Importar", "#carteira/importar"]]
+  [["geral", "Visão geral", "#carteira"], ["posicoes", "Posições", "#carteira/posicoes"], ["proventos", "Proventos", "#carteira/proventos"], ["meta", "Meta e reinvestimento", "#carteira/meta"], ["simulacoes", "Simulações", "#carteira/simulacoes"], ["mais", "Mais", "#carteira/mais"]]
     .forEach(([id, n, h]) => nav.append(el("a", { href: h, ...(id === v || (id === "simulacoes" && ehVistaSim(v)) ? { "aria-current": "page" } : {}) }, n)));
   cab.append(nav, el("span", { class: "ct-esp" }));
   const quem = ["no seu perfil, só você vê"];
   if (j && !j.vazia && j.importacoes && j.importacoes[0]) quem.push("importado " + fmtRel(j.importacoes[0].em));
   if (j && j.resumo && j.resumo.corretoras.length) quem.push(j.resumo.corretoras.join(", "));
   cab.append(el("span", { class: "ct-quem" }, quem.join(" · ")));
-  if (v !== "importar" && j && !j.desligada) cab.append(el("a", { class: "dd-btn dd-btn--primary", href: "#carteira/importar" }, "Importar extratos"));
+  if (v !== "mais" && j && !j.desligada) cab.append(el("a", { class: "dd-btn dd-btn--primary", href: "#carteira/mais" }, "Importar extratos"));
   return cab;
 }
 function estadoCarteira(j) {
@@ -6383,11 +6418,12 @@ function estadoCarteira(j) {
   return el("section", { class: "ct-card ct-vazio" }, el("h3", {}, "Sua carteira ainda está vazia"),
     el("p", {}, "Exporte da Área do Investidor da B3 os extratos de Negociação, Movimentação e Proventos recebidos e solte os arquivos na tela de importar. O Lookout monta as posições, o preço médio, os proventos e a meta a partir deles."),
     el("p", {}, "Os dados ficam cifrados na sua conta e só você vê."),
-    el("a", { class: "dd-btn dd-btn--primary", href: "#carteira/importar" }, "Importar extratos"));
+    el("a", { class: "dd-btn dd-btn--primary", href: "#carteira/mais" }, "Importar extratos"));
 }
 function esqueletoCart(v) {
-  const k = el("div", { class: v === "geral" ? "ct-kpis ct-kpis--6" : "ct-kpis" });
-  for (let i = 0; i < (v === "geral" ? 6 : 4); i++) k.append(el("div", { class: "ct-card ct-kpi" }, esqueleto(2)));
+  if (v === "posicoes") return [el("div", { class: "ct-card" }, esqueleto(8))];
+  const k = el("div", { class: v === "geral" ? "ct-kpis ct-kpis--geral" : "ct-kpis" });
+  for (let i = 0; i < (v === "geral" ? 5 : 4); i++) k.append(el("div", { class: "ct-card ct-kpi" + (v === "geral" && i === 1 ? " ct-paguei" : "") }, esqueleto(2)));
   return [k, el("div", { class: "ct-card" }, esqueleto(3)), el("div", { class: "ct-card" }, esqueleto(6))];
 }
 let renderCartGer = 0;
@@ -6395,7 +6431,7 @@ async function renderCarteira() {
   if (carteiraVista === "listas") return renderTodasListas(true);
   if (ehVistaLista(carteiraVista)) return renderPaginaLista(carteiraVista.slice(6), true);
   const box = $("carteira"), v = carteiraVista, g = ++renderCartGer;
-  if (!cartJ) { box.textContent = ""; box.append(cabCarteira(null), ...(v === "importar" ? [] : esqueletoCart(v))); if (v === "importar") desenharImportar(box, null); }
+  if (!cartJ) { box.textContent = ""; box.append(cabCarteira(null), ...(v === "mais" ? [] : esqueletoCart(v))); if (v === "mais") desenharMais(box, null); }
   const j = await lerCarteira();
   if (g !== renderCartGer || !inicio || carteiraVista !== v) return;
   desenharCarteira(j);
@@ -6406,9 +6442,10 @@ function desenharCarteira(j) {
   const rolar = window.scrollY;
   box.textContent = "";
   box.append(cabCarteira(j));
-  if (v === "importar") { desenharImportar(box, j); }
+  if (v === "mais") { desenharMais(box, j); }
   else if (!j || j.erro || j.desligada || (j.vazia && v !== "meta")) box.append(estadoCarteira(j));
   else if (v === "geral") desenharGeral(box, j);
+  else if (v === "posicoes") desenharPosicoes(box, j);
   else if (v === "proventos") desenharProventos(box, j);
   else if (v === "meta") desenharMeta(box, j);
   else if (v === "simulacoes") desenharSimulacoes(box, j);
@@ -6417,63 +6454,104 @@ function desenharCarteira(j) {
   window.scrollTo({ top: rolar });
 }
 
-/* Visão geral */
-// Resultado realizado e Saídas (vendas e retiradas). Sem nenhuma das duas, os cards ficam com "–" para a pessoa saber que existem.
-function kpisSaidas(r, kpi) {
-  const re = r.realizado || { total: 0, ano: 0, n: 0, nAno: 0 };
-  const sd = r.saidas || { vendas: { total: 0, ano: 0, n: 0 }, retiradas: { total: 0, ano: 0, n: 0 } };
-  const vn = sd.vendas, rt = sd.retiradas;
-  const nVendas = (n) => `${n} ${n === 1 ? "venda" : "vendas"}`;
-  const realizado = !re.n && Math.abs(re.total) < 0.005
-    ? kpi("Resultado realizado", "–", "", "nenhuma venda até hoje")
-    : kpi("Resultado realizado", rsS(re.total), clsS(re.total), re.nAno ? `no ano ${rsS(re.ano)} · ${nVendas(re.nAno)}` : Math.abs(re.ano) >= 0.005 ? `no ano ${rsS(re.ano)}` : "nenhuma venda no ano");
-  const linha = (n, v) => el("span", {}, n, el("b", {}, rs(v)));
-  const saidas = !vn.n && !rt.n
-    ? kpi("Saídas", "–", "", "nenhuma até hoje")
-    : el("div", { class: "ct-card ct-kpi" }, el("div", { class: "r" }, el("span", { class: "rotulo" }, "Saídas")),
-      el("span", { class: "v2" }, linha("vendas", vn.total), linha("retiradas", rt.total)),
-      el("span", { class: "d" }, vn.ano || rt.ano ? `no ano: vendas ${rs(vn.ano)} · retiradas ${rs(rt.ano)}` : "nada no ano"));
-  return [realizado, saidas];
+/* Visão geral: os números do topo, a faixa da Meta e quatro cards (Alertas e Agenda à esquerda; Como está dividido e
+   Movimentos recentes à direita). Card sem dado não aparece. */
+let ctFiltro = "todas", ctCorretora = "", ctEnc = false, ctBusca = "", ctAlertasTodos = false;
+const kpiEl = (rot, val, cls, desc, pin) => el("div", { class: "ct-card ct-kpi" }, el("div", { class: "r" }, el("span", { class: "rotulo" }, rot), pin ? pinBtn(pin) : null), el("span", { class: "v " + (cls || "") }, val), el("span", { class: "d" }, desc));
+const rsPc = (v, p) => rsS(v) + (p == null ? "" : ` (${pc(p, true)})`);
+const verTudo = (href, txt = "ver tudo") => el("a", { href, class: "ct-volta" }, txt);
+/* Paguei × hoje: o resultado em aberto com nome que se entende, e embaixo a conta contando proventos e vendas */
+function kpiPaguei(r) {
+  const a = el("a", { class: "ct-card ct-kpi ct-paguei", href: "#carteira/posicoes", title: "Ver posição por posição" });
+  a.append(el("div", { class: "r" }, el("span", { class: "rotulo" }, "Paguei × hoje"), el("span", { class: "ct-seta", "aria-hidden": "true" }, "→")),
+    el("span", { class: "pg-l1" }, el("span", {}, "Paguei ", el("b", {}, rs(r.custo)), " · Hoje ", el("b", {}, rs(r.patrimonio))), el("span", { class: "v " + clsS(r.aberto) }, rsPc(r.aberto, r.resultadoPct))));
+  const t = r.total;
+  if (t) a.append(el("span", { class: "pg-l2" }, el("span", {}, el("span", { class: "pg-rot" }, "Contando proventos e vendas: "), "entrou ", el("b", {}, rs(t.pago)), " · tenho ou recebi ", el("b", {}, rs(t.hoje))), el("b", { class: "pg-v " + clsS(t.ganho) }, rsPc(t.ganho, t.pct))));
+  return a;
 }
-let ctFiltro = "todas", ctBusca = "";
+// Resultado realizado (vendas); retiradas de custódia só aparecem no subtexto
+function kpiRealizado(r) {
+  const re = r.realizado || { total: 0, ano: 0, n: 0, nAno: 0 };
+  const sd = r.saidas || { vendas: { total: 0, n: 0 }, retiradas: { total: 0, n: 0 } };
+  const sub = `vendas ${rs(sd.vendas.total)} · retiradas ${rs(sd.retiradas.total)}`;
+  if (!re.n && Math.abs(re.total) < 0.005) return kpiEl("Resultado realizado", "–", "", sd.retiradas.n ? sub : "nenhuma venda até hoje");
+  const k = kpiEl("Resultado realizado", rsS(re.total), clsS(re.total), sub);
+  k.title = re.nAno ? `No ano: ${rsS(re.ano)} em ${re.nAno} ${re.nAno === 1 ? "venda" : "vendas"}` : "Nenhuma venda no ano";
+  return k;
+}
+function notaCotacoes(j) {
+  if (!j.cotacoes || !j.cotacoes.b3) return null;
+  return el("p", { class: "ct-nota ct-rodape" }, "Cotações " + fmtRel(j.cotacoes.b3) + " · pregão da B3, com atraso de até 30 min");
+}
 function desenharGeral(box, j) {
-  const r = j.resumo;
-  const k = el("div", { class: "ct-kpis ct-kpis--6" });
-  const kpi = (rot, val, cls, desc, pin) => el("div", { class: "ct-card ct-kpi" }, el("div", { class: "r" }, el("span", { class: "rotulo" }, rot), pin ? pinBtn(pin) : null), el("span", { class: "v " + (cls || "") }, val), el("span", { class: "d" }, desc));
-  const nc = r.corretoras.length;
+  const r = j.resumo, nc = r.corretoras.length;
+  const k = el("div", { class: "ct-kpis ct-kpis--geral" });
   k.append(
-    kpi("Patrimônio em bolsa", rs(r.patrimonio), "", `${r.papeis} ${r.papeis === 1 ? "papel" : "papéis"} · ${nc} ${nc === 1 ? "corretora" : "corretoras"}${r.semCotacao ? ` · ${r.semCotacao} sem cotação` : ""}`, "carteira-patrimonio"),
-    kpi("Resultado em aberto", rsS(r.aberto ?? r.resultado), clsS(r.aberto ?? r.resultado), `${pc(r.resultadoPct, true)} · custo ${rs(r.custo)}`),
-    ...kpisSaidas(r, kpi),
-    kpi("Proventos em 12 meses", rs(r.prov12), "", `${pc(r.yoc)} sobre o custo · ${rs(r.media12)}/mês`),
-    kpi("Proventos em " + mesNome(r.mesAnterior.mes), rs(r.mesAnterior.total), "", `${r.mesAnterior.n} ${r.mesAnterior.n === 1 ? "pagamento" : "pagamentos"}${r.provDesde ? ` · desde ${r.provDesde.slice(0, 4)}: ${rs(r.provTotal)}` : ""}`));
-  box.append(k);
-  box.append(faixaMetaGeral(j));
-  const corpo = el("div", { class: "ct-corpo" }), esq = el("div", { class: "ct-col" }), dir = el("div", { class: "ct-col" });
-  // Como está dividido
-  const { faixa, fat, tot } = faixaClasses(r);
-  const div = cardEl("Como está dividido", { sub: "por valor atual" });
-  div.append(faixa, el("div", { class: "ct-legenda" }, ...fat.map(([k2, v2]) => el("span", {}, el("i", { class: "ct-c-" + k2 }), `${NOME_CLASSE[k2]} ${pc((v2 / tot) * 100)} · ${rs(v2)}`))));
-  esq.append(div, cardReinvestir(), cardPosicoes(j));
-  // Lateral
-  const pm = cardEl("Proventos por mês", { pin: "carteira-proventos-mes" });
-  pm.append(...barrasMes(ultimos12(r), porMesMap(r), { destacarUltimo: true }), el("a", { href: "#carteira/proventos", class: "ct-volta" }, "Ver proventos"));
-  const top = provPorPapel(j, somarMes(r.hoje.slice(0, 7), -12), somarMes(r.hoje.slice(0, 7), -1)).slice(0, 5);
-  const quem = cardEl("Quem mais pagou em 12 meses");
-  quem.append(top.length ? el("div", { class: "ct-linhas" }, ...top.map(([t, v2]) => el("div", {}, papelBtn(t), el("span", { class: "ct-mono" }, rs(v2))))) : el("p", { class: "ct-nota" }, "Nenhum provento nos últimos 12 meses."));
-  const mov = cardEl("Movimentos recentes");
-  mov.append(el("div", { class: "ct-mov" }, ...(r.recentes || []).slice(0, 6).map((x) => el("div", {}, el("b", {}, ddmm(x.d)), " · " + (NOME_MOV[x.o] || x.o) + " · ", papelBtn(x.t),
-    " " + (x.v != null ? rs(x.v, true) : x.p != null ? `${qtd(x.q)} × ${rs(x.p, true)}` : x.q ? qtd(x.q) + (x.o === "emp" ? " emprestadas" : "") : "")))));
-  dir.append(pm, quem, mov);
-  if (r.alertas && r.alertas.length) {
-    const al = cardEl("Alertas", { sub: String(r.alertas.length), pin: "carteira-alertas" });
-    al.append(el("div", { class: "ct-linhas alertas" }, ...r.alertas.slice(0, 6).map((a) => el("div", {}, el("span", {}, ...textoAlerta(a))))));
-    dir.append(al);
-  } else dir.append((() => { const al = cardEl("Alertas", { sub: "nenhum agora", pin: "carteira-alertas" }); al.append(el("p", { class: "ct-nota" }, "Avisos de rendimento menor que o anterior, subscrição em carteira e papel com mais de 20% da carteira aparecem aqui.")); return al; })());
-  if (j.cotacoes && j.cotacoes.b3) dir.append(el("p", { class: "ct-nota", title: "Cotações com atraso de até 30 min" }, "Cotações " + fmtRel(j.cotacoes.b3)));
-  corpo.append(esq, dir);
+    kpiEl("Patrimônio em bolsa", rs(r.patrimonio), "", `${r.papeis} ${r.papeis === 1 ? "papel" : "papéis"} · ${nc} ${nc === 1 ? "corretora" : "corretoras"}${r.semCotacao ? ` · ${r.semCotacao} sem cotação` : ""}`, "carteira-patrimonio"),
+    kpiPaguei(r),
+    kpiRealizado(r),
+    kpiEl("Proventos em 12 meses", rs(r.prov12), "", `${pc(r.yoc)} sobre o custo · ${rs(r.media12)}/mês`),
+    kpiEl("Proventos em " + mesNome(r.mesAnterior.mes), rs(r.mesAnterior.total), "", `${r.mesAnterior.n} ${r.mesAnterior.n === 1 ? "pagamento" : "pagamentos"}${r.provDesde ? ` · desde ${r.provDesde.slice(0, 4)}: ${rs(r.provTotal)}` : ""}`));
+  box.append(k, faixaMetaGeral(j));
+  const esq = [];
+  if (r.alertas && r.alertas.length) esq.push(cardAlertas(r));
+  if (r.agenda && r.agenda.length) {
+    const ag = cardEl("Agenda", { sub: "o que já se sabe", pin: "carteira-agenda", extra: verTudo("#carteira/proventos") });
+    ag.append(...[].concat(agendaEl(r, 6)));
+    esq.push(ag);
+  }
+  const dir = [cardDividido(j), cardMovimentos(r)];
+  const corpo = el("div", { class: "ct-geral" });
+  if (esq.length) corpo.append(el("div", { class: "ct-col" }, ...esq), el("div", { class: "ct-col" }, ...dir));
+  else corpo.append(...dir.map((c) => el("div", { class: "ct-col" }, c)));
   box.append(corpo);
-  box.append(maisDaCarteira(j));
+  const nota = notaCotacoes(j); if (nota) box.append(nota);
+}
+function cardAlertas(r) {
+  const n = r.alertas.length;
+  const al = cardEl("Alertas", { sub: String(n), pin: "carteira-alertas" });
+  const vis = ctAlertasTodos ? r.alertas : r.alertas.slice(0, 6);
+  al.append(el("div", { class: "ct-linhas alertas" }, ...vis.map((a) => el("div", {}, el("span", {}, ...textoAlerta(a))))));
+  if (n > 6) {
+    const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, ctAlertasTodos ? "Mostrar menos" : `Ver os ${n}`);
+    b.addEventListener("click", () => { ctAlertasTodos = !ctAlertasTodos; desenharCarteira(cartJ); });
+    al.append(el("div", {}, b));
+  }
+  return al;
+}
+/* Como está dividido: valor de hoje por classe, a parte de cada uma e quanto ganha ou perde contra o que foi pago */
+function porClasseComCusto(posicoes) {
+  const m = new Map();
+  for (const p of posicoes) {
+    const x = m.get(p.classe) || { valor: 0, custo: 0, n: 0 };
+    x.valor += p.valor; x.custo += p.custo != null ? p.custo : p.valor; x.n++;
+    m.set(p.classe, x);
+  }
+  return ORDEM_CLASSE.filter((k) => m.has(k) && m.get(k).valor > 0.5).map((k) => [k, m.get(k)]).sort((a, b) => b[1].valor - a[1].valor);
+}
+function cardDividido(j) {
+  const r = j.resumo;
+  const lin = porClasseComCusto(j.posicoes);
+  const tot = lin.reduce((s, [, x]) => s + x.valor, 0) || 1;
+  const c = cardEl("Como está dividido", { sub: "por valor de hoje", extra: verTudo("#carteira/posicoes") });
+  const faixa = el("div", { class: "ct-faixa", role: "img", "aria-label": "Divisão por classe: " + lin.map(([k, x]) => NOME_CLASSE[k] + " " + pc((x.valor / tot) * 100)).join(", ") });
+  lin.forEach(([k, x]) => faixa.append(el("span", { class: "ct-c-" + k, style: `width:${(x.valor / tot) * 100}%`, title: `${NOME_CLASSE[k]}: ${rs(x.valor)}` })));
+  const linhas = el("div", { class: "ct-div" }, el("div", { class: "cab" }, el("span", {}, "Classe"), el("span", {}, "Hoje"), el("span", {}, "Ganho ou perda")),
+    ...lin.map(([k, x]) => {
+      const g = x.valor - x.custo;
+      return el("div", {}, el("span", { class: "n" }, el("i", { class: "ct-c-" + k }), NOME_CLASSE[k], el("small", {}, " " + pc((x.valor / tot) * 100))),
+        el("span", { class: "ct-mono" }, rs(x.valor)), el("span", { class: "ct-mono " + clsS(g) }, rsPc(g, x.custo > 0 ? (g / x.custo) * 100 : null)));
+    }));
+  c.append(faixa, linhas);
+  if (r.emprestado > 0.5) c.append(el("p", { class: "ct-nota" }, `${rs(r.emprestado)} estão em empréstimo e contam na classe de cada papel.`));
+  return c;
+}
+function cardMovimentos(r) {
+  const mov = cardEl("Movimentos recentes");
+  const l = (r.recentes || []).slice(0, 6);
+  mov.append(l.length ? el("div", { class: "ct-mov" }, ...l.map((x) => el("div", {}, el("b", {}, ddmm(x.d)), " · " + (NOME_MOV[x.o] || x.o) + " · ", papelBtn(x.t),
+    " " + (x.v != null ? rs(x.v, true) : x.p != null ? `${qtd(x.q)} × ${rs(x.p, true)}` : x.q ? qtd(x.q) + (x.o === "emp" ? " emprestadas" : "") : "")))) : el("p", { class: "ct-nota" }, "Nenhum movimento ainda."));
+  return mov;
 }
 function faixaMetaGeral(j) {
   const m = j.meta, r = j.resumo;
@@ -6489,30 +6567,48 @@ function faixaMetaGeral(j) {
   g.append(esq, dir); c.append(g);
   return c;
 }
-function cardPosicoes(j) {
+
+/* Posições: filtros de classe e corretora, o toggle de encerradas, a tabela no helper (com Colunas e a linha de total)
+   e, embaixo, Rentabilidade e Por corretora */
+const CLASSE_UM = { fii: "FII", fiinfra: "FI-Infra", fiagro: "Fiagro", acao: "Ação", etf: "ETF", bdr: "BDR", subscricao: "Subscrição", outro: "Outro" };
+function desenharPosicoes(box, j) {
+  const r = j.resumo, encs = r.encerradas || [];
   const c = el("section", { class: "ct-card ct-posicoes", id: "ct-posicoes" });
-  const classes = new Set(j.posicoes.map((p) => p.classe));
-  const filtros = [["todas", "Todas"], ["fii", "FIIs"], ["acao", "Ações"]];
-  if (classes.has("fiinfra")) filtros.push(["fiinfra", "FI-Infra"]);
-  if (classes.has("fiagro")) filtros.push(["fiagro", "Fiagro"]);
-  if (classes.has("etf")) filtros.push(["etf", "ETFs"]);
-  if (["bdr", "subscricao", "outro"].some((x) => classes.has(x))) filtros.push(["outros", "Outros"]);
-  filtros.push(["encerradas", "Encerradas"]);
+  const fonte = ctEnc ? encs : j.posicoes;
+  const conta = new Map();
+  fonte.forEach((p) => { const k = OUTRAS_CLASSES.has(p.classe) ? "outros" : p.classe; conta.set(k, (conta.get(k) || 0) + 1); });
+  const filtros = [["todas", "Todas", fonte.length]];
+  [["fii", "FIIs"], ["fiinfra", "FI-Infra"], ["fiagro", "Fiagro"], ["acao", "Ações"], ["etf", "ETFs"], ["outros", "Outros"]].forEach(([id, n]) => { if (conta.has(id)) filtros.push([id, n, conta.get(id)]); });
   if (!filtros.some(([id]) => id === ctFiltro)) ctFiltro = "todas";
-  const seg = el("div", { class: "seg", role: "group", "aria-label": "Filtrar posições" });
-  const corpo = el("div", { style: "display:contents" });
-  filtros.forEach(([id, n]) => {
-    const b = el("button", { type: "button", "aria-pressed": String(ctFiltro === id) }, n);
+  const seg = el("div", { class: "seg", role: "group", "aria-label": "Classe" });
+  filtros.forEach(([id, n, q]) => {
+    const b = el("button", { type: "button", "aria-pressed": String(ctFiltro === id) }, n + " ", el("span", { class: "ct-n" }, String(q)));
     b.addEventListener("click", () => { ctFiltro = id; seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); pintar(); });
     seg.append(b);
   });
+  // corretora: as encerradas não guardam corretora, então o filtro fica desligado nelas
+  const porCorr = new Map();
+  j.posicoes.forEach((p) => p.corretoras.forEach((x) => porCorr.set(x, (porCorr.get(x) || 0) + 1)));
+  if (ctCorretora && !porCorr.has(ctCorretora)) ctCorretora = "";
+  const sel = el("select", { class: "dd-input", "aria-label": "Corretora", ...(ctEnc ? { disabled: "" } : {}) },
+    el("option", { value: "" }, "Todas"), ...[...porCorr].sort((a, b) => b[1] - a[1]).map(([x, n]) => el("option", { value: x, ...(x === ctCorretora ? { selected: "" } : {}) }, `${x} (${n})`)));
+  sel.addEventListener("change", () => { ctCorretora = sel.value; pintar(); });
+  const bEnc = el("button", { type: "button", class: "dd-btn dd-btn--outline ct-enc", "aria-pressed": String(ctEnc), title: "Mostrar as posições que já foram vendidas por inteiro" }, "Encerradas ", el("span", { class: "ct-n" }, String(encs.length)));
+  bEnc.addEventListener("click", () => { ctEnc = !ctEnc; ctFiltro = "todas"; desenharCarteira(cartJ); const b = document.querySelector("#ct-posicoes .ct-enc"); if (b) b.focus({ preventScroll: true }); });
   const busca = el("input", { class: "dd-input", type: "search", placeholder: "papel ou nome", "aria-label": "Buscar papel", autocomplete: "off" });
   busca.value = ctBusca;
-  busca.addEventListener("input", () => { ctBusca = busca.value; if (ctTabAtual && ctTabAtual.vivo()) ctTabAtual.atualizar(linhasCt(j), { voltarPagina: true }); else pintar(); });
-  c.append(el("div", { class: "ct-ferr" }, el("h3", {}, "Posições"), seg, el("span", { class: "ct-esp", style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Buscar"), busca)), corpo);
-  const pintar = () => { corpo.textContent = ""; corpo.append(...tabelaPosicoes(j, pintar)); };
+  busca.addEventListener("input", () => { ctBusca = busca.value; pintar(); });
+  c.append(el("div", { class: "ct-ferr" }, el("h3", {}, ctEnc ? "Encerradas" : "Posições"), seg,
+    el("label", {}, el("span", {}, "Corretora"), sel), bEnc, el("span", { class: "ct-esp", style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Buscar"), busca)));
+  const corpo = el("div", { style: "display:contents" });
+  c.append(corpo);
+  const pintar = () => {
+    if (ctTabAtual && ctTabAtual.vivo() && corpo.contains(ctTabAtual.el)) { ctTabAtual.atualizar(linhasCt(j), { voltarPagina: true }); return; }
+    corpo.textContent = ""; corpo.append(...tabelaPosicoes(j));
+  };
   pintar();
-  return c;
+  box.append(c, el("div", { class: "ct-mais dois" }, cardRentab(r), cardPorCorretora(r)));
+  const nota = notaCotacoes(j); if (nota) box.append(nota);
 }
 /* ---- Reinvestir: os 5 FIIs de maior pontuação pelos critérios da pessoa (GET/PUT /api/carteira/reinvestir) ----
    A conta é do Worker (src/pontuacao-fii.js); aqui só o desenho. O card mostra a conta e os fatos: nenhum texto diz o
@@ -6711,35 +6807,53 @@ function painelCriterios(painel, j, status) {
     grade, el("div", { class: "ct-acoes" }, bPadrao, bSalvar, soma));
   somar();
 }
-/* Posições, Encerradas e Pagamentos da carteira no helper de tabela (ids carteira-posicoes, carteira-encerradas, carteira-proventos).
-   A classe (Todas, FIIs...) e a busca continuam por fora; ordem, filtro por coluna e página ficam na tabela. */
+/* Posições, Encerradas e Pagamentos da carteira no helper de tabela (ids carteira-pos, carteira-encerradas, carteira-proventos).
+   Classe, corretora e busca ficam por fora; ordem, filtro por coluna, colunas e página ficam na tabela. A linha de total
+   soma o que passa nos filtros, em todas as páginas. */
 let ctTabAtual = null;
 const OUTRAS_CLASSES = new Set(["bdr", "subscricao", "outro"]);
 function linhasCt(j) {
   const q = semAcento(ctBusca.trim().toLowerCase());
   const passa = (p) => !q || semAcento((p.t + " " + (p.nome || "")).toLowerCase()).includes(q);
-  if (ctFiltro === "encerradas") return (j.resumo.encerradas || []).filter(passa);
-  return j.posicoes.filter((p) => (ctFiltro === "todas" || p.classe === ctFiltro || (ctFiltro === "outros" && OUTRAS_CLASSES.has(p.classe))) && passa(p));
+  const daClasse = (p) => ctFiltro === "todas" || p.classe === ctFiltro || (ctFiltro === "outros" && OUTRAS_CLASSES.has(p.classe));
+  if (ctEnc) return (j.resumo.encerradas || []).filter((e) => daClasse(e) && passa(e));
+  return j.posicoes.filter((p) => daClasse(p) && (!ctCorretora || p.corretoras.includes(ctCorretora)) && passa(p));
 }
 const COLS_ENC = [
   { id: "t", rotulo: "Papel", tipo: "texto", cls: "e", valor: (e) => e.t, obrigatoria: true },
   { id: "ate", rotulo: "Período", rotuloCurto: "Encerrada", tipo: "data", valor: (e) => e.ate || "" },
+  { id: "pago", rotulo: "Pago", tipo: "num", unidade: "R$", valor: (e) => e.pago },
+  { id: "recebido", rotulo: "Recebido na venda", tipo: "num", unidade: "R$", valor: (e) => e.recebido },
   { id: "resultado", rotulo: "Resultado", tipo: "num", unidade: "R$", valor: (e) => e.resultado },
   { id: "proventos", rotulo: "Proventos", tipo: "num", unidade: "R$", valor: (e) => e.proventos },
   { id: "total", rotulo: "Total", tipo: "num", unidade: "R$", valor: (e) => e.total },
 ];
+// "Com proventos": a diferença de hoje mais tudo o que o papel já pagou. DY 12m: proventos de 12 meses sobre o valor de hoje.
+const difPos = (p) => (p.custo == null ? null : p.valor - p.custo);
+const comProvPos = (p) => (p.custo == null ? null : p.valor - p.custo + (p.proventos || 0));
+const dyPos = (p) => (p.valor > 0 && p.prov12 > 0 ? (p.prov12 / p.valor) * 100 : null);
+const pesoPos = (p) => (cartJ && cartJ.resumo.patrimonio > 0 ? (p.valor / cartJ.resumo.patrimonio) * 100 : null);
 const COLS_POS = [
   { id: "t", rotulo: "Papel", tipo: "texto", cls: "e", valor: (p) => p.t, obrigatoria: true },
+  { id: "classe", rotulo: "Classe", tipo: "texto", cls: "e", valor: (p) => CLASSE_UM[p.classe] || "Outro" },
   { id: "q", rotulo: "Qtd", tipo: "num", valor: (p) => p.q },
+  { id: "custo", rotulo: "Pago", tipo: "num", unidade: "R$", valor: (p) => p.custo },
+  { id: "valor", rotulo: "Hoje", tipo: "num", unidade: "R$", valor: (p) => p.valor },
+  { id: "dif", rotulo: "Diferença R$", tipo: "num", unidade: "R$", valor: difPos },
+  { id: "resPct", rotulo: "Diferença %", tipo: "num", unidade: "%", valor: (p) => p.resPct },
+  { id: "comProv", rotulo: "Com proventos", tipo: "num", unidade: "R$", valor: comProvPos },
+  { id: "dy", rotulo: "DY 12m", tipo: "num", unidade: "%", valor: dyPos },
   { id: "pm", rotulo: "Preço médio", tipo: "num", unidade: "R$", valor: (p) => p.pm },
-  { id: "preco", rotulo: "Atual", tipo: "num", unidade: "R$", valor: (p) => p.preco },
-  { id: "valor", rotulo: "Valor", tipo: "num", unidade: "R$", valor: (p) => p.valor },
-  { id: "resPct", rotulo: "Resultado", tipo: "num", unidade: "%", valor: (p) => p.resPct },
-  { id: "prov12", rotulo: "Prov. 12m", tipo: "num", unidade: "R$", valor: (p) => p.prov12 || null },
-  { id: "yoc", rotulo: "DY s/ custo", tipo: "num", unidade: "%", valor: (p) => p.yoc },
+  { id: "preco", rotulo: "Preço atual", tipo: "num", unidade: "R$", valor: (p) => p.preco },
   { id: "corretora", rotulo: "Corretora", tipo: "texto", cls: "e", valor: (p) => p.corretoras.join(", "), valores: (p) => p.corretoras },
+  { id: "seg", rotulo: "Segmento", tipo: "texto", cls: "e", valor: (p) => (p.seg ? segNome(p.seg) : "") },
+  { id: "prov12", rotulo: "Proventos 12m", tipo: "num", unidade: "R$", valor: (p) => p.prov12 || null },
+  { id: "peso", rotulo: "% da carteira", tipo: "num", unidade: "%", valor: pesoPos },
+  { id: "emp", rotulo: "Emprestadas", tipo: "num", valor: (p) => p.emprestadas || null },
 ];
+const OCULTAS_POS = ["pm", "preco", "corretora", "seg", "prov12", "peso", "emp"];
 function celulaPos(c, p) {
+  const mono = (txt, cls) => el("td", { class: "mono" + (cls ? " " + cls : "") }, txt);
   if (c === "t") {
     const nome = nomeDoPapel(p);
     const td = el("td", { class: "e" }, papelBtn(p.t, nome), nome ? el("span", { class: "ct-nome", title: nome }, nome) : null);
@@ -6747,79 +6861,117 @@ function celulaPos(c, p) {
     if (p.semCotacao) td.append(" ", tagEl("sem cotação", "", "Fora das tabelas do pregão do Lookout; o valor usa o preço médio"));
     return td;
   }
-  if (c === "q") return el("td", { class: "mono" }, qtd(p.q));
-  if (c === "pm") return el("td", { class: "mono" }, rs(p.pm, true));
-  if (c === "preco") return el("td", { class: "mono" }, p.preco == null ? "–" : rs(p.preco, true));
-  if (c === "valor") return el("td", { class: "mono" }, rs(p.valor));
-  if (c === "resPct") return el("td", { class: "mono " + clsS(p.resPct) }, pc(p.resPct, true));
-  if (c === "prov12") return el("td", { class: "mono" }, p.prov12 ? rs(p.prov12) : "–");
-  if (c === "yoc") return el("td", { class: "mono" }, p.yoc == null ? "–" : pc(p.yoc));
+  if (c === "classe") return el("td", { class: "e" }, CLASSE_UM[p.classe] || "Outro");
+  if (c === "q") return mono(qtd(p.q));
+  if (c === "custo") return mono(p.custo == null ? "–" : rs(p.custo));
+  if (c === "valor") return mono(rs(p.valor));
+  if (c === "dif") { const v = p.semCotacao ? null : difPos(p); return mono(v == null ? "–" : rsS(v), clsS(v)); }
+  if (c === "resPct") return mono(pc(p.resPct, true), clsS(p.resPct));
+  if (c === "comProv") { const v = comProvPos(p); return mono(v == null ? "–" : rsS(v), clsS(v)); }
+  if (c === "dy") return mono(dyPos(p) == null ? "–" : pc(dyPos(p)));
+  if (c === "pm") return mono(p.pm == null ? "–" : rs(p.pm, true));
+  if (c === "preco") return mono(p.preco == null ? "–" : rs(p.preco, true));
+  if (c === "seg") return el("td", { class: "e" }, p.seg ? segNome(p.seg) : "–");
+  if (c === "prov12") return mono(p.prov12 ? rs(p.prov12) : "–");
+  if (c === "peso") return mono(pc(pesoPos(p)));
+  if (c === "emp") return mono(p.emprestadas ? qtd(p.emprestadas) : "–");
   return el("td", { class: "e" }, ...p.corretoras.map((x) => tagEl(x)));
 }
 function celulaEnc(c, e) {
   if (c === "t") return el("td", { class: "e" }, papelBtn(e.t, e.nome));
   if (c === "ate") return el("td", { class: "mono" }, periodo(e.de, e.ate));
-  if (c === "proventos") return el("td", { class: "mono" }, rs(e.proventos));
+  if (c === "pago" || c === "recebido" || c === "proventos") return el("td", { class: "mono" }, rs(e[c]));
   return el("td", { class: "mono " + clsS(e[c]) }, rsS(e[c]));
 }
+function somaPos(ls) {
+  const s = { custo: 0, valor: 0, prov: 0, prov12: 0 };
+  for (const p of ls) { s.valor += p.valor; s.custo += p.custo != null ? p.custo : p.valor; s.prov += p.proventos || 0; s.prov12 += p.prov12 || 0; }
+  s.dif = s.valor - s.custo; s.pct = s.custo > 0 ? (s.dif / s.custo) * 100 : null; s.comProv = s.dif + s.prov;
+  return s;
+}
+function rodapePos(cols, ls) {
+  const s = somaPos(ls), pat = cartJ && cartJ.resumo.patrimonio;
+  const td = (txt, cls) => el("td", { class: "mono" + (cls ? " " + cls : "") }, txt);
+  return cols.map((c, i) => {
+    if (i === 0) return el("td", { class: "e" }, `Total · ${ls.length} ${ls.length === 1 ? "papel" : "papéis"}`);
+    if (c.id === "custo") return td(rs(s.custo));
+    if (c.id === "valor") return td(rs(s.valor));
+    if (c.id === "dif") return td(rsS(s.dif), clsS(s.dif));
+    if (c.id === "resPct") return td(pc(s.pct, true), clsS(s.pct));
+    if (c.id === "comProv") return td(rsS(s.comProv), clsS(s.comProv));
+    if (c.id === "dy") return td(s.valor > 0 && s.prov12 > 0 ? pc((s.prov12 / s.valor) * 100) : "");
+    if (c.id === "prov12") return td(rs(s.prov12));
+    if (c.id === "peso") return td(pat > 0 ? pc((s.valor / pat) * 100) : "");
+    return el("td", {});
+  });
+}
+function rodapeEnc(cols, ls) {
+  const s = { pago: 0, recebido: 0, resultado: 0, proventos: 0, total: 0 };
+  for (const e of ls) for (const k of Object.keys(s)) s[k] += e[k] || 0;
+  return cols.map((c, i) => {
+    if (i === 0) return el("td", { class: "e" }, `Total · ${ls.length}`);
+    if (c.id === "pago" || c.id === "recebido" || c.id === "proventos") return el("td", { class: "mono" }, rs(s[c.id]));
+    if (c.id in s) return el("td", { class: "mono " + clsS(s[c.id]) }, rsS(s[c.id]));
+    return el("td", {});
+  });
+}
 const UNID_CLASSE = (c) => (c === "fii" || c === "fiinfra" || c === "fiagro" ? "cotas" : c === "acao" ? "ações" : "un.");
-function tabelaPosicoes(j, repintar) {
-  const enc = ctFiltro === "encerradas";
+function tabelaPosicoes(j) {
+  const enc = ctEnc;
   const t = Tabela.criar({
-    id: enc ? "carteira-encerradas" : "carteira-posicoes", colunas: enc ? COLS_ENC : COLS_POS, linhas: linhasCt(j),
+    id: enc ? "carteira-encerradas" : "carteira-pos", colunas: enc ? COLS_ENC : COLS_POS, linhas: linhasCt(j),
     total: enc ? (j.resumo.encerradas || []).length : j.posicoes.length, rotuloConta: enc ? "encerradas" : "posições",
-    padrao: { ordem: enc ? [] : [{ c: "valor", d: -1 }], filtros: {}, pagina: 1, porPagina: 25 },
+    padrao: enc ? { ordem: [], filtros: {}, pagina: 1, porPagina: 25 } : { ordem: [{ c: "valor", d: -1 }], filtros: {}, pagina: 1, porPagina: 25, ocultas: OCULTAS_POS },
     celula: (c, x) => (enc ? celulaEnc(c.id, x) : celulaPos(c.id, x)), classeTabela: "ct-tab", classeCaixa: "ct-caixa",
+    rodape: enc ? rodapeEnc : rodapePos,
+    rodapeCel: enc
+      ? (ls) => { const s = ls.reduce((a, e) => ({ pago: a.pago + e.pago, total: a.total + e.total }), { pago: 0, total: 0 }); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length}`), el("span", { class: "ct-mono " + clsS(s.total) }, rsS(s.total)), el("small", {}, "pago " + rs(s.pago)), el("small", {})); }
+      : (ls) => { const s = somaPos(ls); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length} ${ls.length === 1 ? "papel" : "papéis"}`), el("span", { class: "ct-mono" }, rs(s.valor)), el("small", {}, `pago ${rs(s.custo)} · com proventos `, el("span", { class: clsS(s.comProv) }, rsS(s.comProv))), el("small", { class: "ct-mono " + clsS(s.dif) }, rsPc(s.dif, s.pct))); },
     cel: enc
-      ? (e) => el("div", { class: "ct-lin" }, papelBtn(e.t, e.nome), el("span", { class: "ct-mono " + clsS(e.total) }, rsS(e.total)), el("small", {}, periodo(e.de, e.ate) + " · proventos " + rs(e.proventos)), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)))
+      ? (e) => el("div", { class: "ct-lin" }, papelBtn(e.t, e.nome), el("span", { class: "ct-mono " + clsS(e.total) }, rsS(e.total)), el("small", {}, `${periodo(e.de, e.ate)} · pago ${rs(e.pago)} · recebido ${rs(e.recebido)} · proventos ${rs(e.proventos)}`), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)))
       : (p) => el("div", { class: "ct-lin" }, papelBtn(p.t, nomeDoPapel(p)), el("span", { class: "ct-mono" }, rs(p.valor)),
-        el("small", {}, `${qtd(p.q)} ${UNID_CLASSE(p.classe)} · PM ${rs(p.pm, true)}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(p.resPct) }, pc(p.resPct, true))),
-    vazio: (comFiltro) => el("p", { class: "ct-nota" }, comFiltro ? "Nenhuma linha com esses filtros." : ctBusca ? "Nenhum papel com essa busca." : enc ? "Nenhuma posição encerrada." : "Nenhuma posição nesta classe."),
-    nota: () => el("span", {}, enc ? "Encerradas com histórico de negócio, com o resultado realizado e os proventos recebidos." : "Clique no papel para abrir a ficha."),
+        el("small", {}, `${qtd(p.q)} ${UNID_CLASSE(p.classe)} · pago ${p.custo == null ? "–" : rs(p.custo)}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(difPos(p)) }, p.semCotacao ? "sem cotação" : rsPc(difPos(p), p.resPct))),
+    vazio: (comFiltro) => el("p", { class: "ct-nota" }, comFiltro ? "Nenhuma linha com esses filtros." : ctBusca ? "Nenhum papel com essa busca." : enc ? "Nenhuma posição encerrada." : "Nenhuma posição com esses filtros."),
+    nota: () => el("span", {}, enc ? "Posições vendidas por inteiro: o que foi pago, o que voltou na venda, o resultado e os proventos que pagaram." : "Pago é o preço médio vezes a quantidade. Com proventos soma à diferença tudo o que o papel já pagou. Clique no papel para abrir a ficha."),
   });
   ctTabAtual = t;
   return [t.el];
 }
 function periodo(de, ate) { if (!de) return "–"; const a = de.slice(0, 4), b = ate ? ate.slice(0, 4) : a; return a === b ? mesC(ate.slice(0, 7)) : `${a} – ${mesC(ate.slice(0, 7))}`; }
-function maisDaCarteira(j) {
-  const r = j.resumo;
-  const box = el("div", { class: "ct-mais", id: "ct-mais" });
-  // Agenda
-  const ag = cardEl("Agenda", { sub: "o que já se sabe", pin: "carteira-agenda" });
-  ag.append(...[].concat(agendaEl(r, 8)));
-  // Rentabilidade
+/* Cards que mudaram de aba: Rentabilidade e Por corretora (Posições), Renda por classe e segmento (Proventos),
+   Aportes mês a mês (Meta e reinvestimento), Imposto de renda (Mais) */
+function cardRentab(r) {
   const re = cardEl("Rentabilidade", { sub: "preço + proventos", pin: "carteira-rentabilidade" });
   re.append(...[].concat(rentabEl(r)));
-  // Renda por classe e segmento
+  return re;
+}
+function cardPorCorretora(r) {
+  const pcor = cardEl("Por corretora");
+  const tc = el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Corretora", "Papéis", "Valor", "Prov. 12m"].map((h, k) => el("th", { class: k ? "" : "e", scope: "col" }, h)))),
+    el("tbody", {}, ...(r.porCorretora || []).map((x) => el("tr", {}, el("td", { class: "e" }, x.corretora), el("td", { class: "mono" }, String(x.papeis)), el("td", { class: "mono" }, rs(x.valor)), el("td", { class: "mono" }, rs(x.prov12))))));
+  pcor.append(el("div", { class: "ct-caixa" }, tc), el("p", { class: "ct-nota" }, "Transferências entre corretoras vêm da Movimentação e não contam como compra ou venda."));
+  return pcor;
+}
+function cardRendaClasse(r) {
   const rc = cardEl("Renda por classe e segmento", { sub: "12 meses" });
   const rl = Object.entries(r.rendaClasse || {}).sort((a, b) => b[1] - a[1]);
   const totR = rl.reduce((s, [, v]) => s + v, 0) || 1;
   rc.append(rl.length ? el("div", { class: "ct-linhas" }, ...rl.map(([k2, v2]) => el("div", { style: "flex-direction:column;align-items:stretch;gap:0" },
     el("div", { style: "display:flex;justify-content:space-between;gap:10px" }, el("span", {}, nomeRenda(k2)), el("span", { class: "ct-mono" }, `${rs(v2)} · ${pc((v2 / totR) * 100)}`)),
     el("div", { class: "ct-mini" }, el("span", { style: `width:${(v2 / totR) * 100}%` }))))) : el("p", { class: "ct-nota" }, "Nenhum provento nos últimos 12 meses."));
-  // Por corretora
-  const pcor = cardEl("Por corretora");
-  const tc = el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Corretora", "Papéis", "Valor", "Prov. 12m"].map((h, k) => el("th", { class: k ? "" : "e", scope: "col" }, h)))),
-    el("tbody", {}, ...(r.porCorretora || []).map((x) => el("tr", {}, el("td", { class: "e" }, x.corretora), el("td", { class: "mono" }, String(x.papeis)), el("td", { class: "mono" }, rs(x.valor)), el("td", { class: "mono" }, rs(x.prov12))))));
-  pcor.append(el("div", { class: "ct-caixa" }, tc), el("p", { class: "ct-nota" }, "Transferências entre corretoras vêm da Movimentação e não contam como compra ou venda."));
-  // Aportes
+  return rc;
+}
+function cardAportes(j) {
+  const r = j.resumo;
   const ap = cardEl("Aportes mês a mês", { sub: "compras menos vendas" });
   const apMax = Math.max(1, ...r.aportes.map((x) => Math.abs(x.liquido)));
   const barras = el("div", { class: "ct-barras", role: "img", "aria-label": "Aportes por mês: " + r.aportes.map((x) => mesC(x.mes) + " " + rsS(x.liquido)).join(", ") });
   r.aportes.forEach((x) => barras.append(el("div", { class: x.liquido ? "" : "vazio-b", title: `${mesL(x.mes)}: compras ${rs(x.compras)}, vendas ${rs(x.vendas)}`, style: `height:${x.liquido ? Math.max(4, (Math.abs(x.liquido) / apMax) * 100) : 4}%` }, x.liquido ? el("span", { style: `height:100%;background:${x.liquido < 0 ? "var(--err)" : "var(--primary)"}` }) : null)));
   const negativos = r.aportes.filter((x) => x.liquido < 0).map((x) => mesC(x.mes));
   ap.append(barras, el("div", { class: "ct-barras-pe pontas" }, el("span", {}, mesC(r.aportes[0].mes)), negativos.length ? el("span", {}, "venda líquida em " + negativos.join(", ")) : null, el("span", {}, mesC(r.aportes[r.aportes.length - 1].mes) + (j.meta && j.meta.definida ? " · plano " + rs(j.meta.cfg.aporte) : ""))));
-  // Encerradas
-  const en = cardEl("Encerradas", { sub: "resultado realizado, com proventos" });
-  const el5 = (r.encerradas || []).slice(0, 5);
-  en.append(el5.length ? el("div", { class: "ct-caixa" }, el("table", { class: "ct-tab" }, el("thead", {}, el("tr", {}, ...["Papel", "Período", "Resultado", "Total"].map((h, k) => el("th", { class: k ? "" : "e", scope: "col" }, h)))),
-    el("tbody", {}, ...el5.map((e) => el("tr", {}, el("td", { class: "e" }, papelBtn(e.t, e.nome)), el("td", { class: "mono" }, periodo(e.de, e.ate)), el("td", { class: "mono " + clsS(e.resultado) }, rsS(e.resultado)), el("td", { class: "mono " + clsS(e.total), title: "com " + rs(e.proventos) + " de proventos" }, rsS(e.total))))))) : el("p", { class: "ct-nota" }, "Nenhuma posição encerrada."));
-  if ((r.encerradas || []).length > 5) {
-    const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, `Ver as ${r.encerradas.length} encerradas`);
-    b.addEventListener("click", () => { ctFiltro = "encerradas"; desenharCarteira(cartJ); requestAnimationFrame(() => { const p = $("ct-posicoes"); if (p) p.scrollIntoView({ block: "start" }); }); });
-    en.append(b);
-  }
-  // IR
+  return ap;
+}
+function cardIR(r) {
   const ir = cardEl("Imposto de renda", { sub: "só para conferir; o cálculo oficial é seu ou do contador" });
   const x = r.ir;
   ir.append(el("div", { class: "ct-ir" },
@@ -6828,9 +6980,24 @@ function maisDaCarteira(j) {
     el("div", {}, el("span", {}, "JCP recebido em " + x.ano), el("span", { class: "ct-mono" }, rs(x.jcpAno, true)), el("small", {}, "tributado na fonte, vai na declaração")),
     el("div", {}, el("span", {}, "Prejuízo a compensar"), el("span", { class: "ct-mono" }, rs(x.prejuizoAcoes)), el("small", {}, `ações, acumulado${x.prejuizoFii ? " · FIIs " + rs(x.prejuizoFii) : ""}`))),
     el("p", { class: "ct-nota" }, "Conta simplificada pelo preço médio, sem day trade, custos de corretagem nem IR retido na fonte das vendas."));
-  box.append(ag, re, rc, pcor, ap, en, ir);
+  return ir;
+}
+/* Leitura do dia (Proventos) e Sua carteira contra o filtro (Meta): os mesmos cards do radar, lidos aqui quando a aba abre */
+function noCartaoAsync(id, montar) {
+  const box = el("div", { class: "ct-col", id });
+  box.append(el("section", { class: "ct-card" }, esqueleto(3)));
+  (async () => { try { const c = await montar(); if (box.isConnected) box.replaceChildren(...(c ? [c] : [])); if (box.isConnected && !c) box.remove(); } catch (e) { if (box.isConnected) box.remove(); } })();
   return box;
 }
+const cartLeitura = () => noCartaoAsync("ct-leitura", async () => { await lerLeitura(); return cardLeitura(); });
+const cartContra = () => noCartaoAsync("ct-contra", async () => {
+  await lerRadarPrefs();
+  await Promise.all([baseRadar(false, RF.filtroPadrao(rdPrefs).classe), lerCarteira()]);
+  const { f, linhas } = radarDoPadrao();
+  return temCarteira() && linhas.length ? cardContra(f, linhas) : null;
+});
+/* Os botões desses cards (Gerar agora, Ver os N) redesenham o radar; na carteira, a aba é que redesenha */
+function repintarRadarNaCarteira() { if (inicio && (carteiraVista === "proventos" || carteiraVista === "meta") && cartJ) desenharCarteira(cartJ); }
 function nomeRenda(k) {
   if (k.startsWith("fii:")) return "FIIs · " + k.slice(4);
   return { acao: "Ações (dividendo e JCP)", fiinfra: "FI-Infra", fiagro: "Fiagro", etf: "ETFs", bdr: "BDRs", subscricao: "Recibos de subscrição", outro: "Outros" }[k] || k;
@@ -6854,7 +7021,7 @@ function rentabEl(r) {
 }
 
 /* Proventos */
-let provPeriodo = "12m", provPapel = "", provTipo = "", provTodosPapeis = false;
+let provPeriodo = "12m", provPapel = "", provTipo = "", provTodosPapeis = false, provOrdemPapel = "valor";
 function periodoProv(r) {
   const atual = r.hoje.slice(0, 7), ano = r.hoje.slice(0, 4);
   if (provPeriodo === "ano") return { de: ano + "-01", ate: atual, nome: "em " + ano, meses: Array.from({ length: 12 }, (_, k) => ano + "-" + String(k + 1).padStart(2, "0")) };
@@ -6908,12 +7075,12 @@ function desenharProventos(box, j) {
   const kpi = (rot, v, d) => el("div", { class: "ct-card ct-kpi" }, el("span", { class: "rotulo" }, rot), v, el("span", { class: "d" }, d));
   k.append(
     kpi("Recebido " + per.nome, el("span", { class: "v" }, rs(total)), provPeriodo === "12m" ? `${mesL(per.de)} a ${mesL(per.ate)}` : provPeriodo === "ano" ? `até ${Number(r.hoje.slice(8, 10))} de ${mesNome(r.hoje)}` : `${soFechado.length} pagamentos`),
-    kpi("Média por mês", el("span", { class: "v" }, rs(total / nMeses)), melhor ? `melhor mês: ${mesC(melhor)}, ${rs(por.get(melhor).total)}` : "–"),
+    kpi("Média por mês", el("span", { class: "v" }, rs(total / nMeses)), melhor ? `mês mais alto: ${mesC(melhor)}, ${rs(por.get(melhor).total)}` : "–"),
     kpi("Por tipo", el("span", { class: "tipos" }, ...[["rend", "Rendimento de FII"], ["div", "Dividendo"], ["jcp", "JCP"], ["outro", "Outros"]].filter(([t]) => tipos[t]).map(([t, n], i) => el("span", { style: "display:block" }, n + " ", el("b", { class: "ct-mono" }, pc((tipos[t] / tot) * 100))))), ""),
     kpi("Yield sobre o custo", el("span", { class: "v" }, pc(r.yoc)), `12 meses · FIIs ${pc(yc(["fii"]))}, ações ${pc(yc(["acao"]))}`));
   box.append(k);
   // Barras
-  const bc = cardEl(provPeriodo === "inicio" && per.meses.length > 24 ? "Por ano" : "Por mês " + per.nome, { extra: el("span", { class: "ct-legenda" }, el("span", {}, el("i", { class: "ct-c-rend" }), "Rendimento"), el("span", {}, el("i", { class: "ct-c-div" }), "Dividendo"), el("span", {}, el("i", { class: "ct-c-jcp" }), "JCP"), el("span", {}, el("i", { class: "ct-c-outros" }), "Outros")) });
+  const bc = cardEl(provPeriodo === "inicio" && per.meses.length > 24 ? "Renda por ano" : "Renda por mês " + per.nome, { pin: "carteira-proventos-mes", extra: el("span", { class: "ct-legenda" }, el("span", {}, el("i", { class: "ct-c-rend" }), "Rendimento"), el("span", {}, el("i", { class: "ct-c-div" }), "Dividendo"), el("span", {}, el("i", { class: "ct-c-jcp" }), "JCP"), el("span", {}, el("i", { class: "ct-c-outros" }), "Outros")) });
   if (provPeriodo === "inicio" && per.meses.length > 24) {
     const anos = new Map();
     for (const m of per.meses) { const a = m.slice(0, 4); const x = por.get(m); const y = anos.get(a) || { total: 0, rend: 0, div: 0, jcp: 0, amort: 0, outro: 0 }; if (x) for (const kk of Object.keys(y)) y[kk] += x[kk] || 0; anos.set(a, y); }
@@ -6950,17 +7117,25 @@ function desenharProventos(box, j) {
   st.addEventListener("change", () => { provTipo = st.value; pintar(); });
   pintar();
   esq.append(tc);
-  const pp = cardEl("Por papel " + per.nome);
+  // Por papel: quem mais pagou no período (em 12 meses, por padrão), ou em ordem alfabética
+  const segP = el("div", { class: "seg", role: "group", "aria-label": "Ordem" });
+  [["valor", "quem mais pagou"], ["papel", "A–Z"]].forEach(([id, n]) => {
+    const b = el("button", { type: "button", "aria-pressed": String(provOrdemPapel === id) }, n);
+    b.addEventListener("click", () => { provOrdemPapel = id; desenharCarteira(j); });
+    segP.append(b);
+  });
+  const pp = cardEl("Por papel", { sub: per.nome, extra: segP });
   const pl = provPorPapel(j, per.de, per.mais || per.ate);
-  const maxP = pl.length ? pl[0][1] : 1;
+  if (provOrdemPapel === "papel") pl.sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
+  const maxP = Math.max(1, ...pl.map((x) => x[1]));
   const visP = provTodosPapeis ? pl : pl.slice(0, 8);
   pp.append(pl.length ? el("div", { class: "ct-linhas" }, ...visP.map(([t, v]) => el("div", { style: "flex-direction:column;align-items:stretch;gap:0" }, el("div", { style: "display:flex;justify-content:space-between;gap:10px" }, papelBtn(t), el("span", { class: "ct-mono" }, rs(v))), el("div", { class: "ct-mini" }, el("span", { style: `width:${(v / maxP) * 100}%` }))))) : el("p", { class: "ct-nota" }, "Nada no período."));
   if (pl.length > 8) { const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, provTodosPapeis ? "Mostrar menos" : `Ver os ${pl.length}`); b.addEventListener("click", () => { provTodosPapeis = !provTodosPapeis; desenharCarteira(j); }); pp.append(b); }
   const ar = cardEl("A receber", { pin: "carteira-pagamentos" });
   ar.append(...aReceberEl(r, j, 8));
-  dir.append(ar, pp);
+  dir.append(pp, ar);
   dois.append(esq, dir);
-  box.append(dois);
+  box.append(dois, el("div", { class: "ct-mais dois" }, cardRendaClasse(r), cartLeitura()));
 }
 function aReceberEl(r, j, n) {
   const l = (r.aReceber || []).slice(0, n);
@@ -6973,7 +7148,15 @@ function aReceberEl(r, j, n) {
 /* Meta */
 /* Campos numéricos da página: public/campo.js formata ao sair e Campo.valor devolve o número cru */
 const numBr = (t) => Campo.ler("numero", t).valor;
+/* Meta e reinvestimento: a meta (formulário, barra, cenários, Trajetória, Marcos, Este mês contra o plano) e embaixo
+   Reinvestir, Onde o aporte rende mais, Sua carteira contra o filtro e Aportes mês a mês */
 function desenharMeta(box, j) {
+  desenharSoMeta(box, j);
+  if (j.vazia || !j.resumo) return;
+  const ap = el("div", { class: "ct-mais dois" }, cartContra(), cardAportes(j));
+  box.append(cardReinvestir(), blocoMetaRadar(j.meta), ap);
+}
+function desenharSoMeta(box, j) {
   const m = j.meta, cfg = m.cfg;
   const f = el("section", { class: "ct-card" });
   const campo = (id, rot, val, ph, sufixo, op) => { const i = Campo.ligar(el("input", { class: "dd-input", id, value: val, placeholder: ph }), op); return el("div", {}, el("label", { class: "rotulo", for: id }, rot), el("div", { class: "campo" }, i, sufixo ? el("span", {}, sufixo) : null)); };
@@ -7037,7 +7220,6 @@ function desenharMeta(box, j) {
     el("p", { class: "ct-nota" }, cfg.reinvestir ? "O plano conta o aporte mais os proventos do mês reinvestidos. Atualiza a cada importação dos extratos." : "Atualiza a cada importação dos extratos."));
   dois.append(mc, mp);
   box.append(dois);
-  box.append(blocoMetaRadar(m));
 }
 function grafMeta(m) {
   const W = 1200, H = 300, x0 = 56, x1 = 1180, y0 = 262, y1 = 24;
@@ -7414,9 +7596,11 @@ async function enviarImportacao(simular) {
       await lerCarteira(true);
     }
   } catch (e) { imp.fase = simular ? "inicio" : "previa"; imp.erro = e.message === "carteira desligada" ? "A carteira está desligada neste servidor (falta o secret CARTEIRA_KEY)." : "Não deu para " + (simular ? "conferir" : "importar") + " agora: " + e.message; }
-  if (carteiraVista === "importar") desenharCarteira(cartJ);
+  if (carteiraVista === "mais") desenharCarteira(cartJ);
 }
-function desenharImportar(box, j) {
+/* Mais: importar extratos (soltar arquivos, prévia, importações anteriores, como exportar, como a posição é montada,
+   o que fica guardado), Imposto de renda e Apagar minha carteira */
+function desenharMais(box, j) {
   const dois = el("div", { class: "ct-dois" }), esq = el("div", { class: "ct-col" }), dir = el("div", { class: "ct-col" });
   const input = el("input", { type: "file", multiple: "", accept: ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", id: "ct-arquivos", "aria-label": "Escolher arquivos .xlsx" });
   input.addEventListener("change", () => { if (input.files && input.files.length) lerArquivos([...input.files]); });
@@ -7447,6 +7631,7 @@ function desenharImportar(box, j) {
     return el("div", {}, el("span", {}, el("b", { class: "ct-mono" }, quando), ` · ${n} ${n === 1 ? "arquivo" : "arquivos"} · ${fmtNum(x.novos, 0)} linhas novas`), b);
   })) : el("p", { class: "ct-nota" }, "Nenhuma ainda."));
   esq.append(ant);
+  if (j && j.resumo && j.resumo.ir && !j.vazia) esq.append(cardIR(j.resumo));
   // Lateral: passo a passo, como monta, privacidade, apagar
   const passos = cardEl("Como exportar na B3");
   const passo = (n, ...t) => el("div", {}, el("span", { class: "num" }, String(n)), el("span", {}, ...t));
@@ -8040,7 +8225,7 @@ function cardLeitura() {
   return c;
 }
 async function gerarLeituraAgora() {
-  rdGerando = true; rdAvisoLeit = ""; renderRadarVisao(true);
+  rdGerando = true; rdAvisoLeit = ""; renderRadarVisao(true); repintarRadarNaCarteira();
   try {
     const r = await fetch("/api/leitura/gerar", { method: "POST", credentials: "same-origin", cache: "no-store", headers: { ...XHR, "content-type": "application/json" }, body: "{}" });
     const j = await r.json().catch(() => ({}));
@@ -8049,7 +8234,7 @@ async function gerarLeituraAgora() {
     else if (!r.ok) rdAvisoLeit = "Não deu para gerar agora: " + (j.erro || "http " + r.status);
     else { rdLeit = j; ["leitura-dia", "radar-meu", "carteira-contra-filtro"].forEach((w) => wDados.delete(w)); }
   } catch (e) { rdAvisoLeit = "Não deu para gerar agora. Tente de novo em instantes."; }
-  rdGerando = false; renderRadarVisao(true);
+  rdGerando = false; renderRadarVisao(true); repintarRadarNaCarteira();
 }
 const NOME_CLS_CART = { fiis: "FIIs", acoes: "ações", eua: "ações dos EUA" };
 function concentracaoTxt() {
@@ -8075,7 +8260,7 @@ function cardContra(f, linhas) {
     if (l.length) c.append(el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, papelBtn(x.t)), el("span", {}, x.motivo)))));
     if (cf.naoPassam.length > 6) {
       const b = el("button", { class: "dd-btn dd-btn--link", type: "button", id: "rd-todos-cart" }, rdTodosCart ? "Mostrar menos" : `Ver os ${cf.naoPassam.length}`);
-      b.addEventListener("click", () => { rdTodosCart = !rdTodosCart; renderRadarVisao(true); });
+      b.addEventListener("click", () => { rdTodosCart = !rdTodosCart; renderRadarVisao(true); repintarRadarNaCarteira(); });
       c.append(el("div", {}, b));
     }
   }

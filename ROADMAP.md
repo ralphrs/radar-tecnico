@@ -134,6 +134,9 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Carteira: card Reinvestir com os 5 FIIs de maior pontuação pelos critérios da pessoa (05/11)
 - [x] Reinvestir: aporte sugerido e editável no cabeçalho do card, só para simular (05/11)
 
+## Pedidos de 06/11
+- [x] Minha carteira reorganizada em 6 abas (Visão geral enxuta, Posições, Proventos, Meta e reinvestimento, Simulações, Mais) e card Paguei × hoje com ganho contando proventos e vendas (06/11)
+
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
 - [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)

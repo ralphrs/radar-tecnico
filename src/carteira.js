@@ -401,15 +401,15 @@ export function calcular(extrato, ctx = {}) {
   for (const b of bases) {
     const evs = [...(trades.get(b) || []).map((x) => ({ ...x, ord: 0 })), ...(eventos.get(b) || []).map((x) => ({ ...x, ord: 1 }))]
       .sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : x.ord - y.ord));
-    const L = { q: 0, custo: 0, realizado: 0, primeiro: evs[0] ? evs[0].d : "", ultimo: evs.length ? evs[evs.length - 1].d : "", passos: [] };
+    const L = { q: 0, custo: 0, realizado: 0, pago: 0, recebido: 0, primeiro: evs[0] ? evs[0].d : "", ultimo: evs.length ? evs[evs.length - 1].d : "", passos: [] };
     for (const e of evs) {
-      if (e.k === "C") { L.q += e.q; L.custo += e.q * e.p; somaFluxo(ym(e.d), "compras", e.q * e.p); L.ultPreco = e.p; }
+      if (e.k === "C") { L.q += e.q; L.custo += e.q * e.p; L.pago += e.q * e.p; somaFluxo(ym(e.d), "compras", e.q * e.p); L.ultPreco = e.p; }
       else if (e.k === "V") {
         const q = Math.min(e.q, Math.max(L.q, 0));
         const baixa = L.q > 0 ? (L.custo / L.q) * q : 0;
         const valor = e.q * e.p;
         const res = valor - baixa;
-        L.realizado += res;
+        L.realizado += res; L.recebido += valor;
         vendasTodas.push({ d: e.d, b, valor, custo: baixa, res });
         somaFluxo(ym(e.d), "vendas", valor);
         L.q -= e.q; L.custo -= baixa;
@@ -433,7 +433,7 @@ export function calcular(extrato, ctx = {}) {
           if (resta <= 0) break;
           if (s.d > e.d || s.q <= 0) continue;
           const usa = Math.min(s.q, resta);
-          L.custo += usa * s.p; somaFluxo(ym(e.d), "compras", usa * s.p);
+          L.custo += usa * s.p; L.pago += usa * s.p; somaFluxo(ym(e.d), "compras", usa * s.p);
           s.q -= usa; resta -= usa;
         }
         L.q += e.q;
@@ -507,7 +507,7 @@ export function calcular(extrato, ctx = {}) {
       if (hist && (cls !== "subscricao" || Math.abs(L.realizado) > 0.005)) {
         const d0 = L.primeiro || "", d1 = L.ultimo || ultimoMov.get(b) || "";
         const pr = provTotPapel.get(b) || 0;
-        encerradas.push({ t: b, nome: nomeDe(b), classe: cls, de: d0, ate: d1, resultado: r2(L.realizado), proventos: r2(pr), total: r2(L.realizado + pr) });
+        encerradas.push({ t: b, nome: nomeDe(b), classe: cls, de: d0, ate: d1, resultado: r2(L.realizado), proventos: r2(pr), total: r2(L.realizado + pr), pago: r2(L.pago || 0), recebido: r2(L.recebido || 0) });
       }
       continue;
     }
@@ -528,6 +528,7 @@ export function calcular(extrato, ctx = {}) {
       resPct: custo && preco != null ? Math.round(((valor - custo) / custo) * 1e4) / 100 : null,
       prov12: r2(p12), yoc: custo ? Math.round((p12 / custo) * 1e4) / 100 : null,
       corretoras: corrList, emprestadas: empAtivo || 0, semCotacao: preco == null, realizado: r2(L.realizado),
+      proventos: r2(provTotPapel.get(b) || 0), // tudo o que o papel pagou desde o começo (a coluna "Com proventos")
     });
     patrimonio += valor; if (custo != null) custoTotal += custo;
     const empValor = empAtivo && precoUsado != null ? empAtivo * precoUsado : 0;
@@ -699,13 +700,24 @@ export function calcular(extrato, ctx = {}) {
     if (d.startsWith(anoCivil)) retiradas.ano += valor;
   }
 
-  // 10. Resumo
+  // 10. Paguei × hoje contando proventos e vendas: tudo o que entrou em compras desde o começo (inclui a subscrição
+  // exercida, que é dinheiro pago) contra o que se tem hoje mais o que já voltou em dinheiro (proventos e vendas).
+  // Retirada de custódia não entra em nenhum lado: não é compra nem venda e saiu sem virar dinheiro.
+  let comprasTotal = 0;
+  for (const [, f] of fluxoMes) comprasTotal += f.compras;
+  const totHoje = patrimonio + provTotal + vendas.total;
+  const total = {
+    pago: r2(comprasTotal), hoje: r2(totHoje), proventos: r2(provTotal), vendas: r2(vendas.total),
+    ganho: r2(totHoje - comprasTotal), pct: comprasTotal > 0 ? Math.round(((totHoje - comprasTotal) / comprasTotal) * 1e4) / 100 : null,
+  };
+
+  // 11. Resumo
   const corretoras = [...qCorr].map(([c, x]) => ({ corretora: c, papeis: x.papeis, valor: r2(x.valor), prov12: r2(prov12Corr.get(c) || 0) })).sort((a, b) => b.valor - a.valor);
   const mAnt = somarMeses(mesAtual, -1);
   const pegaMes = (m) => { const x = provMes.get(m); return { mes: m, total: r2(x ? x.total : 0), n: x ? x.n : 0 }; };
   const resumo = {
     hoje, patrimonio: r2(patrimonio), custo: r2(custoTotal), resultado: r2(patrimonio - custoTotal), aberto: r2(patrimonio - custoTotal),
-    realizado: { total: r2(realizado.total), ano: r2(realizado.ano), n: realizado.n, nAno: realizado.nAno },
+    realizado: { total: r2(realizado.total), ano: r2(realizado.ano), n: realizado.n, nAno: realizado.nAno }, total,
     saidas: {
       vendas: { total: r2(vendas.total), ano: r2(vendas.ano), n: vendas.n },
       retiradas: { total: r2(retiradas.total), ano: r2(retiradas.ano), n: retiradas.n, tipos: Object.fromEntries(Object.entries(retiradas.tipos).map(([k, v]) => [k, r2(v)])) },

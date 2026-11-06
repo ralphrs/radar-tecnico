@@ -9,6 +9,8 @@
  *   fmt(v) (como o número aparece no chip), unidade ("%", "R$"...), obrigatoria (não pode ser escondida; sem nenhuma
  *   marcada, a primeira coluna é a obrigatória), aPartirDe (largura mínima de tela em px; sem ela, "so-largo" no cls vale
  *   640 e "so-xl" vale 1200, regras que continuam no CSS da página) }
+ * Opcional: rodape(colunasVisiveis, linhasFiltradas) devolve as <td> de uma linha de totais no <tfoot> (todas as páginas,
+ *   com os filtros); rodapeCel(linhasFiltradas) faz o mesmo na lista do celular.
  * Estado: { ordem: [{ c, d }], filtros: { <col>: { q, vals } | { min, max } | { de, ate } }, pagina, porPagina, ocultas?: [col] }
  *   Coluna oculta sai do cabeçalho e das linhas; a ordenação e o filtro dela ficam guardados, suspensos, e voltam
  *   quando a coluna volta. Ocultas que não existem mais na tabela são ignoradas (e ficam guardadas: a página da lista,
@@ -392,8 +394,8 @@
     barra.append(conta, chips, el("div", { class: "tb-acoes" }, btnOrdenar, btnColunas));
     const caixa = el("div", { class: op.classeCaixa || "cot-caixa" });
     const tabela = el("table", { class: (op.classeTabela || "cot-tab") + " tb-tab" });
-    const thead = el("thead"), tbody = el("tbody");
-    tabela.append(thead, tbody); caixa.append(tabela);
+    const thead = el("thead"), tbody = el("tbody"), tfoot = el("tfoot");
+    tabela.append(thead, tbody, tfoot); caixa.append(tabela);
     const cel = op.cel ? el("div", { class: op.classeCel || "ct-lista-cel" }) : null;
     const vazioEl = el("div", { class: "tb-vazio", hidden: true });
     const pe = el("div", { class: "tb-pe" });
@@ -605,6 +607,12 @@
       tabela.classList.toggle("tb-2-oculta", colunas.length > 1 && o.includes(colunas[1].id));
       tbody.replaceChildren(...visiveis.map((l) => { const tr = el("tr", op.attrsLinha ? op.attrsLinha(l) : {}, ...cols.map((c) => op.celula(c, l))); return tr; }));
       if (cel) cel.replaceChildren(...visiveis.map(op.cel));
+      /* rodapé de totais (opcional): soma das linhas que passam no filtro, de todas as páginas */
+      if (op.rodape) {
+        const tds = filtradas.length ? op.rodape(cols, filtradas) : null;
+        tfoot.replaceChildren(...(tds ? [el("tr", { class: "tb-total" }, ...tds)] : []));
+        if (cel && op.rodapeCel && filtradas.length) { const x = op.rodapeCel(filtradas); if (x) cel.append(x); }
+      }
       const m = total != null ? total : linhas.length;
       conta.textContent = `${ordenadas.length.toLocaleString("pt-BR")} de ${m.toLocaleString("pt-BR")}`;
       if (op.rotuloConta) conta.textContent += " " + op.rotuloConta;
