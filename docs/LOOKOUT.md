@@ -62,6 +62,8 @@ Custo: o DO entra no Workers Paid com cota própria, não somada à do D1. Linha
 
 Ações da B3, BDRs e ações dos EUA abrem uma ficha no diálogo do papel (`abrirAtivo`, maior e com rolagem interna): preço grande com a variação do dia, pregão aberto ou fechado com a hora do dado, faixas do dia e de 52 semanas, gráfico de 1 ano com 1M · 3M · 1A, estatísticas em quatro blocos (pregão, retorno, tamanho, múltiplos e dividendos), "Sobre a empresa", a listagem cruzada (BDR e papel americano) e as notícias do feed. FIIs e ETFs ficam como eram e ganham só as faixas e o gráfico. Nada de sinal técnico, preço-alvo, preço justo nem média móvel: só fato e número.
 
+No celular (até 639 px) a janela do papel, de FII ou de ação, vira folha de baixo quase em tela cheia (presa às bordas com `inset`, sem `100vw`, áreas seguras respeitadas), com código, nome e Fechar (44 px) presos no topo, o resto rolando por dentro e os indicadores em 2 colunas; abrir põe uma entrada no histórico (`pushState`, mesmo endereço, porque o hash é a rota), e o Voltar do navegador ou do Android fecha. `html` e `body` têm `overflow-x: clip`: um bloco mais largo que a tela não alarga mais o viewport de layout do Chrome Android (era o que tirava a janela do lugar, a partir da linha da "Divisão do aporte" no Reinvestir).
+
 Dados (`src/papel.js`), um doc por papel em `hist`, id `US:NVDA` ou `BR:PETR4`:
 
 | O quê | Fonte | Precisa de token |

@@ -2,7 +2,7 @@
 
 ## Definition of done (vale para toda tarefa)
 - Navegação: de qualquer página ou estado (admin, lista, ficha, carteira, esportes, convite, erro) dá para voltar ao Início pelo logotipo e pelo botão Voltar do navegador; nenhuma tela é beco sem saída
-- Dois temas e celular conferidos com print
+- Dois temas e celular conferidos com print; celular conferido com emulação de toque (isMobile), não só janela estreita
 - Texto em pt-BR natural, sem "ticker", sem recomendação, sem o nome do dono
 - `npm test` e `node --check` passando; mudou o cálculo da carteira, sobe a versão dos dados de teste e gera correção
 
@@ -140,6 +140,7 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 
 ## Pedidos de 10/11
 - [x] Reinvestir olha o extrato para equilibrar: critério Equilíbrio (papel, segmento, compras recentes) com tetos da pessoa, retrato dos FIIs por segmento e divisão do aporte cota a cota (10/11)
+- [x] Janela do papel no celular: tela cheia com cabeçalho fixo, 2 colunas, Voltar fecha; página não alarga mais o viewport (10/11)
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

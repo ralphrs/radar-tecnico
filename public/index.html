@@ -44,6 +44,10 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html.trava, html.trava body { overflow: hidden; }
+/* Nada alarga o viewport de layout: no Chrome Android, um bloco mais largo que a tela faz o viewport crescer junto, e
+   diálogos e folhas (fixos) passam a se centrar nele, fora da tela. `clip` não cria contêiner de rolagem: o cabeçalho
+   sticky continua preso e tabelas com overflow-x próprio continuam rolando de lado. */
+html, body { overflow-x: clip; }
 body { background: var(--background); color: var(--foreground); font: 400 15px/1.55 var(--font-sans); -webkit-font-smoothing: antialiased; }
 .wrap { max-width: 780px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; display: flex; flex-direction: column; gap: var(--space-6); }
 @media (max-width: 699px) { .wrap { padding-block: 16px 48px; gap: var(--space-4); } }
@@ -408,6 +412,29 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
   .ficha-esq .esq.ficha-esq-graf { height: 150px; }
 }
 @media (max-width: 639px) { .ativo-dlg > * { margin-left: 16px; margin-right: 16px; } }
+/* Celular: a janela do papel vira folha de baixo quase em tela cheia, presa às bordas (inset), sem depender de 100vw,
+   com cantos arredondados só em cima e as áreas seguras respeitadas. O cabeçalho (código, nome e Fechar) fica preso
+   no topo e o resto rola por dentro. Vale para FII (.ativo-dlg) e para a ficha de ação/EUA (.ativo-dlg.ficha). */
+@media (max-width: 639px) {
+  .ativo-dlg, .ativo-dlg.ficha {
+    position: fixed; inset: auto 0 0 0; margin: 0; width: auto; max-width: none;
+    max-height: calc(100dvh - 12px - env(safe-area-inset-top, 0px));
+    border-width: 1px 0 0; border-radius: 16px 16px 0 0;
+    padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  }
+  .ativo-dlg > .ativo-cab { position: sticky; top: 0; z-index: 2; margin: 0; padding: 12px 8px 10px 16px; align-items: center; background: var(--background, var(--card)); border-bottom: 1px solid var(--border); }
+  .ativo-cab h2 { font-size: 22px; }
+  .ativo-cab p { margin: 2px 0 0; font-size: 14px; -webkit-line-clamp: 1; }
+  .ativo-fechar { width: var(--toque, 44px); height: var(--toque, 44px); }
+  .ativo-dlg > .ativo-chips { margin-top: 12px; }
+  .ativo-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ativo-kpi { padding: 10px; }
+  .ativo-kpi small { letter-spacing: .03em; overflow-wrap: anywhere; }
+  .ativo-kpi b { font-size: 18px; overflow-wrap: anywhere; }
+  .ativo-sobre { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ativo-graf { overflow-x: auto; }
+}
 .rankings { display: flex; flex-direction: column; gap: var(--space-3); }
 .rk-quando { font: 400 12px var(--font-mono); color: var(--muted-foreground); }
 /* No celular as listas viram trilho horizontal; na visão Bolsa, a partir de 900 px, voltam a ser grade */
@@ -1453,6 +1480,15 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
   .rv-parte .rv-nota { grid-column: 1 / -1; grid-row: 2; }
   .rv-parte .rv-barra { grid-column: 1 / -1; grid-row: 3; }
   .rv-div-lista li { grid-template-columns: minmax(70px, auto) repeat(3, auto) minmax(30px, 1fr); gap: 4px 10px; font-size: 13px; }
+}
+/* Celular: a linha da divisão tinha piso de ~360 px (papel, cotas, valor, % e barra lado a lado) e, com valores longos,
+   passava da tela e alargava o viewport de layout do Chrome Android. Aqui a barra desce para a segunda linha e as
+   cotas quebram em vez de empurrar. */
+@media (max-width: 639px) {
+  .rv-div-lista li { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 2px 10px; }
+  .rv-div-lista li > * { min-width: 0; }
+  .rv-div-lista li > .ct-mono:nth-child(2) { white-space: normal; overflow-wrap: anywhere; }
+  .rv-div-lista li > .rv-barra { grid-column: 1 / -1; }
 }
 @media (max-width: 899px) {
   .rd-filtrobar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); }
@@ -3938,6 +3974,11 @@ function abrirAtivo(x, aba = cotAba, ficha) {
   if (!d) {
     d = el("dialog", { id: "ativo-dlg", class: "ativo-dlg", "aria-labelledby": "ativo-titulo" });
     d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
+    /* fechou pelo Fechar, Esc ou toque fora: tira a entrada que a abertura pôs no histórico */
+    d.addEventListener("close", () => {
+      if (d.dataset.pelaVolta) { delete d.dataset.pelaVolta; return; }
+      if (history.state && history.state.ativoDlg) { try { history.back(); } catch (e) {} }
+    });
     document.body.append(d);
   }
   /* redesenho da mesma ficha (a resposta chegou): mantém a rolagem e o foco dentro do diálogo */
@@ -3982,8 +4023,9 @@ function abrirAtivo(x, aba = cotAba, ficha) {
   const setor = !f && setorPt(x.setor || (completa && h && h.setor));
   if (setor && setor !== "ETF") chips.append(el("span", { class: "chip" }, setor));
   const nome = f && f.n ? nomeBonito(f.n) : ABAS_FICHA.has(aba) && x.nome ? nomeBonito(x.nome) : x.nome || (h && (h.nomeCurto || h.nome)) || "";
+  /* cabeçalho só com código, nome e Fechar (fica preso no topo no celular); os selos vêm logo abaixo e rolam */
   d.append(el("div", { class: "ativo-cab" },
-    el("div", {}, el("h2", { id: "ativo-titulo" }, papelEl(x.t, us ? { ...x, us: true } : x)), el("p", { title: (f && f.n) || nome }, nome), chips), fechar));
+    el("div", {}, el("h2", { id: "ativo-titulo" }, papelEl(x.t, us ? { ...x, us: true } : x)), el("p", { title: (f && f.n) || nome }, nome)), fechar), chips);
   const sim = h ? simDe(h.moeda) : simMoeda(us ? { us: true } : x);
   const fmtP = (v) => (v == null ? "–" : sim + fmtNum(v, 2));
   if (completa) {
@@ -4102,7 +4144,12 @@ function abrirAtivo(x, aba = cotAba, ficha) {
     d.append(el("p", { class: "nota" }, "Fontes: " + fontes.join(", ") + (h ? ". Ficha de " + fmtData(resp.data.atualizado) : "") + (us ? ". Valores em dólar" : "") + "."));
   }
   d.append(links);
-  if (!d.open) d.showModal();
+  if (!d.open) {
+    d.showModal();
+    /* Voltar do navegador (e o do Android) fecha a janela: a abertura põe uma entrada no histórico com o mesmo
+       endereço. Não usa o hash, como "Meus esportes", porque o hash é a rota da página (seção, carteira e aba). */
+    if (!(history.state && history.state.ativoDlg)) { try { history.pushState({ ...(history.state || {}), ativoDlg: true }, ""); } catch (e) {} }
+  }
   else {
     if (rolou) d.scrollTop = rolou;
     if (focoDentro) fechar.focus({ preventScroll: true });
@@ -10004,6 +10051,10 @@ function trocarRadar(id, porHash) {
   ligarRadar();
   window.scrollTo({ top: 0 });
 }
+window.addEventListener("popstate", () => {
+  const d = $("ativo-dlg");
+  if (d && d.open && !(history.state && history.state.ativoDlg)) { d.dataset.pelaVolta = "1"; d.close(); }
+});
 window.addEventListener("hashchange", () => {
   const cv = carteiraDoHash();
   if (cv) { irCarteira(cv, true); return; }
