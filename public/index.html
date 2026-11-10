@@ -1049,7 +1049,9 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
 .ct-lotes-bt[aria-expanded="true"] { color: var(--primary); }
 .ct-lotes-bt[aria-expanded="true"] svg { transform: rotate(180deg); }
 .ct-tab tr.ct-lotes-tr > td { padding: 2px 10px 14px 40px; white-space: normal; text-align: left; background: color-mix(in srgb, var(--secondary) 60%, var(--card)); }
-.ct-lotes { display: grid; grid-template-columns: minmax(170px, auto) repeat(5, minmax(88px, auto)); justify-content: start; font-size: 13px; }
+.ct-lotes { display: grid; grid-template-columns: minmax(170px, auto) repeat(5, minmax(88px, auto)) minmax(120px, auto); justify-content: start; font-size: 13px; }
+.ct-lote > span.lim-lote { text-align: left; }
+.ct-lote.cab > span:last-child { text-align: left; padding-left: 24px; }
 .ct-lote { display: contents; }
 .ct-lote > span { padding: 7px 0 7px 24px; border-top: 1px solid var(--border); text-align: right; white-space: nowrap; }
 .ct-lote > span:first-child { text-align: left; padding-left: 0; }
@@ -1129,6 +1131,48 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
 .ct-tag.err { color: var(--err); border-color: color-mix(in srgb, var(--err) 35%, transparent); background: color-mix(in srgb, var(--err) 8%, var(--card)); }
 .ct-tag.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); background: color-mix(in srgb, var(--warn) 8%, var(--card)); }
 .ct-tag.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); background: color-mix(in srgb, var(--ok) 8%, var(--card)); }
+/* Limites de compra e de venda da pessoa: selo verde (venda), roxo (compra) e o "falta" miúdo no meio */
+.ct-tag.info { color: var(--info); border-color: color-mix(in srgb, var(--info) 40%, transparent); background: color-mix(in srgb, var(--info) 9%, var(--card)); }
+.lim-falta { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; }
+.ct-lin > span:first-child .ct-tag { margin-left: 6px; }
+.ct-lin > .lim-falta { grid-column: 1 / -1; white-space: normal; }
+.ct-ferr-lim { gap: 6px 10px; }
+.ct-ferr-lim > span { font-size: 13px; color: var(--muted-foreground); }
+.lim-sub { margin-top: -6px; }
+.lim-listas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 18px; }
+.lim-lado { min-width: 0; }
+.lim-lado h4 { margin: 0 0 2px; font: 600 13px/1.4 var(--font-sans); }
+.lim-lado h4 small { font: 400 12px var(--font-mono); color: var(--muted-foreground); margin-left: 4px; }
+.lim-lin { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.lim-lin > .ct-mono { text-align: right; white-space: nowrap; font-weight: 600; }
+.lim-lin small { font-size: 12px; color: var(--muted-foreground); min-width: 0; }
+.lim-lin small.ct-mono { text-align: right; white-space: nowrap; }
+.lim-lin .lim-ganho { grid-column: 1 / -1; }
+.lim-lin .lim-ganho .ct-mono { color: var(--ok); }
+.lim-vazio { margin: 0; padding: 8px 0; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--muted-foreground); }
+.lim-mais { padding-top: 6px; }
+.lim-link { all: unset; cursor: pointer; font: 500 13px/20px var(--font-sans); color: var(--primary); }
+.lim-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.lim-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 2px; }
+.lim-painel { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--secondary); }
+.lim-painel[hidden] { display: none; }
+.lim-painel .rv-grade { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.lim-status:empty { display: none; }
+.ativo-tenho { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 13.5px; }
+.ativo-tenho b { font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ativo-tenho .ct-pos { color: var(--ok); } .ativo-tenho .ct-neg { color: var(--err); }
+.ativo-tenho small { font-size: 12px; color: var(--muted-foreground); }
+.wdg-lim { display: flex; flex-direction: column; gap: 8px; }
+.wdg-lim-lados { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.wdg-lim-lados.largo { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
+.wdg-lim-lado .rotulo { display: block; margin: 0 0 2px; }
+.wdg-lim-lado .rotulo b { font-family: var(--font-mono); }
+.wdg-lim-lado > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; padding: 2px 0; }
+.wdg-lim-lado .ct-mono { white-space: nowrap; }
+.wdg-lim-lado .nada { font-size: 12.5px; color: var(--muted-foreground); }
+.wdg-lim-curto { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 13px; }
+.wdg-lim-curto span { white-space: nowrap; }
+@media (max-width: 699px) { .lim-listas { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
 .ct-pe { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted-foreground); }
 .ct-lista-cel { display: none; flex-direction: column; }
 .ct-lin { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 13px; }
@@ -1278,6 +1322,8 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
   .ct-lote > span { border-top: 0; padding: 0; display: flex; justify-content: space-between; gap: 8px; text-align: left; }
   .ct-lote > span:first-child { grid-column: 1 / -1; padding-bottom: 2px; }
   .ct-lote-d i { display: none; }
+  .ct-lote > span.lim-lote { grid-column: 1 / -1; flex-wrap: wrap; }
+  .ct-lote > span.lim-lote .lim-falta { white-space: normal; text-align: right; }
   .ct-rot { display: inline; font: 400 12px var(--font-sans); color: var(--muted-foreground); }
   .vd-cab { display: none; }
   .vd-linha { grid-template-columns: repeat(2, minmax(0, 1fr)) 28px; gap: 3px 12px; }
@@ -4026,6 +4072,9 @@ function abrirAtivo(x, aba = cotAba, ficha) {
   /* cabeçalho só com código, nome e Fechar (fica preso no topo no celular); os selos vêm logo abaixo e rolam */
   d.append(el("div", { class: "ativo-cab" },
     el("div", {}, el("h2", { id: "ativo-titulo" }, papelEl(x.t, us ? { ...x, us: true } : x)), el("p", { title: (f && f.n) || nome }, nome)), fechar), chips);
+  /* Quem tem o papel na carteira: quantidade, preço médio, a variação de hoje contra ele e a situação pelos limites */
+  const tenhoEl = linhaTenhoAtivo(x, aba, ficha);
+  if (tenhoEl) d.append(tenhoEl);
   const sim = h ? simDe(h.moeda) : simMoeda(us ? { us: true } : x);
   const fmtP = (v) => (v == null ? "–" : sim + fmtNum(v, 2));
   if (completa) {
@@ -4154,6 +4203,28 @@ function abrirAtivo(x, aba = cotAba, ficha) {
     if (rolou) d.scrollTop = rolou;
     if (focoDentro) fechar.focus({ preventScroll: true });
   }
+}
+/* A linha "Você tem N cotas a R$ X de preço médio · hoje +Y% · [selo ou quanto falta]" da janela do papel. Usa a carteira
+   já lida; sem ela, lê uma vez e redesenha a janela se ainda estiver no mesmo papel. */
+let cartPedidaAtivo = false;
+function linhaTenhoAtivo(x, aba, ficha) {
+  if (x.us || ABAS_EUA.has(aba)) return null;
+  if (!cartJ) {
+    if (!cartPedidaAtivo && (!secoesLiberadas || secoesLiberadas.includes("investimentos"))) {
+      cartPedidaAtivo = true;
+      lerCarteira().then((j) => { const dd = $("ativo-dlg"); if (j && cartJ && !cartJ.vazia && dd && dd.open && dd.dataset.papel === x.t && cartJ.posicoes.some((p) => p.t === x.t)) abrirAtivo(x, aba, ficha && ficha.carregando ? undefined : ficha); }).catch(() => {});
+    }
+    return null;
+  }
+  const p = !cartJ.vazia && Array.isArray(cartJ.posicoes) ? cartJ.posicoes.find((q) => q.t === x.t) : null;
+  if (!p || !(p.q > 0)) return null;
+  const L = limitesJ(cartJ), s = p.sinal;
+  const partes = [el("span", {}, "Você tem ", el("b", {}, qtd(p.q)), ` ${unidadeDe(p.classe, p.q)} a `, el("b", {}, p.pm != null ? rs(p.pm, true) : "–"), " de preço médio")];
+  if (s) {
+    partes.push(el("small", { "aria-hidden": "true" }, "·"), el("span", {}, "hoje ", el("b", { class: clsS(s.pct) }, pc(s.pct, true))), el("small", { "aria-hidden": "true" }, "·"));
+    partes.push(s.tipo ? el("span", {}, seloLimite(s, L), el("small", {}, " pelo limite que você definiu")) : el("span", { class: "lim-falta", title: tituloFalta(s, L) }, faltaLimite(s)));
+  } else partes.push(el("small", {}, "· sem cotação hoje"));
+  return el("p", { class: "ativo-tenho" }, ...partes);
 }
 async function lerMercado(fresco) {
   if (!R().mercado) return;
@@ -5320,6 +5391,7 @@ const CATALOGO_LOCAL = [
   { id: "carteira-alertas", titulo: "Alertas da carteira", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-simulacoes", titulo: "Minhas simulações", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-reinvestir", titulo: "Reinvestir: maior pontuação", tamanho: 1, secao: "investimentos", pessoal: true },
+  { id: "carteira-limites", titulo: "Pelos seus limites", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "radar-meu", titulo: "Meu radar", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "leitura-dia", titulo: "Leitura do dia", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-contra-filtro", titulo: "Carteira contra o filtro", tamanho: 1, secao: "investimentos", pessoal: true },
@@ -6587,9 +6659,127 @@ function desenharCarteira(j) {
   window.scrollTo({ top: rolar });
 }
 
+/* ---- Limites de compra e de venda da pessoa (pedido de 10/11) ----
+   A conta é do Worker (src/carteira.js, aplicarLimites; src/pontuacao-fii.js, sinalPosicao): cada posição aberta traz
+   `sinal` { tipo: "compra" | "venda" | null, pct, faltaCompra, faltaVenda, precoCompra, precoVenda }, pela cotação
+   contra o preço médio. Os limites ficam em prefs/<email>, doc "reinvestir" (PUT /api/carteira/reinvestir { limites }).
+   A tela informa que o limite foi atingido; nenhum texto diz o que fazer com o papel. */
+const LIM_PADRAO = { compra: 10, venda: 10 };
+const limitesJ = (j) => (j && j.limites) || LIM_PADRAO;
+const titLimite = (tipo, L) => (tipo === "venda"
+  ? `Passível de venda pelo limite que você definiu: cotação ${L.venda}% ou mais acima do seu preço médio`
+  : `Passível de compra pelo limite que você definiu: cotação ${L.compra}% ou mais abaixo do seu preço médio`);
+const seloLimite = (s, L) => (s && s.tipo ? tagEl(s.tipo === "venda" ? "passível de venda" : "passível de compra", s.tipo === "venda" ? "ok" : "info", titLimite(s.tipo, L)) : null);
+/* "falta 3,2% p/ venda · 6,8% p/ compra", o lado mais perto primeiro */
+function faltaLimite(s) {
+  const v = fmtNum(s.faltaVenda, 1) + "% p/ venda", c = fmtNum(s.faltaCompra, 1) + "% p/ compra";
+  return "falta " + (s.faltaVenda <= s.faltaCompra ? v + " · " + c : c + " · " + v);
+}
+const tituloFalta = (s, L) => `Venda com +${L.venda}% sobre o preço médio (R$ ${fmtNum(s.precoVenda, 2)}); compra com ${MENOS}${L.compra}% (R$ ${fmtNum(s.precoCompra, 2)}), pelos limites que você definiu`;
+function situacaoEl(s, L) {
+  if (!s) return el("span", { class: "lim-falta" }, "–");
+  return s.tipo ? seloLimite(s, L) : el("span", { class: "lim-falta", title: tituloFalta(s, L) }, faltaLimite(s));
+}
+/* Os dois campos dos limites (Visão geral e Reinvestir › Critérios): percentual inteiro de 1 a 90 */
+function camposLimites(prefixo, L, padrao = LIM_PADRAO) {
+  const inps = {};
+  const grade = el("div", { class: "rv-grade rv-limites" });
+  [["venda", "Limite de venda (%)", "passível de venda com a cotação esse tanto acima do seu preço médio"], ["compra", "Limite de compra (%)", "passível de compra com a cotação esse tanto abaixo do seu preço médio"]].forEach(([k, nome, faixa]) => {
+    const id = prefixo + "-" + k;
+    const inp = Campo.ligar(el("input", { class: "dd-input", id }), { tipo: "percentual", casas: 0, min: 1, max: 90 });
+    Campo.definir(inp, L[k]);
+    inps[k] = inp;
+    grade.append(el("div", {}, el("label", { class: "rotulo", for: id }, nome), el("div", { class: "campo" }, inp, el("span", {}, `padrão ${padrao[k]}% · de 1 a 90`)), el("small", { class: "rv-faixa" }, faixa)));
+  });
+  return {
+    grade,
+    padrao: () => Object.keys(inps).forEach((k) => Campo.definir(inps[k], padrao[k])),
+    /* { limites } ou { erro, campo } */
+    ler: () => {
+      const out = {};
+      for (const k of ["venda", "compra"]) {
+        const v = Campo.valor(inps[k]);
+        if (Campo.invalido(inps[k]) || v == null || Math.round(v) !== v || v < 1 || v > 90) return { erro: `Use um inteiro de 1 a 90 no limite de ${k}.`, campo: inps[k] };
+        out[k] = v;
+      }
+      return { limites: out };
+    },
+  };
+}
+/* Depois de salvar os limites: a carteira, o Reinvestir e os widgets da carteira leem de novo */
+function limitesMudaram() {
+  cartEm = 0; limparReinvestir();
+  [...wDados.keys()].forEach((k) => { if (k.startsWith("carteira-")) wDados.delete(k); });
+}
+const unidadeDe = (classe, q) => { const u = UNID_CLASSE(classe); return q === 1 ? { cotas: "cota", "ações": "ação", "un.": "un." }[u] : u; };
+/* Visão geral: "Pelos seus limites", duas listas (venda e compra) com papel, preço médio, cotação, variação e valor;
+   some sem papel nos limites (fica enquanto o painel de limites estiver aberto ou acabou de salvar) */
+let ctLimPainel = false, ctLimMsg = "";
+const LIM_LINHAS = 5;
+function cardLimites(j) {
+  const s = j.sinais || { compra: [], venda: [] }, L = limitesJ(j);
+  const msg = ctLimMsg; ctLimMsg = "";
+  if (!s.compra.length && !s.venda.length && !ctLimPainel && !msg) return null;
+  const porT = new Map(j.posicoes.map((p) => [p.t, p]));
+  const bLim = el("button", { type: "button", class: "lim-link", "aria-expanded": String(ctLimPainel), "aria-controls": "lim-painel" }, "mudar limites");
+  const c = cardEl("Pelos seus limites", { cls: "lim-card", id: "ct-limites", pin: "carteira-limites", extra: bLim });
+  c.append(el("p", { class: "ct-nota lim-sub" }, "pela cotação contra o seu preço médio, nos limites que você definiu"));
+  /* painel pequeno: os dois campos e Salvar */
+  const painel = el("div", { class: "lim-painel", id: "lim-painel" });
+  painel.hidden = !ctLimPainel;
+  const status = el("p", { class: "ct-nota lim-status", role: "status" }, msg);
+  const campos = camposLimites("lim", L);
+  const bSalvar = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, "Salvar");
+  const bPadrao = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Padrão");
+  bPadrao.addEventListener("click", () => { campos.padrao(); status.textContent = "Limites padrão no formulário. Salve para usar."; });
+  bSalvar.addEventListener("click", async () => {
+    const r = campos.ler();
+    if (r.erro) { status.textContent = r.erro; r.campo.focus(); return; }
+    bSalvar.disabled = true; status.textContent = "Salvando…";
+    try {
+      await apiCart("PUT", "/reinvestir", { limites: r.limites });
+      limitesMudaram();
+      ctLimPainel = false; ctLimMsg = `Limites salvos: venda com +${r.limites.venda}%, compra com ${MENOS}${r.limites.compra}%.`;
+      const novo = await lerCarteira(true);
+      if (carteiraVista === "geral" && novo && !novo.erro) desenharCarteira(novo);
+      const b = document.querySelector("#ct-limites .lim-link"); if (b) b.focus({ preventScroll: true });
+    } catch (e) { status.textContent = "Não deu para salvar: " + e.message; bSalvar.disabled = false; }
+  });
+  painel.append(el("p", { class: "ct-nota" }, "Quanto a cotação precisa andar contra o seu preço médio para o papel aparecer aqui. Vale para todas as classes e também para o critério Abaixo do que você pagou, no Reinvestir."),
+    campos.grade, el("div", { class: "ct-acoes" }, bPadrao, bSalvar));
+  bLim.addEventListener("click", () => {
+    ctLimPainel = !ctLimPainel; painel.hidden = !ctLimPainel; bLim.setAttribute("aria-expanded", String(ctLimPainel));
+    if (ctLimPainel) { const i = painel.querySelector("input"); if (i) i.focus(); }
+  });
+  c.append(painel, status);
+  const linha = (t, tipo) => {
+    const p = porT.get(t); if (!p || !p.sinal) return null;
+    const ganho = p.custo != null ? p.valor - p.custo : null;
+    return el("div", { class: "lim-lin" },
+      el("span", {}, papelBtn(p.t, nomeDoPapel(p))), el("span", { class: "ct-mono " + clsS(p.sinal.pct) }, pc(p.sinal.pct, true)),
+      el("small", {}, `PM ${rs(p.pm, true)} · hoje ${rs(p.preco, true)}`), el("small", { class: "ct-mono" }, rs(p.valor)),
+      tipo === "venda" && ganho != null ? el("small", { class: "lim-ganho" }, el("span", { class: "ct-mono" }, rsS(ganho)), " se vendesse tudo hoje") : null);
+  };
+  const lado = (tipo, titulo) => {
+    const l = s[tipo];
+    const box = el("div", { class: "lim-lado" }, el("h4", {}, titulo, el("small", {}, String(l.length))));
+    if (!l.length) box.append(el("p", { class: "lim-vazio" }, tipo === "venda" ? `Nenhum papel ${L.venda}% acima do preço médio.` : `Nenhum papel ${L.compra}% abaixo do preço médio.`));
+    l.slice(0, LIM_LINHAS).forEach((t) => { const x = linha(t, tipo); if (x) box.append(x); });
+    if (l.length > LIM_LINHAS) {
+      const a = el("a", { href: "#carteira/posicoes", class: "ct-volta lim-mais" }, `ver os ${l.length} em Posições`);
+      a.addEventListener("click", () => { ctSinal = tipo; ctEnc = false; });
+      box.append(a);
+    }
+    if (tipo === "venda" && l.length) box.append(el("p", { class: "ct-nota", style: "font-size:12px;margin:4px 0 0" }, "antes de imposto e taxas"));
+    return box;
+  };
+  c.append(el("div", { class: "lim-listas" }, lado("venda", `Passíveis de venda (≥ +${L.venda}%)`), lado("compra", `Passíveis de compra (≤ ${MENOS}${L.compra}%)`)));
+  return c;
+}
+
 /* Visão geral: os números do topo, a faixa da Meta e quatro cards (Alertas e Agenda à esquerda; Como está dividido e
    Movimentos recentes à direita). Card sem dado não aparece. */
-let ctFiltro = "todas", ctCorretora = "", ctEnc = false, ctBusca = "", ctAlertasTodos = false;
+let ctFiltro = "todas", ctCorretora = "", ctEnc = false, ctBusca = "", ctAlertasTodos = false, ctSinal = "todas";
 /* Preço médio | Por lote (FIFO): a chave da aba Posições, salva neste navegador. Os lotes abertos e as vendas abertas
    ficam só na memória da página. */
 let ctModo = "pm";
@@ -6638,6 +6828,7 @@ function desenharGeral(box, j) {
     kpiEl("Proventos em " + mesNome(r.mesAnterior.mes), rs(r.mesAnterior.total), "", `${r.mesAnterior.n} ${r.mesAnterior.n === 1 ? "pagamento" : "pagamentos"}${r.provDesde ? ` · desde ${r.provDesde.slice(0, 4)}: ${rs(r.provTotal)}` : ""}`));
   box.append(k, faixaMetaGeral(j));
   const esq = [];
+  const lim = cardLimites(j); if (lim) esq.push(lim);
   if (r.alertas && r.alertas.length) esq.push(cardAlertas(r));
   if (r.agenda && r.agenda.length) {
     const ag = cardEl("Agenda", { sub: "o que já se sabe", pin: "carteira-agenda", extra: verTudo("#carteira/proventos") });
@@ -6757,6 +6948,17 @@ function desenharPosicoes(box, j) {
   });
   c.append(el("div", { class: "ct-ferr" }, el("h3", {}, ctEnc ? "Encerradas" : "Posições"), seg,
     el("label", {}, el("span", {}, "Corretora"), sel), bEnc, ctEnc ? null : modo, el("span", { class: "ct-esp", style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Buscar"), busca)));
+  /* Pelos limites da pessoa: Todas | Passíveis de compra | Passíveis de venda (só nas abertas) */
+  if (!ctEnc) {
+    const sn = j.sinais || { compra: [], venda: [] }, L = limitesJ(j);
+    const segL = el("div", { class: "seg", role: "group", "aria-label": "Pelos limites que você definiu" });
+    [["todas", "Todas", null], ["compra", "Passíveis de compra", sn.compra.length], ["venda", "Passíveis de venda", sn.venda.length]].forEach(([id, n, q]) => {
+      const b = el("button", { type: "button", "aria-pressed": String(ctSinal === id), title: id === "todas" ? "" : titLimite(id, L) }, n, q == null ? null : el("span", { class: "ct-n" }, " " + q));
+      b.addEventListener("click", () => { ctSinal = id; segL.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); pintar(); });
+      segL.append(b);
+    });
+    c.append(el("div", { class: "ct-ferr ct-ferr-lim" }, el("span", {}, `Pelos seus limites (venda +${L.venda}%, compra ${MENOS}${L.compra}%):`), segL));
+  }
   const corpo = el("div", { style: "display:contents" });
   c.append(corpo);
   const pintar = () => {
@@ -6852,15 +7054,15 @@ function cardReinvestir() {
     seg.textContent = "";
     ["todos", "meus"].forEach((u) => {
       const b = el("button", { type: "button", "aria-pressed": String(j.universo === u) }, NOME_UNIV[u]);
-      b.addEventListener("click", async () => {
+      b.addEventListener("click", () => {
         if (j.universo === u) return;
-        rvUniverso = u; rvAbertos.clear();
-        corpo.textContent = ""; corpo.append(esqueleto(5));
+        rvUniverso = u;
         seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-        const novo = await lerReinvestir(u, false, rvAporte);
-        if (!novo.erro) pintar(novo);
-        /* o universo fica salvo com os pesos de agora; falha aqui não muda a tela */
-        apiCart("PUT", "/reinvestir", { pesos: novo.pesos || j.pesos, tetos: novo.tetos || j.tetos, universo: u }).then(() => { Object.keys(rvJ).forEach((k) => { if (k.startsWith("|")) delete rvJ[k]; }); wDados.delete("carteira-reinvestir"); }).catch(() => {});
+        /* pelo refazer: vale só a resposta do pedido mais novo (o aporte digitado sai do campo no mesmo clique e pede a
+           conta do universo anterior; sem isso, a que chegasse por último pintava a lista) */
+        refazer();
+        /* o universo fica salvo (o servidor guarda pesos, tetos e limites como estão); falha aqui não muda a tela */
+        apiCart("PUT", "/reinvestir", { universo: u }).then(() => { Object.keys(rvJ).forEach((k) => { if (k.startsWith("|")) delete rvJ[k]; }); wDados.delete("carteira-reinvestir"); }).catch(() => {});
       });
       seg.append(b);
     });
@@ -6881,6 +7083,7 @@ function cardReinvestir() {
     else fatos.push("sem CDI no painel de mercado");
     fatos.push(`${j.total} ${j.total === 1 ? "FII avaliado" : "FIIs avaliados"}`);
     if (j.excluidos) fatos.push(`${j.excluidos} fora por falta de dado`);
+    if (j.foraPorVenda) fatos.push(`${j.foraPorVenda} ${j.foraPorVenda === 1 ? "papel fora por estar" : "papéis fora por estarem"} acima do seu limite de venda (+${limitesJ(j).venda}%)`);
     if (j.ref && j.ref.cvm) fatos.push("informe da CVM de " + mesL(j.ref.cvm));
     pe.append(el("p", { class: "ct-nota" }, fatos.join(" · ")),
       el("p", { class: "ct-nota" }, "Conta sobre os seus critérios e tetos, com o que está no seu extrato, dado da CVM e da brapi. Falta vacância e alavancagem, que entram com o informe trimestral."));
@@ -6962,9 +7165,10 @@ function linhaReinvestir(x, i, j) {
   const seta = el("button", { type: "button", class: "rv-seta", "aria-expanded": String(aberto), "aria-controls": idc, "aria-label": (aberto ? "Fechar" : "Ver") + " os critérios de " + x.t, html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' });
   const barra = el("span", { class: "rv-barra", "aria-hidden": "true" }, el("span", { style: `width:${Math.max(2, Math.min(100, x.pontos))}%` }));
   const tenho = x.tenho ? tagEl("tenho" + (x.tenho.pct != null ? " " + pc(x.tenho.pct) : ""), "ok", "Peso do papel nos seus FIIs hoje") : null;
+  const passivel = x.sinal && x.sinal.tipo === "compra" ? seloLimite(x.sinal, limitesJ(j)) : null;
   const linha = el("div", { class: "rv-linha" },
     el("span", { class: "rv-pos ct-mono" }, String(i + 1)),
-    el("span", { class: "rv-papel" }, papelBtn(x.t, x.nome ? nomeBonito(x.nome) : ""), tenho, el("small", {}, x.segmento || "sem segmento")),
+    el("span", { class: "rv-papel" }, papelBtn(x.t, x.nome ? nomeBonito(x.nome) : ""), tenho, passivel, el("small", {}, x.segmento || "sem segmento")),
     el("span", { class: "rv-pts", title: `${x.pontos} de 100 pontos` }, el("b", { class: "ct-mono" }, String(x.pontos)), barra),
     el("span", { class: "rv-fatos" },
       el("span", { class: "rv-fato" }, el("small", {}, "DY 12m"), el("span", { class: "ct-mono" }, pc(x.dy))),
@@ -7022,9 +7226,11 @@ function painelCriterios(painel, j, status) {
     tetos[id] = inp;
     gradeTetos.append(el("div", {}, el("label", { class: "rotulo", for: "rv-t-" + id }, nome), el("div", { class: "campo" }, inp, el("span", {}, `padrão ${tp[id]}% · de ${LIM_TETO[id][0]} a ${LIM_TETO[id][1]}`)), el("small", { class: "rv-faixa" }, faixa)));
   });
+  /* Limites de compra e de venda: o mesmo dado do card Pelos seus limites, na Visão geral */
+  const lims = camposLimites("rv-l", limitesJ(j), j.limitesPadrao || LIM_PADRAO);
   const bPadrao = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Padrão");
   const bSalvar = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, "Salvar");
-  bPadrao.addEventListener("click", () => { j.criterios.forEach((k) => Campo.definir(campos[k.id], j.padrao[k.id])); Object.keys(tetos).forEach((id) => Campo.definir(tetos[id], tp[id])); somar(); status.textContent = "Pesos e tetos padrão no formulário. Salve para usar."; });
+  bPadrao.addEventListener("click", () => { j.criterios.forEach((k) => Campo.definir(campos[k.id], j.padrao[k.id])); Object.keys(tetos).forEach((id) => Campo.definir(tetos[id], tp[id])); lims.padrao(); somar(); status.textContent = "Pesos, tetos e limites padrão no formulário. Salve para usar."; });
   bSalvar.addEventListener("click", async () => {
     const inv = Object.values(campos).find((i) => Campo.invalido(i));
     if (inv) { status.textContent = "Use um inteiro de 0 a 50 em cada peso."; inv.focus(); return; }
@@ -7037,18 +7243,22 @@ function painelCriterios(painel, j, status) {
       if (Campo.invalido(tetos[id]) || v == null || Math.round(v) !== v || v < a || v > z) { status.textContent = `Use um inteiro de ${a} a ${z} no teto por ${id}.`; tetos[id].focus(); return; }
       tt[id] = v;
     }
+    const rl = lims.ler();
+    if (rl.erro) { status.textContent = rl.erro; rl.campo.focus(); return; }
     bSalvar.disabled = true; status.textContent = "Salvando…";
     try {
-      await apiCart("PUT", "/reinvestir", { pesos, tetos: tt, universo: j.universo });
-      limparReinvestir(); wDados.delete("carteira-reinvestir");
-      rvMsg = "Pesos e tetos salvos. A conta já usa os novos.";
+      await apiCart("PUT", "/reinvestir", { pesos, tetos: tt, universo: j.universo, limites: rl.limites });
+      limitesMudaram();
+      rvMsg = "Pesos, tetos e limites salvos. A conta já usa os novos.";
       const velho = document.getElementById("ct-reinvestir");
       if (velho) velho.replaceWith(cardReinvestir());
     } catch (e) { status.textContent = "Não deu para salvar: " + e.message; bSalvar.disabled = false; }
   });
   painel.append(el("p", { class: "ct-nota" }, "Cada critério dá de 0 a 1 e vale o peso que você escolher (inteiro de 0 a 50). Peso 0 tira o critério da conta."),
     grade, el("h4", { class: "rv-painel-tit" }, "Tetos do equilíbrio"), el("p", { class: "ct-nota" }, "Quanto um papel e um segmento podem pesar nos seus FIIs, depois do aporte, sem perder pontos no Equilíbrio."),
-    gradeTetos, el("div", { class: "ct-acoes" }, bPadrao, bSalvar, soma));
+    gradeTetos, el("h4", { class: "rv-painel-tit" }, "Limites de compra e de venda"),
+    el("p", { class: "ct-nota" }, "Cotação contra o seu preço médio. O de compra é a régua do critério Abaixo do que você pagou (máximo com o dobro); papel passível de venda pelo seu limite fica fora da lista. Os mesmos limites marcam as posições na Visão geral e em Posições."),
+    lims.grade, el("div", { class: "ct-acoes" }, bPadrao, bSalvar, soma));
   somar();
 }
 /* Posições, Encerradas e Pagamentos da carteira no helper de tabela (ids carteira-pos, carteira-encerradas, carteira-proventos).
@@ -7061,7 +7271,8 @@ function linhasCt(j) {
   const passa = (p) => !q || semAcento((p.t + " " + (p.nome || "")).toLowerCase()).includes(q);
   const daClasse = (p) => ctFiltro === "todas" || p.classe === ctFiltro || (ctFiltro === "outros" && OUTRAS_CLASSES.has(p.classe));
   if (ctEnc) return (j.resumo.encerradas || []).filter((e) => daClasse(e) && passa(e));
-  return j.posicoes.filter((p) => daClasse(p) && (!ctCorretora || p.corretoras.includes(ctCorretora)) && passa(p));
+  const doLado = (p) => ctSinal === "todas" || (p.sinal && p.sinal.tipo === ctSinal);
+  return j.posicoes.filter((p) => daClasse(p) && (!ctCorretora || p.corretoras.includes(ctCorretora)) && passa(p) && doLado(p));
 }
 const COLS_ENC = [
   { id: "t", rotulo: "Papel", tipo: "texto", cls: "e", valor: (e) => e.t, obrigatoria: true },
@@ -7089,6 +7300,8 @@ const COLS_POS = [
   { id: "valor", rotulo: "Hoje", tipo: "num", unidade: "R$", valor: (p) => p.valor },
   { id: "dif", rotulo: "Diferença R$", tipo: "num", unidade: "R$", valor: difPos },
   { id: "resPct", rotulo: "Diferença %", tipo: "num", unidade: "%", valor: (p) => (p.semCotacao ? null : pctPos(p)) },
+  /* Situação pelos limites da pessoa: sempre pelo preço médio (a chave Por lote não muda); ordena pela variação */
+  { id: "situacao", rotulo: "Situação", tipo: "num", unidade: "%", cls: "e", valor: (p) => (p.sinal ? p.sinal.pct : null) },
   { id: "comProv", rotulo: "Com proventos", tipo: "num", unidade: "R$", valor: comProvPos },
   { id: "dy", rotulo: "DY 12m", tipo: "num", unidade: "%", valor: dyPos },
   { id: "pm", rotulo: "Preço médio", tipo: "num", unidade: "R$", valor: (p) => p.pm },
@@ -7110,6 +7323,7 @@ function celulaPos(c, p) {
     return td;
   }
   if (c === "classe") return el("td", { class: "e" }, CLASSE_UM[p.classe] || "Outro");
+  if (c === "situacao") return el("td", { class: "e" }, situacaoEl(p.sinal, limitesJ(cartJ)));
   if (c === "q") return mono(qtd(p.q));
   if (c === "custo") return mono(custoPos(p) == null ? "–" : rs(custoPos(p)));
   if (c === "valor") return mono(rs(p.valor));
@@ -7178,13 +7392,14 @@ function tabelaPosicoes(j) {
       : (ls) => { const s = somaPos(ls); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length} ${ls.length === 1 ? "papel" : "papéis"}`), el("span", { class: "ct-mono" }, rs(s.valor)), el("small", {}, `pago ${rs(s.custo)} · com proventos `, el("span", { class: clsS(s.comProv) }, rsS(s.comProv))), el("small", { class: "ct-mono " + clsS(s.dif) }, rsPc(s.dif, s.pct))); },
     cel: enc
       ? (e) => el("div", { class: "ct-lin" }, papelBtn(e.t, e.nome), el("span", { class: "ct-mono " + clsS(e.total) }, rsS(e.total)), el("small", {}, `${periodo(e.de, e.ate)} · pago ${rs(e.pago)} · recebido ${rs(e.recebido)} · proventos ${rs(e.proventos)}`), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)))
-      : (p) => el("div", { class: "ct-lin" }, el("span", {}, porLote(p) ? botaoLotes(p) : null, papelBtn(p.t, nomeDoPapel(p))), el("span", { class: "ct-mono" }, rs(p.valor)),
+      : (p) => el("div", { class: "ct-lin" }, el("span", {}, porLote(p) ? botaoLotes(p) : null, papelBtn(p.t, nomeDoPapel(p)), seloLimite(p.sinal, limitesJ(cartJ))), el("span", { class: "ct-mono" }, rs(p.valor)),
         el("small", {}, `${qtd(p.q)} ${UNID_CLASSE(p.classe)} · pago ${custoPos(p) == null ? "–" : rs(custoPos(p))}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(difPos(p)) }, p.semCotacao ? "sem cotação" : rsPc(difPos(p), pctPos(p))),
+        p.sinal && !p.sinal.tipo ? el("small", { class: "lim-falta", title: tituloFalta(p.sinal, limitesJ(cartJ)) }, faltaLimite(p.sinal)) : null,
         porLote(p) && ctLotesAbertos.has(p.t) ? el("div", { class: "ct-lin-lotes" }, lotesEl(p)) : null),
     vazio: (comFiltro) => el("p", { class: "ct-nota" }, comFiltro ? "Nenhuma linha com esses filtros." : ctBusca ? "Nenhum papel com essa busca." : enc ? "Nenhuma posição encerrada." : "Nenhuma posição com esses filtros."),
     nota: () => el("span", {}, enc ? "Posições vendidas por inteiro: o que foi pago, o que voltou na venda, o resultado e os proventos que pagaram."
-      : ctModo === "lote" ? "Por lote: cada compra é um lote e a venda baixa do mais antigo (FIFO). O preço médio é o que vale para o imposto. A seta ao lado do papel abre os lotes."
-      : "Pago é o preço médio vezes a quantidade. Com proventos soma à diferença tudo o que o papel já pagou. Clique no papel para abrir a ficha."),
+      : ctModo === "lote" ? "Por lote: cada compra é um lote e a venda baixa do mais antigo (FIFO). O preço médio é o que vale para o imposto. A seta ao lado do papel abre os lotes, cada um com a situação pelo preço dele. A Situação da posição segue o preço médio."
+      : `Pago é o preço médio vezes a quantidade. Com proventos soma à diferença tudo o que o papel já pagou. Situação: passível de venda ou de compra pelo limite que você definiu (venda com +${limitesJ(cartJ).venda}%, compra com ${MENOS}${limitesJ(cartJ).compra}% sobre o preço médio). Clique no papel para abrir a ficha.`),
   });
   ctTabAtual = t;
   return [t.el];
@@ -7215,7 +7430,8 @@ function botaoLotes(p) {
 }
 function lotesEl(p) {
   const box = el("div", { class: "ct-lotes", id: "ct-lotes-" + p.t, role: "table", "aria-label": "Lotes de " + p.t });
-  box.append(el("div", { class: "ct-lote cab", role: "row" }, ...["Lote", "Qtd", "Preço pago", "Hoje", "Diferença R$", "%"].map((h) => el("span", { role: "columnheader" }, h))));
+  box.append(el("div", { class: "ct-lote cab", role: "row" }, ...["Lote", "Qtd", "Preço pago", "Hoje", "Diferença R$", "%", "Situação"].map((h) => el("span", { role: "columnheader" }, h))));
+  const L = limitesJ(cartJ);
   const rot = (t) => el("small", { class: "ct-rot" }, t);
   p.lotes.forEach((l) => {
     const cls = clsS(l.diferenca);
@@ -7225,7 +7441,8 @@ function lotesEl(p) {
       el("span", { class: "ct-mono", role: "cell" }, rot("Preço pago"), rs(l.preco, true)),
       el("span", { class: "ct-mono", role: "cell" }, rot("Hoje"), rs(l.hoje)),
       el("span", { class: "ct-mono " + cls, role: "cell" }, rot("Diferença"), l.diferenca == null ? "–" : rsS(l.diferenca, true)),
-      el("span", { class: "ct-mono " + cls, role: "cell" }, rot("%"), pc(l.pct, true))));
+      el("span", { class: "ct-mono " + cls, role: "cell" }, rot("%"), pc(l.pct, true)),
+      el("span", { class: "lim-lote", role: "cell" }, rot("Situação"), l.sinal ? situacaoEl(l.sinal, L) : el("span", { class: "lim-falta" }, "–"))));
   });
   if (!p.lotes.length) box.append(el("p", { class: "ct-nota" }, "Nenhum lote com quantidade."));
   return box;
@@ -8114,6 +8331,26 @@ corpos["carteira-simulacoes"] = (j, fm = { c: 1, r: 1 }) => {
   return [el("div", { class: "ct-linhas wdg-sim" }, ...l.map((s) => el("div", {},
     el("span", {}, el("a", { href: "#carteira/simulacoes/" + encodeURIComponent(s.id) }, s.nome), el("small", {}, ` até ${mesL(s.ate)}${fm.c > 1 ? " · " + rs(s.rendaFinal) + "/mês no fim" : ""}`)),
     pillSim(s))))];
+};
+
+/* Pelos seus limites: quantos papéis passaram do limite de venda e do de compra e os 3 primeiros de cada lado (os que
+   mais andaram). 1x1: uma linha por lado; 2x1: os dois lados lado a lado, com a variação e o valor da posição. */
+corpos["carteira-limites"] = (j, fm = { c: 1 }) => {
+  const v = semCartW(j); if (v) return v;
+  const s = j.sinais || { compra: [], venda: [] }, L = limitesJ(j);
+  const porT = new Map((j.posicoes || []).map((p) => [p.t, p]));
+  const fecho = el("span", { class: "ct-nota wdg-fecho" }, `pelos limites que você definiu: venda +${L.venda}%, compra ${MENOS}${L.compra}%`);
+  if (!s.compra.length && !s.venda.length) return [vazioW(`Nenhum papel passou dos seus limites agora (venda com +${L.venda}%, compra com ${MENOS}${L.compra}% sobre o preço médio).`)];
+  const largo = fm.c > 1;
+  const lado = (tipo, nome) => {
+    const l = s[tipo], tops = l.slice(0, 3).map((t) => porT.get(t)).filter((p) => p && p.sinal);
+    const box = el("div", { class: "wdg-lim-lado" }, el("span", { class: "rotulo", title: titLimite(tipo, L) }, nome + " · ", el("b", {}, String(l.length))));
+    if (!l.length) box.append(el("span", { class: "nada" }, "nenhum agora"));
+    else if (!largo) box.append(el("div", { class: "wdg-lim-curto" }, ...tops.map((p) => el("span", {}, papelBtn(p.t), " ", el("span", { class: "ct-mono " + clsS(p.sinal.pct) }, pc(p.sinal.pct, true))))));
+    else tops.forEach((p) => box.append(el("div", {}, el("span", {}, papelBtn(p.t), " ", el("span", { class: "ct-mono " + clsS(p.sinal.pct) }, pc(p.sinal.pct, true))), el("span", { class: "ct-mono" }, rs(p.valor)))));
+    return box;
+  };
+  return [el("div", { class: "wdg-lim" }, el("div", { class: "wdg-lim-lados" + (largo ? " largo" : "") }, lado("venda", "Passíveis de venda"), lado("compra", "Passíveis de compra"))), fecho];
 };
 
 /* Reinvestir: 1x1 com os 3 primeiros e a pontuação; 2x1 com os 5, DY 12m e P/VP e, no fim, a divisão do aporte */

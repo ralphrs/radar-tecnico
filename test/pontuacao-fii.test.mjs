@@ -7,7 +7,7 @@ if (!globalThis.crypto) globalThis.crypto = webcrypto;
 import {
   parcialPvp, parcialDy, parcialRegularidade, parcialRendimento, parcialLiquidez, parcialCotistas, parcialTeto, parcialCompras,
   pontuar, linhasUniverso, reinvestir, equilibrio, baseFiis, dividirAporte, retratoFiis, segmentoDe, pesosDe,
-  PESOS_PADRAO, TETOS_PADRAO, CRITERIOS, APORTE_PADRAO,
+  PESOS_PADRAO, TETOS_PADRAO, LIMITES_PADRAO, CRITERIOS, APORTE_PADRAO,
 } from "../src/pontuacao-fii.js";
 import { validarReinvestir, respostaReinvestir } from "../src/prefs.js";
 import { rotaCarteira, limparCacheCarteira, aporteSugerido, aporteDaUrl, comprasRecentes } from "../src/carteira.js";
@@ -293,7 +293,7 @@ test("reinvestir com o universo todos: 5 primeiros, total, excluídos e ordenaç
 });
 
 test("pesos salvos: validação e padrão", () => {
-  assert.deepEqual(validarReinvestir({ pesos: { pvp: 30 }, universo: "meus" }).reinvestir, { pesos: { ...PESOS_PADRAO, pvp: 30 }, tetos: TETOS_PADRAO, universo: "meus" });
+  assert.deepEqual(validarReinvestir({ pesos: { pvp: 30 }, universo: "meus" }).reinvestir, { pesos: { ...PESOS_PADRAO, pvp: 30 }, tetos: TETOS_PADRAO, universo: "meus", limites: LIMITES_PADRAO });
   assert.match(validarReinvestir({ pesos: { pvp: 51 } }).erro, /0 a 50/);
   assert.match(validarReinvestir({ pesos: { pvp: 2.5 } }).erro, /inteiro/);
   assert.match(validarReinvestir({ pesos: { pvp: -1 } }).erro, /inteiro/);
@@ -301,8 +301,8 @@ test("pesos salvos: validação e padrão", () => {
   assert.match(validarReinvestir({ universo: "alguns" }).erro, /Universo/);
   assert.match(validarReinvestir({ pesos: Object.fromEntries(Object.keys(PESOS_PADRAO).map((k) => [k, 0])) }).erro, /pelo menos um/);
   assert.equal(validarReinvestir({ outro: 1 }).erro, "campo outro");
-  assert.deepEqual(respostaReinvestir(null), { pesos: PESOS_PADRAO, tetos: TETOS_PADRAO, universo: "todos", salvo: false });
-  assert.deepEqual(respostaReinvestir({ pesos: { pvp: 999 } }), { pesos: PESOS_PADRAO, tetos: TETOS_PADRAO, universo: "todos", salvo: false });
+  assert.deepEqual(respostaReinvestir(null), { pesos: PESOS_PADRAO, tetos: TETOS_PADRAO, universo: "todos", limites: LIMITES_PADRAO, salvo: false });
+  assert.deepEqual(respostaReinvestir({ pesos: { pvp: 999 } }), { pesos: PESOS_PADRAO, tetos: TETOS_PADRAO, universo: "todos", limites: LIMITES_PADRAO, salvo: false });
 });
 
 test("rota /api/carteira/reinvestir com o D1 falso: GET, PUT, cache e universo", async () => {
@@ -469,21 +469,35 @@ test("rota /api/carteira/reinvestir com aporte na URL: simulado, origem e cache 
   for (const y of c1.j.top) for (const c of y.criterios) assert.doesNotMatch(c.nota, PROIBIDO);
 });
 
-test("abaixo do que pagou: só para quem tem o papel; zero no preço médio ou acima, máximo 15% abaixo", async () => {
+test("abaixo do que pagou: só para quem tem o papel, na régua do limite de compra (0 antes, 0,6 no limite, 1 no dobro)", async () => {
   const { parcialAbaixo, notaAbaixo } = await import("../src/pontuacao-fii.js");
-  assert.equal(parcialAbaixo(10, null), null);
-  assert.equal(parcialAbaixo(10, 10), 0); assert.equal(parcialAbaixo(11, 10), 0);
-  perto(parcialAbaixo(9.25, 10), 0.5, 1e-6); assert.equal(parcialAbaixo(8.5, 10), 1); assert.equal(parcialAbaixo(5, 10), 1);
-  assert.match(notaAbaixo(8.54, 9.12), /6,4% abaixo/); assert.match(notaAbaixo(10, null), /não tem este papel/);
-  // dois papéis iguais em tudo: o que está 15% abaixo do preço médio passa o que está acima, e quem não tem fica no meio
-  const l = [cheia("AAAA11", { preco: 8.5 }), cheia("BBBB11", { preco: 8.5 }), cheia("CCCC11", { preco: 8.5 })];
-  const r = pontuar(l, { cdi: 11, pm: { AAAA11: 10, BBBB11: 8 } });
+  assert.equal(parcialAbaixo(10, null), null); assert.equal(parcialAbaixo(null, 10), null);
+  // acima do preço médio, no preço médio e caindo menos que o limite de 10%: zero
+  assert.equal(parcialAbaixo(11, 10), 0); assert.equal(parcialAbaixo(10, 10), 0); assert.equal(parcialAbaixo(9.01, 10), 0);
+  // no limite (−10%) = 0,6; −15% = 0,8; −20% (o dobro) = 1; mais que o dobro continua 1
+  perto(parcialAbaixo(9, 10), 0.6, 1e-6); perto(parcialAbaixo(8.5, 10), 0.8, 1e-6); assert.equal(parcialAbaixo(8, 10), 1); assert.equal(parcialAbaixo(5, 10), 1);
+  // limite da pessoa em 5%: −5% = 0,6, −10% = 1; limite inválido cai no padrão
+  perto(parcialAbaixo(9.5, 10, 5), 0.6, 1e-6); assert.equal(parcialAbaixo(9, 10, 5), 1); assert.equal(parcialAbaixo(9.5, 10, 5.5), 0);
+  assert.equal(notaAbaixo(8.54, 9.12), "cotação R$ 8,54, seu preço médio R$ 9,12: 6,4% abaixo, falta 3,6 para o seu limite de 10%");
+  assert.equal(notaAbaixo(8, 9.12), "cotação R$ 8,00, seu preço médio R$ 9,12: 12,3% abaixo, passou do seu limite de 10%");
+  assert.equal(notaAbaixo(9, 10), "cotação R$ 9,00, seu preço médio R$ 10,00: 10,0% abaixo, no seu limite de 10%");
+  assert.equal(notaAbaixo(9.49, 9.12), "cotação R$ 9,49: 4,1% acima do seu preço médio (R$ 9,12)");
+  assert.match(notaAbaixo(9.5, 10, 5), /no seu limite de 5%/);
+  assert.match(notaAbaixo(10, null), /não tem este papel/);
+  // dois papéis iguais em tudo: o que caiu 20% do preço médio passa o que está acima, e quem não tem fica no meio
+  const l = [cheia("AAAA11", { preco: 8 }), cheia("BBBB11", { preco: 8 }), cheia("CCCC11", { preco: 8 }), cheia("DDDD11", { preco: 8 })];
+  const r = pontuar(l, { cdi: 11, pm: { AAAA11: 10, BBBB11: 7.6, DDDD11: 8.5 } });
   const p = Object.fromEntries(r.avaliados.map((x) => [x.t, x]));
-  assert.equal(p.AAAA11.pontos, 100); assert.equal(p.CCCC11.pontos, 100); assert.equal(p.BBBB11.pontos, 80);
-  assert.equal(r.avaliados[r.avaliados.length - 1].t, "BBBB11");
+  assert.equal(p.AAAA11.pontos, 100); assert.equal(p.CCCC11.pontos, 100);
+  // BBBB11 5,3% acima: abaixo zera (25 de 125); DDDD11 5,9% abaixo, antes do limite: também zera
+  assert.equal(p.BBBB11.pontos, 80); assert.equal(p.DDDD11.pontos, 80);
   assert.deepEqual(p.CCCC11.faltando, []);
   assert.equal(p.CCCC11.criterios.find((c) => c.id === "abaixo").naoSeAplica, true);
   assert.equal(p.AAAA11.criterios.find((c) => c.id === "abaixo").pontos, 25);
+  // com limite de compra em 5%: DDDD11 (−5,9%) já pontua
+  const r5 = pontuar(l, { cdi: 11, pm: { DDDD11: 8.5 }, limites: { compra: 5 } });
+  assert.ok(r5.avaliados.find((x) => x.t === "DDDD11").criterios.find((c) => c.id === "abaixo").pontos > 15);
   // peso zero tira o critério
   assert.ok(!pontuar(l, { cdi: 11, pm: { AAAA11: 10 }, pesos: { abaixo: 0 } }).avaliados[0].criterios.some((c) => c.id === "abaixo"));
+  for (const x of [notaAbaixo(8.54, 9.12), notaAbaixo(8, 9.12), notaAbaixo(9.49, 9.12)]) assert.doesNotMatch(x, PROIBIDO);
 });

@@ -18,8 +18,8 @@
 // Este arquivo não importa nada do Worker, para os testes rodarem no Node; as leituras e gravações chegam em `deps`.
 
 import { cifrar, decifrar, cofreLigado } from "./cofre.js";
-import { reinvestir, UNIVERSOS, APORTE_PADRAO } from "./pontuacao-fii.js";
-import { validarReinvestir, respostaReinvestir } from "./prefs.js";
+import { reinvestir, UNIVERSOS, APORTE_PADRAO, sinalPosicao, limitesDe } from "./pontuacao-fii.js";
+import { validarReinvestir, respostaReinvestir, juntarReinvestir } from "./prefs.js";
 
 // ---------- formato das linhas ----------
 
@@ -1186,21 +1186,38 @@ async function sincronizarListas(env, quem, extrato, importacoes, deps) {
   }
 }
 
+// Limites de compra e de venda da pessoa (prefs/<email>, doc "reinvestir") sobre as posições abertas, pelo preço médio
+// do extrato: cada posição ganha `sinal` (sinalPosicao) e cada lote aberto o seu, pelo preço do lote, só para a lista de
+// lotes. Vale para toda classe. Devolve as posições novas (as de calcular não mudam) e as listas de papéis de cada lado:
+// venda da maior alta para a menor, compra da maior queda para a menor.
+export function aplicarLimites(posicoes, limites) {
+  const L = limitesDe(limites);
+  const out = (posicoes || []).map((p) => {
+    const sinal = p.semCotacao ? null : sinalPosicao(p.preco, p.pm, L);
+    const lotes = Array.isArray(p.lotes) ? p.lotes.map((l) => ({ ...l, sinal: p.semCotacao ? null : sinalPosicao(p.preco, l.preco, L) })) : p.lotes;
+    return { ...p, sinal, lotes };
+  });
+  const lado = (tipo, dir) => out.filter((p) => p.sinal && p.sinal.tipo === tipo).sort((a, b) => dir * (b.sinal.pct - a.sinal.pct) || (a.t < b.t ? -1 : 1)).map((p) => p.t);
+  return { posicoes: out, limites: L, sinais: { compra: lado("compra", -1), venda: lado("venda", 1) } };
+}
+
 // GET /api/carteira (e o GET de /meta, que é o mesmo cálculo)
 const temLinhas = (ex) => !!(ex && (ex.neg || []).length + (ex.mov || []).length + (ex.prov || []).length);
 async function montar(env, quem, deps) {
   const col = "carteira/" + quem.email;
   const docs = await lerDocs(env, col, deps, false, IDS_TODOS);
   const hoje = hojeDe(deps);
+  const prefs = await lerPrefsReinvestir(env, quem.email, deps, false);
   if (!temLinhas(docs.extrato)) {
-    return { vazia: true, meta: projecao(docs.meta, calcular(extratoVazio(), { hoje }), hoje), importacoes: docs.importacoes?.lista || [], simulacoes: [] };
+    return { vazia: true, meta: projecao(docs.meta, calcular(extratoVazio(), { hoje }), hoje), importacoes: docs.importacoes?.lista || [], simulacoes: [], limites: limitesDe(prefs.limites), sinais: { compra: [], venda: [] } };
   }
   const [b3, fiiResumo] = await Promise.all([lerMetaDoc(env, "b3", deps), lerMetaDoc(env, "fii-resumo", deps)]);
   const calc = calcular(docs.extrato, { b3, fiiResumo, importacoes: docs.importacoes, hoje });
   const mensal = await fecharSePreciso(env, col, docs, calc, hoje, deps);
+  const lim = aplicarLimites(calc.posicoes, prefs.limites);
   return {
     vazia: false,
-    posicoes: calc.posicoes, proventos: calc.proventos, resumo: calc.resumo,
+    posicoes: lim.posicoes, limites: lim.limites, sinais: lim.sinais, proventos: calc.proventos, resumo: calc.resumo,
     meta: projecao(docs.meta, calc, hoje),
     importacoes: (docs.importacoes?.lista || []).slice().reverse(),
     cotacoes: { b3: b3 ? b3.atualizado : null, cvm: fiiResumo ? fiiResumo.ref : null },
@@ -1331,8 +1348,9 @@ async function rotaSimulacoes(request, env, quem, resto, deps) {
 // Reinvestir (src/pontuacao-fii.js): os 5 FIIs de maior pontuação pelos critérios da pessoa, o retrato dos FIIs por
 // segmento e a divisão do aporte. Pesos, tetos e universo em prefs/<email>, doc "reinvestir" (JSON puro, sem cifra: não
 // tem nada da carteira). GET ?universo=todos|meus (sem ele, o universo salvo) e &aporte=<número> para simular (de 0 a 10
-// milhões, não fica salvo; sem ele ou inválido, o sugerido de aporteSugerido); PUT { pesos, tetos, universo }, corpo até
-// 2 KB. O GET fica 60 s na memória por pessoa, universo e aporte.
+// milhões, não fica salvo; sem ele ou inválido, o sugerido de aporteSugerido); PUT { pesos, tetos, universo, limites },
+// corpo até 2 KB; campo que não vier fica como está salvo (juntarReinvestir). O GET fica 60 s na memória por pessoa,
+// universo e aporte. Os limites também valem no GET /api/carteira (aplicarLimites): o PUT limpa os dois caches.
 async function lerPrefsReinvestir(env, email, deps, doD1) {
   try {
     const r = doD1 ? await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = 'reinvestir'").bind("prefs/" + email).first()
@@ -1382,7 +1400,7 @@ async function montarReinvestir(env, quem, universo, prefs, deps, aporteSim = nu
   const sugerido = aporteSugerido(docs.meta, calc, hoje);
   const aporte = aporteSim == null ? sugerido : { valor: aporteSim, origem: "simulado" };
   const compras = comprasRecentes(calc, hoje);
-  const out = reinvestir({ b3, fiiResumo, mercado, posicoes: calc ? calc.posicoes : [], aporte, sugerido, pesos: prefs.pesos, tetos: prefs.tetos, universo, compras });
+  const out = reinvestir({ b3, fiiResumo, mercado, posicoes: calc ? calc.posicoes : [], aporte, sugerido, pesos: prefs.pesos, tetos: prefs.tetos, limites: prefs.limites, universo, compras });
   return { ...out, vazia, salvo: prefs.salvo, universoSalvo: prefs.universo };
 }
 async function rotaReinvestir(request, env, quem, deps) {
@@ -1404,7 +1422,8 @@ async function rotaReinvestir(request, env, quem, deps) {
   if (m === "PUT") {
     const { b, erro, status } = await lerCorpo(request, 2048);
     if (erro) return resp({ erro }, status);
-    const v = validarReinvestir(b);
+    const salvo = await lerPrefsReinvestir(env, quem.email, deps, true);
+    const v = validarReinvestir(juntarReinvestir(salvo, b));
     if (v.erro) return resp({ erro: v.erro }, 400);
     const col = "prefs/" + quem.email, atualizado = new Date().toISOString();
     const data = JSON.stringify({ ...v.reinvestir, atualizado });

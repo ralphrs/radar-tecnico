@@ -4,11 +4,12 @@
 //   manda só as que mudaram ({ tabelas: { <id>: estado | null } }) e o servidor junta com o que já havia, guardando as
 //   40 mexidas por último. Assim dois aparelhos abertos não apagam a tabela um do outro.
 // - doc "layout": colunas recolhidas ({ esq, dir }).
-// - doc "reinvestir": pesos, tetos e universo do card Reinvestir da Minha carteira (validarReinvestir, no fim do arquivo).
+// - doc "reinvestir": pesos, tetos e universo do card Reinvestir da Minha carteira e os limites de compra e de venda por
+//   posição (validarReinvestir, no fim do arquivo).
 // A conferência do estado é a mesma da página (public/tabela.js). Sem nada do Worker aqui, para os testes rodarem no Node.
 
 import "../public/tabela.js";
-import { IDS as IDS_REINV, PESOS_PADRAO as PESOS_REINV, PESO_MAX as PESO_MAX_REINV, UNIVERSOS as UNIVERSOS_REINV, TETOS_PADRAO, TETOS_LIM, migrarPesos } from "./pontuacao-fii.js";
+import { IDS as IDS_REINV, PESOS_PADRAO as PESOS_REINV, PESO_MAX as PESO_MAX_REINV, UNIVERSOS as UNIVERSOS_REINV, TETOS_PADRAO, TETOS_LIM, LIMITES_PADRAO, LIMITES_LIM, migrarPesos } from "./pontuacao-fii.js";
 const T = globalThis.Tabela;
 
 export const MAX_TABELAS = 40;
@@ -67,10 +68,14 @@ export const respostaLayout = (salvo) => ({ esq: !!(salvo && salvo.esq), dir: !!
 // ({ pesos, tetos, universo }). Critérios, faixas e padrão em src/pontuacao-fii.js. Pesos inteiros de 0 a 50, pelo menos
 // um acima de zero; critério que não vier fica com o peso padrão. Peso `carteira` (o critério de antes do equilíbrio)
 // vale como `equilibrio`. Tetos em % inteiro: papel de 2 a 50, segmento de 5 a 100; o que não vier fica no padrão.
+// Limites ({ compra, venda }, pedido de 10/11): % inteiro de 1 a 90 sobre o preço médio; o que não vier fica no padrão
+// (10 e 10). Doc salvo antes dos limites vale com o padrão, sem regravar.
 const NOME_TETO = { papel: "Teto por papel", segmento: "Teto por segmento" };
+const NOME_LIMITE = { compra: "Limite de compra", venda: "Limite de venda" };
+const CAMPOS_REINV = ["pesos", "universo", "tetos", "limites"];
 export function validarReinvestir(b) {
   if (!b || typeof b !== "object" || Array.isArray(b)) return { erro: "corpo" };
-  for (const k of Object.keys(b)) if (k !== "pesos" && k !== "universo" && k !== "tetos") return { erro: "campo " + String(k).slice(0, 20) };
+  for (const k of Object.keys(b)) if (!CAMPOS_REINV.includes(k)) return { erro: "campo " + String(k).slice(0, 20) };
   const universo = b.universo === undefined ? "todos" : b.universo;
   if (!UNIVERSOS_REINV.includes(universo)) return { erro: "Universo: use todos ou meus." };
   const p = migrarPesos(b.pesos === undefined ? {} : b.pesos);
@@ -91,12 +96,32 @@ export function validarReinvestir(b) {
     if (!Number.isInteger(v) || v < a || v > z) return { erro: `${NOME_TETO[k]}: use um inteiro de ${a} a ${z}.` };
     tetos[k] = v;
   }
-  return { reinvestir: { pesos, tetos, universo } };
+  const l = b.limites === undefined ? {} : b.limites;
+  if (!l || typeof l !== "object" || Array.isArray(l)) return { erro: "limites" };
+  const limites = { ...LIMITES_PADRAO };
+  for (const [k, v] of Object.entries(l)) {
+    if (!(k in LIMITES_PADRAO)) return { erro: "Limite desconhecido: " + String(k).slice(0, 20) };
+    const [a, z] = LIMITES_LIM;
+    if (!Number.isInteger(v) || v < a || v > z) return { erro: `${NOME_LIMITE[k]}: use um inteiro de ${a} a ${z}.` };
+    limites[k] = v;
+  }
+  return { reinvestir: { pesos, tetos, universo, limites } };
+}
+// PUT parcial: o campo que não veio no corpo fica como está salvo (o painel "mudar limites" da Visão geral manda só os
+// limites; o seletor de universo manda pesos, tetos e universo). Devolve o corpo completo para validarReinvestir.
+export function juntarReinvestir(salvo, b) {
+  if (!b || typeof b !== "object" || Array.isArray(b)) return b;
+  const base = salvo && salvo.salvo ? salvo : null;
+  if (!base) return b;
+  const out = {};
+  for (const k of CAMPOS_REINV) if (b[k] !== undefined) out[k] = b[k]; else out[k] = base[k];
+  for (const k of Object.keys(b)) if (!CAMPOS_REINV.includes(k)) out[k] = b[k];
+  return out;
 }
 // O salvo (conferido de novo, com `carteira` lido como `equilibrio`, sem regravar) ou o padrão. Quem nunca salvou fica
 // com o universo "todos".
 export function respostaReinvestir(salvo) {
-  const v = salvo ? validarReinvestir({ pesos: salvo.pesos, universo: salvo.universo, tetos: salvo.tetos }) : null;
+  const v = salvo ? validarReinvestir({ pesos: salvo.pesos, universo: salvo.universo, tetos: salvo.tetos, limites: salvo.limites }) : null;
   if (v && v.reinvestir) return { ...v.reinvestir, salvo: true };
-  return { pesos: { ...PESOS_REINV }, tetos: { ...TETOS_PADRAO }, universo: "todos", salvo: false };
+  return { pesos: { ...PESOS_REINV }, tetos: { ...TETOS_PADRAO }, universo: "todos", limites: { ...LIMITES_PADRAO }, salvo: false };
 }

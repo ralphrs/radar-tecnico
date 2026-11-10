@@ -15,7 +15,7 @@
     listas: ["1x1", "1x2", "2x1"], favoritos: ["1x1", "1x2"], destaques: ["1x1", "1x2"], ultimas: ["1x1", "1x2"],
     "carteira-meta": ["2x1", "3x1"], "carteira-patrimonio": ["1x1", "2x1"], "carteira-proventos-mes": ["1x1"],
     "carteira-pagamentos": ["1x1", "1x2"], "carteira-agenda": ["1x1", "1x2"], "carteira-rentabilidade": ["1x1", "2x1"],
-    "carteira-alertas": ["1x1", "1x2"], "carteira-simulacoes": ["1x1", "2x1"], "carteira-reinvestir": ["1x1", "2x1"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"],
+    "carteira-alertas": ["1x1", "1x2"], "carteira-simulacoes": ["1x1", "2x1"], "carteira-reinvestir": ["1x1", "2x1"], "carteira-limites": ["1x1", "2x1"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"],
     "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"],
     "esportes-rodada": ["1x1", "2x1"], "esportes-tabela": ["1x1", "1x2"], "esportes-meu-time": ["1x1"],
   };
