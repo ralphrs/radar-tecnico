@@ -1487,7 +1487,8 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 .rv-leg small { font-size: 12px; }
 .rv-efeito { gap: 3px; }
 .rv-efeito .rv-renda small { font-size: 11.5px; color: var(--muted-foreground); }
-.rv-ef-seg { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rv-ef-seg { font-size: 12px; color: var(--muted-foreground); overflow-wrap: anywhere; }
+.rv-ef { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .rv-ef-seg.acima, .rv-ef-seg.acima .ct-mono { color: var(--warn); }
 .rv-crit li.rv-partes { display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin: -2px 0 2px; padding: 8px 0 8px 12px; border-left: 2px solid var(--border); }
 .rv-parte { display: grid; grid-template-columns: 138px minmax(0, 1fr) 70px 80px; align-items: center; gap: 12px; font-size: 12.5px; }
@@ -7122,12 +7123,22 @@ function faixaFiisRv(box, j) {
 function efeitoRv(x, j) {
   const e = x.efeito;
   if (!e || !j.fiis || !(j.fiis.total > 0)) return el("small", { class: "rv-ef-seg" }, x.segmento || "Outros");
-  const teto = j.tetos ? j.tetos.segmento : 25;
+  const teto = j.tetos ? j.tetos.segmento : 25, tetoP = j.tetos ? j.tetos.papel : 10;
   const acima = e.segmentoDepois > teto;
-  return el("small", { class: "rv-ef-seg" + (acima ? " acima" : ""), title: `${x.segmento} nos seus FIIs, hoje e com o aporte inteiro neste papel (teto de ${teto}%)` },
+  // o papel nos seus FIIs, hoje e com o aporte inteiro nele, com as cotas que cada percentual representa
+  const papel = el("small", { class: "rv-ef-seg" + (e.papelDepois > tetoP ? " acima" : ""), title: `Este papel nos seus FIIs, hoje e com o aporte inteiro nele (teto de ${tetoP}%)` },
+    "papel ", el("span", { class: "ct-mono" }, `${pcRv(e.papelAntes, e.papelDepois)}${cotasRv(e.cotas, "antes")} → ${pcRv(e.papelDepois, e.papelAntes, tetoP)}${cotasRv(e.cotas, "depois")}`));
+  const seg = el("small", { class: "rv-ef-seg" + (acima ? " acima" : ""), title: `${x.segmento} nos seus FIIs, hoje e com o aporte inteiro neste papel (teto de ${teto}%)` },
     (x.segmento || "Outros") + " ", el("span", { class: "ct-mono" }, `${pcRv(e.segmentoAntes, e.segmentoDepois)} → ${pcRv(e.segmentoDepois, e.segmentoAntes, teto)}`));
+  return el("span", { class: "rv-ef" }, papel, seg);
 }
 /* As três partes do critério Equilíbrio, na linha aberta; a que deu a nota leva "a menor" */
+/* " (120 cotas)": as cotas que o percentual do papel representa, hoje e com o aporte inteiro nele */
+function cotasRv(c, qual) {
+  if (!c || typeof c[qual] !== "number") return "";
+  const n = c[qual];
+  return ` (${fmtNum(n, Number.isInteger(n) ? 0 : 2)} ${n === 1 ? "cota" : "cotas"})`;
+}
 function partesEquilibrio(k) {
   const p = k.partes;
   const linha = (id, nome, txt, parcial) => el("div", { class: "rv-parte" + (k.limita === id ? " limita" : "") },
@@ -7137,7 +7148,7 @@ function partesEquilibrio(k) {
     el("span", { class: "rv-barra fina", "aria-hidden": "true" }, el("span", { style: `width:${Math.min(100, parcial * 100)}%` })));
   const m = mesLongo(p.compras.desde);
   return el("li", { class: "rv-partes" },
-    linha("papel", "Papel", `${pcRv(p.papel.antes, p.papel.depois)} → ${pcRv(p.papel.depois, p.papel.antes, p.papel.teto)} dos seus FIIs · teto ${p.papel.teto}%`, p.papel.parcial),
+    linha("papel", "Papel", `${pcRv(p.papel.antes, p.papel.depois)}${cotasRv(p.papel.cotas, "antes")} → ${pcRv(p.papel.depois, p.papel.antes, p.papel.teto)}${cotasRv(p.papel.cotas, "depois")} dos seus FIIs · teto ${p.papel.teto}%`, p.papel.parcial),
     linha("segmento", "Segmento", `${p.segmento.nome} ${pcRv(p.segmento.antes, p.segmento.depois)} → ${pcRv(p.segmento.depois, p.segmento.antes, p.segmento.teto)} · teto ${p.segmento.teto}%`, p.segmento.parcial),
     linha("compras", "Compras recentes", p.compras.pct == null ? `nenhuma compra de FII${m ? " desde " + m : ""}` : `${pcRv(p.compras.pct)} das compras de FIIs${m ? " desde " + m : ""} neste papel · até 25% fica no máximo`, p.compras.parcial));
 }

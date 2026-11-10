@@ -243,18 +243,19 @@ const pc = (v, ...outros) => {
 
 // Retrato dos FIIs da carteira. posicoes: as de calcular(); fundos: meta/fii-resumo.fundos (para o segmento).
 export function baseFiis(posicoes, fundos = {}) {
-  const porPapel = {}, porSeg = {}, segPapel = {};
+  const porPapel = {}, porSeg = {}, segPapel = {}, qPorPapel = {};
   let total = 0;
   for (const p of posicoes || []) {
     if (!p || !(p.q > 0) || p.classe !== "fii") continue;
     const v = num(p.valor) || 0;
     const seg = segmentoDe((fundos[p.t] && fundos[p.t].s) || p.seg);
     porPapel[p.t] = (porPapel[p.t] || 0) + v;
+    qPorPapel[p.t] = (qPorPapel[p.t] || 0) + p.q;
     porSeg[seg] = (porSeg[seg] || 0) + v;
     segPapel[p.t] = seg;
     total += v;
   }
-  return { porPapel, porSeg, segPapel, total };
+  return { porPapel, porSeg, segPapel, qPorPapel, total };
 }
 
 // Compras recentes: { desde: "AAAA-MM", porPapel: { t: compras − vendas no período } }. Conta só o que ficou positivo.
@@ -268,13 +269,19 @@ function comprasDe(c) {
 // Equilíbrio de um papel. base: baseFiis (pode já somar o que a divisão alocou); entra: quanto vai para o papel agora;
 // final: total dos FIIs no fim (o de hoje mais o aporte inteiro); compras: comprasDe; tetos em frações.
 // semFii: carteira sem FII hoje (só na lista; a divisão faz a conta mesmo assim, sobre o aporte).
-function contaEquilibrio(t, seg, entra, base, final, compras, tetos, semFii) {
+// `preco` (opcional) deixa a conta dizer em cotas o que os percentuais do papel representam: as que a pessoa tem hoje e
+// as que teria com o aporte inteiro nele (cotas inteiras, o que o aporte compra).
+const nCotas = (n) => `${fmt(n, Number.isInteger(n) ? 0 : 2)} ${n === 1 ? "cota" : "cotas"}`;
+function contaEquilibrio(t, seg, entra, base, final, compras, tetos, semFii, preco) {
+  const qAntes = (base.qPorPapel && base.qPorPapel[t]) || 0;
+  const compra = num(preco) > 0 ? Math.floor((entra + 1e-9) / preco) : null;
+  const cotas = compra == null ? null : { antes: qAntes, compra, depois: qAntes + compra };
   const vP = base.porPapel[t] || 0, vS = base.porSeg[seg] || 0, T = base.total;
   const papelAntes = T > 0 ? vP / T : 0, segAntes = T > 0 ? vS / T : 0;
   const papelDepois = final > 0 ? (vP + entra) / final : 0, segDepois = final > 0 ? (vS + entra) / final : 0;
   const cp = compras.total > 0 ? (compras.porPapel[t] || 0) / compras.total : null;
   const partes = {
-    papel: { antes: r1(papelAntes * 100), depois: r1(papelDepois * 100), teto: Math.round(tetos.papel * 100), parcial: parcialTeto(papelDepois, tetos.papel) },
+    papel: { antes: r1(papelAntes * 100), depois: r1(papelDepois * 100), teto: Math.round(tetos.papel * 100), parcial: parcialTeto(papelDepois, tetos.papel), cotas },
     segmento: { nome: seg, antes: r1(segAntes * 100), depois: r1(segDepois * 100), teto: Math.round(tetos.segmento * 100), parcial: parcialTeto(segDepois, tetos.segmento) },
     compras: { pct: cp == null ? null : r1(cp * 100), desde: compras.desde, parcial: parcialCompras(cp) },
   };
@@ -286,11 +293,12 @@ function contaEquilibrio(t, seg, entra, base, final, compras, tetos, semFii) {
   let nota;
   const mexe = (a, d) => d - a >= 0.0005;
   // já acima do teto hoje: "já é"; senão, de quanto para quanto o aporte levaria
-  const frase = (antes, depois, teto, tinha) => antes > teto
-    ? `já é ${pc(antes * 100, teto * 100)} dos seus FIIs, acima do teto de ${pc(teto * 100)}${mexe(antes, depois) ? `; com o aporte, ${pc(depois * 100, antes * 100, teto * 100)}` : ""}`
-    : `${tinha ? `iria de ${pc(antes * 100, depois * 100)} para` : "iria a"} ${pc(depois * 100, antes * 100, teto * 100)} dos seus FIIs, acima do teto de ${pc(teto * 100)}`;
-  if (limita === "papel") nota = frase(papelAntes, papelDepois, tetos.papel, vP > 0);
-  else if (limita === "segmento") nota = `${seg} ${frase(segAntes, segDepois, tetos.segmento, vS > 0)}`;
+  // ca e cd: as cotas de antes e de depois, entre parênteses, só na frase do papel
+  const frase = (antes, depois, teto, tinha, ca = "", cd = "") => antes > teto
+    ? `já é ${pc(antes * 100, teto * 100)}${ca} dos seus FIIs, acima do teto de ${pc(teto * 100)}${mexe(antes, depois) ? `; com o aporte, ${pc(depois * 100, antes * 100, teto * 100)}${cd}` : ""}`
+    : `${tinha ? `iria de ${pc(antes * 100, depois * 100)}${ca} para` : "iria a"} ${pc(depois * 100, antes * 100, teto * 100)}${cd} dos seus FIIs, acima do teto de ${pc(teto * 100)}`;
+  if (limita === "papel") nota = frase(papelAntes, papelDepois, tetos.papel, vP > 0, cotas ? ` (${nCotas(cotas.antes)})` : "", cotas ? ` (${nCotas(cotas.depois)})` : "");
+  else if (limita === "segmento") nota = `${seg} ${frase(segAntes, segDepois, tetos.segmento, vS > 0)}${cotas && cotas.compra > 0 ? `; o aporte compra ${nCotas(cotas.compra)} deste papel` : ""}`;
   else {
     const m = nomeMes(compras.desde);
     nota = `${pc(cp * 100)} das suas compras de FIIs${m ? " desde " + m : " recentes"} foram neste papel`;
@@ -348,7 +356,7 @@ export function pontuar(linhas, opts = {}) {
   const avaliados = [], excluidos = [], foraPorVenda = [];
   for (const l of linhas || []) {
     const seg = segmentoDe(l.seg);
-    const eq = contaEquilibrio(l.t, seg, aporte, base, base.total + aporte, compras, tetos, semFii);
+    const eq = contaEquilibrio(l.t, seg, aporte, base, base.total + aporte, compras, tetos, semFii, num(l.preco));
     const pmL = num(pms[l.t]) > 0 ? pms[l.t] : null;
     const sinal = pmL != null ? sinalPosicao(num(l.preco), pmL, limites) : null;
     const dados = {
@@ -385,7 +393,7 @@ export function pontuar(linhas, opts = {}) {
       tenho: valorAtual > 0 ? { valor: r2(valorAtual), pct: base.total > 0 ? r2((valorAtual / base.total) * 100) : null } : null,
       sinal,
       rendaAporte: dy != null ? r2((aporte * dy) / 100 / 12) : null,
-      efeito: { papelAntes: eq.partes.papel.antes, papelDepois: eq.partes.papel.depois, segmentoAntes: eq.partes.segmento.antes, segmentoDepois: eq.partes.segmento.depois },
+      efeito: { papelAntes: eq.partes.papel.antes, papelDepois: eq.partes.papel.depois, cotas: eq.partes.papel.cotas, segmentoAntes: eq.partes.segmento.antes, segmentoDepois: eq.partes.segmento.depois },
       _fixo: { soma: fixo, pesos: fixoPesos, peq: num(pesos.equilibrio) > 0 ? pesos.equilibrio : 0, pontos: somaPesos > 0 ? soma / somaPesos : 0 },
     });
   }

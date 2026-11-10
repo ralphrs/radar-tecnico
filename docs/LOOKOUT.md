@@ -645,4 +645,6 @@ Workers Paid desde 01/11: US$ 5 por mês mais o excedente. O card de custos do a
 O que está por vir fica no `ROADMAP.md`.
 
 
+Cotas ao lado dos percentuais (10/11): onde a conta diz "iria de 8% para 19%" do papel, vai junto quantas cotas isso é, as de hoje e as de depois do aporte inteiro nele ("iria de 8% (120 cotas) para 19% (295 cotas)"); na parte do segmento, quantas cotas o aporte compra daquele papel. Vem de `partes.papel.cotas` e `efeito.cotas` (`{ antes, compra, depois }`, cotas inteiras).
+
 Duas regras a mais (10/11): na divisão, nenhum papel leva mais de 40% do aporte enquanto houver outro que caiba e esteja a até 5 pontos do primeiro (`TETO_NO_APORTE`, `FOLGA_NO_APORTE` em `src/pontuacao-fii.js`); sem isso, um aporte pequeno perto de uma carteira grande ia quase inteiro para o primeiro da lista. E quem tinha salvo exatamente os pesos padrão antigos (20/25/15/10/10/10/10) passa a usar o padrão novo, porque não tinha escolhido nada.

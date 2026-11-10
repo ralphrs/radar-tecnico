@@ -139,6 +139,7 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Carteira por lote (FIFO): lotes por posição, lotes consumidos por venda, resultado por lote ao lado do preço médio (06/11)
 
 ## Pedidos de 10/11
+- [x] Reinvestir: percentuais do papel com as cotas que representam, antes e depois do aporte (10/11)
 - [x] Reinvestir olha o extrato para equilibrar: critério Equilíbrio (papel, segmento, compras recentes) com tetos da pessoa, retrato dos FIIs por segmento e divisão do aporte cota a cota (10/11)
 - [x] Janela do papel no celular: tela cheia com cabeçalho fixo, 2 colunas, Voltar fecha; página não alarga mais o viewport (10/11)
 - [x] Limites da pessoa por posição: passível de venda com +10% sobre o preço médio, passível de compra com −10%, editáveis; coluna Situação, card Pelos seus limites, widget, e o Reinvestir usa o limite de compra (10/11)

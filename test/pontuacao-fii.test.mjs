@@ -143,12 +143,12 @@ test("equilíbrio na pontuação: quem já pesa muito perde pontos, quem não te
   const t = r.avaliados.find((x) => x.t === "TENH11"), n = r.avaliados.find((x) => x.t === "NAOT11");
   const ce = (x) => x.criterios.find((c) => c.id === "equilibrio");
   assert.equal(ce(t).pontos, 0); assert.equal(ce(t).valor, 90.9); assert.equal(ce(t).limita, "papel");
-  assert.match(ce(t).nota, /^já é 90% dos seus FIIs, acima do teto de 10%; com o aporte, 91%$/);
+  assert.match(ce(t).nota, /^já é 90% \(1 cota\) dos seus FIIs, acima do teto de 10%; com o aporte, 91% \(223 cotas\)$/);
   assert.deepEqual(t.tenho, { valor: 18000, pct: 90 });
   // NAOT11: 2.000 / 22.000 = 9,1% (papel e Shoppings) => máximo
   assert.equal(ce(n).pontos, 25); assert.equal(n.tenho, null);
-  assert.deepEqual(n.efeito, { papelAntes: 0, papelDepois: 9.1, segmentoAntes: 0, segmentoDepois: 9.1 });
-  assert.deepEqual(t.efeito, { papelAntes: 90, papelDepois: 90.9, segmentoAntes: 90, segmentoDepois: 90.9 });
+  assert.deepEqual(n.efeito, { papelAntes: 0, papelDepois: 9.1, cotas: { antes: 0, compra: 222, depois: 222 }, segmentoAntes: 0, segmentoDepois: 9.1 });
+  assert.deepEqual(t.efeito, { papelAntes: 90, papelDepois: 90.9, cotas: { antes: 1, compra: 222, depois: 223 }, segmentoAntes: 90, segmentoDepois: 90.9 });
   assert.equal(t.pontos, 75); assert.equal(r.avaliados[0].t, "NAOT11");
   assert.ok(!("partes" in t.criterios.find((c) => c.id === "dy")));
   for (const k of ["papel", "segmento", "compras"]) assert.ok(k in ce(t).partes, k);
@@ -251,8 +251,8 @@ test("notas: frases curtas e sem palavras proibidas", () => {
   assert.equal(nota("AAAA11", "pvp"), "P/VP 0,92: dentro da faixa de 0,85 a 1,00");
   assert.equal(nota("AAAA11", "regularidade"), "11 pagamentos em 12 meses");
   assert.match(nota("AAAA11", "rendimento"), /17% abaixo/);
-  assert.equal(nota("AAAA11", "equilibrio"), "iria de 10% para 25% dos seus FIIs, acima do teto de 10%");
-  assert.equal(nota("BBBB11", "equilibrio"), "iria a 17% dos seus FIIs, acima do teto de 10%");
+  assert.equal(nota("AAAA11", "equilibrio"), "iria de 10% (1 cota) para 25% (112 cotas) dos seus FIIs, acima do teto de 10%");
+  assert.equal(nota("BBBB11", "equilibrio"), "iria a 17% (111 cotas) dos seus FIIs, acima do teto de 10%");
   assert.match(nota("BBBB11", "pvp"), /abaixo de 0,85/);
   assert.equal(nota("BBBB11", "regularidade"), "8 pagamentos em 12 meses (a CVM tem só 8 informes do fundo)");
   assert.match(nota("CCCC11", "pvp"), /sem pontos/);
@@ -376,7 +376,7 @@ test("aporte simulado: muda rendaAporte e o equilíbrio, sem mexer no sugerido",
   // PASB11: 900 de 19.000 em FIIs; com 500 fica em 7,2% (máximo); com 20.000 fica em 53,6% (zero)
   const cb = b.criterios.find((c) => c.id === "equilibrio"), cs = s.criterios.find((c) => c.id === "equilibrio");
   assert.equal(cb.pontos, 25); assert.equal(cs.pontos, 0); assert.ok(cs.valor > 50);
-  assert.deepEqual(s.efeito, { papelAntes: 4.7, papelDepois: 53.6, segmentoAntes: 4.7, segmentoDepois: 53.6 });
+  assert.deepEqual(s.efeito, { papelAntes: 4.7, papelDepois: 53.6, cotas: { antes: 100, compra: 2222, depois: 2322 }, segmentoAntes: 4.7, segmentoDepois: 53.6 });
   assert.ok(s.pontos < b.pontos);
   // aporte zero vale: renda zero e o peso de hoje
   const zero = reinvestir({ b3, fiiResumo, mercado: MERCADO, posicoes: POS, patrimonio: 19200, aporte: { valor: 0, origem: "simulado" }, universo: "meus" });
