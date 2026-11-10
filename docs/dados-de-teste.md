@@ -1,6 +1,6 @@
 # Dados de teste da Minha carteira
 
-A conta de teste (`ralph.viviane@gmail.com`) usa extratos falsos da B3, gerados por `test/fixtures/b3-fake/gerar.mjs`. São planilhas no formato que a Área do Investidor exporta (Negociação, Movimentação e Proventos recebidos), com papéis reais e números inventados. Nada vem da carteira do Admin: os papéis dele (a lista FII-Core-2026-11 e MXRF11, KNSC11, CPTS11 e GARE11) ficaram de fora.
+A conta de teste (`ralph.viviane@gmail.com`) usa extratos falsos da B3, gerados por `test/fixtures/b3-fake/gerar.mjs`. São planilhas no formato que a Área do Investidor exporta (Negociação, Movimentação, Proventos recebidos e Proventos a receber), com papéis reais e números inventados. Nada vem da carteira do Admin: os papéis dele (a lista FII-Core-2026-11 e MXRF11, KNSC11, CPTS11 e GARE11) ficaram de fora.
 
 ## O que tem
 
@@ -24,6 +24,7 @@ Sai na pasta:
 
 - `negociacao-AAAA-MM-DD-12-00-00.xlsx` e `movimentacao-AAAA-MM-DD-12-00-00.xlsx`, o período inteiro;
 - `proventos-recebidos-AAAA-01-01-a-AAAA-12-31.xlsx`, um por ano (a B3 limita o período desse relatório), o último até `--ate`;
+- `proventos-a-receber-AAAA-MM-DD.xlsx`, o retrato do relatório Proventos a Receber em `--ate` (desde a versão 1.1.0, cenário 15): aba "Proventos a Receber", o cabeçalho exato do relatório, quantidade em texto, um número de conta inventado e a linha "Total líquido" no fim. Entram os proventos do roteiro com pagamento depois de `--ate` que a B3 já teria provisionado (20 dias antes do pagamento, ou o `aviso` do provento no roteiro), com a quantidade de cada corretora na data final. Quando `--ate` passa da data, o mesmo provento aparece nos recebidos, com o mesmo valor;
 - `README.md`, o roteiro em linguagem simples e o que esperar na tela: posições abertas com quantidade, PM e custo, encerradas com o resultado, totais de proventos e os alertas daquela data. Os números saem do próprio `src/carteira.js`, com a cotação de 04/11/2026 guardada em `cenarios.mjs`; na conta de teste o patrimônio vai bater só com a cotação do dia;
 - `manifesto.json`: versão, semente, data final, linhas por arquivo e um hash por linha (o hash da chave de deduplicação de `src/carteira.js`; linha ignorada usa a linha inteira).
 
@@ -33,10 +34,10 @@ Mesma versão, mesma semente e mesma data final geram os mesmos arquivos, byte a
 
 1. Entrar no Lookout com `ralph.viviane@gmail.com` ("Trocar de conta" no menu, se estiver logado com outra). A conta precisa ter Investimentos liberado no admin.
 2. Menu da conta → Importar extratos e soltar todos os .xlsx da pasta de uma vez.
-3. Conferir a prévia com o README: o número de linhas novas e as 5 ignoradas da Movimentação (Tesouro e CDB).
+3. Conferir a prévia com o README: o número de linhas novas, as 5 ignoradas da Movimentação (Tesouro e CDB) e, no arquivo do A receber, "retrato novo" com a data e a soma igual ao Total líquido.
 4. Importar. A Minha carteira tem de mostrar as 16 posições abertas e as 2 encerradas do README.
 
-Importar de novo os mesmos arquivos dá 0 linhas novas.
+Importar de novo os mesmos arquivos dá 0 linhas novas (o A receber aparece como "igual ao retrato guardado").
 
 ## Correções
 
@@ -46,13 +47,13 @@ Para avançar a data sem duplicar nada, gere só a diferença contra o manifesto
 npm run b3-fake -- --saida /caminho/correcao --ate 2026-12-15 --diff /caminho/da/pasta/manifesto.json
 ```
 
-Saem `correcao-AAAA-MM-DD-negociacao.xlsx`, `correcao-AAAA-MM-DD-movimentacao.xlsx` e `correcao-AAAA-MM-DD-proventos-recebidos.xlsx` (só os tipos que tiverem linha nova), com o mesmo cabeçalho dos extratos, e `correcao-AAAA-MM-DD-manifesto.json`, o manifesto completo desta geração. Importe os .xlsx por cima do que já está na conta. Na próxima correção, use esse manifesto novo no `--diff`.
+Saem `correcao-AAAA-MM-DD-negociacao.xlsx`, `correcao-AAAA-MM-DD-movimentacao.xlsx` e `correcao-AAAA-MM-DD-proventos-recebidos.xlsx` (só os tipos que tiverem linha nova), com o mesmo cabeçalho dos extratos, `correcao-AAAA-MM-DD-proventos-a-receber.xlsx` (o retrato inteiro da data nova, porque ele não soma: substitui o que está na conta; só não sai quando é igual ao do manifesto anterior) e `correcao-AAAA-MM-DD-manifesto.json`, o manifesto completo desta geração. Importe os .xlsx por cima do que já está na conta. Na próxima correção, use esse manifesto novo no `--diff`.
 
 A diferença é por multiconjunto, igual à deduplicação da importação: linha que já estava não volta, e as duas compras iguais do mesmo dia continuam sendo duas. Mesmo importando a pasta inteira de novo em vez da correção, a deduplicação segura; a correção existe para a prévia mostrar só o que é novo.
 
 A correção só acrescenta. Se o terminal avisar "linhas do manifesto anterior que não existem mais", alguma linha já importada mudou: a conta de teste precisa ser apagada (Minha carteira, digitar APAGAR) e a pasta nova importada inteira.
 
-As datas do roteiro são fixas no calendário (os aportes de 2026 caem nos dias 2 e 16 de cada mês), então mudar `--ate` só acrescenta linhas. O que o README promete de empréstimo e alerta de rendimento menor vale com `--ate` entre 13/10/2026 e 12/12/2026; fora disso esses dois mudam e o resto fica.
+As datas do roteiro são fixas no calendário (os aportes de 2026 caem nos dias 2 e 16 de cada mês), então mudar `--ate` só acrescenta linhas. O que o README promete de empréstimo e alerta de rendimento menor vale com `--ate` entre 13/10/2026 e 12/12/2026; fora disso esses dois mudam e o resto fica. O retrato dos proventos a receber muda a cada `--ate` (é o que está provisionado naquele dia); o teste confere o de 04/11/2026 (`ESPERADO_ARECEBER` em `cenarios.mjs`).
 
 ## Versão do roteiro
 

@@ -143,6 +143,7 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Reinvestir olha o extrato para equilibrar: critério Equilíbrio (papel, segmento, compras recentes) com tetos da pessoa, retrato dos FIIs por segmento e divisão do aporte cota a cota (10/11)
 - [x] Janela do papel no celular: tela cheia com cabeçalho fixo, 2 colunas, Voltar fecha; página não alarga mais o viewport (10/11)
 - [x] Limites da pessoa por posição: passível de venda com +10% sobre o preço médio, passível de compra com −10%, editáveis; coluna Situação, card Pelos seus limites, widget, e o Reinvestir usa o limite de compra (10/11)
+- [x] Carteira importa o relatório Proventos a Receber da B3: datas e valores reais no A receber, na Agenda e na Meta; retrato que substitui o anterior (10/11)
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

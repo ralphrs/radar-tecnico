@@ -3,10 +3,11 @@
 // A página lê os .xlsx no navegador (SheetJS) e manda só as linhas, como arrays no formato do cabeçalho da B3.
 // Aqui cada linha é conferida, reduzida ao que pode ser guardado e deduplicada contra o que já existe.
 //
-// Collection carteira/<email>, cinco docs, todos cifrados por src/cofre.js:
+// Collection carteira/<email>, seis docs, todos cifrados por src/cofre.js:
 // - extrato: { v, neg, mov, prov } em arrays compactos (formato abaixo), cada linha marcada com o id da importação;
 // - importacoes: { lista: [{ id, em, arquivos: [{ tipo, hash, linhas, novos, repetidos, ignorados, de, ate }] }] };
 // - meta: { alvo, aporte, yield, reinvestir, atualizado };
+// - areceber: o retrato do relatório Proventos a Receber da B3 (seção própria, abaixo de desfazer), que se substitui;
 // - simulacoes e mensal: o simulador de reinvestimento (seção própria, mais abaixo).
 //
 // Linhas guardadas (nunca nome, CPF, conta, CNPJ, ISIN, a linha "Produto" inteira, razão social nem totais em dinheiro):
@@ -176,6 +177,8 @@ export function mesclar(extrato, arquivos, imp) {
   for (const a of arquivos) {
     const campo = CAMPO[a.tipo];
     const r = { nome: a.nome, tipo: a.tipo, hash: a.hash, linhas: 0, novos: 0, repetidos: 0, ignorados: 0, motivos: {}, de: "", ate: "", tiposDesconhecidos: {} };
+    // O retrato dos proventos a receber não é extrato: fica no lugar (para a ordem bater) e quem trata é aplicarRetrato
+    if (a.tipo === "areceber") { porArquivo.push({ ...r, retrato: true }); continue; }
     if (!campo) { r.ignorados = (a.linhas || []).length; r.motivos.tipo = r.ignorados; porArquivo.push(r); ignorados += r.ignorados; continue; }
     const doArquivo = new Map(), linhas = [];
     for (const l of a.linhas || []) {
@@ -213,6 +216,79 @@ export function desfazer(extrato, imp) {
     ex[campo] = (extrato?.[campo] || []).filter((x) => (x[idx] === imp ? (removidas++, false) : true));
   }
   return { extrato: ex, removidas };
+}
+
+// ---------- Proventos a Receber (retrato) ----------
+//
+// O relatório "Proventos a Receber" da Área do Investidor é um retrato do que a B3 já provisionou, não um extrato:
+// cada importação substitui a anterior inteira. A página manda cada linha reduzida, sem a conta e sem o nome do produto:
+//   [papel, tipo de evento, previsão de pagamento, instituição, quantidade, preço unitário, valor líquido]
+// e a linha do total como [null, null, null, null, null, "Total líquido", soma].
+// Doc areceber: { v, atual: { dataRef, imp, em, linhas, total }, anterior: { ... } | null }, com cada linha em
+// { t, tipo, d, inst, q, unit, valor }. `anterior` volta a valer quando a importação do atual é desfeita.
+export const CAB_ARECEBER = ["produto", "tipo", "tipo de evento", "previsao de pagamento", "instituicao", "conta", "quantidade", "preco unitario", "valor liquido"];
+export const RETRATO_VELHO = 45; // dias
+const TIPOS_AREC = { "rendimento": "rendimento", "dividendo": "dividendo", "juros sobre capital proprio": "jcp" };
+export const tipoAReceber = (v) => { const k = chaveTxt(v); return TIPOS_AREC[k] || (k.startsWith("reembolso") ? "reembolso" : "outro"); };
+
+export function normalizarAReceber(l) {
+  if (!Array.isArray(l)) return { erro: "formato" };
+  if (l.every((v) => v == null || String(v).trim() === "")) return { erro: "vazia" };
+  if (chaveTxt(l[5]).startsWith("total") && l.slice(0, 5).every((v) => v == null || String(v).trim() === "")) return { total: numero(l[6]) };
+  const t = baseDe(papelDe(l[0])), d = dataIso(l[2]);
+  const q = numero(l[4]), unit = numero(l[5]), valor = numero(l[6]);
+  if (!d) return { erro: "data" };
+  if (!PAPEL_CART.test(t)) return { erro: "papel" };
+  // Reembolso vem com a quantidade em "-" no relatório da B3 (conferido num export real de 10/11/2026): a linha vale
+  // pelo valor líquido, sem quantidade.
+  if ((q != null && q < 0) || valor == null || valor < 0 || (unit != null && unit < 0)) return { erro: "numero" };
+  return { linha: { t, tipo: tipoAReceber(l[1]), d, inst: siglaCorretora(l[3]), q: q == null ? null : r8(q), unit: unit == null ? null : r8(unit), valor: r2(valor) } };
+}
+
+// Data do retrato: a do nome do arquivo (proventos-a-receber-2026-11-10.xlsx, eventos-2026-11-10-08-12-40.xlsx) ou,
+// sem data no nome, o dia da importação. Data no futuro vira hoje.
+export function dataDoNome(nome, hoje) {
+  const m = /(\d{4})-(\d{2})-(\d{2})/.exec(String(nome || ""));
+  const d = m ? dataIso(m[0]) : "";
+  return d && d <= hoje ? d : hoje;
+}
+
+// Linhas reduzidas -> retrato. A linha do total não entra; serve para conferir a soma (diferença de mais de 1 centavo
+// vira aviso na prévia).
+export function retratoDe(linhas, nome, hoje) {
+  const out = { linhas: [], ignorados: 0, motivos: {}, total: 0, totalArquivo: null, confere: null, de: "", ate: "", dataRef: dataDoNome(nome, hoje), tipos: {} };
+  for (const l of linhas || []) {
+    const n = normalizarAReceber(l);
+    if (n.erro) { if (n.erro !== "vazia") { out.ignorados++; out.motivos[n.erro] = (out.motivos[n.erro] || 0) + 1; } continue; }
+    if ("total" in n) { if (n.total != null) out.totalArquivo = r2(n.total); continue; }
+    out.linhas.push(n.linha);
+  }
+  out.linhas.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : a.t < b.t ? -1 : a.t > b.t ? 1 : a.inst < b.inst ? -1 : a.inst > b.inst ? 1 : 0));
+  for (const x of out.linhas) {
+    out.total += x.valor;
+    out.tipos[x.tipo] = (out.tipos[x.tipo] || 0) + 1;
+    if (!out.de || x.d < out.de) out.de = x.d;
+    if (!out.ate || x.d > out.ate) out.ate = x.d;
+  }
+  out.total = r2(out.total);
+  if (out.totalArquivo != null) out.confere = Math.abs(out.totalArquivo - out.total) <= 0.01 + 1e-9;
+  return out;
+}
+
+// Põe o retrato novo no doc. "igual": mesmas linhas, nada muda. "antigo": a data é anterior à do guardado, recusado.
+// "novo": substitui (o guardado vira `anterior`).
+export function aplicarRetrato(doc, r, imp, em) {
+  const atual = doc && doc.atual;
+  if (atual && JSON.stringify(atual.linhas) === JSON.stringify(r.linhas)) return { status: "igual", doc, guardado: atual.dataRef };
+  if (atual && r.dataRef < atual.dataRef) return { status: "antigo", doc, guardado: atual.dataRef };
+  return { status: "novo", doc: { v: 1, atual: { dataRef: r.dataRef, imp, em, linhas: r.linhas, total: r.total }, anterior: atual || null }, substitui: atual ? atual.dataRef : null };
+}
+// Desfazer a importação que trouxe o retrato devolve o anterior.
+export function desfazerRetrato(doc, imp) {
+  if (!doc || !doc.atual) return { doc: doc || null, mudou: false };
+  if (doc.atual.imp === imp) return { doc: doc.anterior ? { v: 1, atual: doc.anterior, anterior: null } : null, mudou: true };
+  if (doc.anterior && doc.anterior.imp === imp) return { doc: { ...doc, anterior: null }, mudou: true };
+  return { doc, mudou: false };
 }
 
 // ---------- cálculo ----------
@@ -742,18 +818,57 @@ export function calcular(extrato, ctx = {}) {
   ].sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : 0)).slice(0, 12);
 
   // 8. A receber, agenda e alertas
+  // Com o retrato da B3 (ctx.retrato, o `atual` do doc areceber): as linhas com data de hoje em diante, somadas por
+  // papel, data e tipo, origem "b3". A linha que já passou sai sozinha (o pagamento entra pelos proventos recebidos), e a
+  // que já está nos recebidos com o mesmo papel e data não conta duas vezes. A estimativa pela CVM fica só para o FII da
+  // carteira que não aparece no retrato no mês corrente, origem "estimativa", sem data.
   const aReceber = [];
   const pagouEsteMes = new Set(provs.filter((p) => ym(p[0]) === mesAtual).map((p) => p[1]));
+  const ret = ctx.retrato && Array.isArray(ctx.retrato.linhas) && ctx.retrato.dataRef ? ctx.retrato : null;
+  const noRetratoMes = new Set();
+  if (ret) {
+    const recebido = new Set(provs.map((p) => p[1] + "|" + p[0]));
+    const adiante = somarMeses(mesAtual, 12) + hoje.slice(7); // mais de 12 meses: grupo "mais adiante"
+    const grupos = new Map();
+    for (const x of ret.linhas) {
+      if (ym(x.d) === mesAtual) noRetratoMes.add(x.t);
+      if (x.d < hoje || recebido.has(x.t + "|" + x.d)) continue;
+      const k = x.t + "|" + x.d + "|" + x.tipo;
+      if (!grupos.has(k)) grupos.set(k, { t: x.t, tipo: x.tipo, data: x.d, q: 0, porCota: x.unit, valor: 0, corretoras: [], origem: "b3", adiante: x.d > adiante });
+      const g = grupos.get(k);
+      g.q += x.q; g.valor += x.valor;
+      if (x.unit != null && (g.porCota == null || x.unit > g.porCota)) g.porCota = x.unit;
+      if (x.inst && !g.corretoras.includes(x.inst)) g.corretoras.push(x.inst);
+    }
+    for (const g of grupos.values()) aReceber.push({ ...g, q: r8(g.q), valor: r2(g.valor) });
+    aReceber.sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : b.valor - a.valor || (a.t < b.t ? -1 : 1)));
+  }
+  const estimados = [];
   for (const p of posicoes) {
-    if (p.classe !== "fii") continue;
+    if (p.classe !== "fii" || noRetratoMes.has(p.t)) continue;
     const f = ref.fundos[p.t];
     // O rendimento do resumo é estimado (DY do mês × VP) e às vezes vem torto: fica de fora o que passa de 5% da cota no mês
     const pc = p.preco != null ? p.preco : p.pm;
     if (!f || !(f.rend > 0) || pagouEsteMes.has(p.t) || (pc > 0 && f.rend > pc * 0.05)) continue;
-    aReceber.push({ t: p.t, porCota: f.rend, valor: r2(f.rend * p.q), ref: f.ref || "", data: null });
+    estimados.push({ t: p.t, tipo: "rendimento", porCota: f.rend, valor: r2(f.rend * p.q), ref: f.ref || "", data: null, origem: "estimativa" });
   }
-  aReceber.sort((a, b) => b.valor - a.valor);
+  estimados.sort((a, b) => b.valor - a.valor);
+  aReceber.push(...estimados);
+  const diasRet = ret ? Math.round((Date.parse(hoje + "T12:00:00Z") - Date.parse(ret.dataRef + "T12:00:00Z")) / 86400000) : null;
+  const b3NoMes = aReceber.filter((x) => x.origem === "b3" && ym(x.data) === mesAtual);
+  const retrato = ret ? {
+    dataRef: ret.dataRef, dias: diasRet, velho: diasRet > RETRATO_VELHO, linhas: ret.linhas.length,
+    aReceber: aReceber.filter((x) => x.origem === "b3").length, noMes: r2(b3NoMes.reduce((s, x) => s + x.valor, 0)),
+    total: r2(aReceber.filter((x) => x.origem === "b3").reduce((s, x) => s + x.valor, 0)),
+  } : null;
   const alertas = [];
+  // Fundo da carteira que pagou nos 3 meses anteriores, ainda não pagou neste e não está no retrato deste mês. Só com
+  // retrato do mês corrente: um retrato de outro mês não diz nada sobre este.
+  if (ret && ym(ret.dataRef) === mesAtual) {
+    const desde = somarMeses(mesAtual, -3);
+    const pagou3 = new Set(provs.filter((p) => ym(p[0]) >= desde && ym(p[0]) < mesAtual).map((p) => p[1]));
+    for (const p of posicoes) if (["fii", "fiagro", "fiinfra"].includes(p.classe) && pagou3.has(p.t) && !pagouEsteMes.has(p.t) && !noRetratoMes.has(p.t)) alertas.push({ tipo: "fora-do-retrato", t: p.t, mes: mesAtual, dataRef: ret.dataRef });
+  }
   const porCotaRend = new Map();
   for (const [d, b, tipo, , pc] of [...provs].reverse()) {
     if (tipo !== "rend" || !(pc > 0)) continue;
@@ -770,9 +885,13 @@ export function calcular(extrato, ctx = {}) {
     if (p.classe === "subscricao" && (ultimoMov.get(p.t) || "") >= isoMenosDias(hoje, 60)) alertas.push({ tipo: "subscricao", t: p.t, q: p.q, vence: null });
     if (patrimonio > 0 && p.valor / patrimonio > 0.2) alertas.push({ tipo: "concentracao", t: p.t, pct: Math.round((p.valor / patrimonio) * 1000) / 10 });
   }
+  // Agenda: pagamentos com data (os da B3), subscrições, as estimativas sem data e, por último, o que fica mais adiante
+  const pag = (x) => ({ o: "pagamento", t: x.t, tipo: x.tipo, valor: x.valor, data: x.data, origem: x.origem, adiante: !!x.adiante, ...(x.ref ? { ref: x.ref } : {}) });
   const agenda = [
+    ...aReceber.filter((x) => x.data && !x.adiante).map(pag),
     ...alertas.filter((a) => a.tipo === "subscricao").map((a) => ({ o: "subscricao", t: a.t, q: a.q, data: null })),
-    ...aReceber.map((x) => ({ o: "pagamento", t: x.t, valor: x.valor, data: null, ref: x.ref })),
+    ...aReceber.filter((x) => !x.data).map(pag),
+    ...aReceber.filter((x) => x.adiante).map(pag),
   ];
 
   // 9. Saídas: vendas e retiradas, e o realizado
@@ -843,7 +962,7 @@ export function calcular(extrato, ctx = {}) {
     prov12: r2(prov12), media12: r2(prov12 / 12), yoc: custoTotal > 0 ? Math.round((prov12 / custoTotal) * 1e4) / 100 : null,
     porTipo12: Object.fromEntries(Object.entries(porTipo12).map(([k, v]) => [k, r2(v)])),
     mesAtual: pegaMes(mesAtual), mesAnterior: pegaMes(mAnt), provTotal: r2(provTotal), provDesde: provs.length ? ym(provs[provs.length - 1][0]) : null, provN: provs.length, provDaMov: daMov,
-    meses: mesesProv, aportes, rentabilidade: rent, encerradas, recentes, aReceber, agenda, alertas,
+    meses: mesesProv, aportes, rentabilidade: rent, encerradas, recentes, aReceber, retrato, agenda, alertas,
     ir: { mes: mesAtual, vendasAcoes: r2(vendasAcoesMes), lucroFii: r2(lucroFiiMes), jcpAno: r2(jcpAno), ano: anoAtual, prejuizoAcoes: r2(prejuizoAcoes), prejuizoFii: r2(prejuizoFii) },
     avisos: Object.entries(avisos).map(([k, n]) => ({ k, n })),
     linhas: { neg: ex.neg.length, mov: ex.mov.length, prov: ex.prov.length },
@@ -867,7 +986,10 @@ export function projecao(metaCfg, calc, hoje) {
   const provMes = r.mesAtual.total;
   const aportado = f.compras - f.vendas;
   const esperado = (cfg.aporte || 0) + (cfg.reinvestir ? provMes : 0);
-  out.mesPlano = { planejado: cfg.aporte || 0, aportado: r2(aportado), proventos: provMes, reinvestidos: r2(Math.min(Math.max(f.compras, 0), provMes)), contra: r2(aportado - esperado), esperado: r2(esperado) };
+  // O que o retrato da B3 diz que ainda cai no mês (de hoje até o fim do mês): fica à parte, o "contra o plano" é do que já aconteceu
+  const aRecMes = (r.aReceber || []).filter((x) => x.origem === "b3" && x.data && ym(x.data) === mesAtual).reduce((s, x) => s + x.valor, 0);
+  out.mesPlano = { planejado: cfg.aporte || 0, aportado: r2(aportado), proventos: provMes, reinvestidos: r2(Math.min(Math.max(f.compras, 0), provMes)), contra: r2(aportado - esperado), esperado: r2(esperado),
+    aReceber: r2(aRecMes), comAReceber: r2(provMes + aRecMes), retrato: r.retrato ? r.retrato.dataRef : null };
   // Realizado: média móvel de 12 meses dos proventos, do primeiro mês com dado até o mês passado
   const pm = new Map((r.meses || []).map((m) => [m.mes, m.total]));
   const realizado = [];
@@ -1116,7 +1238,7 @@ export const listarSimulacoes = (simulacoes, mensal) => ((simulacoes && simulaco
 const resp = (dados, status = 200) =>
   new Response(JSON.stringify(dados), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" } });
 
-const IDS = ["extrato", "importacoes", "meta"];
+const IDS = ["extrato", "importacoes", "meta", "areceber"];
 const IDS_SIM = ["simulacoes", "mensal"];
 const IDS_TODOS = [...IDS, ...IDS_SIM];
 const cacheGet = new Map(); // email -> { em, txt }
@@ -1212,7 +1334,7 @@ async function montar(env, quem, deps) {
     return { vazia: true, meta: projecao(docs.meta, calcular(extratoVazio(), { hoje }), hoje), importacoes: docs.importacoes?.lista || [], simulacoes: [], limites: limitesDe(prefs.limites), sinais: { compra: [], venda: [] } };
   }
   const [b3, fiiResumo] = await Promise.all([lerMetaDoc(env, "b3", deps), lerMetaDoc(env, "fii-resumo", deps)]);
-  const calc = calcular(docs.extrato, { b3, fiiResumo, importacoes: docs.importacoes, hoje });
+  const calc = calcular(docs.extrato, { b3, fiiResumo, importacoes: docs.importacoes, retrato: docs.areceber ? docs.areceber.atual : null, hoje });
   const mensal = await fecharSePreciso(env, col, docs, calc, hoje, deps);
   const lim = aplicarLimites(calc.posicoes, prefs.limites);
   return {
@@ -1468,25 +1590,43 @@ export async function rotaCarteira(request, env, quem, caminho, deps) {
       let total = 0;
       for (const a of arquivos) {
         if (!a || typeof a !== "object" || !Array.isArray(a.linhas)) return resp({ erro: "arquivo" }, 400);
-        if (!CAMPO[a.tipo]) return resp({ erro: "Tipo de arquivo desconhecido." }, 400);
+        if (!CAMPO[a.tipo] && a.tipo !== "areceber") return resp({ erro: "Tipo de arquivo desconhecido." }, 400);
         total += a.linhas.length;
         a.nome = String(a.nome || "").slice(0, 120);
         a.hash = /^[0-9a-f]{16,64}$/.test(String(a.hash || "")) ? String(a.hash).slice(0, 16) : await hashDe(a.linhas);
       }
       if (total > MAX_LINHAS) return resp({ erro: `Até ${MAX_LINHAS.toLocaleString("pt-BR")} linhas por vez. Mande os arquivos em partes.` }, 413);
       const docs = await lerDocs(env, col, deps, true);
-      const imp = novoId();
+      const imp = novoId(), em = new Date().toISOString(), hoje = hojeDe(deps);
       const r = mesclar(docs.extrato || extratoVazio(), arquivos, imp);
-      const porArquivo = r.porArquivo.map((x) => ({ nome: x.nome, tipo: x.tipo, linhas: x.linhas, novos: x.novos, repetidos: x.repetidos, ignorados: x.ignorados, motivos: x.motivos, de: x.de, ate: x.ate, tiposDesconhecidos: x.tiposDesconhecidos }));
-      const saida = { novos: r.novos, repetidos: r.repetidos, ignorados: r.ignorados, porArquivo };
+      // Retratos dos proventos a receber, do mais antigo para o mais novo (o último que entra é o que vale)
+      let docRet = docs.areceber || null, retMudou = false, retNovos = 0;
+      const retratos = arquivos.map((a, i) => ({ a, i, rr: a.tipo === "areceber" ? retratoDe(a.linhas, a.nome, hoje) : null })).filter((x) => x.rr).sort((x, y) => (x.rr.dataRef < y.rr.dataRef ? -1 : x.rr.dataRef > y.rr.dataRef ? 1 : x.i - y.i));
+      for (const { a, i, rr } of retratos) {
+        const ap = aplicarRetrato(docRet, rr, imp, em);
+        const n = rr.linhas.length, novo = ap.status === "novo" && n > 0;
+        if (novo) { docRet = ap.doc; retMudou = true; retNovos += n; }
+        r.porArquivo[i] = {
+          nome: a.nome, tipo: "areceber", hash: a.hash, linhas: n, novos: novo ? n : 0, repetidos: ap.status === "igual" ? n : 0, ignorados: rr.ignorados, motivos: rr.motivos, de: rr.de, ate: rr.ate, tiposDesconhecidos: {},
+          retrato: { dataRef: rr.dataRef, status: n ? ap.status : "vazio", guardado: ap.guardado || null, substitui: ap.substitui || null, total: rr.total, totalArquivo: rr.totalArquivo, confere: rr.confere, tipos: rr.tipos },
+        };
+        r.ignorados += rr.ignorados;
+      }
+      const porArquivo = r.porArquivo.map((x) => ({ nome: x.nome, tipo: x.tipo, linhas: x.linhas, novos: x.novos, repetidos: x.repetidos, ignorados: x.ignorados, motivos: x.motivos, de: x.de, ate: x.ate, tiposDesconhecidos: x.tiposDesconhecidos, ...(x.tipo === "areceber" ? { retrato: x.retrato } : {}) }));
+      const saida = { novos: r.novos + retNovos, repetidos: r.repetidos + r.porArquivo.reduce((s, x) => s + (x.tipo === "areceber" ? x.repetidos : 0), 0), ignorados: r.ignorados, porArquivo };
       if (b.simular === true) return resp({ ...saida, simulado: true, gravado: false });
       // Nada novo: a carteira fica como está, mas as listas automáticas são conferidas (voltam se a pessoa apagou alguma)
-      if (!r.novos) return resp({ ...saida, simulado: false, gravado: false, listas: await sincronizarListas(env, quem, docs.extrato, docs.importacoes, deps) });
-      const lista = (docs.importacoes?.lista || []).concat([{ id: imp, em: new Date().toISOString(), novos: r.novos,
-        arquivos: r.porArquivo.filter((x) => x.novos).map((x) => ({ tipo: x.tipo, hash: x.hash, linhas: x.linhas, novos: x.novos, repetidos: x.repetidos, ignorados: x.ignorados, de: x.de, ate: x.ate })) }]).slice(-MAX_IMPORTACOES);
-      await gravarDocs(env, col, { extrato: r.extrato, importacoes: { lista } }, deps);
+      if (!r.novos && !retMudou) return resp({ ...saida, simulado: false, gravado: false, listas: await sincronizarListas(env, quem, docs.extrato, docs.importacoes, deps) });
+      const registro = { id: imp, em, novos: r.novos + retNovos,
+        arquivos: r.porArquivo.filter((x) => x.novos).map((x) => ({ tipo: x.tipo, hash: x.hash, linhas: x.linhas, novos: x.novos, repetidos: x.repetidos, ignorados: x.ignorados, de: x.de, ate: x.ate, ...(x.tipo === "areceber" ? { dataRef: x.retrato.dataRef } : {}) })) };
+      if (retMudou) registro.retrato = { dataRef: docRet.atual.dataRef, linhas: docRet.atual.linhas.length };
+      const lista = (docs.importacoes?.lista || []).concat([registro]).slice(-MAX_IMPORTACOES);
+      const gravar = { importacoes: { lista } };
+      if (r.novos) gravar.extrato = r.extrato;
+      if (retMudou) gravar.areceber = docRet;
+      await gravarDocs(env, col, gravar, deps);
       limparCacheCarteira(quem.email);
-      const listas = await sincronizarListas(env, quem, r.extrato, { lista }, deps);
+      const listas = r.novos ? await sincronizarListas(env, quem, r.extrato, { lista }, deps) : null;
       return resp({ ...saida, gravado: true, importacao: imp, listas });
     }
     if (caminho.startsWith("importacoes/") && m === "DELETE") {
@@ -1496,11 +1636,18 @@ export async function rotaCarteira(request, env, quem, caminho, deps) {
       const lista = docs.importacoes?.lista || [];
       if (!lista.some((x) => x.id === id)) return resp({ erro: "Importação não encontrada." }, 404);
       const r = desfazer(docs.extrato || extratoVazio(), id);
+      const dr = desfazerRetrato(docs.areceber, id);
       const restantes = lista.filter((x) => x.id !== id);
-      await gravarDocs(env, col, { extrato: r.extrato, importacoes: { lista: restantes } }, deps);
+      const gravar = { extrato: r.extrato, importacoes: { lista: restantes } };
+      if (dr.mudou && dr.doc) gravar.areceber = dr.doc;
+      await gravarDocs(env, col, gravar, deps);
+      if (dr.mudou && !dr.doc) {
+        await env.DB.prepare("DELETE FROM docs WHERE collection = ? AND id = ?").bind(col, "areceber").run();
+        deps.removerDoEspelho(env, [{ collection: col, id: "areceber" }]);
+      }
       limparCacheCarteira(quem.email);
       const listas = await sincronizarListas(env, quem, r.extrato, { lista: restantes }, deps);
-      return resp({ ok: true, removidas: r.removidas, listas });
+      return resp({ ok: true, removidas: r.removidas + (dr.mudou ? 1 : 0), retrato: dr.mudou ? (dr.doc ? dr.doc.atual.dataRef : null) : undefined, listas });
     }
     if (caminho === "meta" && m === "GET") {
       const j = await montar(env, quem, deps);

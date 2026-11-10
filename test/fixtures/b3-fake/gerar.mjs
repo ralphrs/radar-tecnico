@@ -4,9 +4,10 @@
 //   node test/fixtures/b3-fake/gerar.mjs --saida <pasta> [--ate AAAA-MM-DD] [--semente 2020]
 //   node test/fixtures/b3-fake/gerar.mjs --saida <pasta> --diff <manifesto-anterior.json> [--ate ...]
 //
-// Sem --diff: grava negociacao-*.xlsx, movimentacao-*.xlsx, proventos-recebidos-*.xlsx (um por ano), README.md e
-// manifesto.json. Com --diff: grava só as linhas que o manifesto anterior não tem, em correcao-AAAA-MM-DD-*.xlsx, e
-// correcao-AAAA-MM-DD-manifesto.json (o manifesto completo desta geração, base da próxima correção).
+// Sem --diff: grava negociacao-*.xlsx, movimentacao-*.xlsx, proventos-recebidos-*.xlsx (um por ano),
+// proventos-a-receber-AAAA-MM-DD.xlsx (o retrato do que a B3 já provisionou na data final), README.md e manifesto.json.
+// Com --diff: grava só as linhas que o manifesto anterior não tem, em correcao-AAAA-MM-DD-*.xlsx, mais o retrato
+// inteiro (ele não soma, substitui), e correcao-AAAA-MM-DD-manifesto.json (o manifesto completo desta geração).
 //
 // O roteiro fica em cenarios.mjs. Mesma versão + mesma semente + mesma data final = mesmos arquivos, byte a byte.
 // As planilhas são escritas por xlsx.py (openpyxl), porque o repositório não tem biblioteca de planilha.
@@ -17,7 +18,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizarLinha, chaveLinha, mesclar, calcular } from "../../../src/carteira.js";
+import { normalizarLinha, normalizarAReceber, retratoDe, chaveLinha, mesclar, calcular } from "../../../src/carteira.js";
 import { CENARIOS, PAPEIS, ESPERADO, refCalculo } from "./cenarios.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -29,8 +30,14 @@ export const CAB = {
   negociacao: ["Data do Negócio", "Tipo de Movimentação", "Mercado", "Prazo/Vencimento", "Instituição", "Código de Negociação", "Quantidade", "Preço", "Valor"],
   movimentacao: ["Entrada/Saída", "Data", "Movimentação", "Produto", "Instituição", "Quantidade", "Preço unitário", "Valor da Operação"],
   proventos: ["Produto", "Pagamento", "Tipo de Evento", "Instituição", "Quantidade", "Preço unitário", "Valor líquido"],
+  areceber: ["Produto", "Tipo", "Tipo de Evento", "Previsão de pagamento", "Instituição", "Conta", "Quantidade", "Preço unitário", "Valor líquido"],
 };
-export const ABA = { negociacao: "Negociação", movimentacao: "Movimentação", proventos: "Proventos Recebidos" };
+export const ABA = { negociacao: "Negociação", movimentacao: "Movimentação", proventos: "Proventos Recebidos", areceber: "Proventos a Receber" };
+// Proventos a Receber: o evento em maiúsculas, como a B3 escreve nesse relatório, e um número de conta inventado
+const EVENTO_AREC = { rend: "RENDIMENTO", div: "DIVIDENDO", jcp: "JUROS SOBRE CAPITAL PRÓPRIO", amort: "AMORTIZAÇÃO" };
+const CONTA_FAKE = (corr) => "00" + String(1000 + (parseInt(sha(corr).toString("hex").slice(0, 6), 16) % 9000));
+const tipoPapel = (t) => (/11$/.test(t) ? "Fundo" : /3[1-9]$/.test(t) ? "BDR" : /4$/.test(t) ? "PN" : /3$/.test(t) ? "ON" : "Outro");
+export const AVISO_PADRAO = 20; // dias entre a B3 provisionar o provento e a data de pagamento
 const COL_DATA = { negociacao: 0, movimentacao: 1, proventos: 1 };
 const TIPO_TXT = { rend: "Rendimento", div: "Dividendo", jcp: "Juros Sobre Capital Próprio", amort: "Amortização" };
 
@@ -44,6 +51,7 @@ const br = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const deBr = (s) => (/^\d{2}\/\d{2}\/\d{4}$/.test(s) ? `${s.slice(6)}-${s.slice(3, 5)}-${s.slice(0, 2)}` : s);
 const dia = (iso) => new Date(iso + "T12:00:00Z");
 const iso = (dt) => dt.toISOString().slice(0, 10);
+const menosDias = (d, n) => { const x = dia(d); x.setUTCDate(x.getUTCDate() - n); return iso(x); };
 export const util = (d) => { const x = dia(d); const w = x.getUTCDay(); if (w === 6) x.setUTCDate(x.getUTCDate() + 2); if (w === 0) x.setUTCDate(x.getUTCDate() + 1); return iso(x); };
 const maisUteis = (d, n) => { const x = dia(d); while (n > 0) { x.setUTCDate(x.getUTCDate() + 1); const w = x.getUTCDay(); if (w !== 0 && w !== 6) n--; } return iso(x); };
 const proxMes = (m) => { const [a, mm] = m.split("-").map(Number); return mm === 12 ? `${a + 1}-01` : `${a}-${String(mm + 1).padStart(2, "0")}`; };
@@ -52,16 +60,25 @@ export const hojeBr = () => new Date(Date.now() - 3 * 3600_000).toISOString().sl
 
 // ---------- o que a página faz antes de mandar (public/index.html: detectarTipo e reduzirLinha) ----------
 
-const semAcento = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+const semAcento = (s) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const CAB_ARECEBER = ["produto", "tipo", "tipo de evento", "previsao de pagamento", "instituicao", "conta", "quantidade", "preco unitario", "valor liquido"];
 export function detectarTipo(cab) {
-  const c = cab.map((v) => semAcento(String(v || "")).toLowerCase().trim());
+  const c = cab.map((v) => semAcento(String(v || "")).toLowerCase().replace(/\s+/g, " ").trim());
   const tem = (x) => c.some((v) => v.includes(x));
+  // Proventos a Receber: cabeçalho exato (o nome do arquivo varia); vem antes, porque também tem "pagamento"
+  if (CAB_ARECEBER.every((x, i) => c[i] === x) && c.slice(9).every((v) => !v)) return "areceber";
   if (tem("data do negocio") && tem("codigo de negociacao")) return "negociacao";
   if (tem("entrada/saida") && tem("movimentacao") && tem("produto")) return "movimentacao";
-  if (tem("produto") && tem("pagamento") && tem("tipo de evento")) return "proventos";
+  if (tem("produto") && tem("pagamento") && tem("tipo de evento") && !tem("previsao de pagamento")) return "proventos";
   return null;
 }
 export function reduzirLinha(tipo, r) {
+  // Proventos a Receber: sai o Tipo (ON, PN, Fundo) e a Conta; fica [papel, evento, previsão, instituição, qtd, unitário, líquido]
+  if (tipo === "areceber") {
+    const l = [r[0], r[2], r[3], r[4], r[6], r[7], r[8]].map((v) => (v === undefined ? null : v));
+    if (l[0] != null) l[0] = String(l[0]).split(" - ")[0].trim();
+    return l;
+  }
   const l = r.slice(0, tipo === "negociacao" ? 9 : tipo === "movimentacao" ? 8 : 7);
   const k = tipo === "movimentacao" ? 3 : tipo === "proventos" ? 0 : -1;
   if (k >= 0 && l[k] != null) l[k] = String(l[k]).split(" - ")[0].trim();
@@ -184,6 +201,24 @@ export function gerar({ ate = hojeBr(), semente = SEMENTE } = {}) {
   // Mais novo primeiro, como a B3 exporta
   for (const t of Object.keys(linhas)) linhas[t].sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : a.seq - b.seq));
 
+  // Proventos a Receber na data final: os proventos do roteiro com pagamento depois de --ate que a B3 já provisionou
+  // (aviso dias antes do pagamento; AVISO_PADRAO sem `aviso`), com a quantidade de cada corretora em --ate. Não muda
+  // nenhuma linha dos outros arquivos: quando --ate passar da data, o mesmo provento sai nos recebidos.
+  const previstos = intents.filter((x) => x.k === "prov" && x.d > ate && menosDias(x.d, x.aviso ?? AVISO_PADRAO) <= ate)
+    .sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : a.papel < b.papel ? -1 : a.papel > b.papel ? 1 : a.ord - b.ord));
+  const itensRet = [];
+  let somaRet = 0;
+  for (const x of previstos) {
+    for (const [corr, q] of est.get(x.papel) || new Map()) {
+      if (!(q > 0) || (x.corr && corr !== x.corr)) continue;
+      const liq = r2(q * x.pc * (x.tipo === "jcp" ? 0.85 : 1));
+      if (liq < 0.01) continue;
+      somaRet += liq;
+      itensRet.push({ d: x.d, cen: x.cen, row: [prod(x.papel), tipoPapel(x.papel), EVENTO_AREC[x.tipo], br(x.d), corr, CONTA_FAKE(corr), qtdTexto(q), x.pc, liq] });
+    }
+  }
+  itensRet.push({ d: ate, cen: 15, row: [null, null, null, null, null, null, null, "Total líquido", r2(somaRet)] });
+
   // Arquivos: Negociação e Movimentação inteiras; Proventos por ano (a B3 limita o período)
   const carimbo = `${ate}-12-00-00`;
   const arquivos = [
@@ -194,6 +229,7 @@ export function gerar({ ate = hojeBr(), semente = SEMENTE } = {}) {
     const de = `${a}-01-01`, fim = a === Number(ate.slice(0, 4)) ? ate : `${a}-12-31`;
     arquivos.push({ nome: `proventos-recebidos-${de}-a-${fim}.xlsx`, tipo: "proventos", itens: linhas.proventos.filter((l) => l.d >= de && l.d <= fim) });
   }
+  arquivos.push({ nome: `proventos-a-receber-${ate}.xlsx`, tipo: "areceber", itens: itensRet });
   return { ate, semente, versao: VERSAO, arquivos: arquivos.map(comHashes) };
 }
 
@@ -201,15 +237,20 @@ function comHashes(a) {
   return { ...a, linhas: a.itens.map((l) => l.row), hashes: a.itens.map((l) => hashLinha(a.tipo, l.row)), cenarios: a.itens.map((l) => l.cen) };
 }
 
+// O retrato (areceber) não entra em `linhas`: ele não é deduplicado, cada importação troca o anterior. Fica em `retrato`.
 export function manifesto(g) {
   const linhas = { negociacao: [], movimentacao: [], proventos: [] };
-  for (const a of g.arquivos) linhas[a.tipo].push(...a.hashes);
+  for (const a of g.arquivos) if (linhas[a.tipo]) linhas[a.tipo].push(...a.hashes);
+  const ret = g.arquivos.find((a) => a.tipo === "areceber");
+  const rr = ret ? retratoDe(ret.linhas.map((l) => reduzirLinha("areceber", l)), ret.nome, g.ate) : null;
+  const ignoradas = (a) => (a.tipo === "areceber" ? a.linhas.filter((l) => normalizarAReceber(reduzirLinha(a.tipo, l)).erro).length : a.linhas.filter((l) => normalizarLinha(a.tipo, reduzirLinha(a.tipo, l)).erro).length);
   return {
     gerador: "test/fixtures/b3-fake/gerar.mjs",
     versao: g.versao, semente: g.semente, ate: g.ate,
-    arquivos: g.arquivos.map((a) => ({ nome: a.nome, tipo: a.tipo, linhas: a.linhas.length, ignoradas: a.linhas.filter((l) => normalizarLinha(a.tipo, reduzirLinha(a.tipo, l)).erro).length })),
+    arquivos: g.arquivos.map((a) => ({ nome: a.nome, tipo: a.tipo, linhas: a.linhas.length, ignoradas: ignoradas(a) })),
     totais: Object.fromEntries(Object.entries(linhas).map(([k, v]) => [k, v.length])),
     linhas,
+    ...(rr ? { retrato: { nome: ret.nome, dataRef: rr.dataRef, linhas: rr.linhas.length, total: rr.total, confere: rr.confere } } : {}),
   };
 }
 
@@ -223,6 +264,7 @@ export function diferenca(g, anterior) {
   }
   const novas = { negociacao: [], movimentacao: [], proventos: [] };
   for (const a of g.arquivos) {
+    if (a.tipo === "areceber") continue;
     const m = resto[a.tipo] || new Map();
     a.linhas.forEach((row, i) => {
       const h = a.hashes[i];
@@ -235,6 +277,10 @@ export function diferenca(g, anterior) {
     nome: `correcao-${g.ate}-${tipo === "proventos" ? "proventos-recebidos" : tipo}.xlsx`, tipo,
     linhas: l.map((x) => x.row), hashes: l.map((x) => x.h), cenarios: l.map((x) => x.cen),
   }));
+  // O retrato vai inteiro (na importação ele toma o lugar do anterior), a menos que seja o mesmo do manifesto anterior
+  const ret = g.arquivos.find((a) => a.tipo === "areceber");
+  const ra = manifesto(g).retrato, rb = anterior.retrato;
+  if (ret && !(rb && ra && rb.dataRef === ra.dataRef && rb.linhas === ra.linhas && rb.total === ra.total)) arquivos.push({ ...ret, nome: `correcao-${g.ate}-proventos-a-receber.xlsx` });
   return { arquivos, sumiram, novas: Object.fromEntries(Object.entries(novas).map(([t, l]) => [t, l.length])) };
 }
 
@@ -261,10 +307,13 @@ export function lerXlsx(caminho) {
 // Importa tudo como a página faria e calcula com a cotação guardada em cenarios.mjs (REF)
 export function simularImportacao(arquivos, hoje) {
   const envio = arquivos.map((a) => ({ nome: a.nome, tipo: a.tipo, linhas: a.linhas.map((l) => reduzirLinha(a.tipo, l)) }));
-  const m = mesclar(null, envio, "imp1");
+  const m = mesclar(null, envio.filter((a) => a.tipo !== "areceber"), "imp1");
   const importacoes = { lista: [{ id: "imp1", arquivos: m.porArquivo.map((x) => ({ tipo: x.tipo, de: x.de, ate: x.ate })) }] };
+  const ra = envio.filter((a) => a.tipo === "areceber").pop();
+  const rr = ra ? retratoDe(ra.linhas, ra.nome, hoje) : null;
+  const retrato = rr ? { dataRef: rr.dataRef, linhas: rr.linhas, total: rr.total } : null;
   const { b3, fiiResumo } = refCalculo();
-  return { m, importacoes, calc: calcular(m.extrato, { b3, fiiResumo, importacoes, hoje }) };
+  return { m, importacoes, rr, calc: calcular(m.extrato, { b3, fiiResumo, importacoes, retrato, hoje }) };
 }
 
 const NOME_CLASSE = { acao: "Ação", fii: "FII", fiinfra: "FI-Infra", fiagro: "Fiagro", etf: "ETF", bdr: "BDR", subscricao: "Subscrição", outro: "Outro" };
@@ -282,7 +331,7 @@ export function readme(g, man) {
   for (const a of man.arquivos) L.push(`| ${a.nome} | ${a.linhas} | ${a.ignoradas} |`);
   L.push("", `Total: ${man.totais.negociacao} negócios, ${man.totais.movimentacao} linhas de Movimentação e ${man.totais.proventos} pagamentos.`, "");
   L.push(`## Como importar`, "");
-  L.push(`Na conta de teste, menu da conta → Importar extratos, solte todos os .xlsx de uma vez. A prévia deve mostrar ${m.novos} linhas novas e ${m.ignorados} ignoradas (Tesouro e CDB). Importar de novo os mesmos arquivos dá 0 novas.`, "");
+  L.push(`Na conta de teste, menu da conta → Importar extratos, solte todos os .xlsx de uma vez. A prévia deve mostrar ${m.novos + (man.retrato ? man.retrato.linhas : 0)} linhas novas (${m.novos} dos extratos e ${man.retrato ? man.retrato.linhas : 0} do retrato dos proventos a receber) e ${m.ignorados} ignoradas (Tesouro e CDB). Importar de novo os mesmos arquivos dá 0 novas.`, "");
   L.push(`Mais tarde, para acompanhar a data, gere só a diferença: \`node test/fixtures/b3-fake/gerar.mjs --saida <pasta> --diff <esta pasta>/manifesto.json\`. Saem arquivos \`correcao-AAAA-MM-DD-*.xlsx\` só com as linhas novas; importe-os por cima. Veja docs/dados-de-teste.md.`, "");
   L.push(`## Roteiro`, "");
   for (const s of CENARIOS) {
@@ -314,9 +363,21 @@ export function readme(g, man) {
     if (a.tipo === "rendimento-menor") L.push(`- Rendimento menor: ${a.t}, de ${brl(a.de)} para ${brl(a.para)} por cota em ${br(a.d)}`);
     else if (a.tipo === "concentracao") L.push(`- Concentração: ${a.t} com ${num(a.pct, 1)}% da carteira`);
     else if (a.tipo === "subscricao") L.push(`- Subscrição em carteira: ${a.t}`);
+    else if (a.tipo === "fora-do-retrato") L.push(`- ${a.t} não aparece nos proventos a receber do mês`);
     else L.push(`- ${a.tipo}: ${a.t}`);
   }
-  L.push("", `A receber (FII sem pagamento no mês, pelo meta/fii-resumo): ${r.aReceber.length ? r.aReceber.map((x) => `${x.t} ${brl(x.valor)}`).join(", ") : "nenhum"}.`, "");
+  L.push("", `**A receber**`, "");
+  const rt = r.retrato, man2 = man.retrato;
+  if (rt && man2) {
+    L.push(`O arquivo ${man2.nome} é o retrato do relatório Proventos a Receber em ${br(rt.dataRef)}: ${man2.linhas} linhas, total líquido ${brl(man2.total)} (a linha "Total líquido" ${man2.confere ? "bate com a soma" : "não bate com a soma"}). Na tela, o card A receber mostra:`, "");
+    L.push(`| Data | Papel | Tipo | Por cota | Líquido | Grupo |`, `|---|---|---|---:|---:|---|`);
+    for (const x of r.aReceber.filter((y) => y.origem === "b3")) L.push(`| ${br(x.data)} | ${x.t} | ${x.tipo} | ${x.porCota == null ? "–" : x.porCota.toLocaleString("pt-BR", { maximumFractionDigits: 6 })} | ${brl(x.valor)} | ${x.adiante ? "mais adiante" : ""} |`);
+    L.push("", `- Ainda neste mês, pela B3: ${brl(rt.noMes)}; total sem o que fica mais adiante: ${brl(r.aReceber.filter((y) => y.origem === "b3" && !y.adiante).reduce((s, y) => s + y.valor, 0))}`);
+  }
+  const est = r.aReceber.filter((x) => x.origem === "estimativa");
+  L.push(`- Estimativa pela CVM (FII que não aparece no retrato do mês): ${est.length ? est.map((x) => `${x.t} ${brl(x.valor)}`).join(", ") : "nenhuma"}`);
+  const fora = r.alertas.filter((a) => a.tipo === "fora-do-retrato").map((a) => a.t);
+  L.push(`- Alerta "não aparece nos proventos a receber": ${fora.length ? fora.join(", ") : "nenhum"}`, "");
   return L.join("\n");
 }
 

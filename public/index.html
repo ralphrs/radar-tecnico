@@ -1193,6 +1193,13 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
 .ct-linhas > div > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ct-linhas .ct-mono { white-space: nowrap; }
 .ct-linhas small { color: var(--muted-foreground); font-size: 12.5px; }
+/* A receber: data na frente de cada linha e o grupo "mais adiante" recolhido */
+.ar-d { display: inline-block; min-width: 3.4em; margin-right: 6px; color: var(--muted-foreground); font: 500 12.5px var(--font-mono); }
+.ar-rot { margin: 12px 0 2px; font: 600 12.5px var(--font-sans); color: var(--muted-foreground); }
+.ar-grupo { margin-top: 4px; border-top: 1px solid var(--border); }
+.ar-grupo > summary { cursor: pointer; padding: 8px 0 4px; font: 500 13px var(--font-sans); color: var(--muted-foreground); border-radius: var(--radius-md); }
+.ar-grupo > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ar-tot > div { font-weight: 600; }
 .ct-mini { height: 6px; border-radius: 3px; background: var(--secondary); overflow: hidden; margin-top: 4px; }
 .ct-mini span { display: block; height: 100%; background: var(--primary); border-radius: 3px; }
 .ct-mov { font-size: 13px; color: var(--muted-foreground); display: flex; flex-direction: column; gap: 8px; }
@@ -1246,6 +1253,8 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
 .ct-arq .n { font: 400 12.5px var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ct-arq .d { grid-column: 2; font-size: 12.5px; color: var(--muted-foreground); }
 .ct-arq .st { grid-row: 1 / span 2; grid-column: 3; text-align: right; font: 500 12.5px var(--font-sans); }
+/* Celular: o status desce para baixo do nome, para o detalhe não virar uma coluna de uma palavra */
+@media (max-width: 560px) { .ct-arq { grid-template-columns: auto minmax(0, 1fr); } .ct-arq .st { grid-row: auto; grid-column: 2; text-align: left; display: block; height: auto; padding: 0; background: none; } .ct-arq .st::before { display: none; } }
 .ct-passos { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
 .ct-passos > div { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; align-items: start; }
 .ct-passos .num { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 14%, var(--card)); color: var(--primary); font: 600 12px var(--font-sans); }
@@ -6594,6 +6603,7 @@ function cardEl(titulo, opts = {}) {
 function textoAlerta(a) {
   if (a.tipo === "rendimento-menor") return [tagEl("rendimento menor", "warn"), " ", papelBtn(a.t), el("span", { class: "ct-mono" }, ` ${fmtNum(a.de, 3)} → ${fmtNum(a.para, 3)}`)];
   if (a.tipo === "subscricao") return [tagEl("subscrição em carteira", "err"), " ", papelBtn(a.t), el("span", {}, ` ${qtd(a.q)} direitos · prazo a confirmar`)];
+  if (a.tipo === "fora-do-retrato") return [tagEl("a receber", "info"), " ", papelBtn(a.t), el("span", {}, ` não aparece nos proventos a receber de ${mesNome(a.mes)} (retrato de ${ddmm(a.dataRef)}); pagou nos últimos 3 meses`)];
   return [tagEl("concentração", "warn"), " ", papelBtn(a.t), el("span", { class: "ct-mono" }, ` ${pc(a.pct)} da carteira`)];
 }
 
@@ -6622,7 +6632,7 @@ function estadoCarteira(j) {
   if (j.desligada) return el("section", { class: "ct-card ct-vazio", role: "status" }, el("h3", {}, "A carteira está desligada neste servidor"),
     el("p", {}, "Falta a chave que cifra os dados (o secret CARTEIRA_KEY do Worker). Sem ela nada é importado nem gravado. Quem cuida do Lookout gera a chave com openssl rand -base64 32 e cola no painel da Cloudflare."));
   return el("section", { class: "ct-card ct-vazio" }, el("h3", {}, "Sua carteira ainda está vazia"),
-    el("p", {}, "Exporte da Área do Investidor da B3 os extratos de Negociação, Movimentação e Proventos recebidos e solte os arquivos na tela de importar. O Lookout monta as posições, o preço médio, os proventos e a meta a partir deles."),
+    el("p", {}, "Exporte da Área do Investidor da B3 os extratos de Negociação, Movimentação e Proventos recebidos (e, se quiser, o Proventos a receber) e solte os arquivos na tela de importar. O Lookout monta as posições, o preço médio, os proventos e a meta a partir deles."),
     el("p", {}, "Os dados ficam cifrados na sua conta e só você vê."),
     el("a", { class: "dd-btn dd-btn--primary", href: "#carteira/mais" }, "Importar extratos"));
 }
@@ -7575,13 +7585,36 @@ function nomeRenda(k) {
   if (k.startsWith("fii:")) return "FIIs · " + k.slice(4);
   return { acao: "Ações (dividendo e JCP)", fiinfra: "FI-Infra", fiagro: "Fiagro", etf: "ETFs", bdr: "BDRs", subscricao: "Recibos de subscrição", outro: "Outros" }[k] || k;
 }
+/* A receber: nomes dos tipos do relatório da B3, valor por cota e data (com o ano quando não é o deste ano) */
+const NOME_AREC = { rendimento: "Rendimento", dividendo: "Dividendo", jcp: "JCP", reembolso: "Reembolso", outro: "Outro evento" };
+const porCotaTxt = (v) => "R$\u00a0" + Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+const dataAr = (d, hoje) => (d.slice(0, 4) === String(hoje || "").slice(0, 4) ? ddmm(d) : ddmm(d) + "/" + d.slice(0, 4));
+const somaV = (l) => l.reduce((s, x) => s + (x.valor || 0), 0);
+function linhaAr(x, hoje, curta) {
+  const det = NOME_AREC[x.tipo] || "Rendimento";
+  return el("div", {}, el("span", {}, el("span", { class: "ar-d" }, dataAr(x.data, hoje)), papelBtn(x.t), el("small", {}, " " + det + (!curta && x.porCota != null ? " · " + porCotaTxt(x.porCota) + "\u00a0por\u00a0cota" : ""))),
+    el("span", { class: "ct-mono" }, rs(x.valor, true)));
+}
+function grupoAdiante(l, hoje, curta) {
+  if (!l.length) return null;
+  return el("details", { class: "ar-grupo" }, el("summary", {}, `Mais adiante, a mais de 12 meses: ${l.length} ${l.length === 1 ? "pagamento" : "pagamentos"}, ${rs(somaV(l), true)}`),
+    el("div", { class: "ct-linhas" }, ...l.map((x) => linhaAr(x, hoje, curta))));
+}
 function agendaEl(r, n) {
-  const l = (r.agenda || []).slice(0, n);
-  if (!l.length) return el("p", { class: "ct-nota" }, "Nada anunciado por enquanto. Rendimentos dos FIIs da carteira e direitos de subscrição aparecem aqui.");
-  return [el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {},
-      el("span", {}, x.o === "subscricao" ? tagEl("subscrição", "err") : "Rendimento", " ", papelBtn(x.t), el("small", {}, x.data ? " " + ddmm(x.data) : x.o === "subscricao" ? " prazo a confirmar" : " data a confirmar")),
-      el("span", { class: "ct-mono" }, x.o === "subscricao" ? qtd(x.q) + " direitos" : "≈ " + rs(x.valor))))),
-    el("p", { class: "ct-nota" }, "Rendimentos estimados pelo último informe da CVM vezes a sua quantidade. A CVM não traz a data de pagamento, então ela fica a confirmar.")];
+  const todos = r.agenda || [];
+  const adiante = todos.filter((x) => x.adiante);
+  const l = todos.filter((x) => !x.adiante).slice(0, n);
+  if (!l.length && !adiante.length) return el("p", { class: "ct-nota" }, "Nada anunciado por enquanto. Rendimentos dos FIIs da carteira e direitos de subscrição aparecem aqui.");
+  const temEst = l.some((x) => x.origem === "estimativa"), rt = r.retrato;
+  const linha = (x) => {
+    if (x.o === "subscricao") return el("div", {}, el("span", {}, tagEl("subscrição", "err"), " ", papelBtn(x.t), el("small", {}, " prazo a confirmar")), el("span", { class: "ct-mono" }, qtd(x.q) + " direitos"));
+    if (x.data) return linhaAr(x, r.hoje, true);
+    return el("div", {}, el("span", {}, "Rendimento ", papelBtn(x.t), el("small", {}, " data a confirmar")), el("span", { class: "ct-mono" }, "≈ " + rs(x.valor)));
+  };
+  const notas = [];
+  if (rt) notas.push(`Datas e valores do relatório Proventos a Receber da B3, retrato de ${ddmm(rt.dataRef)}.` + (rt.velho ? " O retrato tem mais de 45 dias: importe de novo." : ""));
+  if (temEst) notas.push((rt ? "Os sem data são" : "Rendimentos") + " estimados pelo último informe da CVM vezes a sua quantidade. A CVM não traz a data de pagamento, então ela fica a confirmar.");
+  return [el("div", { class: "ct-linhas" }, ...l.map(linha)), grupoAdiante(adiante, r.hoje, true), ...notas.map((t) => el("p", { class: "ct-nota" }, t))].filter(Boolean);
 }
 function rentabEl(r) {
   const x = r.rentabilidade;
@@ -7704,17 +7737,40 @@ function desenharProventos(box, j) {
   const visP = provTodosPapeis ? pl : pl.slice(0, 8);
   pp.append(pl.length ? el("div", { class: "ct-linhas" }, ...visP.map(([t, v]) => el("div", { style: "flex-direction:column;align-items:stretch;gap:0" }, el("div", { style: "display:flex;justify-content:space-between;gap:10px" }, papelBtn(t), el("span", { class: "ct-mono" }, rs(v))), el("div", { class: "ct-mini" }, el("span", { style: `width:${(v / maxP) * 100}%` }))))) : el("p", { class: "ct-nota" }, "Nada no período."));
   if (pl.length > 8) { const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, provTodosPapeis ? "Mostrar menos" : `Ver os ${pl.length}`); b.addEventListener("click", () => { provTodosPapeis = !provTodosPapeis; desenharCarteira(j); }); pp.append(b); }
-  const ar = cardEl("A receber", { pin: "carteira-pagamentos" });
-  ar.append(...aReceberEl(r, j, 8));
+  const ar = cardEl("A receber", { pin: "carteira-pagamentos", sub: r.retrato ? "retrato de " + ddmm(r.retrato.dataRef) : "estimativa" });
+  ar.append(...aReceberEl(r, j));
   dir.append(pp, ar);
   dois.append(esq, dir);
   box.append(dois, el("div", { class: "ct-mais dois" }, cardRendaClasse(r), cartLeitura()));
 }
-function aReceberEl(r, j, n) {
-  const l = (r.aReceber || []).slice(0, n);
-  const ref = j.cotacoes && j.cotacoes.cvm;
-  const out = [el("p", { class: "ct-nota" }, `Rendimentos que os FIIs da carteira ainda não pagaram este mês, estimados pelo último informe da CVM${ref ? " (" + mesC(ref) + ")" : ""} vezes a sua quantidade. A data fica a confirmar.`)];
-  out.push(l.length ? el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " data a confirmar")), el("span", { class: "ct-mono" }, "≈ " + rs(x.valor, x.valor < 100))))) : el("p", { class: "ct-nota" }, "Nada a receber pelo que o Lookout conhece agora."));
+/* Card A receber: com o retrato da B3, cada pagamento com data, tipo, valor por cota e líquido, o total e o grupo
+   "mais adiante" recolhido; embaixo a estimativa pela CVM dos FIIs que o retrato não traz neste mês */
+function aReceberEl(r, j) {
+  const l = r.aReceber || [], rt = r.retrato;
+  const b3 = l.filter((x) => x.origem === "b3"), est = l.filter((x) => x.origem !== "b3");
+  const perto = b3.filter((x) => !x.adiante), longe = b3.filter((x) => x.adiante);
+  const mes = r.hoje.slice(0, 7);
+  const out = [];
+  if (rt) {
+    out.push(el("p", { class: "ct-nota" }, `O que a B3 já provisionou, pelo relatório Proventos a Receber de ${ddmm(rt.dataRef)}. O pagamento que já passou sai daqui e entra nos proventos recebidos na próxima importação do extrato.`));
+    if (rt.velho) out.push(el("p", { class: "ct-nota ct-aviso", role: "note" }, `Retrato de ${ddmm(rt.dataRef)}, importe de novo.`));
+  }
+  if (perto.length) {
+    const noMes = perto.filter((x) => x.data.slice(0, 7) === mes);
+    out.push(el("div", { class: "ct-linhas" }, ...perto.map((x) => linhaAr(x, r.hoje))));
+    out.push(el("div", { class: "ct-linhas ar-tot" },
+      noMes.length && noMes.length < perto.length ? linhaEl("Ainda em " + mesNome(mes), rs(somaV(noMes), true)) : null,
+      linhaEl(longe.length ? "Total, sem o que fica mais adiante" : "Total", rs(somaV(perto), true))));
+  } else if (rt) out.push(el("p", { class: "ct-nota" }, "Nada com data de hoje em diante no retrato."));
+  const ga = grupoAdiante(longe, r.hoje); if (ga) out.push(ga);
+  if (est.length) {
+    const ref = j.cotacoes && j.cotacoes.cvm;
+    if (rt) out.push(el("h4", { class: "ar-rot" }, "Estimativa, data a confirmar"));
+    out.push(el("p", { class: "ct-nota" }, `${rt ? "FIIs da carteira que não aparecem no retrato deste mês" : "Rendimentos que os FIIs da carteira ainda não pagaram este mês"}, estimados pelo último informe da CVM${ref ? " (" + mesC(ref) + ")" : ""} vezes a sua quantidade.${rt ? "" : " A data fica a confirmar."}`));
+    out.push(el("div", { class: "ct-linhas" }, ...est.map((x) => el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " data a confirmar")), el("span", { class: "ct-mono" }, "≈ " + rs(x.valor, x.valor < 100))))));
+  }
+  if (!b3.length && !est.length && !rt) out.push(el("p", { class: "ct-nota" }, "Nada a receber pelo que o Lookout conhece agora."));
+  if (!rt) out.push(el("p", { class: "ct-nota" }, "Importando o relatório Proventos a Receber da B3 (aba Mais), aparecem a data, o valor por cota e o líquido de cada pagamento, ações incluídas."));
   return out;
 }
 
@@ -7789,6 +7845,8 @@ function desenharSoMeta(box, j) {
   const mp = cardEl("Este mês contra o plano");
   const p = m.mesPlano;
   mp.append(el("div", { class: "ct-linhas" }, linhaEl("Aporte planejado", rs(p.planejado)), linhaEl("Aportado (compras menos vendas)", rs(p.aportado)), linhaEl("Proventos recebidos", rs(p.proventos)),
+    p.retrato ? linhaEl("Ainda a receber no mês", rs(p.aReceber), "pela B3, retrato de " + ddmm(p.retrato)) : null,
+    p.retrato ? linhaEl("Proventos do mês, contando o que falta", rs(p.comAReceber)) : null,
     linhaEl("Reinvestidos", rs(p.reinvestidos)), el("div", {}, el("span", {}, "Contra o plano"), el("span", { class: "ct-mono " + clsS(p.contra) }, rsS(p.contra)))),
     el("p", { class: "ct-nota" }, cfg.reinvestir ? "O plano conta o aporte mais os proventos do mês reinvestidos. Atualiza a cada importação dos extratos." : "Atualiza a cada importação dos extratos."));
   dois.append(mc, mp);
@@ -8096,18 +8154,28 @@ function carregarSheetJS() {
   });
   return sheetP;
 }
-const NOME_TIPO_ARQ = { negociacao: "Negociação", movimentacao: "Movimentação", proventos: "Proventos" };
-const UNID_ARQ = { negociacao: "negócios", movimentacao: "linhas", proventos: "pagamentos" };
+const NOME_TIPO_ARQ = { negociacao: "Negociação", movimentacao: "Movimentação", proventos: "Proventos", areceber: "A receber" };
+const UNID_ARQ = { negociacao: "negócios", movimentacao: "linhas", proventos: "pagamentos", areceber: "pagamentos previstos" };
+const CAB_ARECEBER = ["produto", "tipo", "tipo de evento", "previsao de pagamento", "instituicao", "conta", "quantidade", "preco unitario", "valor liquido"];
 function detectarTipo(cab) {
-  const c = cab.map((v) => semAcento(String(v || "")).toLowerCase().trim());
+  const c = cab.map((v) => semAcento(String(v || "")).toLowerCase().replace(/\s+/g, " ").trim());
   const tem = (x) => c.some((v) => v.includes(x));
+  /* Proventos a Receber: cabeçalho exato (o nome do arquivo varia); vem antes, porque também tem "pagamento" */
+  if (CAB_ARECEBER.every((x, i) => c[i] === x) && c.slice(9).every((v) => !v)) return "areceber";
   if (tem("data do negocio") && tem("codigo de negociacao")) return "negociacao";
   if (tem("entrada/saida") && tem("movimentacao") && tem("produto")) return "movimentacao";
-  if (tem("produto") && tem("pagamento") && tem("tipo de evento")) return "proventos";
+  if (tem("produto") && tem("pagamento") && tem("tipo de evento") && !tem("previsao de pagamento")) return "proventos";
   return null;
 }
-/* "PETR4 - PETROLEO BRASILEIRO S/A" vira PETR4 antes de sair do navegador: o nome da empresa não vai ao servidor */
+/* "PETR4 - PETROLEO BRASILEIRO S/A" vira PETR4 antes de sair do navegador: o nome da empresa não vai ao servidor.
+   Do Proventos a Receber saem também o Tipo (ON, PN, Fundo) e a Conta: a linha vai como
+   [papel, evento, previsão, instituição, quantidade, unitário, líquido] */
 function reduzirLinha(tipo, r) {
+  if (tipo === "areceber") {
+    const l = [r[0], r[2], r[3], r[4], r[6], r[7], r[8]].map((v) => (v === undefined ? null : v));
+    if (l[0] != null) l[0] = String(l[0]).split(" - ")[0].trim();
+    return l;
+  }
   const l = r.slice(0, tipo === "negociacao" ? 9 : tipo === "movimentacao" ? 8 : 7);
   const k = tipo === "movimentacao" ? 3 : tipo === "proventos" ? 0 : -1;
   if (k >= 0 && l[k] != null) l[k] = String(l[k]).split(" - ")[0].trim();
@@ -8179,7 +8247,7 @@ function desenharMais(box, j) {
   input.addEventListener("change", () => { if (input.files && input.files.length) lerArquivos([...input.files]); });
   const solta = el("div", { class: "ct-solta" }, el("span", { html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>' }),
     el("strong", {}, "Solte aqui os arquivos exportados da Área do Investidor"),
-    el("p", {}, "Negociação, Movimentação e Proventos recebidos, em .xlsx, do jeito que a B3 exporta. Pode soltar vários de uma vez e de várias corretoras. O Lookout reconhece cada tipo pelo cabeçalho."),
+    el("p", {}, "Negociação, Movimentação, Proventos recebidos e Proventos a receber, em .xlsx, do jeito que a B3 exporta. Pode soltar vários de uma vez e de várias corretoras. O Lookout reconhece cada tipo pelo cabeçalho, não pelo nome do arquivo."),
     el("label", { class: "dd-btn dd-btn--outline", for: "ct-arquivos", style: "position:relative" }, "Escolher arquivos", input));
   solta.addEventListener("dragover", (e) => { e.preventDefault(); solta.classList.add("sobre"); });
   solta.addEventListener("dragleave", () => solta.classList.remove("sobre"));
@@ -8196,12 +8264,15 @@ function desenharMais(box, j) {
     const n = (x.arquivos || []).length;
     const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, "Desfazer");
     b.addEventListener("click", async () => {
-      if (!confirm(`Tirar da carteira as ${fmtNum(x.novos, 0)} linhas que entraram nesta importação?`)) return;
+      if (!confirm(`Tirar da carteira as ${fmtNum(x.novos, 0)} linhas que entraram nesta importação?${x.retrato ? " O retrato dos proventos a receber volta a ser o anterior, se houver." : ""}`)) return;
       b.disabled = true;
       try { await apiCart("DELETE", "/importacoes/" + encodeURIComponent(x.id)); invalidarCarteira(); imp = { fase: "inicio", arquivos: [], erro: "", resultado: null }; await lerCarteira(true); desenharCarteira(cartJ); }
       catch (e) { b.disabled = false; alert("Não deu para desfazer: " + e.message); }
     });
-    return el("div", {}, el("span", {}, el("b", { class: "ct-mono" }, quando), ` · ${n} ${n === 1 ? "arquivo" : "arquivos"} · ${fmtNum(x.novos, 0)} linhas novas`), b);
+    const ret = x.retrato ? `retrato dos proventos a receber de ${ddmm(x.retrato.dataRef)}, ${fmtNum(x.retrato.linhas, 0)} ${x.retrato.linhas === 1 ? "linha" : "linhas"}` : "";
+    const ext = x.novos - (x.retrato ? x.retrato.linhas : 0);
+    const partes = [`${n} ${n === 1 ? "arquivo" : "arquivos"}`, ext > 0 || !ret ? `${fmtNum(ext, 0)} linhas novas` : "", ret].filter(Boolean);
+    return el("div", {}, el("span", {}, el("b", { class: "ct-mono" }, quando), " · " + partes.join(" · ")), b);
   })) : el("p", { class: "ct-nota" }, "Nenhuma ainda."));
   esq.append(ant);
   if (j && j.resumo && j.resumo.ir && !j.vazia) esq.append(cardIR(j.resumo));
@@ -8212,19 +8283,22 @@ function desenharMais(box, j) {
     passo(1, "Entre em ", el("span", { class: "ct-mono" }, "investidor.b3.com.br"), " com a conta gov.br."),
     passo(2, el("b", {}, "Extratos → Negociação"), ": filtre o período todo e clique em Exportar."),
     passo(3, el("b", {}, "Extratos → Movimentação"), ": o mesmo caminho. Aqui vêm bonificação, subscrição, grupamento, empréstimo e transferência entre corretoras."),
-    passo(4, el("b", {}, "Extratos → Proventos recebidos"), ": a B3 limita o período, por isso saem vários arquivos. Solte todos.")),
-    el("p", { class: "ct-nota" }, "Depois da primeira vez, basta exportar o último mês. O que já está guardado não entra de novo."));
+    passo(4, el("b", {}, "Extratos → Proventos recebidos"), ": a B3 limita o período, por isso saem vários arquivos. Solte todos."),
+    passo(5, el("b", {}, "Proventos → A receber"), ": clique em Exportar. É um retrato do que a B3 já provisionou (data, valor por cota, líquido); cada importação troca o retrato anterior pelo novo.")),
+    el("p", { class: "ct-nota" }, "Depois da primeira vez, basta exportar o último mês dos extratos. O que já está guardado não entra de novo. O A receber vale a pena exportar de novo a cada poucas semanas."));
   const como = cardEl("Como a posição é montada");
   como.append(el("ul", { class: "ct-ul" },
     el("li", {}, "A quantidade vem da ", el("b", {}, "Movimentação"), " (liquidação, bonificação, desdobro, grupamento, subscrição, transferência). O fracionário (PETR4F) soma com o lote."),
     el("li", {}, "O preço médio vem da ", el("b", {}, "Negociação"), ", pela média ponderada das compras, e recomeça quando a posição zera."),
     el("li", {}, "Cotas em ", el("b", {}, "empréstimo"), " continuam contando como suas."),
     el("li", {}, "Proventos vêm do extrato de proventos; o período que ele não cobre é completado pela Movimentação."),
+    el("li", {}, "O ", el("b", {}, "A receber"), " vem do relatório Proventos a Receber, com a data prevista de cada pagamento. Sem ele, ou para o FII que não aparece nele no mês, fica a estimativa pelo informe da CVM."),
     el("li", {}, "Tesouro Direto, CDB e outros títulos de renda fixa ficam de fora por enquanto."),
     el("li", {}, "A cotação atual vem do pregão do Lookout.")));
   const priv = cardEl("O que fica guardado");
   priv.append(el("ul", { class: "ct-ul" },
     el("li", {}, "Entra: data, papel, compra ou venda, quantidade, preço, tipo do evento, valor por cota, líquido do provento e a sigla da corretora (XP, Rico, Modal)."),
+    el("li", {}, "Do Proventos a Receber entram papel, tipo do evento, data prevista, quantidade, valor por cota, líquido e a sigla da corretora. O número da conta fica no navegador."),
     el("li", {}, "Não entra: nome, CPF, conta, CNPJ, ISIN, o nome da empresa, a razão social da corretora nem totais em dinheiro (são calculados na hora)."),
     el("li", {}, "A planilha é lida aqui no navegador; o arquivo não vai para o servidor, só as linhas."),
     el("li", {}, "Tudo é cifrado (AES-GCM) antes de gravar, numa coleção só sua. Nem o admin vê a carteira de outra pessoa; excluir a conta apaga a carteira junto.")));
@@ -8243,6 +8317,13 @@ function desenharMais(box, j) {
   dois.append(esq, dir);
   box.append(dois);
 }
+/* Retrato dos proventos a receber na prévia: substitui, igual ao guardado ou recusado por ser mais antigo */
+function statusRetrato(rt) {
+  if (rt.status === "antigo") return { st: `já existe um retrato mais novo, de ${ddmm(rt.guardado)} · ignorado`, cls: "ct-neg" };
+  if (rt.status === "igual") return { st: "igual ao retrato guardado · nada novo", cls: "ct-aviso" };
+  if (rt.status === "vazio") return { st: "sem pagamentos previstos · ignorado", cls: "ct-aviso" };
+  return { st: rt.substitui ? `troca o retrato de ${ddmm(rt.substitui)}` : "retrato novo", cls: "ct-pos" };
+}
 function previaImportacao() {
   const c = cardEl(imp.fase === "pronto" ? "Importação concluída" : imp.fase === "lendo" ? "Lendo os arquivos…" : imp.fase === "conferindo" ? "Conferindo com o que já está guardado…" : imp.fase === "enviando" ? "Importando…" : "O que vai entrar");
   if (imp.fase === "lendo") { c.append(esqueleto(3)); return c; }
@@ -8254,10 +8335,20 @@ function previaImportacao() {
     if (a.erro) { st = a.erro + ", ignorado"; cls = "ct-neg"; }
     else if (!a.tipo) { st = "cabeçalho não reconhecido, ignorado"; cls = "ct-aviso"; }
     else if (!r) st = "…";
+    else if (r.retrato) { ({ st, cls } = statusRetrato(r.retrato)); novos += r.novos; }
     else if (r.novos) { st = `${fmtNum(r.novos, 0)} novos`; cls = "ct-pos"; novos += r.novos; }
     else { st = `${fmtNum(r.repetidos, 0)} já estavam · nada novo`; cls = "ct-aviso"; }
     const det = [];
-    if (r) {
+    let aviso = null;
+    if (r && r.retrato) {
+      const rt = r.retrato;
+      det.push(`retrato de ${ddmm(rt.dataRef)}`, `${fmtNum(r.linhas, 0)} ${r.linhas === 1 ? "pagamento previsto" : "pagamentos previstos"}`);
+      if (r.de) det.push(r.de === r.ate ? ddmm(r.de) : `${dataAr(r.de, rt.dataRef)} a ${dataAr(r.ate, rt.dataRef)}`);
+      if (rt.confere === true) det.push(`soma ${rs(rt.total, true)}, igual ao Total líquido`);
+      if (rt.confere === false) aviso = `A soma das linhas (${rs(rt.total, true)}) não bate com o Total líquido do arquivo (${rs(rt.totalArquivo, true)}). Confira se o arquivo veio inteiro.`;
+      if (rt.tipos && rt.tipos.outro) det.push(`${rt.tipos.outro} de tipo que o Lookout não separa (entra como outro evento)`);
+      if (r.ignorados) det.push(`${fmtNum(r.ignorados, 0)} fora (código fora do padrão)`);
+    } else if (r) {
       det.push(`${fmtNum(r.linhas, 0)} ${UNID_ARQ[a.tipo]}`);
       if (r.de) det.push(r.de.slice(0, 7) === r.ate.slice(0, 7) ? mesL(r.de.slice(0, 7)) : `${mesL(r.de.slice(0, 7))} a ${mesL(r.ate.slice(0, 7))}`);
       if (r.novos && r.repetidos) det.push(`${fmtNum(r.repetidos, 0)} já estavam`);
@@ -8265,7 +8356,8 @@ function previaImportacao() {
       const tn = Object.entries(r.tiposDesconhecidos || {});
       if (tn.length) det.push("tipos que o Lookout ainda não conhece: " + tn.map(([k, n]) => `${k} (${n})`).join(", "));
     }
-    l.append(el("div", { class: "ct-arq" }, tagEl(a.tipo ? NOME_TIPO_ARQ[a.tipo] : "?"), el("span", { class: "n", title: a.nome }, a.nome), el("span", { class: "st " + cls }, st), el("span", { class: "d" }, det.join(" · "))));
+    l.append(el("div", { class: "ct-arq" }, tagEl(a.tipo ? NOME_TIPO_ARQ[a.tipo] : "?"), el("span", { class: "n", title: a.nome }, a.nome), el("span", { class: "st " + cls }, st), el("span", { class: "d" }, det.join(" · ")),
+      aviso ? el("span", { class: "d ct-aviso", role: "note" }, aviso) : null));
   });
   c.append(l);
   if (imp.fase === "previa") {
@@ -8274,7 +8366,8 @@ function previaImportacao() {
     ok.addEventListener("click", () => enviarImportacao(false));
     const can = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Cancelar");
     can.addEventListener("click", () => { imp = { fase: "inicio", arquivos: [], erro: "", resultado: null }; desenharCarteira(cartJ); });
-    c.append(el("div", { class: "ct-acoes" }, ok, can), el("p", { class: "ct-nota" }, "Linha repetida (mesma data, papel, tipo, quantidade e valor) não entra duas vezes. Dá para reimportar o mesmo arquivo sem medo."));
+    c.append(el("div", { class: "ct-acoes" }, ok, can), el("p", { class: "ct-nota" }, "Linha repetida (mesma data, papel, tipo, quantidade e valor) não entra duas vezes. Dá para reimportar o mesmo arquivo sem medo."),
+      imp.arquivos.some((a) => a.tipo === "areceber") ? el("p", { class: "ct-nota" }, "O Proventos a receber não soma com o que já está guardado: o retrato novo toma o lugar do anterior inteiro.") : null);
   }
   if (imp.fase === "pronto") {
     c.append(el("p", { class: "ct-nota", role: "status" }, imp.resultado ? `Pronto: ${fmtNum(imp.resultado, 0)} linhas novas entraram na sua carteira.` : "Nada novo entrou."),
@@ -8306,21 +8399,29 @@ corpos["carteira-patrimonio"] = (j, fm = { c: 1 }) => {
 corpos["carteira-proventos-mes"] = (j) => {
   const v = semCartW(j); if (v) return v;
   const r = j.resumo;
-  const aRec = (r.aReceber || []).reduce((s, x) => s + x.valor, 0);
+  const lr = (r.aReceber || []).filter((x) => !x.data || x.data.slice(0, 7) === r.hoje.slice(0, 7));
+  const est = lr.some((x) => x.origem !== "b3");
+  const aRec = lr.reduce((s, x) => s + x.valor, 0);
   return [el("div", { class: "wdg-cart" }, el("span", { class: "wdg-big" }, rs(r.mesAtual.total), el("small", {}, "até hoje")),
-    el("div", { class: "ct-linhas" }, linhaEl("A receber (estimado)", "≈ " + rs(aRec)), linhaEl(mesNome(r.mesAnterior.mes).replace(/^./, (c) => c.toUpperCase()) + " inteiro", rs(r.mesAnterior.total)), linhaEl("Média 12m", rs(r.media12))))];
+    el("div", { class: "ct-linhas" }, linhaEl(est ? "A receber no mês (com estimativa)" : "A receber no mês", (est ? "≈ " : "") + rs(aRec)), linhaEl(mesNome(r.mesAnterior.mes).replace(/^./, (c) => c.toUpperCase()) + " inteiro", rs(r.mesAnterior.total)), linhaEl("Média 12m", rs(r.media12))))];
 };
 corpos["carteira-pagamentos"] = (j, fm = { r: 1 }) => {
   const v = semCartW(j); if (v) return v;
-  const l = (j.resumo.aReceber || []).slice(0, 5 * fm.r);
-  if (!l.length) return [vazioW("Nada a receber pelo que o Lookout conhece agora.")];
-  return [el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " data a confirmar")), el("span", { class: "ct-mono" }, "≈ " + rs(x.valor, x.valor < 100)))))];
+  const r = j.resumo, todos = r.aReceber || [];
+  const l = todos.filter((x) => !x.adiante).slice(0, 5 * fm.r);
+  if (!l.length) return [vazioW(todos.length ? "Nada nos próximos 12 meses." : "Nada a receber pelo que o Lookout conhece agora.")];
+  const out = [el("div", { class: "ct-linhas" }, ...l.map((x) => (x.data ? linhaAr(x, r.hoje, true)
+    : el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " data a confirmar")), el("span", { class: "ct-mono" }, "≈ " + rs(x.valor, x.valor < 100))))))];
+  if (r.retrato) out.push(el("span", { class: "ct-nota" + (r.retrato.velho ? " ct-aviso" : ""), style: "font-size:12px" }, r.retrato.velho ? `Retrato de ${ddmm(r.retrato.dataRef)}, importe de novo.` : `Pela B3, retrato de ${ddmm(r.retrato.dataRef)}.`));
+  return out;
 };
 corpos["carteira-agenda"] = (j, fm = { r: 1 }) => {
   const v = semCartW(j); if (v) return v;
-  const l = (j.resumo.agenda || []).slice(0, 5 * fm.r);
+  const r = j.resumo;
+  const l = (r.agenda || []).filter((x) => !x.adiante).slice(0, 5 * fm.r);
   if (!l.length) return [vazioW("Nada anunciado por enquanto.")];
-  return [el("div", { class: "ct-linhas" }, ...l.map((x) => el("div", {}, el("span", {}, x.o === "subscricao" ? tagEl("subscrição", "err") : "Rendimento", " ", papelBtn(x.t)), el("span", { class: "ct-mono" }, x.o === "subscricao" ? "prazo a confirmar" : "≈ " + rs(x.valor)))))];
+  return [el("div", { class: "ct-linhas" }, ...l.map((x) => (x.o === "pagamento" && x.data ? linhaAr(x, r.hoje, true)
+    : el("div", {}, el("span", {}, x.o === "subscricao" ? tagEl("subscrição", "err") : "Rendimento", " ", papelBtn(x.t)), el("span", { class: "ct-mono" }, x.o === "subscricao" ? "prazo a confirmar" : "≈ " + rs(x.valor))))))];
 };
 corpos["carteira-rentabilidade"] = (j) => {
   const v = semCartW(j); if (v) return v;

@@ -10,8 +10,11 @@
 // Cada roteiro recebe `c` (o contexto do gerador):
 //   c.compra(data, papel, q, corretora, { frac, preco })  negócio no lote (e `frac` cotas no fracionário, com F)
 //   c.venda(data, papel, q, corretora, { frac, preco })   idem, venda
-//   c.prov(data, papel, tipo, porCota, { corr, evento })  provento a quem tem o papel na data, por corretora
-//                                                        (tipo: rend | div | jcp | amort); sai na Movimentação e nos Proventos
+//   c.prov(data, papel, tipo, porCota, { corr, evento, aviso })
+//                                                        provento a quem tem o papel na data, por corretora
+//                                                        (tipo: rend | div | jcp | amort); sai na Movimentação e nos Proventos.
+//                                                        Com pagamento depois de --ate, sai no Proventos a Receber se a B3
+//                                                        já provisionou: `aviso` dias antes (padrão 20, AVISO_PADRAO)
 //   c.mov(data, "C"|"D", "Tipo como a B3 escreve", papel, q, preco | null, corretora, { dq })
 //                                                        linha solta da Movimentação; dq é o que ela muda na quantidade
 //                                                        que o gerador acompanha (para os proventos saírem certos)
@@ -104,7 +107,7 @@ export const CENARIOS = [
       for (const d of trimestres(2020, 2022, [2, 5, 8, 11], 10)) c.compra(d, "PETR4", 100, XP, { frac: 1 + Math.floor(c.r("PETR4", "frac", i++) * 30) });
       c.venda("2023-05-16", "PETR4", 300, XP);
       for (const d of trimestres(2020, 2026, [3, 6, 9, 12], 20)) {
-        c.prov(d, "PETR4", "div", dois(0.3 + c.r("PETR4", "div", d) * 1.2));
+        c.prov(d, "PETR4", "div", dois(0.3 + c.r("PETR4", "div", d) * 1.2), { aviso: 60 }); // cenário 15
         c.prov(d, "PETR4", "jcp", dois(0.2 + c.r("PETR4", "jcp", d) * 0.6));
       }
     },
@@ -228,7 +231,7 @@ export const CENARIOS = [
     espera: "TRXF11 aberta na XP, TRXF12 não aparece. B3SA3 aberta na Nu Invest com 159 ações (155 + 4).",
     roteiro(c) {
       c.compra("2021-08-11", "TRXF11", 100, XP);
-      for (const d of c.mensal("2021-09", "2026-12", 22)) c.prov(d, "TRXF11", "rend", dois(0.7 + c.r("TRXF11", "rend", d) * 0.4));
+      for (const d of c.mensal("2021-09", "2026-12", 22)) c.prov(d, "TRXF11", "rend", dois(0.7 + c.r("TRXF11", "rend", d) * 0.4), { aviso: 5 }); // cenário 15
       c.mov("2023-04-03", "C", "Direito de Subscrição", "TRXF12", 20, null, XP, { dq: 20 });
       c.mov("2023-04-12", "D", "Cessão de Direitos - Solicitada", "TRXF12", 20, null, XP);
       c.mov("2023-04-12", "C", "Cessão de Direitos", "TRXF12", 20, null, XP);
@@ -264,7 +267,7 @@ export const CENARIOS = [
     roteiro(c) {
       c.compra("2022-09-14", "BBAS3", 100, XP, { preco: 18.42 });
       c.compra("2022-09-14", "BBAS3", 100, XP, { preco: 18.42 });
-      for (const d of trimestres(2022, 2026, [3, 6, 9, 12], 12)) c.prov(d, "BBAS3", "jcp", dois(0.2 + c.r("BBAS3", "jcp", d) * 0.3));
+      for (const d of trimestres(2022, 2026, [3, 6, 9, 12], 12)) c.prov(d, "BBAS3", "jcp", dois(0.2 + c.r("BBAS3", "jcp", d) * 0.3), { aviso: 40 }); // cenário 15
     },
   },
   {
@@ -285,6 +288,14 @@ export const CENARIOS = [
       c.compra("2022-03-09", "XPTO3", 100, XP);
     },
   },
+  {
+    id: 15, titulo: "Proventos a Receber: o retrato do que a B3 já provisionou", papeis: ["KNIP11", "VILG11", "XPML11", "IFRA11", "KNCA11", "AAPL34", "PETR4", "BBAS3", "TRXF11", "ITSA4"],
+    testa: "Arquivo proventos-a-receber-<data>.xlsx com o cabeçalho do relatório da B3, quantidade em texto, conta inventada e a linha \"Total líquido\". Entram os proventos do roteiro com pagamento depois de --ate já provisionados (20 dias antes; o dividendo de PETR4 com 60 e o JCP de BBAS3 com 40). O rendimento de TRXF11 só é provisionado 5 dias antes: o FII pagou nos meses anteriores e fica fora do retrato do mês. Um dividendo de ITSA4 em 2028 fica no grupo \"mais adiante\". Nenhuma linha dos outros arquivos muda.",
+    espera: "Com --ate 04/11/2026: A receber com data e valor da B3 para XPML11, KNIP11, VILG11, KNCA11, AAPL34 e IFRA11 em novembro, o JCP de BBAS3 e o dividendo de PETR4 em dezembro e ITSA4 recolhido em mais adiante. Alerta \"TRXF11 não aparece nos proventos a receber de novembro\" (sem estimativa: o informe da CVM guardado traz rendimento zero para ele). A prévia mostra o retrato de 04/11 com o total conferido.",
+    roteiro(c) {
+      c.prov("2028-04-28", "ITSA4", "div", 0.04, { aviso: 900 });
+    },
+  },
 ];
 
 // O que o README promete e o teste confere (independe da semente). Vale para --ate de 2026-10-13 a 2026-12-12
@@ -299,4 +310,19 @@ export const ESPERADO = {
   emprestadas: { VILG11: 30 },
   rendimentoMenor: ["KNIP11"],
   ignorados: { negociacao: 0, movimentacao: 5, proventos: 0 },
+};
+
+// O retrato dos proventos a receber (cenário 15) com --ate 04/11/2026, a data do teste: quem aparece, em que data, e o
+// alerta. Depende da semente nos dias em que VILG11 não paga: com outra semente, confira o README.
+export const ESPERADO_ARECEBER = {
+  ate: "2026-11-04",
+  nome: "proventos-a-receber-2026-11-04.xlsx",
+  linhas: 9,
+  total: 2046.92,
+  papeis: ["XPML11", "KNIP11", "VILG11", "KNCA11", "AAPL34", "IFRA11", "BBAS3", "PETR4", "ITSA4"], // em ordem de data
+  noMes: 793.34,
+  adiante: ["ITSA4"],
+  foraDoRetrato: ["TRXF11"],
+  estimativa: [],
+  tipos: { BBAS3: "jcp", PETR4: "dividendo", AAPL34: "dividendo", KNIP11: "rendimento", ITSA4: "dividendo" },
 };

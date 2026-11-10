@@ -7,9 +7,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { mesclar, calcular, chaveLinha } from "../src/carteira.js";
+import { mesclar, calcular, chaveLinha, retratoDe, aplicarRetrato } from "../src/carteira.js";
 import { gerar, manifesto, diferenca, escreverXlsx, lerXlsx, linhasDaPagina, simularImportacao, reduzirLinha } from "./fixtures/b3-fake/gerar.mjs";
-import { ESPERADO, refCalculo } from "./fixtures/b3-fake/cenarios.mjs";
+import { ESPERADO, ESPERADO_ARECEBER, refCalculo } from "./fixtures/b3-fake/cenarios.mjs";
 import { conferirLotes, compradoPorPapel } from "./fixtures-carteira.mjs";
 
 const ATE = "2026-11-04";
@@ -31,7 +31,7 @@ test("planilhas: a página reconhece cada arquivo e lê as mesmas linhas que o g
       const lido = lerXlsx(path.join(dir, a.nome));
       const { tipo, linhas } = linhasDaPagina(lido.linhas);
       assert.equal(tipo, a.tipo, a.nome);
-      assert.equal(lido.aba, { negociacao: "Negociação", movimentacao: "Movimentação", proventos: "Proventos Recebidos" }[a.tipo]);
+      assert.equal(lido.aba, { negociacao: "Negociação", movimentacao: "Movimentação", proventos: "Proventos Recebidos", areceber: "Proventos a Receber" }[a.tipo]);
       assert.deepEqual(linhas, a.linhas.map((l) => reduzirLinha(a.tipo, l)), a.nome);
     }
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -169,4 +169,55 @@ test("linha de comando: gera a pasta e depois só a correção", { skip: semPyth
     const d = diferenca(gerar({ ate: ATE }), man);
     for (const a of d.arquivos) assert.equal(linhasDaPagina(lerXlsx(path.join(corr, a.nome)).linhas).linhas.length, a.linhas.length, a.nome);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ---------- Proventos a Receber (cenário 15) ----------
+const EA = ESPERADO_ARECEBER;
+
+test("a receber: o retrato sai com o cabeçalho da B3, a linha do total e nada dos outros arquivos muda", () => {
+  const a = g.arquivos.find((x) => x.tipo === "areceber");
+  assert.equal(a.nome, EA.nome);
+  assert.equal(a.linhas.length, EA.linhas + 1); // mais a linha do total
+  const total = a.linhas.at(-1);
+  assert.deepEqual(total.slice(0, 8), [null, null, null, null, null, null, null, "Total líquido"]);
+  assert.ok(a.linhas.slice(0, -1).every((l) => typeof l[6] === "string" && /^\d+$/.test(l[5]) && / - /.test(l[0])), "quantidade em texto, conta e produto com nome");
+  // os arquivos de antes são os mesmos com ou sem o cenário 15 (nenhum provento futuro entra nos recebidos)
+  const man = manifesto(g);
+  assert.deepEqual(Object.keys(man.linhas), ["negociacao", "movimentacao", "proventos"]);
+  assert.deepEqual(man.retrato, { nome: EA.nome, dataRef: EA.ate, linhas: EA.linhas, total: EA.total, confere: true });
+  assert.ok(!g.arquivos.filter((x) => x.tipo === "proventos").some((x) => x.linhas.some((l) => l[1] > "2026-11-04" && l[1].includes("2028"))));
+});
+
+test("a receber: números da tela com o retrato de 04/11/2026", () => {
+  const { calc, rr } = simularImportacao(g.arquivos, ATE);
+  assert.equal(rr.confere, true); assert.equal(rr.totalArquivo, EA.total); assert.equal(rr.ignorados, 0);
+  const r = calc.resumo;
+  const b3l = r.aReceber.filter((x) => x.origem === "b3");
+  assert.deepEqual(b3l.map((x) => x.t), EA.papeis);
+  assert.deepEqual(b3l.filter((x) => x.adiante).map((x) => x.t), EA.adiante);
+  for (const [t, tipo] of Object.entries(EA.tipos)) assert.equal(b3l.find((x) => x.t === t).tipo, tipo, t);
+  assert.deepEqual(r.aReceber.filter((x) => x.origem === "estimativa").map((x) => x.t), EA.estimativa);
+  assert.deepEqual(r.alertas.filter((a) => a.tipo === "fora-do-retrato").map((a) => a.t), EA.foraDoRetrato);
+  assert.equal(r.retrato.dataRef, EA.ate); assert.equal(r.retrato.noMes, EA.noMes);
+  // a quantidade de cada linha é a da posição na data final
+  for (const x of b3l) { const p = pos(calc, x.t); if (p) assert.equal(x.q, p.q, x.t); }
+  // as datas reais vão para a agenda, a distante por último
+  assert.equal(r.agenda[0].data, "2026-11-13"); assert.equal(r.agenda.at(-1).t, "ITSA4");
+});
+
+test("a receber: a página reconhece o arquivo e manda a linha sem conta; a correção traz o retrato inteiro", { skip: semPython }, () => {
+  const dir = tmp();
+  try {
+    const a = g.arquivos.find((x) => x.tipo === "areceber");
+    escreverXlsx(dir, [a, { ...a, nome: "eventos-2026-11-04-09-30-12.xlsx" }], ATE);
+    const l1 = linhasDaPagina(lerXlsx(path.join(dir, a.nome)).linhas), l2 = linhasDaPagina(lerXlsx(path.join(dir, "eventos-2026-11-04-09-30-12.xlsx")).linhas);
+    assert.equal(l1.tipo, "areceber"); assert.deepEqual(l1, l2);
+    assert.ok(!JSON.stringify(l1.linhas).match(/00\d{4}"/), "conta");
+    const r1 = retratoDe(l1.linhas, a.nome, ATE), r2 = retratoDe(l2.linhas, "eventos-2026-11-04-09-30-12.xlsx", ATE);
+    assert.equal(aplicarRetrato(aplicarRetrato(null, r1, "a", "x").doc, r2, "b", "y").status, "igual");
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  const d = diferenca(g, manifesto(gerar({ ate: "2026-06-30" })));
+  const c = d.arquivos.find((x) => x.tipo === "areceber");
+  assert.equal(c.nome, "correcao-2026-11-04-proventos-a-receber.xlsx");
+  assert.equal(c.linhas.length, EA.linhas + 1);
 });

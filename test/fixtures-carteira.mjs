@@ -140,3 +140,18 @@ export const arquivosLotes = () => [
   { nome: "negociacao-lotes.xlsx", tipo: "negociacao", linhas: negLotes },
   { nome: "movimentacao-lotes.xlsx", tipo: "movimentacao", linhas: movLotes },
 ];
+// Proventos a Receber (relatório da Área do Investidor), como a planilha vem: cabeçalho, linhas e a linha do total.
+// Quantidade em texto, data em texto, conta inventada. Para os testes de test/areceber.test.mjs, com "hoje" = 10/11/2026.
+export const CAB_ARECEBER = ["Produto", "Tipo", "Tipo de Evento", "Previsão de pagamento", "Instituição", "Conta", "Quantidade", "Preço unitário", "Valor líquido"];
+export const aReceberPlanilha = [
+  CAB_ARECEBER,
+  ["QRST11 - FUNDO QRST                        ", "Fundo", "RENDIMENTO", "13/11/2026", XP, "0001234", "110", 0.95, 104.5],
+  ["QRST11 - FUNDO QRST                        ", "Fundo", "RENDIMENTO", "13/11/2026", RICO, "0009876", "10", 0.95, 9.5],
+  ["EFGH4 - EMPRESA EFGH S.A.", "PN", "DIVIDENDO", "05/11/2026", XP, "0001234", "110", 0.3, 33],
+  ["EFGH4 - EMPRESA EFGH S.A.", "PN", "JUROS SOBRE CAPITAL PRÓPRIO", "28/11/2026", XP, "0001234", "110", 0.4, 37.4],
+  ["EFGH4 - EMPRESA EFGH S.A.", "PN", "Reembolso - DIVIDENDO", "28/11/2026", XP, "0001234", "50", 0.4, 20],
+  ["ABCD3 - EMPRESA ABCD S.A.", "ON", "DIVIDENDO", "15/12/2026", XP, "0001234", "105", 0.2, 21],
+  ["IJKL3 - EMPRESA IJKL", "ON", "RESTITUIÇÃO DE CAPITAL", "07/12/2026", XP, "0001234", "100", 0.1, 10],
+  ["ABCD3F - EMPRESA ABCD S.A.", "ON", "DIVIDENDO", "10/03/2028", XP, "0001234", "105", 0.5, 52.5],
+  [null, null, null, null, null, null, null, "Total líquido", 287.9],
+];
