@@ -17,6 +17,8 @@
 // - liquidez: volume do último pregão × preço, do meta/b3 (a mesma "liquidez do dia" do Radar). O Lookout não guarda
 //   a média diária de um período; quando guardar, troca aqui.
 // - cotistas: total de cotistas do último informe da CVM.
+// - abaixo: cotação do meta/b3 contra o preço médio da posição, que vem do extrato importado (calcular). Só vale para
+//   papel que a pessoa tem.
 // - equilibrio: o menor de três partes, todas sobre a parte de FIIs da carteira depois de pôr o aporte inteiro no papel:
 //   o peso do papel contra o teto por papel, o peso do segmento (o da CVM) contra o teto por segmento e quanto das
 //   compras dos últimos 3 meses fechados mais o mês atual (do extrato) foi neste papel. Tetos da pessoa, em prefs.
@@ -28,6 +30,7 @@ const RF = globalThis.RadarFiltro;
 
 export const CRITERIOS = [
   { id: "equilibrio", nome: "Equilíbrio", peso: 25, faixa: "o menor de três: papel e segmento até o teto (zero no dobro); até 25% das compras recentes neste papel" },
+  { id: "abaixo", nome: "Abaixo do que você pagou", peso: 25, faixa: "só para papel que você tem: zero com a cotação no seu preço médio ou acima; máximo 15% abaixo" },
   { id: "dy", nome: "DY 12m sobre o CDI", peso: 20, faixa: "zero no CDI; máximo com 4 pontos acima" },
   { id: "pvp", nome: "P/VP", peso: 20, faixa: "máximo de 0,85 a 1,00; zero em 1,25 e em 0,60" },
   { id: "regularidade", nome: "Regularidade", peso: 10, faixa: "12 de 12 meses pagando = máximo; 11 = 70%; 10 = 40%" },
@@ -55,6 +58,22 @@ const r1 = (x) => Math.round(x * 10) / 10;
 const r2 = (x) => Math.round(x * 100) / 100;
 
 // ---------- parciais (0 a 1), uma por critério; null = sem dado ----------
+// Abaixo do que a pessoa pagou: cotação contra o preço médio da posição (o do extrato). No preço médio ou acima, 0;
+// cai em linha reta até 1 com a cotação 15% abaixo. Pedido do dono (10/11): pôr o aporte onde a posição está no
+// vermelho, para baixar o preço médio. Papel que a pessoa não tem não entra na conta deste critério (nem soma, nem
+// conta como dado faltando).
+export const DESCONTO_CHEIO = 0.15;
+export function parcialAbaixo(preco, pm) {
+  if (!(num(preco) > 0) || !(num(pm) > 0)) return null;
+  return lim((pm - preco) / pm / DESCONTO_CHEIO);
+}
+export function notaAbaixo(preco, pm) {
+  if (!(num(pm) > 0)) return "você não tem este papel";
+  if (!(num(preco) > 0)) return "sem cotação";
+  const d = ((preco - pm) / pm) * 100;
+  const txt = `cotação R$ ${fmt(preco, 2)}, seu preço médio R$ ${fmt(pm, 2)}`;
+  return Math.abs(d) < 0.05 ? `${txt}: no preço médio` : d < 0 ? `${txt}: ${fmt(-d, 1)}% abaixo` : `${txt}: ${fmt(d, 1)}% acima`;
+}
 // P/VP: 1 entre 0,85 e 1,00. Acima, cai em linha reta até 0 em 1,25. Abaixo, cai 4 por unidade (0,70 dá 0,4 e 0,60 dá 0):
 // desconto grande costuma ter motivo.
 export function parcialPvp(v) {
@@ -283,12 +302,15 @@ export function pontuar(linhas, opts = {}) {
   const base = opts.fiis || baseFiis([]);
   const compras = comprasDe(opts.compras);
   const semFii = !(base.total > 0);
+  const pms = opts.pm || {};
   const ativos = CRITERIOS.filter((c) => num(pesos[c.id]) > 0);
   const avaliados = [], excluidos = [];
   for (const l of linhas || []) {
     const seg = segmentoDe(l.seg);
     const eq = contaEquilibrio(l.t, seg, aporte, base, base.total + aporte, compras, tetos, semFii);
+    const pmL = num(pms[l.t]) > 0 ? pms[l.t] : null;
     const dados = {
+      abaixo: { valor: pmL != null && num(l.preco) > 0 ? r2(((l.preco - pmL) / pmL) * 100) : null, parcial: parcialAbaixo(num(l.preco), pmL), nota: notaAbaixo(num(l.preco), pmL), naoSeAplica: pmL == null },
       pvp: { valor: num(l.pvp), parcial: parcialPvp(num(l.pvp)), nota: notaPvp(num(l.pvp)) },
       dy: { valor: num(l.dy), parcial: parcialDy(num(l.dy), cdi), nota: notaDy(num(l.dy), cdi) },
       regularidade: { valor: num(l.pg), parcial: parcialRegularidade(num(l.pg)), nota: notaRegularidade(num(l.pg), num(l.m12)) },
@@ -302,6 +324,7 @@ export function pontuar(linhas, opts = {}) {
     for (const c of ativos) {
       const d = dados[c.id], w = pesos[c.id];
       const extra = c.id === "equilibrio" ? { partes: d.partes, limita: d.limita } : {};
+      if (d.naoSeAplica) { criterios.push({ id: c.id, nome: c.nome, valor: null, pontos: null, max: w, nota: d.nota, naoSeAplica: true }); continue; }
       if (d.parcial == null) { faltando.push(c.id); criterios.push({ id: c.id, nome: c.nome, valor: d.valor, pontos: null, max: w, nota: d.nota, ...extra }); continue; }
       soma += w * d.parcial; somaPesos += w;
       if (c.id !== "equilibrio") { fixo += w * d.parcial; fixoPesos += w; }
@@ -421,7 +444,9 @@ export function reinvestir(ctx) {
   const linhas = linhasUniverso({ b3: ctx.b3, fiiResumo: ctx.fiiResumo, posicoes, universo });
   const pesos = pesosDe(ctx.pesos), tetos = tetosDe(ctx.tetos);
   const compras = { desde: (ctx.compras && ctx.compras.desde) || null, porPapel: (ctx.compras && ctx.compras.porPapel) || {} };
-  const r = pontuar(linhas, { cdi, fiis, compras, aporte: aporte.valor, pesos, tetos });
+  const pm = {};
+  for (const p of posicoes) if (p && p.classe === "fii" && p.q > 0 && num(p.pm) > 0) pm[p.t] = p.pm;
+  const r = pontuar(linhas, { cdi, fiis, compras, aporte: aporte.valor, pesos, tetos, pm });
   const div = dividirAporte(r.avaliados.slice(0, CANDIDATOS_DIVISAO), { aporte: aporte.valor, fiis, compras, tetos });
   const limpo = ({ _fixo, ...x }) => x;
   return {
