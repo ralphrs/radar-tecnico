@@ -488,12 +488,15 @@ export function calcular(extrato, ctx = {}) {
   const vendasTodas = []; // { d, b, valor, custo }
   const fluxoMes = new Map(); // mes -> { compras, vendas }
   const somaFluxo = (mes, k, v) => { if (!fluxoMes.has(mes)) fluxoMes.set(mes, { compras: 0, vendas: 0 }); fluxoMes.get(mes)[k] += v; };
+  // compras menos vendas por papel e mês (Reinvestir: compras recentes do equilíbrio); classe junto, para separar os FIIs
+  const fluxoPapel = new Map(); // base -> { classe, meses: Map(mes -> compras − vendas) }
+  const somaPapel = (b, mes, v) => { if (!fluxoPapel.has(b)) fluxoPapel.set(b, { meses: new Map() }); const m = fluxoPapel.get(b).meses; m.set(mes, (m.get(mes) || 0) + v); };
   for (const b of bases) {
     const evs = [...(trades.get(b) || []).map((x) => ({ ...x, ord: 0 })), ...(eventos.get(b) || []).map((x) => ({ ...x, ord: 1 }))]
       .sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : x.ord - y.ord));
     const L = { q: 0, custo: 0, realizado: 0, pago: 0, recebido: 0, primeiro: evs[0] ? evs[0].d : "", ultimo: evs.length ? evs[evs.length - 1].d : "", passos: [] };
     for (const e of evs) {
-      if (e.k === "C") { L.q += e.q; L.custo += e.q * e.p; L.pago += e.q * e.p; somaFluxo(ym(e.d), "compras", e.q * e.p); L.ultPreco = e.p; }
+      if (e.k === "C") { L.q += e.q; L.custo += e.q * e.p; L.pago += e.q * e.p; somaFluxo(ym(e.d), "compras", e.q * e.p); somaPapel(b, ym(e.d), e.q * e.p); L.ultPreco = e.p; }
       else if (e.k === "V") {
         const q = Math.min(e.q, Math.max(L.q, 0));
         const baixa = L.q > 0 ? (L.custo / L.q) * q : 0;
@@ -503,6 +506,7 @@ export function calcular(extrato, ctx = {}) {
         e.resPm = res; // para a venda por lote mostrar os dois resultados lado a lado
         vendasTodas.push({ d: e.d, b, valor, custo: baixa, res });
         somaFluxo(ym(e.d), "vendas", valor);
+        somaPapel(b, ym(e.d), -valor);
         L.q -= e.q; L.custo -= baixa;
         if (L.q <= 1e-9) { L.q = 0; L.custo = 0; }
         L.ultPreco = e.p;
@@ -844,7 +848,8 @@ export function calcular(extrato, ctx = {}) {
     avisos: Object.entries(avisos).map(([k, n]) => ({ k, n })),
     linhas: { neg: ex.neg.length, mov: ex.mov.length, prov: ex.prov.length },
   };
-  return { posicoes, proventos: provs.map((p) => p.slice(0, 7)), resumo, fluxoMes };
+  for (const [b, x] of fluxoPapel) x.classe = classe(b);
+  return { posicoes, proventos: provs.map((p) => p.slice(0, 7)), resumo, fluxoMes, fluxoPapel };
 }
 
 const isoMenosDias = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") - n * 86400000).toISOString().slice(0, 10);
@@ -1323,10 +1328,11 @@ async function rotaSimulacoes(request, env, quem, resto, deps) {
   return resp({ erro: "metodo" }, 405);
 }
 
-// Reinvestir (src/pontuacao-fii.js): os 5 FIIs de maior pontuação pelos critérios da pessoa. Pesos e universo em
-// prefs/<email>, doc "reinvestir" (JSON puro, sem cifra: não tem nada da carteira). GET ?universo=todos|meus (sem ele,
-// o universo salvo) e &aporte=<número> para simular (de 0 a 10 milhões, não fica salvo; sem ele ou inválido, o sugerido
-// de aporteSugerido); PUT { pesos, universo }, corpo até 2 KB. O GET fica 60 s na memória por pessoa, universo e aporte.
+// Reinvestir (src/pontuacao-fii.js): os 5 FIIs de maior pontuação pelos critérios da pessoa, o retrato dos FIIs por
+// segmento e a divisão do aporte. Pesos, tetos e universo em prefs/<email>, doc "reinvestir" (JSON puro, sem cifra: não
+// tem nada da carteira). GET ?universo=todos|meus (sem ele, o universo salvo) e &aporte=<número> para simular (de 0 a 10
+// milhões, não fica salvo; sem ele ou inválido, o sugerido de aporteSugerido); PUT { pesos, tetos, universo }, corpo até
+// 2 KB. O GET fica 60 s na memória por pessoa, universo e aporte.
 async function lerPrefsReinvestir(env, email, deps, doD1) {
   try {
     const r = doD1 ? await env.DB.prepare("SELECT id, data FROM docs WHERE collection = ? AND id = 'reinvestir'").bind("prefs/" + email).first()
@@ -1346,6 +1352,19 @@ export function aporteSugerido(meta, calc, hoje) {
   }
   return { valor: APORTE_PADRAO, origem: "padrao" };
 }
+// Compras recentes do equilíbrio: compras menos vendas de cada FII nos 3 meses fechados antes do mês de hoje mais o mês
+// de hoje (no dia 10/11: agosto, setembro, outubro e novembro). { desde: "AAAA-MM", porPapel: { t: valor } }.
+export function comprasRecentes(calc, hoje) {
+  const atual = ym(hoje), desde = somarMeses(atual, -3);
+  const porPapel = {};
+  if (calc && calc.fluxoPapel) for (const [t, x] of calc.fluxoPapel) {
+    if (x.classe !== "fii") continue;
+    let soma = 0;
+    for (const [m, v] of x.meses) if (m >= desde && m <= atual) soma += v;
+    if (Math.abs(soma) >= 0.005) porPapel[t] = r2(soma);
+  }
+  return { desde, porPapel };
+}
 export const APORTE_MAX = 10000000;
 // ?aporte= da URL: número de 0 a 10 milhões (ponto decimal); qualquer outra coisa vale como ausente.
 export function aporteDaUrl(txt) {
@@ -1362,7 +1381,8 @@ async function montarReinvestir(env, quem, universo, prefs, deps, aporteSim = nu
   const calc = vazia ? null : calcular(docs.extrato, { b3, fiiResumo, importacoes: docs.importacoes, hoje });
   const sugerido = aporteSugerido(docs.meta, calc, hoje);
   const aporte = aporteSim == null ? sugerido : { valor: aporteSim, origem: "simulado" };
-  const out = reinvestir({ b3, fiiResumo, mercado, posicoes: calc ? calc.posicoes : [], patrimonio: calc ? calc.resumo.patrimonio : 0, aporte, sugerido, pesos: prefs.pesos, universo });
+  const compras = comprasRecentes(calc, hoje);
+  const out = reinvestir({ b3, fiiResumo, mercado, posicoes: calc ? calc.posicoes : [], aporte, sugerido, pesos: prefs.pesos, tetos: prefs.tetos, universo, compras });
   return { ...out, vazia, salvo: prefs.salvo, universoSalvo: prefs.universo };
 }
 async function rotaReinvestir(request, env, quem, deps) {

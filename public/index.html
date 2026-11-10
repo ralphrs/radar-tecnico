@@ -1375,7 +1375,7 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 .rv-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .rv-item { border-top: 1px solid var(--border); }
 .rv-item:first-child { border-top: 0; }
-.rv-linha { display: grid; grid-template-columns: 22px minmax(0, 1.6fr) minmax(96px, 1fr) 72px 56px 112px 32px; align-items: center; gap: 12px; padding: 10px 0; cursor: pointer; }
+.rv-linha { display: grid; grid-template-columns: 22px minmax(0, 1.5fr) minmax(96px, 1fr) 64px 52px minmax(150px, 176px) 32px; align-items: center; gap: 12px; padding: 10px 0; cursor: pointer; }
 .rv-linha:hover .rv-seta { background: var(--accent); }
 .rv-pos { font-size: 13px; color: var(--muted-foreground); text-align: right; }
 .rv-papel { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; min-width: 0; }
@@ -1402,6 +1402,33 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
 .rv-crit li.sem .rv-cn, .rv-crit li.sem .rv-cp { color: var(--muted-foreground); }
 .rv-crit li.rv-obs { display: block; font-size: 12.5px; color: var(--muted-foreground); }
 .rv-pe { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--border); padding-top: 10px; }
+.rv-fiis { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.rv-fiis[hidden], .rv-div[hidden] { display: none; }
+.rv-fiis-tit { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 12px; }
+.rv-fiis-tit .rotulo { margin: 0; }
+.rv-fiis-tit small { font-size: 12.5px; color: var(--muted-foreground); }
+.rv-segbar { height: 12px; }
+.rv-leg { font-size: 12.5px; gap: 4px 16px; }
+.rv-leg b { font-weight: 600; color: var(--foreground); }
+.rv-leg .acima, .rv-leg .acima b { color: var(--warn); }
+.rv-leg small { font-size: 12px; }
+.rv-efeito { gap: 3px; }
+.rv-efeito .rv-renda small { font-size: 11.5px; color: var(--muted-foreground); }
+.rv-ef-seg { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rv-ef-seg.acima, .rv-ef-seg.acima .ct-mono { color: var(--warn); }
+.rv-crit li.rv-partes { display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin: -2px 0 2px; padding: 8px 0 8px 12px; border-left: 2px solid var(--border); }
+.rv-parte { display: grid; grid-template-columns: 138px minmax(0, 1fr) 70px 80px; align-items: center; gap: 12px; font-size: 12.5px; }
+.rv-parte .rv-pn { color: var(--muted-foreground); }
+.rv-parte.limita .rv-pn { color: var(--foreground); font-weight: 600; }
+.rv-parte .rv-pn small { font-weight: 400; color: var(--warn); }
+.rv-div { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); padding-top: 12px; }
+.rv-div h4, .rv-painel-tit { margin: 0; font: 600 14px/1.3 var(--font-sans); }
+.rv-div-lista { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rv-div-lista li { display: grid; grid-template-columns: minmax(84px, 120px) 88px 96px 44px minmax(60px, 1fr); align-items: center; gap: 12px; font-size: 13.5px; }
+.rv-div-lista .ct-mono { text-align: right; white-space: nowrap; }
+.rv-sobra { margin: 2px 0 0; font-size: 13px; color: var(--muted-foreground); }
+.rv-sobra b { font-weight: 600; color: var(--foreground); }
+.wdg-rv-div { display: block; font-size: 11.5px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: -2px; }
 .rv-pe .ct-nota { font-size: 12.5px; }
 .wdg-rv.ct-linhas > div { font-size: 13px; align-items: center; }
 .wdg-rv .rv-pos { display: inline-block; width: 1.4em; text-align: left; font-size: 12px; }
@@ -1421,6 +1448,11 @@ html.inv-radar #destaques, html.inv-radar #urgente { display: none !important; }
   .rv-crit li { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; }
   .rv-crit .rv-nota { grid-column: 1 / -1; grid-row: 2; }
   .rv-crit .rv-barra { grid-column: 1 / -1; grid-row: 3; }
+  .rv-efeito { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+  .rv-parte { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; }
+  .rv-parte .rv-nota { grid-column: 1 / -1; grid-row: 2; }
+  .rv-parte .rv-barra { grid-column: 1 / -1; grid-row: 3; }
+  .rv-div-lista li { grid-template-columns: minmax(70px, auto) repeat(3, auto) minmax(30px, 1fr); gap: 4px 10px; font-size: 13px; }
 }
 @media (max-width: 899px) {
   .rd-filtrobar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); }
@@ -6732,7 +6764,7 @@ function cardReinvestir() {
   const refazer = async () => {
     const minha = ++vez;
     rvAbertos.clear();
-    corpo.textContent = ""; corpo.append(esqueleto(5));
+    corpo.textContent = ""; corpo.append(esqueleto(5)); divBox.hidden = true;
     const novo = await lerReinvestir(rvUniverso, false, rvAporte);
     if (minha !== vez || !c.isConnected) return;
     if (novo.erro) { corpo.textContent = ""; corpo.append(el("p", { class: "ct-nota" }, "Não deu para fazer a conta agora: " + novo.erro)); return; }
@@ -6754,10 +6786,12 @@ function cardReinvestir() {
   const painel = el("div", { class: "rv-painel", id: "rv-painel" });
   painel.hidden = !rvPainel;
   const corpo = el("div", { class: "rv-corpo" }, esqueleto(5));
+  const fiisBox = el("div", { class: "rv-fiis" }); fiisBox.hidden = true;
+  const divBox = el("div", { class: "rv-div" }); divBox.hidden = true;
   const pe = el("div", { class: "rv-pe" });
   const status = el("p", { class: "ct-nota rv-status", role: "status" }, rvMsg);
   rvMsg = "";
-  c.append(sub, painel, status, corpo, pe);
+  c.append(sub, painel, status, fiisBox, corpo, divBox, pe);
   bCrit.addEventListener("click", () => { rvPainel = !rvPainel; painel.hidden = !rvPainel; bCrit.setAttribute("aria-expanded", String(rvPainel)); if (rvPainel) { const i = painel.querySelector("input"); if (i) i.focus(); } });
   const pintar = (j) => {
     atual = j;
@@ -6779,11 +6813,13 @@ function cardReinvestir() {
         const novo = await lerReinvestir(u, false, rvAporte);
         if (!novo.erro) pintar(novo);
         /* o universo fica salvo com os pesos de agora; falha aqui não muda a tela */
-        apiCart("PUT", "/reinvestir", { pesos: novo.pesos || j.pesos, universo: u }).then(() => { Object.keys(rvJ).forEach((k) => { if (k.startsWith("|")) delete rvJ[k]; }); wDados.delete("carteira-reinvestir"); }).catch(() => {});
+        apiCart("PUT", "/reinvestir", { pesos: novo.pesos || j.pesos, tetos: novo.tetos || j.tetos, universo: u }).then(() => { Object.keys(rvJ).forEach((k) => { if (k.startsWith("|")) delete rvJ[k]; }); wDados.delete("carteira-reinvestir"); }).catch(() => {});
       });
       seg.append(b);
     });
     painelCriterios(painel, j, status);
+    faixaFiisRv(fiisBox, j);
+    divisaoRv(divBox, j);
     corpo.textContent = "";
     if (!j.top.length) corpo.append(el("p", { class: "ct-nota rv-vazio" }, j.universo === "meus" && !j.excluidos ? "Nenhum FII da carteira com informe da CVM." : "Sem dado suficiente da CVM ainda."));
     else {
@@ -6800,7 +6836,7 @@ function cardReinvestir() {
     if (j.excluidos) fatos.push(`${j.excluidos} fora por falta de dado`);
     if (j.ref && j.ref.cvm) fatos.push("informe da CVM de " + mesL(j.ref.cvm));
     pe.append(el("p", { class: "ct-nota" }, fatos.join(" · ")),
-      el("p", { class: "ct-nota" }, "Conta sobre os critérios acima, com dado da CVM e da brapi. Falta vacância e alavancagem, que entram com o informe trimestral."));
+      el("p", { class: "ct-nota" }, "Conta sobre os seus critérios e tetos, com o que está no seu extrato, dado da CVM e da brapi. Falta vacância e alavancagem, que entram com o informe trimestral."));
   };
   (async () => {
     const j = await lerReinvestir(rvUniverso);
@@ -6810,13 +6846,75 @@ function cardReinvestir() {
   })();
   return c;
 }
+/* Percentual curto do Reinvestir: inteiro; uma casa abaixo de 1% */
+const pcRv = (v, ...outros) => (v == null || !Number.isFinite(v) ? "–" : fmtNum(v, (v > 0 && v < 1) || outros.some((o) => o != null && Math.round(v) === Math.round(o) && Math.abs(v - o) >= 0.05) ? 1 : 0) + "%");
+const MES_LONGO = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const mesLongo = (ym) => (ym ? MES_LONGO[Number(ym.slice(5, 7)) - 1] || "" : "");
+/* Cores dos segmentos na faixa "Seus FIIs hoje": âmbar fica só para o segmento acima do teto; Outros em cinza */
+const CORES_SEG_RV = ["--primary", "--brand-end", "--ok", "--chart-1", "--info"];
+/* "Seus FIIs hoje": barra empilhada por segmento, legenda e a maior posição (retrato antes do aporte) */
+function faixaFiisRv(box, j) {
+  box.textContent = "";
+  const f = j.fiis;
+  box.hidden = !(f && f.total > 0 && f.porSegmento.length);
+  if (box.hidden) return;
+  let k = 0;
+  const itens = f.porSegmento.map((s) => ({ ...s, cor: s.acima ? "var(--warn)" : s.segmento === "Outros" ? "var(--muted-foreground)" : `var(${CORES_SEG_RV[k++ % CORES_SEG_RV.length]})` }));
+  const faixa = el("div", { class: "ct-faixa rv-segbar", role: "img", "aria-label": "Seus FIIs por segmento: " + itens.map((s) => `${s.segmento} ${pcRv(s.pct)}${s.acima ? ", acima do teto de " + s.teto + "%" : ""}`).join("; ") });
+  itens.forEach((s) => faixa.append(el("span", { style: `width:${s.pct}%;background:${s.cor}`, title: `${s.segmento}: ${rs(s.valor)}, ${pcRv(s.pct)}` })));
+  const leg = el("div", { class: "ct-legenda rv-leg", "aria-hidden": "true" }, ...itens.map((s) => el("span", { class: s.acima ? "acima" : "" },
+    el("i", { style: `background:${s.cor}` }), s.segmento + " ", el("b", { class: "ct-mono" }, pcRv(s.pct)), s.acima ? el("small", {}, ` acima do teto de ${s.teto}%`) : null)));
+  const mp = f.maiorPapel;
+  box.append(el("div", { class: "rv-fiis-tit" }, el("span", { class: "rotulo" }, "Seus FIIs hoje"),
+    el("small", {}, rs(f.total) + (mp ? ` · maior posição: ${mp.t}, ${pcRv(mp.pct)}` : ""))), faixa, leg);
+}
+/* Efeito do aporte inteiro no segmento do papel: "Logística 12% → 14%"; âmbar quando passa do teto */
+function efeitoRv(x, j) {
+  const e = x.efeito;
+  if (!e || !j.fiis || !(j.fiis.total > 0)) return el("small", { class: "rv-ef-seg" }, x.segmento || "Outros");
+  const teto = j.tetos ? j.tetos.segmento : 25;
+  const acima = e.segmentoDepois > teto;
+  return el("small", { class: "rv-ef-seg" + (acima ? " acima" : ""), title: `${x.segmento} nos seus FIIs, hoje e com o aporte inteiro neste papel (teto de ${teto}%)` },
+    (x.segmento || "Outros") + " ", el("span", { class: "ct-mono" }, `${pcRv(e.segmentoAntes, e.segmentoDepois)} → ${pcRv(e.segmentoDepois, e.segmentoAntes, teto)}`));
+}
+/* As três partes do critério Equilíbrio, na linha aberta; a que deu a nota leva "a menor" */
+function partesEquilibrio(k) {
+  const p = k.partes;
+  const linha = (id, nome, txt, parcial) => el("div", { class: "rv-parte" + (k.limita === id ? " limita" : "") },
+    el("span", { class: "rv-pn" }, nome, k.limita === id ? el("small", {}, " a menor") : null),
+    el("span", { class: "rv-nota" }, txt),
+    el("span", { class: "rv-cp ct-mono" }, fmtNum(parcial * 100, 0) + "%"),
+    el("span", { class: "rv-barra fina", "aria-hidden": "true" }, el("span", { style: `width:${Math.min(100, parcial * 100)}%` })));
+  const m = mesLongo(p.compras.desde);
+  return el("li", { class: "rv-partes" },
+    linha("papel", "Papel", `${pcRv(p.papel.antes, p.papel.depois)} → ${pcRv(p.papel.depois, p.papel.antes, p.papel.teto)} dos seus FIIs · teto ${p.papel.teto}%`, p.papel.parcial),
+    linha("segmento", "Segmento", `${p.segmento.nome} ${pcRv(p.segmento.antes, p.segmento.depois)} → ${pcRv(p.segmento.depois, p.segmento.antes, p.segmento.teto)} · teto ${p.segmento.teto}%`, p.segmento.parcial),
+    linha("compras", "Compras recentes", p.compras.pct == null ? `nenhuma compra de FII${m ? " desde " + m : ""}` : `${pcRv(p.compras.pct)} das compras de FIIs${m ? " desde " + m : ""} neste papel · até 25% fica no máximo`, p.compras.parcial));
+}
+/* "Divisão do aporte pelos seus critérios": cotas inteiras, cota a cota (src/pontuacao-fii.js, dividirAporte) */
+function divisaoRv(box, j) {
+  box.textContent = "";
+  const d = j.divisao;
+  box.hidden = !(d && j.aporte && j.aporte.valor > 0);
+  if (box.hidden) return;
+  const rsC = (v) => rs(v, !Number.isInteger(Math.round(v * 100) / 100));
+  box.append(el("h4", {}, "Divisão do aporte pelos seus critérios"),
+    el("p", { class: "ct-nota" }, "Conta cota a cota: cada cota vai para o papel de maior pontuação naquele momento, já contando as anteriores. Nenhum papel leva mais de 40% do aporte enquanto houver outro a até 5 pontos dele."));
+  if (!d.itens.length) box.append(el("p", { class: "ct-nota" }, `Nenhuma cota dos ${j.total} FIIs avaliados cabe em ${rsC(j.aporte.valor)}.`));
+  else box.append(el("ul", { class: "rv-div-lista" }, ...d.itens.map((x) => el("li", {},
+    papelBtn(x.t), el("span", { class: "ct-mono" }, `${fmtNum(x.cotas, 0)} ${x.cotas === 1 ? "cota" : "cotas"}`),
+    el("span", { class: "ct-mono" }, rsC(x.valor)), el("span", { class: "ct-mono rv-div-pct" }, fmtNum(x.pct, 0) + "%"),
+    el("span", { class: "rv-barra fina", "aria-hidden": "true" }, el("span", { style: `width:${Math.min(100, x.pct)}%` }))))));
+  box.append(el("p", { class: "rv-sobra" }, "sobra ", el("b", { class: "ct-mono" }, rsC(d.sobra)),
+    d.lote > 1 ? el("small", {}, ` · com esse aporte a conta anda de ${d.lote} em ${d.lote} cotas`) : null));
+}
 function linhaReinvestir(x, i, j) {
   const aberto = rvAbertos.has(x.t);
   const li = el("li", { class: "rv-item" + (aberto ? " aberto" : "") });
   const idc = "rv-c-" + x.t;
   const seta = el("button", { type: "button", class: "rv-seta", "aria-expanded": String(aberto), "aria-controls": idc, "aria-label": (aberto ? "Fechar" : "Ver") + " os critérios de " + x.t, html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' });
   const barra = el("span", { class: "rv-barra", "aria-hidden": "true" }, el("span", { style: `width:${Math.max(2, Math.min(100, x.pontos))}%` }));
-  const tenho = x.tenho ? tagEl("tenho" + (x.tenho.pct != null ? " " + pc(x.tenho.pct) : ""), "ok", "Peso do papel na carteira hoje") : null;
+  const tenho = x.tenho ? tagEl("tenho" + (x.tenho.pct != null ? " " + pc(x.tenho.pct) : ""), "ok", "Peso do papel nos seus FIIs hoje") : null;
   const linha = el("div", { class: "rv-linha" },
     el("span", { class: "rv-pos ct-mono" }, String(i + 1)),
     el("span", { class: "rv-papel" }, papelBtn(x.t, x.nome ? nomeBonito(x.nome) : ""), tenho, el("small", {}, x.segmento || "sem segmento")),
@@ -6824,7 +6922,9 @@ function linhaReinvestir(x, i, j) {
     el("span", { class: "rv-fatos" },
       el("span", { class: "rv-fato" }, el("small", {}, "DY 12m"), el("span", { class: "ct-mono" }, pc(x.dy))),
       el("span", { class: "rv-fato" }, el("small", {}, "P/VP"), el("span", { class: "ct-mono" }, x.pvp != null ? fmtNum(x.pvp, 2) : "–")),
-      el("span", { class: "rv-fato rv-renda", title: `Aporte de ${rs(j.aporte.valor)} × DY 12m / 12` }, el("small", {}, "aporte rende"), el("span", { class: "ct-mono" }, x.rendaAporte != null ? rs(x.rendaAporte, true) + "/mês" : "–"))),
+      el("span", { class: "rv-fato rv-efeito" },
+        el("span", { class: "rv-renda", title: `Aporte de ${rs(j.aporte.valor)} × DY 12m / 12` }, el("small", {}, "aporte rende "), el("span", { class: "ct-mono" }, x.rendaAporte != null ? rs(x.rendaAporte, true) + "/mês" : "–")),
+        efeitoRv(x, j))),
     seta);
   const crit = el("ul", { class: "rv-crit", id: idc });
   crit.hidden = !aberto;
@@ -6835,6 +6935,7 @@ function linhaReinvestir(x, i, j) {
       el("span", { class: "rv-nota" }, k.nota + (sem ? " · fora da conta" : "")),
       el("span", { class: "rv-cp ct-mono" }, sem ? "–" : `${fmtNum(k.pontos, Number.isInteger(k.pontos) ? 0 : 1)} de ${k.max}`),
       el("span", { class: "rv-barra fina", "aria-hidden": "true" }, el("span", { style: `width:${sem ? 0 : Math.min(100, (k.pontos / k.max) * 100)}%` }))));
+    if (k.id === "equilibrio" && k.partes && j.fiis && j.fiis.total > 0) crit.append(partesEquilibrio(k));
   });
   if (x.faltando.length) {
     const com = x.criterios.filter((k) => k.pontos != null).reduce((s, k) => s + k.max, 0), tot = x.criterios.reduce((s, k) => s + k.max, 0);
@@ -6864,26 +6965,43 @@ function painelCriterios(painel, j, status) {
     campos[k.id] = inp;
     grade.append(el("div", {}, el("label", { class: "rotulo", for: id }, k.nome), el("div", { class: "campo" }, inp, el("span", {}, `padrão ${j.padrao[k.id]}`)), k.faixa ? el("small", { class: "rv-faixa" }, k.faixa) : null));
   });
+  /* Tetos do equilíbrio, em % da parte de FIIs */
+  const tetos = {}, tp = j.tetosPadrao || { papel: 10, segmento: 25 }, tv = j.tetos || tp;
+  const LIM_TETO = { papel: [2, 50], segmento: [5, 100] };
+  const gradeTetos = el("div", { class: "rv-grade rv-tetos" });
+  [["papel", "Teto por papel (%)", "acima disso o equilíbrio cai; zero no dobro"], ["segmento", "Teto por segmento (%)", "segmento da CVM; sem segmento conta como Outros"]].forEach(([id, nome, faixa]) => {
+    const inp = Campo.ligar(el("input", { class: "dd-input", id: "rv-t-" + id }), { tipo: "percentual", casas: 0, min: LIM_TETO[id][0], max: LIM_TETO[id][1] });
+    Campo.definir(inp, tv[id]);
+    tetos[id] = inp;
+    gradeTetos.append(el("div", {}, el("label", { class: "rotulo", for: "rv-t-" + id }, nome), el("div", { class: "campo" }, inp, el("span", {}, `padrão ${tp[id]}% · de ${LIM_TETO[id][0]} a ${LIM_TETO[id][1]}`)), el("small", { class: "rv-faixa" }, faixa)));
+  });
   const bPadrao = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Padrão");
   const bSalvar = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, "Salvar");
-  bPadrao.addEventListener("click", () => { j.criterios.forEach((k) => Campo.definir(campos[k.id], j.padrao[k.id])); somar(); status.textContent = "Pesos padrão no formulário. Salve para usar."; });
+  bPadrao.addEventListener("click", () => { j.criterios.forEach((k) => Campo.definir(campos[k.id], j.padrao[k.id])); Object.keys(tetos).forEach((id) => Campo.definir(tetos[id], tp[id])); somar(); status.textContent = "Pesos e tetos padrão no formulário. Salve para usar."; });
   bSalvar.addEventListener("click", async () => {
     const inv = Object.values(campos).find((i) => Campo.invalido(i));
     if (inv) { status.textContent = "Use um inteiro de 0 a 50 em cada peso."; inv.focus(); return; }
     const pesos = {};
     for (const k of j.criterios) pesos[k.id] = Campo.valor(campos[k.id]) ?? 0;
     if (!Object.values(pesos).some((v) => v > 0)) { status.textContent = "Deixe pelo menos um critério com peso acima de zero."; return; }
+    const tt = {};
+    for (const id of Object.keys(tetos)) {
+      const v = Campo.valor(tetos[id]), [a, z] = LIM_TETO[id];
+      if (Campo.invalido(tetos[id]) || v == null || Math.round(v) !== v || v < a || v > z) { status.textContent = `Use um inteiro de ${a} a ${z} no teto por ${id}.`; tetos[id].focus(); return; }
+      tt[id] = v;
+    }
     bSalvar.disabled = true; status.textContent = "Salvando…";
     try {
-      await apiCart("PUT", "/reinvestir", { pesos, universo: j.universo });
+      await apiCart("PUT", "/reinvestir", { pesos, tetos: tt, universo: j.universo });
       limparReinvestir(); wDados.delete("carteira-reinvestir");
-      rvMsg = "Pesos salvos. A conta já usa os novos.";
+      rvMsg = "Pesos e tetos salvos. A conta já usa os novos.";
       const velho = document.getElementById("ct-reinvestir");
       if (velho) velho.replaceWith(cardReinvestir());
     } catch (e) { status.textContent = "Não deu para salvar: " + e.message; bSalvar.disabled = false; }
   });
   painel.append(el("p", { class: "ct-nota" }, "Cada critério dá de 0 a 1 e vale o peso que você escolher (inteiro de 0 a 50). Peso 0 tira o critério da conta."),
-    grade, el("div", { class: "ct-acoes" }, bPadrao, bSalvar, soma));
+    grade, el("h4", { class: "rv-painel-tit" }, "Tetos do equilíbrio"), el("p", { class: "ct-nota" }, "Quanto um papel e um segmento podem pesar nos seus FIIs, depois do aporte, sem perder pontos no Equilíbrio."),
+    gradeTetos, el("div", { class: "ct-acoes" }, bPadrao, bSalvar, soma));
   somar();
 }
 /* Posições, Encerradas e Pagamentos da carteira no helper de tabela (ids carteira-pos, carteira-encerradas, carteira-proventos).
@@ -7951,7 +8069,7 @@ corpos["carteira-simulacoes"] = (j, fm = { c: 1, r: 1 }) => {
     pillSim(s))))];
 };
 
-/* Reinvestir: 1x1 com os 3 primeiros e a pontuação; 2x1 com os 5, DY 12m e P/VP */
+/* Reinvestir: 1x1 com os 3 primeiros e a pontuação; 2x1 com os 5, DY 12m e P/VP e, no fim, a divisão do aporte */
 corpos["carteira-reinvestir"] = (d, fm = { c: 1, r: 1 }) => {
   const v = semCartW(d && d.cj); if (v) return v;
   const rv = d.rv;
@@ -7960,6 +8078,9 @@ corpos["carteira-reinvestir"] = (d, fm = { c: 1, r: 1 }) => {
   return [el("div", { class: "ct-linhas wdg-rv" }, ...rv.top.slice(0, largo ? 5 : 3).map((x, i) => el("div", {},
     el("span", {}, el("span", { class: "rv-pos ct-mono" }, String(i + 1)), papelBtn(x.t), x.tenho ? tagEl("tenho", "ok") : null),
     el("span", { class: "rv-w-dir" }, largo ? el("span", { class: "ct-mono rv-w-fatos" }, `DY ${pc(x.dy)} · P/VP ${x.pvp != null ? fmtNum(x.pvp, 2) : "–"}`) : null, el("b", { class: "ct-mono", title: `${x.pontos} de 100 pontos` }, String(x.pontos)))))),
+    largo && rv.divisao && rv.divisao.itens.length && rv.aporte.valor > 0
+      ? el("span", { class: "ct-mono wdg-rv-div", title: `Divisão de ${rs(rv.aporte.valor)} pelos seus critérios, cota a cota` }, "divisão: " + rv.divisao.itens.slice(0, 3).map((x) => `${x.t} ${fmtNum(x.cotas, 0)}`).join(" · ") + (rv.divisao.itens.length > 3 ? " · …" : "") + ` · sobra ${rs(rv.divisao.sobra, !Number.isInteger(rv.divisao.sobra))}`)
+      : null,
     el("span", { class: "ct-nota wdg-fecho" }, "pontos pelos seus critérios, de 0 a 100")];
 };
 
