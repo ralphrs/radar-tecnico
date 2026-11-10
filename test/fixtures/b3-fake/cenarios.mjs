@@ -2,7 +2,8 @@
 //
 // Tudo aqui é inventado: quantidades, preços e proventos saem de um passeio aleatório com semente fixa
 // (gerar.mjs), dentro de uma faixa plausível para cada papel, sem compromisso com a cotação histórica.
-// Os códigos são reais (presentes em meta/b3 e meta/fii-resumo de produção em 04/11/2026), menos o XPTO3.
+// Os códigos são reais (presentes em meta/b3 e meta/fii-resumo de produção em 04/11/2026), menos o XPTO3 e os QZ* dos
+// cenários 18 a 20 (versão 1.3.0), inventados.
 // Ficaram de fora de propósito os papéis da lista FII-Core-2026-11 e MXRF11, KNSC11, CPTS11 e GARE11.
 //
 // Mudou um cenário? Suba a versão em VERSAO e anote no CHANGELOG.md (veja docs/dados-de-teste.md).
@@ -60,6 +61,13 @@ export const PAPEIS = {
   // cenários 16 e 17 (versão 1.2.0): preços sempre escritos no roteiro, o passeio só existe para o gerador não reclamar
   EGIE3: { nome: "ENGIE BRASIL ENERGIA S.A.", ini: 40, vol: 0.03, min: 30, max: 50 },
   WEGE3: { nome: "WEG S.A.", ini: 38, vol: 0.04, min: 25, max: 55 },
+  // cenários 18 a 20 (versão 1.3.0): códigos inventados, preços sempre escritos no roteiro
+  QZDT3: { nome: "QZ DAY TRADE PARTICIPACOES S.A.", ini: 5, vol: 0.03, min: 3, max: 8 },
+  QZFA11: { nome: "QZ FUNDO A FII", ini: 10, vol: 0.02, min: 8, max: 12 },
+  QZFB11: { nome: "QZ FUNDO B FII", ini: 95, vol: 0.02, min: 80, max: 110 },
+  QZFC11: { nome: "QZ FUNDO C FII", ini: 15, vol: 0.02, min: 12, max: 18 },
+  QZFC13: { nome: "QZ FUNDO C FII" },
+  QZFD11: { nome: "QZ FUNDO D FII", ini: 12, vol: 0.02, min: 10, max: 14 },
 };
 
 // Cotação e classe de 04/11/2026 (meta/b3 e meta/fii-resumo de produção), só dos papéis usados: o README e o teste
@@ -68,8 +76,9 @@ export const REF = {
   b3: {
     atualizado: "2026-11-04T14:05:26.416Z",
     // EGIE3 e WEGE3 (cenários 16 e 17) com cotação inventada, fixa aqui como as outras
-    acoes: [["PETR4", 49.88], ["VALE3", 61.67], ["MGLU3", 5.35], ["ITSA4", 12.72], ["B3SA3", 13.95], ["BBAS3", 16.53], ["BBSE3", 39.58], ["EGIE3", 36.4], ["WEGE3", 41.2]],
-    fiis: [["KNIP11", 84.16], ["VILG11", 86.83], ["XPML11", 94.5], ["TRXF11", 62.85]],
+    // QZDT3, QZFB11 e QZFC11 (cenários 18 a 20) inventados; QZFA11 e QZFD11 foram incorporados e não têm cotação
+    acoes: [["PETR4", 49.88], ["VALE3", 61.67], ["MGLU3", 5.35], ["ITSA4", 12.72], ["B3SA3", 13.95], ["BBAS3", 16.53], ["BBSE3", 39.58], ["EGIE3", 36.4], ["WEGE3", 41.2], ["QZDT3", 5.05]],
+    fiis: [["KNIP11", 84.16], ["VILG11", 86.83], ["XPML11", 94.5], ["TRXF11", 62.85], ["QZFB11", 97.3], ["QZFC11", 14.9]],
     fiinfra: [["IFRA11", 83.38]],
     fiagro: [["KNCA11", 83.45]],
     etfs: [["BOVA11", 164.68], ["IVVB11", 472.57]],
@@ -82,6 +91,9 @@ export const REF = {
       VILG11: { n: "VINCI LOGISTICA FUNDO DE INVESTIMENTO IMOBILIARIO", s: "Logística", rend: 0.819763, ref: "2026-09" },
       XPML11: { n: "XP MALLS FII", s: "Shoppings", rend: -0.118418, ref: "2026-09" },
       TRXF11: { n: "LIQUIDEZ PROJETOS GD FI IMOBILIÁRIO RESP LIMITADA", s: "Multicategoria", rend: 0, ref: "2026-09" },
+      // os fundos incorporados dos cenários 19 e 20: só o informe antigo, para a classe ser FII
+      QZFA11: { n: "QZ FUNDO A FII", s: "Outros", rend: 0, ref: "2025-09" },
+      QZFD11: { n: "QZ FUNDO D FII", s: "Outros", rend: 0, ref: "2025-04" },
     },
   },
 };
@@ -329,16 +341,53 @@ export const CENARIOS = [
       c.crua("movimentacao", ["Debito", "2025-05-16", "Transferência - Liquidação", prod, XP, 50, 45, 2250]);
     },
   },
+  {
+    id: 18, titulo: "Day trade com a venda listada antes da compra", papeis: ["QZDT3"],
+    testa: "300 ações compradas em 2025. Em 11/03/2026, na mesma corretora, venda de 200 a R$ 5,12 e compra de 200 a R$ 5,18; no arquivo a venda vem primeiro e a Negociação não tem hora. Sem linha de liquidação na Movimentação (o dia zera). As compras do dia entram antes das vendas: o day trade dá −R$ 12,00 e a posição de antes fica como estava.",
+    espera: "QZDT3 aberta com 300 ações, preço médio R$ 4,90, realizado −R$ 12,00 e a situação day trade. Nada de venda sem origem nem de 200 ações a mais.",
+    roteiro(c) {
+      c.compra("2025-02-12", "QZDT3", 300, XP, { preco: 4.9 });
+      c.crua("negociacao", ["2026-03-11", "Venda", "Mercado à Vista", "-", XP, "QZDT3", 200, 5.12, 1024]);
+      c.crua("negociacao", ["2026-03-11", "Compra", "Mercado à Vista", "-", XP, "QZDT3", 200, 5.18, 1036]);
+    },
+  },
+  {
+    id: 19, titulo: "Fundo incorporado por outro que já estava na carteira", papeis: ["QZFA11", "QZFB11"],
+    testa: "QZFA11 (150 cotas) é incorporado por QZFB11 (80 cotas). Mesma corretora: Atualização de QZFA11 com 150 (só confirma a custódia) e de QZFB11 com 98,64 novas no mesmo dia, Fração em Ativos de 0,64 no débito no dia seguinte, Resgate das 150 de QZFA11 a R$ 0,274 três dias úteis depois e o leilão da fração. O custo de QZFA11 menos o resgate passa para as cotas novas de QZFB11.",
+    espera: "QZFA11 em Encerradas, \"incorporado por QZFB11\", sem resultado próprio. QZFB11 aberta com 178 cotas e o custo das 80 compradas mais o que veio de QZFA11. Situação incorporação nos dois, sem quantidade diferente da B3.",
+    roteiro(c) {
+      c.compra("2023-03-08", "QZFA11", 150, XP, { preco: 9.8 });
+      c.compra("2024-05-08", "QZFB11", 80, XP, { preco: 95 });
+      c.mov("2025-10-15", "C", "Atualização", "QZFA11", 150, null, XP, { dq: 0 });
+      c.mov("2025-10-15", "C", "Atualização", "QZFB11", 98.64, null, XP, { dq: 98.64 });
+      c.mov("2025-10-16", "D", "Fração em Ativos", "QZFB11", 0.64, null, XP, { dq: -0.64 });
+      c.mov("2025-10-20", "C", "Resgate", "QZFA11", 150, 0.274, XP, { dq: "zera" });
+      c.mov("2025-10-28", "C", "Leilão de Fração", "QZFB11", 0.64, 96, XP);
+    },
+  },
+  {
+    id: 20, titulo: "Fundo incorporado com recibo: as cotas novas chegam como recibo e viram cota depois", papeis: ["QZFD11", "QZFC11", "QZFC13"],
+    testa: "QZFD11 (40 cotas na Rico) é incorporado por QZFC11, que não estava na carteira. Atualização do recibo QZFC13 com 31,57, Resgate das 40 de QZFD11 a R$ 0,512 três dias úteis depois, Atualização de QZFC11 com as 31,57 (o recibo vira cota), fração de 0,57 no débito e leilão. Sem subscrição exercida: não é subscrição, é incorporação.",
+    espera: "QZFD11 em Encerradas, \"incorporado por QZFC11\". QZFC11 aberta na Rico com 31 cotas e o custo de QZFD11 menos o resgate. QZFC13 não aparece.",
+    roteiro(c) {
+      c.compra("2023-08-09", "QZFD11", 40, RICO, { preco: 12 });
+      c.mov("2025-05-12", "C", "Atualização", "QZFC13", 31.57, null, RICO, { dq: "+" });
+      c.mov("2025-05-15", "C", "Resgate", "QZFD11", 40, 0.512, RICO, { dq: "zera" });
+      c.mov("2025-05-28", "C", "Atualização", "QZFC11", 31.57, null, RICO, { dq: { de: "QZFC13" } });
+      c.mov("2025-05-29", "D", "Fração em Ativos", "QZFC11", 0.57, null, RICO, { dq: -0.57 });
+      c.mov("2025-06-05", "C", "Leilão de Fração", "QZFC11", 0.57, 15, RICO);
+    },
+  },
 ];
 
 // O que o README promete e o teste confere (independe da semente). Vale para --ate de 2026-10-13 a 2026-12-12
 // (empréstimo nos últimos 60 dias, rendimento menor nos últimos 45); fora disso só emprestadas e o alerta mudam.
 export const ESPERADO = {
-  abertas: ["AAPL34", "B3SA3", "BBAS3", "BBSE3", "BOVA11", "EGIE3", "IFRA11", "ITSA4", "IVVB11", "KNCA11", "KNIP11", "NVDC34", "PETR4", "TRXF11", "VILG11", "XPML11", "XPTO3"],
-  encerradas: ["MGLU3", "VALE3", "WEGE3"],
+  abertas: ["AAPL34", "B3SA3", "BBAS3", "BBSE3", "BOVA11", "EGIE3", "IFRA11", "ITSA4", "IVVB11", "KNCA11", "KNIP11", "NVDC34", "PETR4", "QZDT3", "QZFB11", "QZFC11", "TRXF11", "VILG11", "XPML11", "XPTO3"],
+  encerradas: ["MGLU3", "QZFA11", "QZFD11", "VALE3", "WEGE3"],
   semCotacao: ["XPTO3"],
-  quantidade: { ITSA4: 4400, B3SA3: 159, BBAS3: 200, XPML11: 150, EGIE3: 112 },
-  corretoras: { XPML11: ["XP"], VILG11: ["Rico"], BOVA11: ["Nu Invest"], AAPL34: ["Inter"], EGIE3: ["Rico"] },
+  quantidade: { ITSA4: 4400, B3SA3: 159, BBAS3: 200, XPML11: 150, EGIE3: 112, QZDT3: 300, QZFB11: 178, QZFC11: 31 },
+  corretoras: { XPML11: ["XP"], VILG11: ["Rico"], BOVA11: ["Nu Invest"], AAPL34: ["Inter"], EGIE3: ["Rico"], QZFB11: ["XP"], QZFC11: ["Rico"] },
   avisos: [{ k: "negativa", n: 1 }], // WEGE3, cenário 17
   classes: { IFRA11: "fiinfra", KNCA11: "fiagro", BOVA11: "etf", IVVB11: "etf", AAPL34: "bdr", NVDC34: "bdr", KNIP11: "fii", PETR4: "acao" },
   emprestadas: { VILG11: 30 },
@@ -370,9 +419,23 @@ export const ESPERADO_CONFERENCIA = {
     ITSA4: ["bonificacao-sem-custo"],
     B3SA3: ["bonificacao-sem-custo", "fracao"],
     XPML11: ["transferencia"],
-    XPTO3: ["sem-cotacao"],
+    // desde a versão 1.3.0: XPTO3 (cenário 14) também cai na varredura de papel parado (sem cotação e sem linha há 24 meses)
+    XPTO3: ["parada", "sem-cotacao"],
+    QZDT3: ["day-trade"],
+    QZFA11: ["incorporacao"], QZFB11: ["incorporacao"], QZFC11: ["incorporacao"], QZFD11: ["incorporacao"],
   },
   graves: 4, // EGIE3, WEGE3, ITSA4 e B3SA3
   porCorretora: { EGIE3: { Rico: { q: 112, custo: 4276.36 }, "Nu Invest": { q: 0, realizado: 1147 * 33.9 - (600 * 36.5 + 547 * 35.2) }, Inter: { q: 0, realizado: 0 } } },
   vendaSemOrigem: { WEGE3: 20 },
+};
+
+// Day trade e incorporação (cenários 18 a 20, versão 1.3.0), com --ate 04/11/2026
+export const ESPERADO_FANTASMAS = {
+  dayTrade: { QZDT3: { q: 300, pm: 4.9, realizado: -12 } },
+  incorporacao: {
+    QZFA11: { para: "QZFB11", d: "2025-10-15", resgate: 41.1, comprado: 1470, texto: "QZFA11 foi incorporado por QZFB11 em 15/10/2025: 150 cotas viraram 98,64; R$\u00a041,10 de resgate." },
+    QZFD11: { para: "QZFC11", d: "2025-05-12", resgate: 20.48, comprado: 480, texto: "QZFD11 foi incorporado por QZFC11 em 12/05/2025: 40 cotas viraram 31,57; R$\u00a020,48 de resgate." },
+  },
+  // custo de QZFB11: 80 × 95 + (1.470 − 41,10), menos a fração de 0,64 pelo preço médio; QZFC11: 480 − 20,48, menos 0,57
+  custo: { QZFB11: (7600 + 1428.9) * 178 / 178.64, QZFC11: (480 - 20.48) * 31 / 31.57 },
 };

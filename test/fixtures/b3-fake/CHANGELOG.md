@@ -10,6 +10,31 @@ A versão fica em `VERSAO` e vai para o `manifesto.json` de cada geração. Regr
 
 Em cada entrada: o que mudou, quais cenários e o que fazer na conta de teste.
 
+## 1.3.0 (10/11/2026)
+
+Cenários 18, 19 e 20, para as posições fantasmas da carteira. Só acrescenta: nenhuma linha dos arquivos de antes muda,
+e o retrato dos proventos a receber é o mesmo (os papéis novos não pagam provento). Os códigos são inventados (QZ*).
+
+- 18, QZDT3, day trade com a venda antes: 300 compradas em 2025; em 11/03/2026, venda de 200 a R$ 5,12 listada antes da
+  compra de 200 a R$ 5,18, na mesma corretora (linhas cruas, sem liquidação). Fica aberta com 300 a R$ 4,90 e
+  realizado −R$ 12,00. Antes desta versão do cálculo a venda baixava a posição antiga (+R$ 44,00) e a compra subia o
+  preço médio para R$ 5,09.
+- 19, QZFA11 incorporado por QZFB11 (que já tinha 80): Atualização das duas no mesmo dia (150 que confirmam a custódia e
+  98,64 novas), fração de 0,64, resgate das 150 a R$ 0,274 três dias úteis depois e leilão. QZFA11 em Encerradas
+  ("incorporado por QZFB11"), QZFB11 com 178 cotas. Antes, QZFA11 ficava aberta para sempre, sem cotação.
+- 20, QZFD11 incorporado por QZFC11, com recibo: Atualização de QZFC13 (31,57), resgate das 40 de QZFD11 a R$ 0,512,
+  Atualização de QZFC11 (o recibo vira cota), fração de 0,57 e leilão. QZFC11 com 31 cotas e o custo de QZFD11 menos o
+  resgate (antes, custo zero).
+- O que muda na conta de teste: 20 posições abertas e 5 encerradas, patrimônio e totais com os papéis novos. Os papéis
+  com dado a completar continuam 4. Nenhum número de antes em `test/b3-fake.test.mjs` mudou; o que mudou foi uma
+  situação: XPTO3 (cenário 14) ganhou `parada` (sem cotação e sem linha desde 03/2022), da varredura nova de papel
+  parado, que é o que se espera de um papel delistado. Nenhum cenário antigo tinha compra e venda do mesmo papel no
+  mesmo dia, então a regra nova de day trade não mexeu em nenhum.
+- `cenarios.mjs`: `PAPEIS` e `REF` com os códigos novos, `ESPERADO`, `ESPERADO_CONFERENCIA` (XPTO3 e os papéis novos) e
+  `ESPERADO_FANTASMAS`. O teste de por lote ganhou QZFB11 na exceção da fração (a fração sai do lote incorporado), e o
+  de encerradas aceita a encerrada sem venda quando ela foi incorporada.
+- Na conta de teste: gerar a correção (`--diff` com o manifesto da última importação) e importar os `correcao-*.xlsx`.
+
 ## 1.2.0 (10/11/2026)
 
 Cenários 16 e 17, para a Conferência da carteira. Só acrescenta: nenhuma linha dos arquivos de antes muda, e o

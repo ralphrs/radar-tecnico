@@ -405,46 +405,51 @@ function referencias({ b3, fiiResumo }) {
 // lote { d, q, preco, origem }: compra ("compra", preço do negócio), subscrição que virou cota ("subscricao", preço do
 // exercício), bonificação ("bonificacao", o valor que o extrato trouxer ou zero), transferência de entrada
 // ("transferencia", o preço médio na data, por falta de dado melhor), fração em ativos ("fracao", zero; quando sai,
-// sai ela mesma) e o resto que soma quantidade sem preço ("ajuste", zero). Desdobro e grupamento mudam q e preço de todos os lotes na proporção. Venda, transferência de saída, retirada
-// e vencimento baixam do lote mais antigo. Conta: entrou = baixadoVendas + baixadoOutros + custo dos lotes que sobram.
+// sai ela mesma), cotas que apareceram em custódia sem compra ("custodia", zero ou o custo informado), o fundo
+// incorporado ("incorporacao": os lotes do fundo antigo convertidos na proporção, com as datas deles e o custo menos o
+// resgate) e o resto que soma quantidade sem preço ("ajuste", zero). Desdobro e grupamento mudam q e preço de todos os
+// lotes na proporção. Venda, transferência de saída, retirada, vencimento e resgate baixam do lote mais antigo; a venda
+// de day trade baixa a compra do mesmo dia. Conta: entrou = baixadoVendas + baixadoOutros + custo dos lotes que sobram.
 const pmNaDataL = (L, d) => { let pm = null; for (const s of L.passos) { if (s.d > d) break; if (s.pm != null) pm = s.pm; } return pm != null ? pm : L.q > 1e-9 && L.custo > 0 ? L.custo / L.q : 0; };
 function filaFifo(evs, L, ano) {
   const lotes = [], vendas = [];
-  const c = { entrou: 0, baixadoVendas: 0, baixadoOutros: 0, realizado: 0, realizadoAno: 0, acerto: 0 };
+  const c = { entrou: 0, baixadoVendas: 0, baixadoOutros: 0, realizado: 0, realizadoAno: 0, acerto: 0, incorporado: 0 };
   const custoDe = (ls) => ls.reduce((s, l) => s + l.q * l.preco, 0);
   const entrar = (d, q, preco, origem) => { if (!(q > 1e-9)) return; lotes.push({ d, q, preco, origem }); c.entrou += q * preco; };
-  // Baixa do mais antigo. A fração que sai (Fração em Ativos no Débito) é a mesma que entrou: sai antes do lote de fração.
-  const consumir = (q, origem) => {
+  // Baixa do mais antigo. A fração que sai (Fração em Ativos no Débito) é a mesma que entrou: sai antes do lote de fração
+  // (ou, sem ele, do lote que veio da incorporação, que é de onde a fração quebrada sai). A venda de day trade baixa a
+  // compra do mesmo dia.
+  const consumir = (q, origens) => {
     const usados = [];
     let resta = q;
     const tirar = (i) => {
       const l = lotes[i], usa = Math.min(l.q, resta);
-      usados.push({ d: l.d, q: usa, preco: l.preco });
+      usados.push({ d: l.d, q: usa, preco: l.preco, origem: l.origem });
       l.q -= usa; resta -= usa;
       if (l.q <= 1e-9) lotes.splice(i, 1);
     };
-    if (origem) for (let i = lotes.length - 1; i >= 0 && resta > 1e-9; i--) if (lotes[i].origem === origem) tirar(i);
+    for (const origem of origens ? [].concat(origens) : []) for (let i = lotes.length - 1; i >= 0 && resta > 1e-9; i--) if (lotes[i].origem === origem) tirar(i);
     while (resta > 1e-9 && lotes.length) tirar(0);
     return { usados, resta: resta > 1e-9 ? resta : 0 };
   };
   const pmNaData = (d) => pmNaDataL(L, d);
   const perda = (d, v) => { c.realizado -= v; if (d.startsWith(ano)) c.realizadoAno -= v; };
   for (const e of evs) {
-    if (e.k === "C") entrar(e.d, e.q, e.p, "compra");
+    if (e.k === "C") entrar(e.d, e.q, e.p, e.dt ? "daytrade" : "compra");
     else if (e.k === "V") {
-      const { usados, resta } = consumir(e.q);
+      const { usados, resta } = consumir(e.q, e.dt ? "daytrade" : null);
       const custo = custoDe(usados), valor = e.q * e.p, res = valor - custo;
       c.baixadoVendas += custo; c.realizado += res;
       if (e.d.startsWith(ano)) c.realizadoAno += res;
       vendas.push({
         d: e.d, q: r8(e.q), precoVenda: r8(e.p), valor: r2(valor),
         lotes: usados.map((u) => ({ dLote: u.d, q: r8(u.q), precoLote: r8(u.preco), resultado: r2(u.q * (e.p - u.preco)) })),
-        semLote: r8(resta), resultado: r2(res), resultadoPm: r2(e.resPm ?? res),
+        semLote: r8(resta), resultado: r2(res), resultadoPm: r2(e.resPm ?? res), ...(e.dt ? { dayTrade: true } : {}),
       });
     } else if (e.k === "ajuste" || e.k === "transf") {
       const origem = e.k === "transf" ? "transferencia" : e.t === "fracao" ? "fracao" : "ajuste";
       if (e.q >= 0) entrar(e.d, e.q, e.k === "transf" ? (e.p > 0 ? e.p : pmNaData(e.d)) : 0, origem);
-      else c.baixadoOutros += custoDe(consumir(-e.q, origem === "fracao" ? "fracao" : null).usados);
+      else c.baixadoOutros += custoDe(consumir(-e.q, origem === "fracao" ? ["fracao", "incorporacao"] : null).usados);
     } else if (e.k === "proporcao") {
       if (e.t === "bonif" && e.q > 0) { entrar(e.d, e.q, e.pAj > 0 ? e.pAj : e.p > 0 ? e.p : 0, "bonificacao"); continue; }
       const tot = lotes.reduce((s, l) => s + l.q, 0);
@@ -459,7 +464,33 @@ function filaFifo(evs, L, ano) {
       lotes.length = 0;
     } else if (e.k === "atual") {
       const v = e.custoAtual || 0;
-      entrar(e.d, e.q, e.q > 0 ? v / e.q : 0, v > 0 ? "subscricao" : "ajuste");
+      entrar(e.d, e.q, e.q > 0 ? v / e.q : 0, e.semOrigem ? "custodia" : v > 0 ? "subscricao" : "ajuste");
+    } else if (e.k === "resgate") {
+      // resgate da posição inteira: sai tudo. Incorporado, o custo menos o resgate segue para o papel novo (sem realizado
+      // aqui); sem incorporação, o resgate é o que voltou e a diferença para o custo entra no realizado.
+      const { usados } = consumir(e.q);
+      const custo = custoDe(usados), vai = e.inc ? Math.max(0, custo - e.valor) : 0;
+      c.baixadoOutros += custo;
+      const res = e.valor - custo + vai;
+      c.realizado += res; if (e.d.startsWith(ano)) c.realizadoAno += res;
+      if (e.inc) { e.inc.fifo = { lotes: usados, custo, vai }; }
+    } else if (e.k === "incorp") {
+      // as cotas novas: os lotes do fundo antigo, convertidos na proporção (q × novas/antigas), com as datas deles e o
+      // custo de cada um reduzido na proporção do resgate. Sem linha de quantidade (ajuste sem entrada achada), o custo
+      // vai para os lotes que já existem.
+      const fx = e.inc.fifo || { lotes: [], custo: 0, vai: 0 };
+      const qDe = fx.lotes.reduce((s, l) => s + l.q, 0);
+      if (e.q > 1e-9 && qDe > 1e-9) {
+        const prop = e.q / qDe, f = fx.custo > 0 ? fx.vai / fx.custo : 0;
+        for (const l of fx.lotes) entrar(l.d, l.q * prop, (l.preco * f) / prop, "incorporacao");
+        lotes.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+      } else if (e.q > 1e-9) entrar(e.d, e.q, fx.vai / e.q, "incorporacao");
+      else {
+        const tot = lotes.reduce((s, l) => s + l.q, 0);
+        if (tot > 1e-9) { for (const l of lotes) l.preco += fx.vai / tot; c.entrou += fx.vai; c.incorporado += fx.vai; }
+        continue;
+      }
+      c.incorporado += fx.vai;
     }
   }
   // A quantidade que vale é a da posição (Movimentação). Se a fila não bate com ela, acerta e anota em `acerto`.
@@ -501,6 +532,7 @@ export function diasUteisEntre(a, b) {
   return n;
 }
 export const PRAZO_PORTABILIDADE = 5; // dias úteis
+export const JANELA_INCORPORACAO = 10; // dias úteis entre o resgate do fundo antigo e a entrada do novo
 export function parearTransferencias(mov) {
   const deb = [], cred = [];
   for (const l of mov || []) if (l[2] === "transf" || l[2] === "transf-sf") (l[1] === "D" ? deb : cred).push(l);
@@ -533,9 +565,12 @@ export function parearTransferencias(mov) {
 // - posicao-inicial: q cotas a preço médio valor numa data d até a primeira linha do papel, na corretora inst. Entra
 //   como compra (quantidade, custo e o que foi pago), fora dos aportes mês a mês.
 // - custo-transferencia: preço médio (valor) das cotas que chegaram por transferência sem saída de outra corretora no
-//   extrato (linha de Crédito do papel t na data d). Entra no custo e no que foi pago.
+//   extrato (linha de Crédito do papel t na data d), ou que apareceram em custódia numa linha de Atualização sem compra
+//   antes, sem recibo e sem incorporação. Entra no custo e no que foi pago.
+// - incorporacao: o fundo t foi incorporado pelo papel `para`; d é a data do resgate da posição inteira de t no extrato.
+//   Sem valor: o custo de t, menos o dinheiro do resgate, passa para as cotas de `para` (veja calcular).
 // Nenhum ajuste muda linha importada: calcular() junta os ajustes como eventos, e excluir o ajuste volta ao que era.
-export const TIPOS_AJUSTE = ["custo-bonificacao", "posicao-inicial", "custo-transferencia"];
+export const TIPOS_AJUSTE = ["custo-bonificacao", "posicao-inicial", "custo-transferencia", "incorporacao"];
 export const MAX_AJUSTES = 200;
 export const ID_AJUSTE = /^[a-z0-9]{4,20}$/;
 const MAX_VALOR_AJUSTE = 1_000_000, MAX_Q_AJUSTE = 1e9;
@@ -551,11 +586,21 @@ export function validarAjuste(b, extrato, hoje) {
   const d = dataIso(b.d);
   if (!d) return { erro: "Data inválida." };
   if (d > hoje) return { erro: "A data não pode ser depois de hoje." };
-  const valor = Number(b.valor);
-  if (!Number.isFinite(valor) || valor <= 0 || valor > MAX_VALOR_AJUSTE) return { erro: "O valor precisa ser maior que zero (até R$ 1.000.000 por cota)." };
   const nota = String(b.nota ?? "").replace(/\s+/g, " ").trim();
   if (nota.length > 140) return { erro: "A nota pode ter até 140 caracteres." };
   const inst = b.inst ? siglaCorretora(b.inst) : "";
+  if (tipo === "incorporacao") {
+    const para = baseDe(papelDe(b.para));
+    if (!PAPEL_CART.test(para)) return { erro: "Escreva o código do papel que recebeu as cotas, como PETR4." };
+    if (para === t) return { erro: "O papel que recebeu as cotas precisa ser outro." };
+    const temPara = ex.neg.some((l) => baseDe(l[2]) === para) || ex.mov.some((l) => baseDe(l[3]) === para || (raizDe(l[3]) === raizDe(para) && RECIBO.has(sufixo(l[3]))));
+    if (!temPara) return { erro: `${para} não aparece nos extratos importados.` };
+    const l = ex.mov.filter((x) => x[2] === "resgate" && x[1] === "C" && baseDe(x[3]) === t && x[0] === d);
+    if (!l.length) return { erro: `Não há resgate de ${t} em ${d.split("-").reverse().join("/")} no extrato.` };
+    return { ajuste: { t, tipo, d, q: r8(l.reduce((s, x) => s + x[4], 0)), valor: null, para, nota, inst } };
+  }
+  const valor = Number(b.valor);
+  if (!Number.isFinite(valor) || valor <= 0 || valor > MAX_VALOR_AJUSTE) return { erro: "O valor precisa ser maior que zero (até R$ 1.000.000 por cota)." };
   let q = null;
   if (tipo === "custo-bonificacao") {
     const l = ex.mov.filter((x) => x[2] === "bonif" && x[1] === "C" && baseDe(x[3]) === t && x[0] === d);
@@ -566,7 +611,11 @@ export function validarAjuste(b, extrato, hoje) {
     const l = semPar.filter((x) => x[1] === "C" && baseDe(x[3]) === t && x[0] === d);
     if (!l.length) {
       const casada = ex.mov.some((x) => (x[2] === "transf" || x[2] === "transf-sf") && x[1] === "C" && baseDe(x[3]) === t && x[0] === d);
-      return { erro: casada ? "Essa transferência veio de outra corretora do extrato: o custo já acompanha as cotas." : `Não há transferência de entrada de ${t} nessa data no extrato.` };
+      if (casada) return { erro: "Essa transferência veio de outra corretora do extrato: o custo já acompanha as cotas." };
+      // cotas que apareceram em custódia (Atualização) sem compra no extrato
+      const at = ex.mov.filter((x) => x[2] === "atual" && x[1] === "C" && !ehSub(x[3]) && baseDe(x[3]) === t && x[0] === d);
+      if (!at.length) return { erro: `Não há transferência de entrada nem Atualização de ${t} nessa data no extrato.` };
+      l.push(...at);
     }
     q = r8(l.reduce((s, x) => s + x[4], 0));
   } else {
@@ -580,12 +629,14 @@ export function validarAjuste(b, extrato, hoje) {
 }
 // Lista do doc -> o que calcular() usa, por chave
 function ajustesDe(itens) {
-  const out = { bonif: new Map(), transf: new Map(), ini: [], todos: [] };
+  const out = { bonif: new Map(), transf: new Map(), inc: new Map(), ini: [], todos: [] };
   for (const a of Array.isArray(itens) ? itens : []) {
-    if (!a || !TIPOS_AJUSTE.includes(a.tipo) || !(a.valor > 0) || !a.t || !a.d) continue;
+    if (!a || !TIPOS_AJUSTE.includes(a.tipo) || !a.t || !a.d) continue;
+    if (a.tipo === "incorporacao" ? !a.para || a.para === a.t : !(a.valor > 0)) continue;
     const x = { ...a, aplicado: false };
     out.todos.push(x);
-    if (a.tipo === "custo-bonificacao") out.bonif.set(a.t + "|" + a.d, x);
+    if (a.tipo === "incorporacao") out.inc.set(a.t + "|" + a.d, x);
+    else if (a.tipo === "custo-bonificacao") out.bonif.set(a.t + "|" + a.d, x);
     else if (a.tipo === "custo-transferencia") out.transf.set(a.t + "|" + a.d, x);
     else if (a.q > 0) out.ini.push(x);
   }
@@ -614,8 +665,11 @@ const dTxt = (d) => (d ? d.slice(8, 10) + "/" + d.slice(5, 7) + "/" + d.slice(0,
 const ddmmTxt = (d) => (d ? d.slice(8, 10) + "/" + d.slice(5, 7) : "");
 const naCorr = (c) => (c ? "na " + c : "numa corretora sem nome no extrato");
 const unidTxt = (cls, q) => { const u = cls === "acao" ? "ações" : cls === "fii" || cls === "fiinfra" || cls === "fiagro" ? "cotas" : "unidades"; return Math.abs(q - 1) < 1e-9 ? u.replace(/ões$/, "ão").replace(/s$/, "") : u; };
+const um = (q, sing, plur) => (Math.abs(q - 1) < 1e-9 ? sing : plur);
 const juntas = (n) => (n === 2 ? "as duas" : "as " + n);
-const ORDEM_SIT = ["venda-sem-origem", "quantidade-diverge", "bonificacao-sem-custo", "transferencia", "varias-corretoras", "evento-ignorado", "sem-cotacao", "fracao", "subscricao"];
+const rsSinal = (v) => (v < -0.005 ? "−" : v > 0.005 ? "+" : "") + rsTxt(Math.abs(v));
+const precoTxt = (v) => "R$\u00a0" + Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+const ORDEM_SIT = ["venda-sem-origem", "resgate-total", "custodia-sem-origem", "quantidade-diverge", "bonificacao-sem-custo", "transferencia", "incorporacao", "varias-corretoras", "day-trade", "evento-ignorado", "parada", "sem-cotacao", "fracao", "subscricao"];
 const ordenarSit = (l) => l.sort((a, b) => (b.grave - a.grave) || ORDEM_SIT.indexOf(a.id) - ORDEM_SIT.indexOf(b.id) || ((a.dados && a.dados.d) || "").localeCompare((b.dados && b.dados.d) || ""));
 
 // Livro por corretora, só de leitura: os mesmos eventos do preço médio, cada um na corretora onde aconteceu, e as
@@ -624,12 +678,23 @@ const ordenarSit = (l) => l.sort((a, b) => (b.grave - a.grave) || ORDEM_SIT.inde
 // pelo preço médio da corretora. Devolve Map(inst -> { q, custo, realizado, comprado, vendido, qc, qv }).
 function livroPorCorretora(evs) {
   const C = new Map();
-  const de = (k) => { const c = k || ""; if (!C.has(c)) C.set(c, { q: 0, custo: 0, realizado: 0, comprado: 0, vendido: 0, qc: 0, qv: 0 }); return C.get(c); };
-  const baixar = (x, q) => { const usa = Math.min(q, Math.max(x.q, 0)); const v = x.q > 1e-9 ? (x.custo / x.q) * usa : 0; x.q -= q; x.custo -= v; if (x.q <= 1e-9) { x.q = 0; x.custo = 0; } return v; };
+  const de = (k) => { const c = k || ""; if (!C.has(c)) C.set(c, { q: 0, custo: 0, realizado: 0, comprado: 0, vendido: 0, qc: 0, qv: 0, resgate: 0 }); return C.get(c); };
+  // custoFixo: a venda de day trade baixa pelo preço da compra do mesmo dia, não pelo preço médio da corretora
+  const baixar = (x, q, custoFixo) => { const usa = Math.min(q, Math.max(x.q, 0)); const v = custoFixo != null ? Math.min(custoFixo, x.custo) : x.q > 1e-9 ? (x.custo / x.q) * usa : 0; x.q -= q; x.custo -= v; if (x.q <= 1e-9) { x.q = 0; x.custo = 0; } return v; };
   for (const e of evs) {
     if (e.soPm) continue;
     if (e.k === "C") { const x = de(e.corr); x.q += e.q; x.custo += e.q * e.p; x.comprado += e.q * e.p; x.qc += e.q; }
-    else if (e.k === "V") { const x = de(e.corr); const v = baixar(x, e.q); x.realizado += e.q * e.p - v; x.vendido += e.q * e.p; x.qv += e.q; }
+    else if (e.k === "V") { const x = de(e.corr); const v = baixar(x, e.q, e.custoUnit != null ? e.q * e.custoUnit : null); x.realizado += e.q * e.p - v; x.vendido += e.q * e.p; x.qv += e.q; }
+    else if (e.k === "resgate") {
+      const x = de(e.corr), v = baixar(x, e.q), vai = e.inc ? Math.max(0, v - e.valor) : 0;
+      x.realizado += e.valor - v + vai; x.resgate += e.valor;
+      if (e.inc) e.inc.corr = { vai };
+    } else if (e.k === "incorp") {
+      // sem linha de quantidade (ajuste sem entrada achada), o custo vai para a corretora onde o papel tem mais cotas
+      let k = e.corr;
+      if (!(e.q > 0) && !(de(k).q > 1e-9)) { const m = [...C].filter(([, v]) => v.q > 1e-9).sort((a, b) => b[1].q - a[1].q)[0]; if (m) k = m[0]; }
+      const x = de(k); x.q += e.q; x.custo += e.inc.corr ? e.inc.corr.vai : e.inc.vaiPm || 0;
+    }
     else if (e.k === "ajuste") { const x = de(e.corr); if (e.q >= 0) x.q += e.q; else baixar(x, -e.q); }
     else if (e.k === "proporcao") { const x = de(e.corr); x.q = Math.max(0, x.q + e.q); if (e.pAj > 0 && e.q > 0) x.custo += e.q * e.pAj; if (x.q <= 1e-9) { x.q = 0; x.custo = 0; } }
     else if (e.k === "zera") { const x = de(e.corr); if (x.custo > 0) x.realizado -= x.custo; x.q = 0; x.custo = 0; }
@@ -642,11 +707,13 @@ function livroPorCorretora(evs) {
 }
 
 // "Desde o começo" do papel: tudo o que foi comprado (compras, subscrição paga, posição inicial e custo de
-// transferência informados pela pessoa) contra o que voltou (vendas e proventos) mais o valor de hoje do que sobrou.
-// Não depende de preço médio, lote nem corretora. Retirada de custódia não entra como dinheiro, como em resumo.total.
+// transferência informados pela pessoa) contra o que voltou (vendas, resgate e proventos) mais o valor de hoje do que
+// sobrou. Não depende de preço médio, lote nem corretora. Retirada de custódia não entra como dinheiro, como em
+// resumo.total. Na incorporação, o fundo antigo fica com a compra e o resgate, e o papel novo recebe as cotas sem
+// compra nova: o custo que migrou não conta duas vezes.
 function geralDe(L, prov, hoje) {
-  const comprado = L.pago || 0, vendido = L.recebido || 0, res = vendido + prov + hoje - comprado;
-  return { comprado: r2(comprado), vendido: r2(vendido), proventos: r2(prov), hoje: r2(hoje), resultado: r2(res), pct: comprado > 0 ? Math.round((res / comprado) * 1e4) / 100 : null };
+  const comprado = L.pago || 0, vendido = L.recebido || 0, resgate = L.resgate || 0, res = vendido + resgate + prov + hoje - comprado;
+  return { comprado: r2(comprado), vendido: r2(vendido), resgate: r2(resgate), proventos: r2(prov), hoje: r2(hoje), resultado: r2(res), pct: comprado > 0 ? Math.round((res / comprado) * 1e4) / 100 : null };
 }
 // Uma linha por corretora com a conta daquela custódia. A quantidade é a da posição em cada corretora (Movimentação);
 // o preço médio é o do livro daquela corretora (sem dado nela, o de todas juntas).
@@ -698,13 +765,27 @@ export function calcular(extrato, ctx = {}) {
   const emprestimo = new Map(); // base -> { d, q }
   const ultimoMov = new Map(); // base -> data da última linha que mexeu na quantidade
   const pegar = (b, c) => { if (!qMov.has(b)) qMov.set(b, new Map()); const m = qMov.get(b); return [m, m.get(c) || 0]; };
+  const resgatesTotais = []; // { l, b, corr, d, q, p, antes, valor }: resgate da posição inteira numa corretora
+  const atualSoma = []; // { l, b, corr, d, q, antes }: Atualização que somou (não bateu com a posição)
+  const atualRecibo = []; // { l, b, corr, d, q }: Atualização num código de recibo (raiz de outro papel)
+  const atualConv = []; // { l, b, corr, d, q }: Atualização que converteu recibo em cota
   for (const l of movs) {
-    const [d, es, t, papel, q, , corr] = l;
+    const [d, es, t, papel, q, p, corr] = l;
     const b = baseDe(papel);
     if (t === "aj-ini") { const [m, atual] = pegar(b, corr); m.set(corr, atual + q); comMov.add(b); continue; }
     const ef = efeitoMov(t);
     if (ef === "desconhecido") { avisar("tipo:" + t.replace(/^x:/, "")); marcar(b, { id: "evento-ignorado", texto: `Linha de ${t.slice(2).replace(/-/g, " ")} em ${dTxt(d)} que o cálculo não trata${q ? ` (${qTxt(q)} ${es === "C" ? "no crédito" : "no débito"})` : ""}.`, dados: { tipo: t.slice(2), d, q, inst: corr } }); continue; }
     if (t === "emp") { if (q > 0) emprestimo.set(b, { d, q }); continue; }
+    // Resgate com a quantidade da posição inteira daquela corretora (a menos de uma fração): fundo liquidado ou
+    // incorporado, a posição fecha nessa data. Menor que a posição, é dinheiro só (como a amortização) e não mexe aqui.
+    if (t === "resgate" && es === "C") {
+      const m = qMov.get(b), atual = m ? m.get(corr) || 0 : 0;
+      if (atual > 1e-9 && q > 0 && (q >= atual - 1e-6 || (atual - q < 1 && q >= atual / 2))) {
+        m.set(corr, 0); ultimoMov.set(b, d);
+        resgatesTotais.push({ l, b, corr, d, q, p: p || 0, antes: atual, valor: q * (p || 0) });
+      }
+      continue;
+    }
     if (ef === "nada") continue;
     comMov.add(b);
     ultimoMov.set(b, d);
@@ -724,13 +805,15 @@ export function calcular(extrato, ctx = {}) {
       if (resta >= q - 1e-9) {
         if (!custodia.has(b)) custodia.set(b, new Map());
         // sem nada antes nessa corretora, a linha é a própria posição chegando: soma e não diverge
-        custodia.get(b).set(corr, { d, calculada: atual > 1e-9 ? atual : q, informada: q });
+        custodia.get(b).set(corr, { d, calculada: atual > 1e-9 ? atual : q, informada: q, l });
         if (Math.abs(atual - q) < 1e-6) { atualTipo.set(l, "custodia"); continue; }
         atualTipo.set(l, "soma");
-      } else atualTipo.set(l, "conversao");
+        atualSoma.push({ l, b, corr, d, q, antes: atual });
+      } else { atualTipo.set(l, "conversao"); atualConv.push({ l, b, corr, d, q }); }
       m.set(corr, atual + q);
       continue;
     }
+    if (t === "atual" && es === "C" && RECIBO.has(sufixo(b))) atualRecibo.push({ l, b, corr, d, q });
     const sinal = es === "C" ? 1 : -1;
     const novo = atual + sinal * q;
     m.set(corr, novo);
@@ -740,10 +823,63 @@ export function calcular(extrato, ctx = {}) {
       if (falta > 1e-6) marcar(b, { id: "venda-sem-origem", grave: true, dados: { d, q: r8(falta), inst: corr, tipo: t } });
     }
   }
+  // Incorporação (fundo X incorporado por Y): resgate da posição inteira de X numa corretora e, até 10 dias úteis antes
+  // ou depois, na mesma corretora, a entrada por Atualização de outro papel Y (ou do recibo da raiz de Y, que depois
+  // vira cota de Y) numa quantidade que não é a posição de Y em custódia. Um candidato só: incorporação. Nenhum ou mais
+  // de um: não adivinha; X fecha pelo resgate e a situação resgate-total pede para a pessoa conferir (ajuste
+  // incorporacao resolve na mão, escolhendo Y).
+  const usadas = new Set(), explicadas = new Set();
+  const incPorLinha = new Map(); // linha de entrada em Y -> inc
+  const incResgate = new Map(); // linha do resgate de X -> inc
+  const incorps = []; // { de, para, d, dRes, inst, qDe, qPara, valor, ajuste, linhas }
+  const subsRaiz = new Map(); // raiz -> datas de subscrição exercida ou pedida (recibo de subscrição de verdade)
+  for (const l of ex.mov) if (l[2] === "dir-exe" || l[2] === "sub-sol") { const r = raizDe(l[3]); if (!subsRaiz.has(r)) subsRaiz.set(r, []); subsRaiz.get(r).push(l[0]); }
+  const subscreveu = (r, d) => (subsRaiz.get(r) || []).some((x) => x <= d && x >= isoMenosDias(d, 90));
+  const candidatosDe = (r, para, janela, outraCorr = false) => {
+    const out = new Map(); // Y -> { linhas, entrada, d, q, dist }
+    const por = (y, linhas, entrada, d, q) => {
+      const dist = diasUteisEntre(d, r.d);
+      if (janela && dist > JANELA_INCORPORACAO) return;
+      if (para && y !== para) return;
+      const x = out.get(y);
+      if (!x || dist < x.dist) out.set(y, { linhas, entrada, d, q, dist });
+    };
+    const mesma = (c) => outraCorr || c === r.corr;
+    for (const s of atualSoma) if (mesma(s.corr) && raizDe(s.b) !== raizDe(r.b) && !usadas.has(s.l)) por(s.b, [s.l], s.l, s.d, s.q);
+    for (const s of atualRecibo) {
+      const rz = raizDe(s.b);
+      if (!mesma(s.corr) || rz === raizDe(r.b) || usadas.has(s.l) || subscreveu(rz, s.d)) continue;
+      const conv = atualConv.filter((c) => c.corr === s.corr && raizDe(c.b) === rz && c.d >= s.d && !usadas.has(c.l)).sort((a, b) => (a.d < b.d ? -1 : 1))[0];
+      por(conv ? conv.b : s.b, conv ? [s.l, conv.l] : [s.l], conv ? conv.l : s.l, s.d, s.q);
+    }
+    return out;
+  };
+  for (const r of resgatesTotais) {
+    const a = aj.inc.get(r.b + "|" + r.d) || null;
+    let para = null, cand = null, lista = null;
+    // a pessoa disse quem incorporou: a entrada de Y mais perto da data, na mesma corretora ou, sem ela, em outra
+    if (a) { para = a.para; cand = candidatosDe(r, para, false).get(para) || candidatosDe(r, para, false, true).get(para) || null; a.aplicado = true; }
+    else {
+      lista = candidatosDe(r, null, true);
+      if (lista.size === 1) [[para, cand]] = [...lista];
+    }
+    if (!para) { incResgate.set(r.l, null); r.candidatos = lista ? [...lista.keys()].sort() : []; continue; }
+    const inc = { de: r.b, para, d: cand ? (cand.d < r.d ? cand.d : r.d) : r.d, dRes: r.d, inst: r.corr, qDe: r.q, qPara: cand ? cand.q : null, valor: r.valor, p: r.p, ajuste: a };
+    if (cand) { for (const x of cand.linhas) { usadas.add(x); explicadas.add(x); } incPorLinha.set(cand.entrada, inc); }
+    incResgate.set(r.l, inc);
+    incorps.push(inc);
+  }
   for (const [b, porCorr] of custodia) {
     let calc = 0, inf = 0, d = "";
-    for (const x of porCorr.values()) { calc += x.calculada; inf += x.informada; if (x.d > d) d = x.d; }
+    for (const x of porCorr.values()) { if (explicadas.has(x.l)) continue; calc += x.calculada; inf += x.informada; if (x.d > d) d = x.d; }
     if (Math.abs(calc - inf) > 1e-6) marcar(b, { id: "quantidade-diverge", grave: true, dados: { calculada: r8(calc), informada: r8(inf), d } });
+  }
+  // Atualização sem origem: cotas que apareceram em custódia numa corretora onde não havia nada, sem recibo e sem
+  // incorporação. Soma (é o que a B3 diz que existe), mas o custo é desconhecido até a pessoa informar.
+  const semOrigemAtual = new Map(); // linha -> ajuste custo-transferencia (ou null)
+  for (const s of atualSoma) {
+    if (s.antes > 1e-9 || explicadas.has(s.l)) continue;
+    semOrigemAtual.set(s.l, aj.transf.get(s.b + "|" + s.d) || null);
   }
 
   // 2. Preço médio pela Negociação (Movimentação de liquidação quando o papel não tem Negociação), com os eventos
@@ -771,6 +907,37 @@ export function calcular(extrato, ctx = {}) {
     transfSemOrigem.set(l, a);
     if (a) { addTrade(baseDe(l[3]), { d: l[0], k: "C", q: l[4], p: a.valor, corr: l[6], ajuste: a, soPm: true }); a.aplicado = true; }
   }
+  // Day trade: no mesmo dia, papel e corretora, as compras entram antes das vendas, seja qual for a ordem no arquivo (a
+  // Negociação não tem hora). A parte casada (o menor entre comprado e vendido no dia) dá o resultado do day trade, venda
+  // menos compra pelos preços médios do dia, e não mexe na posição de antes; o que sobra de compra entra na posição pelo
+  // preço médio das compras do dia e o que sobra de venda baixa da posição antiga pelo preço médio dela. Em outra
+  // corretora no mesmo dia não é day trade, mas as compras do dia também vêm antes das vendas.
+  const dayTrades = []; // { b, d, inst, q, pc, pv, res }
+  for (const [b, l] of trades) {
+    const porDia = new Map();
+    for (const x of l) { if (!porDia.has(x.d)) porDia.set(x.d, []); porDia.get(x.d).push(x); }
+    if ([...porDia.values()].every((g) => g.every((x) => x.k === g[0].k))) continue;
+    const out = [];
+    for (const [d, g] of [...porDia].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+      if (g.every((x) => x.k === g[0].k)) { out.push(...g); continue; }
+      const dt = [], compras = [], vendas = [];
+      const porCorr = new Map();
+      for (const x of g) { if (x.ajuste) { compras.push(x); continue; } if (!porCorr.has(x.corr)) porCorr.set(x.corr, []); porCorr.get(x.corr).push(x); }
+      for (const [corr, gc] of porCorr) {
+        const cs = gc.filter((x) => x.k === "C"), vs = gc.filter((x) => x.k === "V");
+        if (!cs.length || !vs.length) { compras.push(...cs); vendas.push(...vs); continue; }
+        const qc = cs.reduce((s, x) => s + x.q, 0), qv = vs.reduce((s, x) => s + x.q, 0);
+        const pc = cs.reduce((s, x) => s + x.q * x.p, 0) / qc, pv = vs.reduce((s, x) => s + x.q * x.p, 0) / qv;
+        const q = Math.min(qc, qv);
+        dt.push({ d, k: "C", q, p: pc, corr, dt: true }, { d, k: "V", q, p: pv, corr, dt: true, custoUnit: pc });
+        if (qc - q > 1e-9) compras.push({ d, k: "C", q: qc - q, p: pc, corr });
+        if (qv - q > 1e-9) vendas.push({ d, k: "V", q: qv - q, p: pv, corr });
+        dayTrades.push({ b, d, inst: corr, q, pc, pv, res: q * (pv - pc) });
+      }
+      out.push(...dt, ...compras, ...vendas);
+    }
+    trades.set(b, out);
+  }
   const eventos = new Map(); // base -> [{ d, k, q, p, corr }]
   const subPreco = new Map(); // raiz -> [{ q, p }] subscrições exercidas esperando virar cota
   const addEv = (b, e) => { if (!eventos.has(b)) eventos.set(b, []); eventos.get(b).push(e); };
@@ -793,12 +960,16 @@ export function calcular(extrato, ctx = {}) {
     else if (t === "dir-exe") { addEv(b, { d, k: "ajuste", q: -q, corr }); if (p != null && p > 0) addEv("#sub:" + raizDe(b), { d, k: "subPreco", q, p }); marcar(b, { id: "subscricao", dados: { d, q, p, codigo: b, como: "exercido" } }); }
     else if (t === "cessao" && es === "C") marcar(b, { id: "subscricao", dados: { d, q, codigo: b, como: "cedido" } });
     else if (t === "leilao") leiloes.push(l);
+    else if (t === "resgate" && incResgate.has(l)) { const r = resgatesTotais.find((x) => x.l === l); addEv(b, { d, k: "resgate", q: r.antes, valor: r.valor, corr, inc: incResgate.get(l) }); }
+    else if (incPorLinha.has(l)) addEv(b, { d, k: "incorp", q, corr, inc: incPorLinha.get(l) });
     else if (t === "recibo" || (t === "atual" && ehSub(b))) addEv(b, { d, k: "ajuste", q: es === "C" ? q : -q, corr });
     else if (t === "atual" && es === "C") {
       const tp = atualTipo.get(l);
-      if (tp !== "custodia") addEv(b, { d, k: "atual", q, corr });
+      if (tp !== "custodia") addEv(b, { d, k: "atual", q, corr, ...(semOrigemAtual.has(l) ? { semOrigem: true, ajCusto: semOrigemAtual.get(l) } : {}) });
     }
   }
+  // Ajuste de incorporação sem linha de entrada achada em Y: o custo vai para as cotas que Y já tem, na data do resgate
+  for (const inc of incorps) if (![...incPorLinha.values()].includes(inc)) addEv(inc.para, { d: inc.dRes, k: "incorp", q: 0, corr: inc.inst, inc });
   // venda de direito no pregão (código de subscrição na Negociação)
   for (const [b, l] of trades) if (ehSub(b)) for (const x of l) if (x.k === "V" && !x.ajuste) marcar(b, { id: "subscricao", dados: { d: x.d, q: x.q, p: x.p, codigo: b, como: "vendido" } });
   for (const [k, l] of eventos) if (k.startsWith("#sub:")) subPreco.set(k.slice(5), l.sort((a, b) => (a.d < b.d ? -1 : 1)).map((x) => ({ ...x })));
@@ -823,11 +994,22 @@ export function calcular(extrato, ctx = {}) {
   const livro = new Map(); // base -> { q, custo, realizado, vendas: [], porMes: Map(mes -> q), primeiro, ultimo, compras }
   const vendasTodas = []; // { d, b, valor, custo }
   const fluxoMes = new Map(); // mes -> { compras, vendas }
-  const somaFluxo = (mes, k, v) => { if (!fluxoMes.has(mes)) fluxoMes.set(mes, { compras: 0, vendas: 0 }); fluxoMes.get(mes)[k] += v; };
+  const somaFluxo = (mes, k, v) => { if (!fluxoMes.has(mes)) fluxoMes.set(mes, { compras: 0, vendas: 0, resgates: 0 }); fluxoMes.get(mes)[k] += v; };
+  let resgatesTotal = 0; // dinheiro dos resgates da posição inteira (volta como capital, não é venda nem provento)
+  // O fundo incorporado vem antes do papel que o incorporou: o custo que passa para Y é o de X na data do resgate
+  const ordemBases = [...bases];
+  for (let k = 0; k < incorps.length + 1; k++) {
+    let mudou = false;
+    for (const inc of incorps) {
+      const i = ordemBases.indexOf(inc.de), j = ordemBases.indexOf(inc.para);
+      if (i >= 0 && j >= 0 && j < i) { ordemBases.splice(j, 1); ordemBases.splice(ordemBases.indexOf(inc.de) + 1, 0, inc.para); mudou = true; }
+    }
+    if (!mudou) break;
+  }
   // compras menos vendas por papel e mês (Reinvestir: compras recentes do equilíbrio); classe junto, para separar os FIIs
   const fluxoPapel = new Map(); // base -> { classe, meses: Map(mes -> compras − vendas) }
   const somaPapel = (b, mes, v) => { if (!fluxoPapel.has(b)) fluxoPapel.set(b, { meses: new Map() }); const m = fluxoPapel.get(b).meses; m.set(mes, (m.get(mes) || 0) + v); };
-  for (const b of bases) {
+  for (const b of ordemBases) {
     const evs = [...(trades.get(b) || []).map((x) => ({ ...x, ord: 0 })), ...(eventos.get(b) || []).map((x) => ({ ...x, ord: 1 }))]
       .sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : x.ord - y.ord));
     const L = { q: 0, custo: 0, realizado: 0, pago: 0, recebido: 0, primeiro: evs[0] ? evs[0].d : "", ultimo: evs.length ? evs[evs.length - 1].d : "", passos: [] };
@@ -838,12 +1020,13 @@ export function calcular(extrato, ctx = {}) {
         // sem Movimentação, a venda maior que a posição é a única pista de cotas de antes do extrato
         if (!comMov.has(b) && e.q > Math.max(L.q, 0) + 1e-6) marcar(b, { id: "venda-sem-origem", grave: true, dados: { d: e.d, q: r8(e.q - Math.max(L.q, 0)), inst: e.corr, tipo: "venda" } });
         const q = Math.min(e.q, Math.max(L.q, 0));
-        const baixa = L.q > 0 ? (L.custo / L.q) * q : 0;
+        // day trade: a parte casada baixa pelo preço das compras do dia, não pelo preço médio
+        const baixa = e.custoUnit != null ? Math.min(q * e.custoUnit, L.custo) : L.q > 0 ? (L.custo / L.q) * q : 0;
         const valor = e.q * e.p;
         const res = valor - baixa;
         L.realizado += res; L.recebido += valor;
         e.resPm = res; // para a venda por lote mostrar os dois resultados lado a lado
-        vendasTodas.push({ d: e.d, b, valor, custo: baixa, res });
+        vendasTodas.push({ d: e.d, b, valor, custo: baixa, res, ...(e.dt ? { dt: true } : {}) });
         somaFluxo(ym(e.d), "vendas", valor);
         somaPapel(b, ym(e.d), -valor);
         L.q -= e.q; L.custo -= baixa;
@@ -862,6 +1045,29 @@ export function calcular(extrato, ctx = {}) {
       } else if (e.k === "zera") {
         if (L.custo > 0) { L.realizado -= L.custo; vendasTodas.push({ d: e.d, b, valor: 0, custo: L.custo, res: -L.custo, zera: true }); }
         L.q = 0; L.custo = 0;
+      } else if (e.k === "resgate") {
+        // posição inteira resgatada numa corretora: sai pelo preço médio. Sem incorporação, o resgate é o que voltou e a
+        // diferença é realizado (perda, quase sempre). Incorporado, o custo menos o resgate vai para o papel novo e aqui
+        // não fica resultado; o resgate entra como capital devolvido, nunca como provento nem como venda.
+        const q = Math.min(e.q, Math.max(L.q, 0));
+        const baixa = L.q > 0 ? (L.custo / L.q) * q : 0;
+        const vai = e.inc ? Math.max(0, baixa - e.valor) : 0;
+        const res = e.valor - baixa + vai;
+        L.q -= q; L.custo -= baixa;
+        if (L.q <= 1e-9) { L.q = 0; L.custo = 0; }
+        L.resgate = (L.resgate || 0) + e.valor; resgatesTotal += e.valor;
+        somaFluxo(ym(e.d), "resgates", e.valor);
+        L.realizado += res;
+        if (!e.inc || Math.abs(res) > 0.005) vendasTodas.push({ d: e.d, b, valor: e.valor, custo: baixa - vai, res, resgate: true });
+        if (e.inc) { e.inc.vaiPm = vai; e.inc.custoDe = baixa; }
+      } else if (e.k === "incorp") {
+        // as cotas novas do papel que incorporou: quantidade da linha de Atualização e o custo que veio do fundo antigo
+        L.q += e.q; L.custo += e.inc.vaiPm || 0;
+        L.recebeuDe = (L.recebeuDe || []).concat([e.inc]);
+      } else if (e.k === "atual" && e.ajCusto) {
+        // cotas que apareceram em custódia sem compra, com o preço médio que a pessoa informou (é dinheiro pago)
+        const v = e.q * e.ajCusto.valor;
+        L.q += e.q; L.custo += v; L.pago += v; pagoAjuste += v; e.custoAtual = v; e.ajCusto.aplicado = true;
       } else if (e.k === "atual") {
         let resta = e.q;
         const fila = subPreco.get(raizDe(b)) || [];
@@ -913,6 +1119,17 @@ export function calcular(extrato, ctx = {}) {
     provs.push([d, baseDe(papel), tp, q, p, r2(q * p), corr, "m"]);
     daMov++;
   }
+  // O dinheiro do resgate da posição inteira já volta como capital (geral.resgate, resumo.total): se o arquivo de proventos
+  // ou a Movimentação também o trouxerem como amortização ou outro evento (mesmo papel, até 7 dias, mesmo valor), não
+  // conta de novo como provento.
+  if (resgatesTotais.length) {
+    const fora = new Set();
+    for (const r of resgatesTotais) {
+      const i = provs.findIndex((x, k) => !fora.has(k) && x[1] === r.b && !["rend", "div", "jcp"].includes(x[2]) && Math.abs(x[5] - r.valor) <= 0.05 && Math.abs(Date.parse(x[0]) - Date.parse(r.d)) <= 7 * DIA_MS);
+      if (i >= 0) fora.add(i);
+    }
+    if (fora.size) { const l = provs.filter((_, k) => !fora.has(k)); provs.length = 0; provs.push(...l); }
+  }
   provs.sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0));
   const ini12 = somarMeses(mesAtual, -12), fim12 = somarMeses(mesAtual, -1); // 12 meses fechados
   const provMes = new Map(), prov12Papel = new Map(), provTotPapel = new Map(), prov12Corr = new Map();
@@ -935,6 +1152,7 @@ export function calcular(extrato, ctx = {}) {
   }
 
   const posicoes = [], encerradas = [];
+  const incDe = new Map(incorps.map((x) => [x.de, x]));
   const qCorr = new Map(); // corr -> { papeis, valor }
   let patrimonio = 0, custoTotal = 0, valorEmprestado = 0, semCotacao = 0;
   const fifoReal = { total: 0, ano: 0 }, fifoAberto = { custo: 0, aberto: 0 };
@@ -955,13 +1173,15 @@ export function calcular(extrato, ctx = {}) {
     const cls = classe(b);
     const F = L.fifo;
     if (F) { F.acertar(q, L.ultimo || hoje); fifoReal.total += F.c.realizado; fifoReal.ano += F.c.realizadoAno; }
-    const contaFifo = () => ({ realizado: r2(F.c.realizado), entrou: r2(F.c.entrou), baixadoVendas: r2(F.c.baixadoVendas), baixadoOutros: r2(F.c.baixadoOutros), acerto: r8(F.c.acerto) });
+    const contaFifo = () => ({ realizado: r2(F.c.realizado), entrou: r2(F.c.entrou), baixadoVendas: r2(F.c.baixadoVendas), baixadoOutros: r2(F.c.baixadoOutros), acerto: r8(F.c.acerto), incorporado: r2(F.c.incorporado) });
     if (q <= 1e-9) {
       const hist = (trades.get(b) || []).length || (eventos.get(b) || []).length;
       if (hist && (cls !== "subscricao" || Math.abs(L.realizado) > 0.005)) {
         const d0 = L.primeiro || "", d1 = L.ultimo || ultimoMov.get(b) || "";
         const pr = provTotPapel.get(b) || 0;
+        const inc = incDe.get(b);
         encerradas.push({ t: b, nome: nomeDe(b), classe: cls, de: d0, ate: d1, resultado: r2(L.realizado), proventos: r2(pr), total: r2(L.realizado + pr), pago: r2(L.pago || 0), recebido: r2(L.recebido || 0),
+          resgate: r2(L.resgate || 0), ...(inc ? { incorporadoPor: inc.para, incorporadoEm: inc.d } : {}),
           vendas: F ? F.vendas : [], fifo: F ? { custo: 0, ...contaFifo() } : null,
           geral: geralDe(L, pr, 0), porCorretora: porCorretoraDe(L, new Map(), null, null, null) });
       }
@@ -984,6 +1204,7 @@ export function calcular(extrato, ctx = {}) {
       resPct: custo && preco != null ? Math.round(((valor - custo) / custo) * 1e4) / 100 : null,
       prov12: r2(p12), yoc: custo ? Math.round((p12 / custo) * 1e4) / 100 : null,
       corretoras: corrList, emprestadas: empAtivo || 0, semCotacao: preco == null, realizado: r2(L.realizado),
+      ...(L.recebeuDe ? { incorporou: L.recebeuDe.map((x) => ({ de: x.de, d: x.d, q: x.qPara })) } : {}),
       proventos: r2(provTotPapel.get(b) || 0), // tudo o que o papel pagou desde o começo (a coluna "Com proventos")
       ...lotesDaPosicao(F, preco, precoUsado, valor, contaFifo),
       geral: geralDe(L, provTotPapel.get(b) || 0, valor),
@@ -1039,6 +1260,31 @@ export function calcular(extrato, ctx = {}) {
     const P = porT.get(a.t);
     marcar(a.t, { id: "venda-sem-origem", ajuste: a.id, texto: `Posição de ${qTxt(a.q)} ${unidTxt(P ? P.classe : "", a.q)} a ${rsTxt(a.valor)} em ${dTxt(a.d)}${a.inst ? " " + naCorr(a.inst) : ""}, informada por você em ${ddmmTxt(a.criado || "")}.`, dados: { d: a.d, q: a.q, valor: a.valor, inst: a.inst } });
   }
+  for (const x of dayTrades) {
+    marcar(x.b, { id: "day-trade", texto: `Day trade em ${dTxt(x.d)} ${naCorr(x.inst)}: ${qTxt(x.q)} ${unidTxt(classe(x.b), x.q)} ${um(x.q, "comprada", "compradas")} a ${precoTxt(r8(x.pc))} e ${um(x.q, "vendida", "vendidas")} a ${precoTxt(r8(x.pv))} no mesmo dia, resultado de ${rsSinal(x.res)}.`,
+      dados: { d: x.d, inst: x.inst, q: r8(x.q), pc: r8(x.pc), pv: r8(x.pv), resultado: r2(x.res) } });
+  }
+  for (const inc of incorps) {
+    const u = unidTxt(classe(inc.de), inc.qDe), a = inc.ajuste;
+    const base = `${inc.de} foi incorporado por ${inc.para} em ${dTxt(inc.d)}: ${inc.qPara != null ? `${qTxt(inc.qDe)} ${u} viraram ${qTxt(inc.qPara)}` : `o custo de ${qTxt(inc.qDe)} ${u} passou para as de ${inc.para}`}; ${rsTxt(r2(inc.valor))} de resgate`;
+    const texto = base + (a ? `, informado por você em ${ddmmTxt(a.criado || "")}.` : ".");
+    const dados = { de: inc.de, para: inc.para, d: inc.d, dResgate: inc.dRes, inst: inc.inst, qDe: r8(inc.qDe), qPara: inc.qPara == null ? null : r8(inc.qPara), resgate: r2(inc.valor), custo: r2(inc.vaiPm || 0) };
+    marcar(inc.de, { id: "incorporacao", texto, dados, ...(a ? { ajuste: a.id } : {}) });
+    marcar(inc.para, { id: "incorporacao", texto, dados, ...(a ? { ajuste: a.id } : {}) });
+  }
+  for (const r of resgatesTotais) {
+    if (incResgate.get(r.l)) continue;
+    const u = unidTxt(classe(r.b), r.q), c = r.candidatos || [];
+    const conf = c.length > 1 ? `Há entradas por Atualização de ${c.join(" e ")} perto dessa data: confira se o fundo foi incorporado por um deles.` : "Confira se o fundo foi incorporado por outro.";
+    marcar(r.b, { id: "resgate-total", grave: true, texto: `${qTxt(r.q)} ${u} ${um(r.q, "resgatada", "resgatadas")} ${naCorr(r.corr)} em ${dTxt(r.d)} a ${precoTxt(r.p)} (${rsTxt(r2(r.valor))}) e a posição fechou. ${conf}`,
+      dados: { d: r.d, q: r8(r.q), p: r.p, valor: r2(r.valor), inst: r.corr, candidatos: c } });
+  }
+  for (const [l, a] of semOrigemAtual) {
+    const b = baseDe(l[3]), u = unidTxt(classe(b), l[4]);
+    marcar(b, a
+      ? { id: "custodia-sem-origem", ajuste: a.id, texto: `${qTxt(l[4])} ${u} ${um(l[4], "apareceu", "apareceram")} em custódia em ${dTxt(l[0])}: preço médio de ${rsTxt(a.valor)} informado por você em ${ddmmTxt(a.criado || "")}.`, dados: { d: l[0], q: l[4], inst: l[6], valor: a.valor } }
+      : { id: "custodia-sem-origem", grave: true, texto: `${qTxt(l[4])} ${u} ${um(l[4], "apareceu", "apareceram")} em custódia em ${dTxt(l[0])} sem compra no extrato: custo desconhecido.`, dados: { d: l[0], q: l[4], inst: l[6] } });
+  }
   for (const l of leiloes) {
     const fr = (sit.get(baseDe(l[3])) || []).filter((x) => x.id === "fracao" && !x.dados.leilao);
     if (fr.length) fr[fr.length - 1].dados.leilao = l[5] != null ? r2(l[4] * l[5]) : null;
@@ -1053,6 +1299,11 @@ export function calcular(extrato, ctx = {}) {
         dados: { corretoras: pc.map((x) => ({ inst: x.inst, comprado: x.comprado, vendido: x.vendido, saldo: x.q, pm: x.pm, realizado: x.realizado })) } });
     }
     if (P.semCotacao) marcar(P.t, { id: "sem-cotacao", texto: "Sem cotação no Lookout: o valor de hoje usa o preço médio e a diferença fica de fora do total." });
+    // Varredura de sanidade: posição aberta sem cotação e sem nenhuma linha que mexa na quantidade há 24 meses
+    if (P.semCotacao && P.q > 0) {
+      const ult = [ultimoMov.get(P.t) || "", ...(trades.get(P.t) || []).map((x) => x.d)].reduce((m, d) => (d > m ? d : m), "");
+      if (ult && ult < somarMeses(mesAtual, -24) + hoje.slice(7)) marcar(P.t, { id: "parada", texto: `Sem movimento desde ${ult.slice(5, 7)}/${ult.slice(0, 4)} e sem cotação: confira se o papel ainda existe.`, dados: { d: ult } });
+    }
   }
   const conf = { papeis: 0, graves: 0, porTipo: {}, situacoes: 0, ajustes: aj.todos.length, ajustesSemEfeito: aj.todos.filter((a) => !a.aplicado).length };
   const juntos = new Map();
@@ -1102,8 +1353,8 @@ export function calcular(extrato, ctx = {}) {
     let v0 = 0;
     for (const m of meses) {
       const v1 = valorEm(m, m === mesAtual);
-      const f = fluxoMes.get(m) || { compras: 0, vendas: 0 };
-      serie.push({ mes: m, v0, fluxo: f.compras - f.vendas, v1, prov: provMes.has(m) ? provMes.get(m).total : 0 });
+      const f = fluxoMes.get(m) || { compras: 0, vendas: 0, resgates: 0 };
+      serie.push({ mes: m, v0, fluxo: f.compras - f.vendas - (f.resgates || 0), v1, prov: provMes.has(m) ? provMes.get(m).total : 0 });
       v0 = v1;
     }
     const pct = (l) => (l.length ? Math.round(twr(l) * 1e4) / 100 : null);
@@ -1122,6 +1373,8 @@ export function calcular(extrato, ctx = {}) {
   const porMesAcoes = new Map();
   for (const v of vendasTodas) {
     const cls = classe(v.b), m = ym(v.d);
+    if (v.resgate) continue; // resgate de fundo não é venda em bolsa
+    if (cls === "acao" && v.dt) continue; // day trade tem regra própria (sem isenção dos R$ 20 mil); fica fora desta conta
     if (cls === "acao") {
       if (m === mesAtual) vendasAcoesMes += v.valor;
       const x = porMesAcoes.get(m) || { vendas: 0, res: 0 };
@@ -1137,7 +1390,7 @@ export function calcular(extrato, ctx = {}) {
     else if (x.vendas > 20000) prejuizoAcoes = Math.max(0, prejuizoAcoes - x.res);
   }
   const fiiPorMes = new Map();
-  for (const v of vendasTodas) if (classe(v.b) === "fii" || classe(v.b) === "fiagro") fiiPorMes.set(ym(v.d), (fiiPorMes.get(ym(v.d)) || 0) + v.res);
+  for (const v of vendasTodas) if (!v.resgate && (classe(v.b) === "fii" || classe(v.b) === "fiagro")) fiiPorMes.set(ym(v.d), (fiiPorMes.get(ym(v.d)) || 0) + v.res);
   for (const [, r] of [...fiiPorMes].sort((a, b) => (a[0] < b[0] ? -1 : 1))) prejuizoFii = r < 0 ? prejuizoFii - r : Math.max(0, prejuizoFii - r);
   const jcpAno = provs.filter((p) => p[2] === "jcp" && p[0].startsWith(anoAtual)).reduce((s, p) => s + p[5], 0);
 
@@ -1244,7 +1497,7 @@ export function calcular(extrato, ctx = {}) {
   for (const v of vendasTodas) {
     const noAno = v.d.startsWith(anoCivil);
     if (noAno) realizado.ano += v.res;
-    if (v.zera) continue;
+    if (v.zera || v.resgate) continue;
     vendas.total += v.valor; vendas.n++; realizado.n++;
     if (noAno) { vendas.ano += v.valor; realizado.nAno++; }
   }
@@ -1273,9 +1526,9 @@ export function calcular(extrato, ctx = {}) {
   // Retirada de custódia não entra em nenhum lado: não é compra nem venda e saiu sem virar dinheiro.
   let comprasTotal = pagoAjuste;
   for (const [, f] of fluxoMes) comprasTotal += f.compras;
-  const totHoje = patrimonio + provTotal + vendas.total;
+  const totHoje = patrimonio + provTotal + vendas.total + resgatesTotal;
   const total = {
-    pago: r2(comprasTotal), hoje: r2(totHoje), proventos: r2(provTotal), vendas: r2(vendas.total),
+    pago: r2(comprasTotal), hoje: r2(totHoje), proventos: r2(provTotal), vendas: r2(vendas.total), resgates: r2(resgatesTotal),
     ganho: r2(totHoje - comprasTotal), pct: comprasTotal > 0 ? Math.round(((totHoje - comprasTotal) / comprasTotal) * 1e4) / 100 : null,
   };
 

@@ -147,6 +147,7 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Conferência da carteira: situações identificadas por papel (várias corretoras, transferência, bonificação sem custo, venda sem origem, quantidade divergente), conta por corretora e ajustes da pessoa (10/11)
 - [x] Agora e Desde o começo por papel: colunas em Posições, blocos na janela do papel e os mesmos rótulos no Paguei × hoje (10/11)
 - [x] A receber com a soma em destaque no topo (B3 e estimativa separadas, o que ainda cai no mês), no widget, na Agenda e na prévia da importação (10/11)
+- [x] Carteira: day trade com venda listada antes da compra, resgate da posição inteira fecha o papel, incorporação de fundo leva o custo para o sucessor (10/11)
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

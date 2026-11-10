@@ -82,8 +82,8 @@ export const arquivosSaidas = () => [
 ];
 // Conferência da carteira por lote (FIFO), usada em carteira.test.mjs e b3-fake.test.mjs. Para cada papel (aberto ou
 // encerrado): a soma dos lotes é a quantidade da posição, nada precisou de acerto e o custo que entrou nos lotes fecha
-// com o que sobrou mais o que saiu em venda e em transferência, retirada ou vencimento. Com `comprado` (papel -> R$),
-// o que entrou nos lotes bate também com o total comprado contado à parte. Devolve a lista de problemas (vazia = ok).
+// com o que sobrou mais o que saiu em venda e em transferência, retirada, vencimento ou resgate. Com `comprado` (papel ->
+// R$), o que entrou nos lotes, tirando o custo que veio de incorporação, bate também com o total comprado contado à parte. Devolve a lista de problemas (vazia = ok).
 export function conferirLotes(calc, comprado = null) {
   const erros = [];
   const papeis = [
@@ -97,7 +97,8 @@ export function conferirLotes(calc, comprado = null) {
     if (p.f.acerto) erros.push(`${p.t}: acerto de ${p.f.acerto}`);
     const conta = p.f.custo + p.f.baixadoVendas + p.f.baixadoOutros;
     if (Math.abs(conta - p.f.entrou) > 0.03) erros.push(`${p.t}: sobrou ${p.f.custo} + vendido ${p.f.baixadoVendas} + saiu ${p.f.baixadoOutros} != entrou ${p.f.entrou}`);
-    if (comprado && Math.abs(p.f.entrou - (comprado[p.t] || 0)) > 0.03) erros.push(`${p.t}: entrou ${p.f.entrou}, comprado ${comprado[p.t] || 0}`);
+    // o custo que veio de um fundo incorporado entrou nos lotes sem compra nova
+    if (comprado && Math.abs(p.f.entrou - (p.f.incorporado || 0) - (comprado[p.t] || 0)) > 0.03) erros.push(`${p.t}: entrou ${p.f.entrou} (${p.f.incorporado || 0} de incorporação), comprado ${comprado[p.t] || 0}`);
     const somaLotes = p.lotes.reduce((s, l) => s + l.custo, 0);
     if (Math.abs(somaLotes - p.f.custo) > 0.03 * Math.max(1, p.lotes.length)) erros.push(`${p.t}: custo dos lotes ${somaLotes} != ${p.f.custo}`);
     realizado += p.f.realizado;

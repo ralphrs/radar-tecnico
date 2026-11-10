@@ -9,7 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mesclar, calcular, chaveLinha, retratoDe, aplicarRetrato } from "../src/carteira.js";
 import { gerar, manifesto, diferenca, escreverXlsx, lerXlsx, linhasDaPagina, simularImportacao, reduzirLinha } from "./fixtures/b3-fake/gerar.mjs";
-import { ESPERADO, ESPERADO_ARECEBER, ESPERADO_CONFERENCIA, refCalculo } from "./fixtures/b3-fake/cenarios.mjs";
+import { ESPERADO, ESPERADO_ARECEBER, ESPERADO_CONFERENCIA, ESPERADO_FANTASMAS, refCalculo } from "./fixtures/b3-fake/cenarios.mjs";
 import { conferirLotes, compradoPorPapel } from "./fixtures-carteira.mjs";
 
 const ATE = "2026-11-04";
@@ -107,13 +107,22 @@ test("por lote (FIFO): lotes somam a quantidade, o custo fecha com o comprado e 
     assert.ok(Math.abs(v.lotes.reduce((s, l) => s + l.q, 0) + v.semLote - v.q) < 1e-6, p.t);
     assert.deepEqual(v.lotes.map((l) => l.dLote), [...v.lotes.map((l) => l.dLote)].sort(), p.t);
   }
-  assert.ok(calc.resumo.encerradas.every((e) => e.vendas.length > 0));
+  // toda encerrada saiu por venda, menos o fundo incorporado (cenários 19 e 20), que sai pelo resgate
+  assert.ok(calc.resumo.encerradas.every((e) => e.vendas.length > 0 || e.incorporadoPor), calc.resumo.encerradas.filter((e) => !e.vendas.length).map((e) => e.t).join(","));
   // sem transferência de saída nem retirada nos dados falsos, aberto + realizado é o mesmo nos dois jeitos, papel a
   // papel. As exceções são B3SA3 e EGIE3: a fração que saiu baixa pelo preço médio num e, no outro, é o próprio lote de
   // fração (zero).
   const total = (p) => ({ pm: (p.resultado ?? 0) + p.realizado, lote: (p.preco != null ? p.valor - p.fifo.custo : 0) + p.fifo.realizado });
   const FRACAO = { B3SA3: 0.65, EGIE3: 0.2 };
-  for (const p of calc.posicoes) { const x = total(p); if (FRACAO[p.t]) assert.ok(Math.abs(x.pm - x.lote - FRACAO[p.t] * (p.custo / p.q)) < 0.01, p.t); else assert.ok(Math.abs(x.pm - x.lote) < 0.02, p.t); }
+  // QZFB11 (cenário 19): a fração de 0,64 sai do lote que veio da incorporação num e pelo preço médio de antes no outro
+  const pmAntes = (7600 + 1428.9) / 178.64, pInc = 1428.9 / 98.64;
+  const OUTRA = { QZFB11: 0.64 * (pmAntes - pInc) };
+  for (const p of calc.posicoes) {
+    const x = total(p);
+    if (FRACAO[p.t]) assert.ok(Math.abs(x.pm - x.lote - FRACAO[p.t] * (p.custo / p.q)) < 0.01, p.t);
+    else if (OUTRA[p.t] != null) assert.ok(Math.abs(x.pm - x.lote - OUTRA[p.t]) < 0.02, `${p.t}: ${x.pm - x.lote}`);
+    else assert.ok(Math.abs(x.pm - x.lote) < 0.02, p.t);
+  }
   for (const e of calc.resumo.encerradas) assert.ok(Math.abs(e.resultado - e.fifo.realizado) < 0.02, e.t);
   // a bonificação de ITSA4 e a de B3SA3 são lotes a custo zero; a fração de B3SA3 entrou e saiu ela mesma
   assert.ok(pos(calc, "ITSA4").lotes.some((l) => l.origem === "bonificacao" && l.preco === 0));
@@ -257,4 +266,32 @@ test("conferência: invariantes nos dados falsos (desde o começo = total; por c
     const tol = p.t === "EGIE3" ? 0.2 * Math.abs(p.porCorretora[0].pm - p.pm) + 0.02 : 0.05;
     assert.ok(Math.abs(porCorr - consolidado) <= tol, `${p.t}: ${porCorr} x ${consolidado}`);
   }
+});
+
+// ---------- Posições fantasmas (cenários 18 a 20) ----------
+const EF = ESPERADO_FANTASMAS;
+
+test("fantasmas: day trade com a venda antes, incorporação com e sem recibo", () => {
+  const { calc } = simularImportacao(g.arquivos, ATE);
+  const porT = Object.fromEntries([...calc.posicoes, ...calc.resumo.encerradas].map((p) => [p.t, p]));
+  for (const [t, x] of Object.entries(EF.dayTrade)) {
+    const p = pos(calc, t);
+    assert.equal(p.q, x.q); assert.ok(Math.abs(p.pm - x.pm) < 1e-9, t); assert.ok(Math.abs(p.realizado - x.realizado) < 0.005, t);
+    assert.ok(Math.abs(p.fifo.realizado - x.realizado) < 0.005, t);
+    assert.ok(Math.abs(p.porCorretora[0].realizado - x.realizado) < 0.005, t);
+  }
+  for (const [t, x] of Object.entries(EF.incorporacao)) {
+    const e = calc.resumo.encerradas.find((y) => y.t === t);
+    assert.ok(e, t + " encerrada");
+    assert.equal(pos(calc, t), undefined, t + " não fica aberta");
+    assert.equal(e.incorporadoPor, x.para); assert.equal(e.incorporadoEm, x.d);
+    assert.equal(e.resultado, 0);
+    assert.deepEqual([e.geral.comprado, e.geral.resgate], [x.comprado, x.resgate]);
+    for (const k of [t, x.para]) assert.deepEqual(porT[k].situacoes.filter((s) => s.id === "incorporacao").map((s) => s.texto), [x.texto], k);
+    assert.deepEqual(porT[x.para].situacoes.filter((s) => s.grave), [], x.para);
+  }
+  for (const [t, c] of Object.entries(EF.custo)) assert.ok(Math.abs(pos(calc, t).custo - c) < 0.01, `${t}: ${pos(calc, t).custo} x ${c}`);
+  assert.equal(pos(calc, "QZFC13"), undefined);
+  // o resgate volta como capital: não é provento nem venda
+  assert.ok(Math.abs(calc.resumo.total.resgates - 41.1 - 20.48) < 0.005);
 });

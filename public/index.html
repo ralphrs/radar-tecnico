@@ -1181,6 +1181,7 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
 .ct-tab th button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
 .ct-tab th[aria-sort="ascending"] button::after { content: "▲"; font-size: 9px; }
 .ct-tab th[aria-sort="descending"] button::after { content: "▼"; font-size: 9px; }
+.ct-sub-num { display: block; color: var(--muted-foreground); font-size: 12px; }
 .ct-nome { color: var(--muted-foreground); font-size: 13px; margin-left: 6px; max-width: 220px; display: inline-block; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 .ct-tag { display: inline-block; font: 600 11.5px/16px var(--font-sans); padding: 1px 8px; border-radius: var(--radius-md); border: 1px solid var(--border); color: var(--muted-foreground); background: var(--secondary); white-space: nowrap; }
 .ct-tag + .ct-tag { margin-left: 4px; }
@@ -7446,8 +7447,11 @@ function celulaPos(c, p) {
   if (c === "emp") return mono(p.emprestadas ? qtd(p.emprestadas) : "–");
   return el("td", { class: "e" }, ...p.corretoras.map((x) => tagEl(x)));
 }
+/* Encerrada por incorporação: o selo diz para onde as cotas foram */
+const seloIncorp = (e) => (e.incorporadoPor ? tagEl("incorporado por " + e.incorporadoPor, "", `As cotas viraram ${e.incorporadoPor} em ${dataBr(e.incorporadoEm)} e o custo foi junto, menos o resgate. O desde o começo daqui conta a compra e o resgate; as cotas novas estão em ${e.incorporadoPor}.`) : null);
 function celulaEnc(c, e) {
-  if (c === "t") return el("td", { class: "e" }, papelBtn(e.t, e.nome), iconeSit(e));
+  if (c === "t") return el("td", { class: "e" }, papelBtn(e.t, e.nome), iconeSit(e), e.incorporadoPor ? " " : null, seloIncorp(e));
+  if (c === "recebido" && e.resgate > 0) return el("td", { class: "mono" }, rs(e.recebido), el("small", { class: "ct-sub-num" }, "resgate " + rs(e.resgate)));
   if (c === "total") { const v = e.geral ? e.geral.resultado : e.total; return el("td", { class: "mono " + clsS(v) }, rsS(v)); }
   if (c === "ate") return el("td", { class: "mono" }, periodo(e.de, e.ate));
   if (c === "pago" || c === "recebido" || c === "proventos") return el("td", { class: "mono" }, rs(e[c]));
@@ -7504,7 +7508,7 @@ function tabelaPosicoes(j) {
       ? (ls) => { const s = ls.reduce((a, e) => ({ pago: a.pago + e.pago, total: a.total + (e.geral ? e.geral.resultado : e.total) }), { pago: 0, total: 0 }); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length}`), el("span", { class: "ct-mono " + clsS(s.total) }, rsS(s.total)), el("small", {}, "pago " + rs(s.pago)), el("small", {})); }
       : (ls) => { const s = somaPos(ls); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length} ${ls.length === 1 ? "papel" : "papéis"}`), el("span", { class: "ct-mono" }, rs(s.valor)), el("small", {}, `pago ${rs(s.custo)} · com proventos `, el("span", { class: clsS(s.comProv) }, rsS(s.comProv))), el("small", { class: "ct-mono " + clsS(s.dif) }, rsPc(s.dif, s.pct)), el("small", { class: "ct-geral-l" }, "desde o começo ", el("span", { class: "ct-mono " + clsS(s.geral) }, rsS(s.geral)))); },
     cel: enc
-      ? (e) => { const v = e.geral ? e.geral.resultado : e.total; return el("div", { class: "ct-lin" }, el("span", {}, papelBtn(e.t, e.nome), iconeSit(e)), el("span", { class: "ct-mono " + clsS(v) }, rsS(v)), el("small", {}, `${periodo(e.de, e.ate)} · pago ${rs(e.pago)} · recebido ${rs(e.recebido)} · proventos ${rs(e.proventos)}`), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)),
+      ? (e) => { const v = e.geral ? e.geral.resultado : e.total; return el("div", { class: "ct-lin" }, el("span", {}, papelBtn(e.t, e.nome), iconeSit(e), seloIncorp(e)), el("span", { class: "ct-mono " + clsS(v) }, rsS(v)), el("small", {}, `${periodo(e.de, e.ate)} · pago ${rs(e.pago)} · ${e.resgate > 0 ? "resgate " + rs(e.resgate) : "recebido " + rs(e.recebido)} · proventos ${rs(e.proventos)}`), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)),
         ctSitAbertas.has(e.t) ? el("div", { class: "ct-lin-lotes" }, sitListaEl(e)) : null); }
       : (p) => el("div", { class: "ct-lin" }, el("span", {}, porLote(p) ? botaoLotes(p) : null, papelBtn(p.t, nomeDoPapel(p)), iconeSit(p), seloLimite(p.sinal, limitesJ(cartJ))), el("span", { class: "ct-mono" }, rs(p.valor)),
         el("small", {}, `${qtd(p.q)} ${UNID_CLASSE(p.classe)} · pago ${custoPos(p) == null ? "–" : rs(custoPos(p))}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(difPos(p)) }, p.semCotacao ? "sem cotação" : rsPc(difPos(p), pctPos(p))),
@@ -7524,13 +7528,15 @@ function tabelaPosicoes(j) {
 }
 /* ---- Por lote (FIFO): o botão que abre os lotes, a lista de lotes de um papel e a seção Vendas ---- */
 const SETA_BAIXO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-const ORIGEM_LOTE = { subscricao: "subscrição", bonificacao: "bonificação", transferencia: "transferência", fracao: "fração", ajuste: "ajuste" };
+const ORIGEM_LOTE = { subscricao: "subscrição", bonificacao: "bonificação", transferencia: "transferência", fracao: "fração", ajuste: "ajuste", incorporacao: "incorporação", custodia: "custódia" };
 const TITULO_ORIGEM = {
   subscricao: "Subscrição que virou cota, ao preço do exercício",
   bonificacao: "Bonificação: entra a custo zero quando o extrato não traz o valor",
   transferencia: "Entrou por transferência; sem o preço de origem, usa o preço médio da data",
   fracao: "Fração em ativos, sem custo",
   ajuste: "Entrou sem preço no extrato",
+  incorporacao: "Veio do fundo incorporado: a data é a da compra lá, e o custo é o de lá menos o resgate",
+  custodia: "Apareceu em custódia sem compra no extrato",
 };
 function botaoLotes(p) {
   const ab = ctLotesAbertos.has(p.t), n = p.lotes.length;
@@ -7570,7 +7576,7 @@ function lotesEl(p) {
    p.porCorretora, j.ajustes). Aqui só o desenho: o ícone ao lado do papel (âmbar quando falta dado), a lista no toque,
    as linhas por corretora, o bloco da janela do papel, o formulário do ajuste e o card Conferência da aba Mais. */
 const ICO_SIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.5h.01"/></svg>';
-const NOME_SIT = { "venda-sem-origem": "Venda sem origem", "quantidade-diverge": "Quantidade diferente da B3", "bonificacao-sem-custo": "Bonificação sem custo", transferencia: "Transferência entre corretoras", "varias-corretoras": "Mais de uma corretora", "evento-ignorado": "Linha que o cálculo não trata", "sem-cotacao": "Sem cotação", fracao: "Fração", subscricao: "Subscrição" };
+const NOME_SIT = { "venda-sem-origem": "Venda sem origem", "resgate-total": "Resgate da posição inteira", "custodia-sem-origem": "Cotas sem compra no extrato", "quantidade-diverge": "Quantidade diferente da B3", "bonificacao-sem-custo": "Bonificação sem custo", transferencia: "Transferência entre corretoras", incorporacao: "Fundo incorporado", "varias-corretoras": "Mais de uma corretora", "day-trade": "Day trade", "evento-ignorado": "Linha que o cálculo não trata", parada: "Papel parado", "sem-cotacao": "Sem cotação", fracao: "Fração", subscricao: "Subscrição" };
 const ORDEM_SIT = Object.keys(NOME_SIT);
 const temGrave = (p) => (p.situacoes || []).some((x) => x.grave);
 function iconeSit(p) {
@@ -7622,7 +7628,7 @@ function blocosAgoraDesde(p, aberta) {
   const lin = (rot, v, cls) => el("div", {}, el("dt", {}, rot), el("dd", { class: "ct-mono " + (cls || "") }, v));
   const g = p.geral;
   const desde = el("section", { class: "ag-bloco" }, el("h3", {}, "Desde o começo"), el("dl", {},
-    lin("Comprou", rs(g.comprado)), lin("Vendeu", rs(g.vendido)), lin("Proventos", rs(g.proventos)), lin("Vale hoje", rs(g.hoje)),
+    lin("Comprou", rs(g.comprado)), lin("Vendeu", rs(g.vendido)), g.resgate > 0 ? lin("Resgate", rs(g.resgate)) : null, lin("Proventos", rs(g.proventos)), lin("Vale hoje", rs(g.hoje)),
     lin("Resultado", rsPc(g.resultado, g.pct), clsS(g.resultado))));
   const blocos = [];
   if (aberta) {
@@ -7632,31 +7638,43 @@ function blocosAgoraDesde(p, aberta) {
       lin("Diferença", dif == null ? "sem cotação" : rsPc(dif, p.resPct), clsS(dif)))));
   }
   blocos.push(desde);
-  const expl = aberta
+  let expl = aberta
     ? `Agora conta só as ${qtd(p.q)} ${unidadeDe(p.classe, p.q)} que você tem e o que pagou por elas, pelo preço médio. Desde o começo soma tudo o que já passou pelo papel: o que voltou em vendas e proventos mais o valor de hoje, contra tudo o que foi pago. Esse não muda com preço médio, lote ou corretora.`
     : "Você não tem mais o papel. Desde o começo soma o que voltou em vendas e proventos contra tudo o que foi pago.";
+  /* incorporação: a compra fica no fundo antigo e as cotas novas não contam como compra no papel que incorporou */
+  if (p.incorporadoPor) expl = `As cotas viraram ${p.incorporadoPor} em ${dataBr(p.incorporadoEm)} e o custo foi junto, menos o resgate. Aqui ficam a compra e o resgate; o valor de hoje dessas cotas está em ${p.incorporadoPor}, por isso o resultado daqui parece uma perda.`;
+  else if (p.incorporou && p.incorporou.length) expl += ` As cotas que vieram de ${p.incorporou.map((x) => x.de).join(" e ")} entram no Agora com o custo de lá, mas não contam como compra no Desde o começo: a compra ficou no fundo antigo.`;
   return [el("div", { class: "ag-blocos" }, ...blocos), el("p", { class: "nota ag-expl" }, expl)];
 }
 /* Formulário do ajuste: o que falta para a conta de hoje estar completa. Situação -> tipo de ajuste */
 let ajForm = null; // { t, i }: a situação com o formulário aberto na janela do papel
-const tipoAjuste = (x) => (x.id === "bonificacao-sem-custo" ? "custo-bonificacao" : x.id === "transferencia" ? "custo-transferencia" : "posicao-inicial");
-const BOTAO_AJ = { "custo-bonificacao": "Informar custo", "custo-transferencia": "Informar custo", "posicao-inicial": "Informar posição inicial" };
-const NOME_AJ = { "custo-bonificacao": "Custo da bonificação", "custo-transferencia": "Custo de cotas transferidas", "posicao-inicial": "Posição de antes do extrato" };
+const tipoAjuste = (x) => (x.id === "bonificacao-sem-custo" ? "custo-bonificacao" : x.id === "transferencia" || x.id === "custodia-sem-origem" ? "custo-transferencia" : x.id === "resgate-total" ? "incorporacao" : "posicao-inicial");
+const BOTAO_AJ = { "custo-bonificacao": "Informar custo", "custo-transferencia": "Informar custo", "posicao-inicial": "Informar posição inicial", incorporacao: "Informar o fundo que incorporou" };
+const NOME_AJ = { "custo-bonificacao": "Custo da bonificação", "custo-transferencia": "Custo de cotas sem compra no extrato", "posicao-inicial": "Posição de antes do extrato", incorporacao: "Incorporação" };
 function formAjuste(p, x, reabrir) {
   const tipo = tipoAjuste(x), dd = x.dados || {}, id = "aj-" + p.t;
   const f = el("form", { class: "aj-form", "aria-label": NOME_AJ[tipo] + " de " + p.t, novalidate: "" });
   const campo = (sufixo, rot, inp, dica) => { inp.id = id + "-" + sufixo; return el("div", {}, el("label", { class: "rotulo", for: inp.id }, rot), inp, dica ? el("small", {}, dica) : null); };
   const grade = el("div", { class: "aj-grade" });
-  const valor = Campo.ligar(el("input", { class: "dd-input", inputmode: "decimal", autocomplete: "off" }), { tipo: "moeda", casas: tipo === "custo-bonificacao" ? 4 : 2, min: 0.0001 });
-  let data = null, q = null, inst = null;
-  if (tipo === "posicao-inicial") {
+  const valor = tipo === "incorporacao" ? null : Campo.ligar(el("input", { class: "dd-input", inputmode: "decimal", autocomplete: "off" }), { tipo: "moeda", casas: tipo === "custo-bonificacao" ? 4 : 2, min: 0.0001 });
+  let data = null, q = null, inst = null, para = null;
+  if (tipo === "incorporacao") {
+    /* o papel que ficou com as cotas: os candidatos que o cálculo achou perto da data e os outros papéis da carteira */
+    const cands = (dd.candidatos || []).filter((c) => c !== p.t);
+    const lista = "aj-lista-" + p.t;
+    const outros = cartJ && Array.isArray(cartJ.posicoes) ? cartJ.posicoes.map((y) => y.t).filter((t) => t !== p.t && !cands.includes(t)) : [];
+    para = el("input", { class: "dd-input", autocomplete: "off", autocapitalize: "characters", spellcheck: "false", maxlength: "7", list: lista, ...(cands.length === 1 ? { value: cands[0] } : {}) });
+    grade.append(campo("p", "Papel que recebeu as cotas", para, cands.length > 1 ? `perto dessa data entraram ${cands.join(" e ")}` : "o fundo que ficou com as cotas, como aparece no extrato"),
+      el("datalist", { id: lista }, ...[...cands, ...outros].map((t) => el("option", { value: t }))));
+  } else if (tipo === "posicao-inicial") {
     data = Campo.ligar(el("input", { class: "dd-input", inputmode: "numeric", autocomplete: "off" }), { tipo: "data" });
     q = Campo.ligar(el("input", { class: "dd-input", inputmode: "decimal", autocomplete: "off" }), { tipo: "numero", casas: 2, min: 0.01 });
     if (dd.q) Campo.definir(q, dd.q);
     const insts = [...new Set([dd.inst, ...(p.porCorretora || []).map((c) => c.inst)].filter(Boolean))];
     inst = el("select", { class: "dd-input" }, ...insts.map((c) => el("option", { value: c }, c)));
     grade.append(campo("d", "Data", data, "a primeira linha do papel no extrato ou antes"), campo("q", "Quantidade", q), campo("v", "Preço médio", valor), campo("i", "Corretora", inst));
-  } else grade.append(campo("v", tipo === "custo-bonificacao" ? "Custo por " + unidadeDe(p.classe, 1) : "Preço médio das que chegaram", valor, tipo === "custo-bonificacao" ? "o valor que a empresa informou no aviso da bonificação" : "o que você pagou na outra corretora"));
+  } else if (x.id === "custodia-sem-origem") grade.append(campo("v", "Preço médio das que apareceram", valor, "o que você pagou por elas, fora do extrato"));
+  else grade.append(campo("v", tipo === "custo-bonificacao" ? "Custo por " + unidadeDe(p.classe, 1) : "Preço médio das que chegaram", valor, tipo === "custo-bonificacao" ? "o valor que a empresa informou no aviso da bonificação" : "o que você pagou na outra corretora"));
   const nota = el("input", { class: "dd-input", maxlength: "140", autocomplete: "off" });
   grade.append(campo("n", "Nota (opcional)", nota));
   const status = el("p", { class: "nota", role: "status" });
@@ -7665,10 +7683,14 @@ function formAjuste(p, x, reabrir) {
   can.addEventListener("click", () => { ajForm = null; reabrir(); });
   f.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const corpo = { tipo, t: p.t, valor: Campo.valor(valor), nota: nota.value };
+    const corpo = { tipo, t: p.t, nota: nota.value };
+    if (valor) corpo.valor = Campo.valor(valor);
     if (tipo === "posicao-inicial") Object.assign(corpo, { d: Campo.valor(data), q: Campo.valor(q), inst: inst.value });
     else corpo.d = dd.d;
-    if (!(corpo.valor > 0)) { status.textContent = "Escreva um valor maior que zero."; valor.focus(); return; }
+    if (para) {
+      corpo.para = para.value.trim().toUpperCase();
+      if (!PAPEL_BR.test(corpo.para)) { status.textContent = "Escreva o código do papel como aparece no extrato."; para.focus(); return; }
+    } else if (!(corpo.valor > 0)) { status.textContent = "Escreva um valor maior que zero."; valor.focus(); return; }
     if (tipo === "posicao-inicial" && (!corpo.d || !(corpo.q > 0))) { status.textContent = "Preencha a data e a quantidade."; (corpo.d ? q : data).focus(); return; }
     ok.disabled = true; status.textContent = "Salvando…";
     try {
@@ -7718,7 +7740,7 @@ function cardConferencia(j) {
   if (!cf) return null;
   const todos = [...j.posicoes, ...(r.encerradas || [])];
   const c = cardEl("Conferência", { id: "ct-conferencia", sub: cf.papeis ? `${cf.papeis} ${cf.papeis === 1 ? "papel com situação" : "papéis com situação"} · ${cf.graves} a completar` : "nenhuma situação" });
-  c.append(el("p", { class: "ct-nota" }, "O que muda a conta de cada papel: corretoras diferentes, transferência, bonificação, venda de cotas de antes do extrato. Nas marcadas em âmbar falta um dado que o extrato não traz; você completa na ficha do papel."));
+  c.append(el("p", { class: "ct-nota" }, "O que muda a conta de cada papel: corretoras diferentes, transferência, bonificação, venda de cotas de antes do extrato, fundo incorporado, day trade. Nas marcadas em âmbar falta um dado que o extrato não traz; você completa na ficha do papel."));
   const porTipo = new Map();
   todos.forEach((p) => (p.situacoes || []).forEach((x) => { if (!porTipo.has(x.id)) porTipo.set(x.id, []); porTipo.get(x.id).push([p, x]); }));
   ORDEM_SIT.filter((k) => porTipo.has(k)).forEach((k) => {
@@ -7744,7 +7766,9 @@ function cardConferencia(j) {
   else {
     const ul = el("ul", { class: "cf-ajustes" });
     aj.slice().sort((a, b) => (a.criado < b.criado ? 1 : -1)).forEach((a) => {
-      const txt = a.tipo === "posicao-inicial" ? `${qtd(a.q)} a ${rs(a.valor, true)} em ${dataBr(a.d)}${a.inst ? " na " + a.inst : ""}` : `${rs(a.valor, true)} por ${a.tipo === "custo-bonificacao" ? "cota bonificada" : "cota"}, linha de ${dataBr(a.d)}`;
+      const txt = a.tipo === "posicao-inicial" ? `${qtd(a.q)} a ${rs(a.valor, true)} em ${dataBr(a.d)}${a.inst ? " na " + a.inst : ""}`
+        : a.tipo === "incorporacao" ? `incorporado por ${a.para}, resgate de ${dataBr(a.d)}`
+        : `${rs(a.valor, true)} por ${a.tipo === "custo-bonificacao" ? "cota bonificada" : "cota"}, linha de ${dataBr(a.d)}`;
       const li = el("li", {}, el("span", {}, papelBtn(a.t), " ", el("b", {}, NOME_AJ[a.tipo]), " · " + txt, a.nota ? el("small", {}, " · " + a.nota) : null, a.aplicado ? null : el("small", { class: "ct-aviso" }, " · sem efeito: a linha do extrato não está mais lá")));
       if (ajExcluir === a.id) {
         const sim = el("button", { type: "button", class: "dd-btn dd-btn--perigo" }, "Excluir");
