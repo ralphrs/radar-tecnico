@@ -1066,6 +1066,62 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
 .ct-modo button { height: 24px; }
 .ct-paguei .pg-l3 { font-size: 12px; color: var(--muted-foreground); }
 .ct-paguei .pg-l3 .ct-mono { font-size: 12px; white-space: nowrap; }
+/* Conferência: ícone de situação ao lado do papel (âmbar quando falta dado), a lista no toque, as linhas por corretora,
+   Agora e Desde o começo na janela do papel, o formulário do ajuste e o card da aba Mais */
+.cf-ico { all: unset; box-sizing: border-box; flex: none; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--muted-foreground); cursor: pointer; vertical-align: middle; margin-left: 2px; }
+.cf-ico svg { width: 15px; height: 15px; }
+.cf-ico.grave { color: var(--warn); }
+.cf-ico:hover { background: var(--accent); }
+.cf-ico:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.cf-ico[aria-expanded="true"] { background: color-mix(in srgb, var(--primary) 12%, var(--card)); }
+.cf-ico.grave[aria-expanded="true"] { background: color-mix(in srgb, var(--warn) 14%, var(--card)); }
+.cf-lista { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.45; white-space: normal; }
+.cf-lista > li { padding: 4px 0 4px 10px; border-left: 3px solid var(--border); overflow-wrap: anywhere; }
+.cf-lista > li.grave { border-left-color: var(--warn); }
+.cf-lista > li.ajustada { border-left-color: var(--ok); }
+.cf-lista > li.cf-acao { border-left-color: transparent; padding-top: 0; }
+.cf-lista .dd-btn--link { height: auto; padding: 0; font-size: 13px; }
+.ct-corr { margin-top: 6px; }
+.ct-corr .ct-lote-d b { font-family: var(--font-sans); font-weight: 600; }
+.ct-tab tr.ct-lotes-tr > td > * + * { margin-top: 8px; }
+.ct-geral-l { grid-column: 1 / -1; font-size: 12px; color: var(--muted-foreground); }
+.ct-geral-l .ct-mono { font-size: 12px; }
+.ag-blocos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.ag-bloco { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px; min-width: 0; }
+.ag-bloco h3 { margin: 0 0 6px; font: 600 12px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.ag-bloco dl { margin: 0; display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; }
+.ag-bloco dl > div { display: flex; justify-content: space-between; gap: 10px; }
+.ag-bloco dt { color: var(--muted-foreground); }
+.ag-bloco dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.ag-bloco dl > div:last-child { border-top: 1px solid var(--border); padding-top: 4px; margin-top: 2px; font-weight: 600; }
+.ag-expl { margin-top: 6px; margin-bottom: 0; }
+.cf-bloco .cf-lista { font-size: 13.5px; }
+.aj-form { margin: 8px 0 4px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); }
+.aj-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 12px; }
+.aj-grade > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.aj-grade .dd-input { width: 100%; min-width: 0; box-sizing: border-box; }
+.aj-grade small { font-size: 11.5px; color: var(--muted-foreground); }
+.aj-form .ct-acoes { margin-top: 8px; }
+.cf-grupo { border-top: 1px solid var(--border); padding: 8px 0; }
+.cf-grupo summary { cursor: pointer; font-weight: 600; font-size: 13.5px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cf-grupo summary .ct-tag { margin-left: 4px; }
+.cf-grupo .cf-lista .cot-papel { margin-right: 2px; }
+.cf-sub { margin: 14px 0 6px; font: 600 13.5px/18px var(--font-sans); }
+.cf-ajustes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.cf-ajustes > li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.cf-ajustes > li > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.cf-ajustes small { color: var(--muted-foreground); }
+.cf-conf { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; width: 100%; }
+.cf-conf > span:first-child { font-size: 12.5px; color: var(--muted-foreground); }
+#ct-conferencia:focus { outline: none; }
+/* A receber: o total em destaque no topo e a linha de total das listas resumidas */
+.ar-topo { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 14px; padding: 2px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.ar-topo > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ar-big b { font: 500 24px/1.15 var(--font-mono); font-variant-numeric: tabular-nums; }
+.ar-big small, .ar-est { font-size: 12.5px; color: var(--muted-foreground); }
+.ar-mes { font-size: 13px; color: var(--muted-foreground); }
+.ar-mes b { color: var(--foreground); font-weight: 600; }
+.ar-prev-tot b { font-weight: 600; }
 .vd-lista { display: flex; flex-direction: column; }
 .vd-cab, .vd-linha { display: grid; grid-template-columns: 96px minmax(120px, 1.4fr) minmax(56px, .6fr) minmax(100px, 1fr) minmax(104px, 1fr) minmax(120px, 1fr) minmax(112px, 1fr) 28px; gap: 4px 14px; align-items: center; }
 .vd-cab { padding: 0 0 8px; font: 600 11.5px/16px var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
@@ -1334,6 +1390,9 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
   .ct-lote > span.lim-lote { grid-column: 1 / -1; flex-wrap: wrap; }
   .ct-lote > span.lim-lote .lim-falta { white-space: normal; text-align: right; }
   .ct-rot { display: inline; font: 400 12px var(--font-sans); color: var(--muted-foreground); }
+  .ct-corr .ct-lote > span:last-child:not(:first-child) { grid-column: 1 / -1; }
+  .ag-blocos { grid-template-columns: minmax(0, 1fr); }
+  .ct-ferr .ct-modo { flex-wrap: wrap; }
   .vd-cab { display: none; }
   .vd-linha { grid-template-columns: repeat(2, minmax(0, 1fr)) 28px; gap: 3px 12px; }
   .vd-linha > span { display: flex; justify-content: space-between; gap: 8px; }
@@ -4131,6 +4190,8 @@ function abrirAtivo(x, aba = cotAba, ficha) {
     d.append(grade);
     if (ABAS_FICHA.has(aba)) d.append(el("p", { class: "nota" }, "FI-Infra e Fiagro não entregam o informe mensal de FII na CVM; DY e rendimento vêm da ficha (Yahoo). Confira o valor exato no aviso aos cotistas."));
   }
+  /* Agora e Desde o começo, e o que mexeu na posição (também para o papel que a pessoa já teve), logo depois da cotação */
+  d.append(...blocosCarteiraAtivo(x, aba, ficha));
   /* Faixas e gráfico (todas as classes, quando o dado existe); o resto da ficha só em ações, BDRs e ações dos EUA */
   if (h) {
     const fx = faixasFicha(h, fmtP), gr = graficoFicha(h, fmtP);
@@ -6601,6 +6662,11 @@ function cardEl(titulo, opts = {}) {
   return c;
 }
 function textoAlerta(a) {
+  if (a.tipo === "conferencia") {
+    const l = el("a", { href: "#carteira/mais", class: "ct-volta" }, `${a.n} ${a.n === 1 ? "papel com dado a completar" : "papéis com dado a completar"}`);
+    l.addEventListener("click", () => { ctIrConf = true; if (carteiraVista === "mais") desenharCarteira(cartJ); });
+    return [tagEl("conferência", "warn"), " ", l];
+  }
   if (a.tipo === "rendimento-menor") return [tagEl("rendimento menor", "warn"), " ", papelBtn(a.t), el("span", { class: "ct-mono" }, ` ${fmtNum(a.de, 3)} → ${fmtNum(a.para, 3)}`)];
   if (a.tipo === "subscricao") return [tagEl("subscrição em carteira", "err"), " ", papelBtn(a.t), el("span", {}, ` ${qtd(a.q)} direitos · prazo a confirmar`)];
   if (a.tipo === "fora-do-retrato") return [tagEl("a receber", "info"), " ", papelBtn(a.t), el("span", {}, ` não aparece nos proventos a receber de ${mesNome(a.mes)} (retrato de ${ddmm(a.dataRef)}); pagou nos últimos 3 meses`)];
@@ -6791,11 +6857,11 @@ function cardLimites(j) {
 /* Visão geral: os números do topo, a faixa da Meta e quatro cards (Alertas e Agenda à esquerda; Como está dividido e
    Movimentos recentes à direita). Card sem dado não aparece. */
 let ctFiltro = "todas", ctCorretora = "", ctEnc = false, ctBusca = "", ctAlertasTodos = false, ctSinal = "todas";
-/* Preço médio | Por lote (FIFO): a chave da aba Posições, salva neste navegador. Os lotes abertos e as vendas abertas
-   ficam só na memória da página. */
-let ctModo = "pm";
-try { if (localStorage.getItem("carteira-modo") === "lote") ctModo = "lote"; } catch (e) {}
-const ctLotesAbertos = new Set(), ctVendasAbertas = new Set();
+/* Preço médio | Por lote (FIFO) | Por corretora: a chave da aba Posições, salva neste navegador. Os lotes abertos, as
+   situações abertas e as vendas abertas ficam só na memória da página. ctConferir: o filtro "Com situações a conferir". */
+let ctModo = "pm", ctConferir = false;
+try { const m = localStorage.getItem("carteira-modo"); if (m === "lote" || m === "corretora") ctModo = m; } catch (e) {}
+const ctLotesAbertos = new Set(), ctVendasAbertas = new Set(), ctSitAbertas = new Set();
 let ctVendasTodas = false;
 const kpiEl = (rot, val, cls, desc, pin) => el("div", { class: "ct-card ct-kpi" }, el("div", { class: "r" }, el("span", { class: "rotulo" }, rot), pin ? pinBtn(pin) : null), el("span", { class: "v " + (cls || "") }, val), el("span", { class: "d" }, desc));
 const rsPc = (v, p) => rsS(v) + (p == null ? "" : ` (${pc(p, true)})`);
@@ -6804,9 +6870,9 @@ const verTudo = (href, txt = "ver tudo") => el("a", { href, class: "ct-volta" },
 function kpiPaguei(r) {
   const a = el("a", { class: "ct-card ct-kpi ct-paguei", href: "#carteira/posicoes", title: "Ver posição por posição" });
   a.append(el("div", { class: "r" }, el("span", { class: "rotulo" }, "Paguei × hoje"), el("span", { class: "ct-seta", "aria-hidden": "true" }, "→")),
-    el("span", { class: "pg-l1" }, el("span", {}, "Paguei ", el("b", {}, rs(r.custo)), " · Hoje ", el("b", {}, rs(r.patrimonio))), el("span", { class: "v " + clsS(r.aberto) }, rsPc(r.aberto, r.resultadoPct))));
+    el("span", { class: "pg-l1" }, el("span", {}, el("span", { class: "pg-rot", title: "Só as cotas que você tem hoje" }, "Agora: "), "paguei ", el("b", {}, rs(r.custo)), " · hoje ", el("b", {}, rs(r.patrimonio))), el("span", { class: "v " + clsS(r.aberto) }, rsPc(r.aberto, r.resultadoPct))));
   const t = r.total;
-  if (t) a.append(el("span", { class: "pg-l2" }, el("span", {}, el("span", { class: "pg-rot" }, "Contando proventos e vendas: "), "entrou ", el("b", {}, rs(t.pago)), " · tenho ou recebi ", el("b", {}, rs(t.hoje))), el("b", { class: "pg-v " + clsS(t.ganho) }, rsPc(t.ganho, t.pct))));
+  if (t) a.append(el("span", { class: "pg-l2" }, el("span", {}, el("span", { class: "pg-rot", title: "Tudo o que já passou pela carteira, com proventos e vendas" }, "Desde o começo: "), "entrou ", el("b", {}, rs(t.pago)), " · tenho ou recebi ", el("b", {}, rs(t.hoje))), el("b", { class: "pg-v " + clsS(t.ganho) }, rsPc(t.ganho, t.pct))));
   /* por lote: só quando dá diferente do preço médio no que aparece (reais inteiros) */
   const f = r.fifo, re = r.realizado || { total: 0 };
   if (f && (Math.abs(f.aberto - r.aberto) >= 0.5 || Math.abs(f.realizado - re.total) >= 0.5))
@@ -6944,9 +7010,9 @@ function desenharPosicoes(box, j) {
   const busca = el("input", { class: "dd-input", type: "search", placeholder: "papel ou nome", "aria-label": "Buscar papel", autocomplete: "off" });
   busca.value = ctBusca;
   busca.addEventListener("input", () => { ctBusca = busca.value; pintar(); });
-  /* Preço médio | Por lote: muda Pago, Diferença e Com proventos (e o total); nas encerradas não aparece */
+  /* Preço médio | Por lote | Por corretora: muda Pago, Diferença e Com proventos (e o total); nas encerradas não aparece */
   const modo = el("div", { class: "seg ct-modo", role: "group", "aria-label": "Como contar o que foi pago" });
-  [["pm", "Preço médio"], ["lote", "Por lote"]].forEach(([id, n]) => {
+  [["pm", "Preço médio"], ["lote", "Por lote"], ["corretora", "Por corretora"]].forEach(([id, n]) => {
     const b = el("button", { type: "button", "aria-pressed": String(ctModo === id), "data-modo": id }, n);
     b.addEventListener("click", () => {
       if (ctModo === id) return;
@@ -6957,8 +7023,13 @@ function desenharPosicoes(box, j) {
     });
     modo.append(b);
   });
+  /* Com situações a conferir: só os papéis que têm alguma (abertos ou encerrados, conforme a vista) */
+  const nConf = fonte.filter((p) => (p.situacoes || []).length).length;
+  if (!nConf) ctConferir = false;
+  const bConf = el("button", { type: "button", class: "dd-btn dd-btn--outline ct-enc ct-conf-bt", "aria-pressed": String(ctConferir), title: "Só os papéis com alguma situação que muda a conta", ...(nConf ? {} : { disabled: "" }) }, "Com situações a conferir ", el("span", { class: "ct-n" }, String(nConf)));
+  bConf.addEventListener("click", () => { ctConferir = !ctConferir; bConf.setAttribute("aria-pressed", String(ctConferir)); pintar(); });
   c.append(el("div", { class: "ct-ferr" }, el("h3", {}, ctEnc ? "Encerradas" : "Posições"), seg,
-    el("label", {}, el("span", {}, "Corretora"), sel), bEnc, ctEnc ? null : modo, el("span", { class: "ct-esp", style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Buscar"), busca)));
+    el("label", {}, el("span", {}, "Corretora"), sel), bEnc, bConf, ctEnc ? null : modo, el("span", { class: "ct-esp", style: "flex:1 1 auto" }), el("label", {}, el("span", {}, "Buscar"), busca)));
   /* Pelos limites da pessoa: Todas | Passíveis de compra | Passíveis de venda (só nas abertas) */
   if (!ctEnc) {
     const sn = j.sinais || { compra: [], venda: [] }, L = limitesJ(j);
@@ -7291,9 +7362,10 @@ function linhasCt(j) {
   const q = semAcento(ctBusca.trim().toLowerCase());
   const passa = (p) => !q || semAcento((p.t + " " + (p.nome || "")).toLowerCase()).includes(q);
   const daClasse = (p) => ctFiltro === "todas" || p.classe === ctFiltro || (ctFiltro === "outros" && OUTRAS_CLASSES.has(p.classe));
-  if (ctEnc) return (j.resumo.encerradas || []).filter((e) => daClasse(e) && passa(e));
+  const conferir = (p) => !ctConferir || (p.situacoes || []).length > 0;
+  if (ctEnc) return (j.resumo.encerradas || []).filter((e) => daClasse(e) && passa(e) && conferir(e));
   const doLado = (p) => ctSinal === "todas" || (p.sinal && p.sinal.tipo === ctSinal);
-  return j.posicoes.filter((p) => daClasse(p) && (!ctCorretora || p.corretoras.includes(ctCorretora)) && passa(p) && doLado(p));
+  return j.posicoes.filter((p) => daClasse(p) && (!ctCorretora || p.corretoras.includes(ctCorretora)) && passa(p) && doLado(p) && conferir(p));
 }
 const COLS_ENC = [
   { id: "t", rotulo: "Papel", tipo: "texto", cls: "e", valor: (e) => e.t, obrigatoria: true },
@@ -7302,14 +7374,22 @@ const COLS_ENC = [
   { id: "recebido", rotulo: "Recebido na venda", tipo: "num", unidade: "R$", valor: (e) => e.recebido },
   { id: "resultado", rotulo: "Resultado", tipo: "num", unidade: "R$", valor: (e) => e.resultado },
   { id: "proventos", rotulo: "Proventos", tipo: "num", unidade: "R$", valor: (e) => e.proventos },
-  { id: "total", rotulo: "Total", tipo: "num", unidade: "R$", valor: (e) => e.total },
+  /* "Desde o começo": vendas e proventos contra o que foi pago, que nas encerradas é o resultado inteiro do papel */
+  { id: "total", rotulo: "Desde o começo", tipo: "num", unidade: "R$", valor: (e) => (e.geral ? e.geral.resultado : e.total) },
 ];
 // "Com proventos": a diferença de hoje mais tudo o que o papel já pagou. DY 12m: proventos de 12 meses sobre o valor de hoje.
-/* Na chave "Por lote", Pago é a soma dos lotes que sobram e a diferença sai deles (p.fifo); a conta é a mesma */
+/* Na chave "Por lote", Pago é a soma dos lotes que sobram e a diferença sai deles (p.fifo); a conta é a mesma.
+   Na "Por corretora", Pago é a soma do que cada corretora mostra (preço médio de cada custódia vezes as cotas dela). */
 const porLote = (p) => ctModo === "lote" && !!p.fifo;
-const custoPos = (p) => (porLote(p) ? p.fifo.custo : p.custo);
+const porCorrModo = (p) => ctModo === "corretora" && Array.isArray(p.porCorretora) && p.porCorretora.length > 0;
+const custoCorr = (p) => { const l = p.porCorretora.filter((x) => x.q > 0); return l.some((x) => x.custo == null) ? p.custo : l.reduce((s, x) => s + x.custo, 0); };
+const custoPos = (p) => (porLote(p) ? p.fifo.custo : porCorrModo(p) ? custoCorr(p) : p.custo);
 const difPos = (p) => (custoPos(p) == null ? null : p.valor - custoPos(p));
-const pctPos = (p) => (porLote(p) ? p.fifo.pct : p.resPct);
+const pctPos = (p) => (porLote(p) ? p.fifo.pct : porCorrModo(p) ? (custoPos(p) > 0 && !p.semCotacao ? (difPos(p) / custoPos(p)) * 100 : null) : p.resPct);
+const geralRs = (p) => (p.geral ? p.geral.resultado : null), geralPc = (p) => (p.geral ? p.geral.pct : null);
+/* Corretoras que entram nas linhas de baixo em "Por corretora": com cotas ou com resultado realizado */
+const linhasCorr = (p) => (p.porCorretora || []).filter((x) => x.q > 0 || Math.abs(x.realizado) >= 0.005);
+const expandeCorr = (p) => porCorrModo(p) && linhasCorr(p).length > 1;
 const comProvPos = (p) => (custoPos(p) == null ? null : p.valor - custoPos(p) + (p.proventos || 0));
 const dyPos = (p) => (p.valor > 0 && p.prov12 > 0 ? (p.prov12 / p.valor) * 100 : null);
 const pesoPos = (p) => (cartJ && cartJ.resumo.patrimonio > 0 ? (p.valor / cartJ.resumo.patrimonio) * 100 : null);
@@ -7324,6 +7404,10 @@ const COLS_POS = [
   /* Situação pelos limites da pessoa: sempre pelo preço médio (a chave Por lote não muda); ordena pela variação */
   { id: "situacao", rotulo: "Situação", tipo: "num", unidade: "%", cls: "e", valor: (p) => (p.sinal ? p.sinal.pct : null) },
   { id: "comProv", rotulo: "Com proventos", tipo: "num", unidade: "R$", valor: comProvPos },
+  /* Desde o começo: tudo o que já passou pelo papel (vendas, proventos e o valor de hoje contra o que foi pago); não
+     depende de preço médio, lote nem corretora */
+  { id: "geral", rotulo: "Desde o começo R$", tipo: "num", unidade: "R$", valor: geralRs },
+  { id: "geralPct", rotulo: "Desde o começo %", tipo: "num", unidade: "%", valor: geralPc },
   { id: "dy", rotulo: "DY 12m", tipo: "num", unidade: "%", valor: dyPos },
   { id: "pm", rotulo: "Preço médio", tipo: "num", unidade: "R$", valor: (p) => p.pm },
   { id: "preco", rotulo: "Preço atual", tipo: "num", unidade: "R$", valor: (p) => p.preco },
@@ -7333,12 +7417,12 @@ const COLS_POS = [
   { id: "peso", rotulo: "% da carteira", tipo: "num", unidade: "%", valor: pesoPos },
   { id: "emp", rotulo: "Emprestadas", tipo: "num", valor: (p) => p.emprestadas || null },
 ];
-const OCULTAS_POS = ["pm", "preco", "corretora", "seg", "prov12", "peso", "emp"];
+const OCULTAS_POS = ["pm", "preco", "corretora", "seg", "prov12", "peso", "emp", "geralPct"];
 function celulaPos(c, p) {
   const mono = (txt, cls) => el("td", { class: "mono" + (cls ? " " + cls : "") }, txt);
   if (c === "t") {
     const nome = nomeDoPapel(p);
-    const td = el("td", { class: "e" }, porLote(p) ? botaoLotes(p) : null, papelBtn(p.t, nome), nome ? el("span", { class: "ct-nome", title: nome }, nome) : null);
+    const td = el("td", { class: "e" }, porLote(p) ? botaoLotes(p) : null, papelBtn(p.t, nome), iconeSit(p), nome ? el("span", { class: "ct-nome", title: nome }, nome) : null);
     if (p.emprestadas) td.append(" ", tagEl("em empréstimo", "", `${qtd(p.emprestadas)} emprestadas; continuam suas`));
     if (p.semCotacao) td.append(" ", tagEl("sem cotação", "", "Fora das tabelas do pregão do Lookout; o valor usa o preço médio"));
     return td;
@@ -7351,6 +7435,8 @@ function celulaPos(c, p) {
   if (c === "dif") { const v = p.semCotacao ? null : difPos(p); return mono(v == null ? "–" : rsS(v), clsS(v)); }
   if (c === "resPct") { const v = p.semCotacao ? null : pctPos(p); return mono(pc(v, true), clsS(v)); }
   if (c === "comProv") { const v = comProvPos(p); return mono(v == null ? "–" : rsS(v), clsS(v)); }
+  if (c === "geral") { const v = geralRs(p); return mono(v == null ? "–" : rsS(v), clsS(v)); }
+  if (c === "geralPct") { const v = geralPc(p); return mono(pc(v, true), clsS(v)); }
   if (c === "dy") return mono(dyPos(p) == null ? "–" : pc(dyPos(p)));
   if (c === "pm") return mono(p.pm == null ? "–" : rs(p.pm, true));
   if (c === "preco") return mono(p.preco == null ? "–" : rs(p.preco, true));
@@ -7361,15 +7447,16 @@ function celulaPos(c, p) {
   return el("td", { class: "e" }, ...p.corretoras.map((x) => tagEl(x)));
 }
 function celulaEnc(c, e) {
-  if (c === "t") return el("td", { class: "e" }, papelBtn(e.t, e.nome));
+  if (c === "t") return el("td", { class: "e" }, papelBtn(e.t, e.nome), iconeSit(e));
+  if (c === "total") { const v = e.geral ? e.geral.resultado : e.total; return el("td", { class: "mono " + clsS(v) }, rsS(v)); }
   if (c === "ate") return el("td", { class: "mono" }, periodo(e.de, e.ate));
   if (c === "pago" || c === "recebido" || c === "proventos") return el("td", { class: "mono" }, rs(e[c]));
   return el("td", { class: "mono " + clsS(e[c]) }, rsS(e[c]));
 }
 function somaPos(ls) {
-  const s = { custo: 0, valor: 0, prov: 0, prov12: 0 };
-  for (const p of ls) { const c = custoPos(p); s.valor += p.valor; s.custo += c != null ? c : p.valor; s.prov += p.proventos || 0; s.prov12 += p.prov12 || 0; }
-  s.dif = s.valor - s.custo; s.pct = s.custo > 0 ? (s.dif / s.custo) * 100 : null; s.comProv = s.dif + s.prov;
+  const s = { custo: 0, valor: 0, prov: 0, prov12: 0, geral: 0, comprado: 0 };
+  for (const p of ls) { const c = custoPos(p); s.valor += p.valor; s.custo += c != null ? c : p.valor; s.prov += p.proventos || 0; s.prov12 += p.prov12 || 0; if (p.geral) { s.geral += p.geral.resultado; s.comprado += p.geral.comprado; } }
+  s.dif = s.valor - s.custo; s.pct = s.custo > 0 ? (s.dif / s.custo) * 100 : null; s.comProv = s.dif + s.prov; s.geralPct = s.comprado > 0 ? (s.geral / s.comprado) * 100 : null;
   return s;
 }
 function rodapePos(cols, ls) {
@@ -7382,6 +7469,8 @@ function rodapePos(cols, ls) {
     if (c.id === "dif") return td(rsS(s.dif), clsS(s.dif));
     if (c.id === "resPct") return td(pc(s.pct, true), clsS(s.pct));
     if (c.id === "comProv") return td(rsS(s.comProv), clsS(s.comProv));
+    if (c.id === "geral") return td(rsS(s.geral), clsS(s.geral));
+    if (c.id === "geralPct") return td(pc(s.geralPct, true), clsS(s.geralPct));
     if (c.id === "dy") return td(s.valor > 0 && s.prov12 > 0 ? pc((s.prov12 / s.valor) * 100) : "");
     if (c.id === "prov12") return td(rs(s.prov12));
     if (c.id === "peso") return td(pat > 0 ? pc((s.valor / pat) * 100) : "");
@@ -7390,7 +7479,7 @@ function rodapePos(cols, ls) {
 }
 function rodapeEnc(cols, ls) {
   const s = { pago: 0, recebido: 0, resultado: 0, proventos: 0, total: 0 };
-  for (const e of ls) for (const k of Object.keys(s)) s[k] += e[k] || 0;
+  for (const e of ls) for (const k of Object.keys(s)) s[k] += (k === "total" && e.geral ? e.geral.resultado : e[k]) || 0;
   return cols.map((c, i) => {
     if (i === 0) return el("td", { class: "e" }, `Total · ${ls.length}`);
     if (c.id === "pago" || c.id === "recebido" || c.id === "proventos") return el("td", { class: "mono" }, rs(s[c.id]));
@@ -7406,19 +7495,27 @@ function tabelaPosicoes(j) {
     total: enc ? (j.resumo.encerradas || []).length : j.posicoes.length, rotuloConta: enc ? "encerradas" : "posições",
     padrao: enc ? { ordem: [], filtros: {}, pagina: 1, porPagina: 25 } : { ordem: [{ c: "valor", d: -1 }], filtros: {}, pagina: 1, porPagina: 25, ocultas: OCULTAS_POS },
     celula: (c, x) => (enc ? celulaEnc(c.id, x) : celulaPos(c.id, x)), classeTabela: "ct-tab", classeCaixa: "ct-caixa",
-    depois: enc ? null : (p, cols) => (porLote(p) && ctLotesAbertos.has(p.t) ? el("tr", { class: "ct-lotes-tr" }, el("td", { colspan: String(cols.length) }, lotesEl(p))) : null),
+    depois: (p, cols) => {
+      const partes = [!enc && porLote(p) && ctLotesAbertos.has(p.t) ? lotesEl(p) : null, !enc && expandeCorr(p) ? corretorasEl(p) : null, ctSitAbertas.has(p.t) ? sitListaEl(p) : null].filter(Boolean);
+      return partes.length ? el("tr", { class: "ct-lotes-tr" }, el("td", { colspan: String(cols.length) }, ...partes)) : null;
+    },
     rodape: enc ? rodapeEnc : rodapePos,
     rodapeCel: enc
-      ? (ls) => { const s = ls.reduce((a, e) => ({ pago: a.pago + e.pago, total: a.total + e.total }), { pago: 0, total: 0 }); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length}`), el("span", { class: "ct-mono " + clsS(s.total) }, rsS(s.total)), el("small", {}, "pago " + rs(s.pago)), el("small", {})); }
-      : (ls) => { const s = somaPos(ls); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length} ${ls.length === 1 ? "papel" : "papéis"}`), el("span", { class: "ct-mono" }, rs(s.valor)), el("small", {}, `pago ${rs(s.custo)} · com proventos `, el("span", { class: clsS(s.comProv) }, rsS(s.comProv))), el("small", { class: "ct-mono " + clsS(s.dif) }, rsPc(s.dif, s.pct))); },
+      ? (ls) => { const s = ls.reduce((a, e) => ({ pago: a.pago + e.pago, total: a.total + (e.geral ? e.geral.resultado : e.total) }), { pago: 0, total: 0 }); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length}`), el("span", { class: "ct-mono " + clsS(s.total) }, rsS(s.total)), el("small", {}, "pago " + rs(s.pago)), el("small", {})); }
+      : (ls) => { const s = somaPos(ls); return el("div", { class: "ct-lin ct-lin-total" }, el("b", {}, `Total · ${ls.length} ${ls.length === 1 ? "papel" : "papéis"}`), el("span", { class: "ct-mono" }, rs(s.valor)), el("small", {}, `pago ${rs(s.custo)} · com proventos `, el("span", { class: clsS(s.comProv) }, rsS(s.comProv))), el("small", { class: "ct-mono " + clsS(s.dif) }, rsPc(s.dif, s.pct)), el("small", { class: "ct-geral-l" }, "desde o começo ", el("span", { class: "ct-mono " + clsS(s.geral) }, rsS(s.geral)))); },
     cel: enc
-      ? (e) => el("div", { class: "ct-lin" }, papelBtn(e.t, e.nome), el("span", { class: "ct-mono " + clsS(e.total) }, rsS(e.total)), el("small", {}, `${periodo(e.de, e.ate)} · pago ${rs(e.pago)} · recebido ${rs(e.recebido)} · proventos ${rs(e.proventos)}`), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)))
-      : (p) => el("div", { class: "ct-lin" }, el("span", {}, porLote(p) ? botaoLotes(p) : null, papelBtn(p.t, nomeDoPapel(p)), seloLimite(p.sinal, limitesJ(cartJ))), el("span", { class: "ct-mono" }, rs(p.valor)),
+      ? (e) => { const v = e.geral ? e.geral.resultado : e.total; return el("div", { class: "ct-lin" }, el("span", {}, papelBtn(e.t, e.nome), iconeSit(e)), el("span", { class: "ct-mono " + clsS(v) }, rsS(v)), el("small", {}, `${periodo(e.de, e.ate)} · pago ${rs(e.pago)} · recebido ${rs(e.recebido)} · proventos ${rs(e.proventos)}`), el("small", { class: "ct-mono " + clsS(e.resultado) }, rsS(e.resultado)),
+        ctSitAbertas.has(e.t) ? el("div", { class: "ct-lin-lotes" }, sitListaEl(e)) : null); }
+      : (p) => el("div", { class: "ct-lin" }, el("span", {}, porLote(p) ? botaoLotes(p) : null, papelBtn(p.t, nomeDoPapel(p)), iconeSit(p), seloLimite(p.sinal, limitesJ(cartJ))), el("span", { class: "ct-mono" }, rs(p.valor)),
         el("small", {}, `${qtd(p.q)} ${UNID_CLASSE(p.classe)} · pago ${custoPos(p) == null ? "–" : rs(custoPos(p))}${p.emprestadas ? " · em empréstimo" : ""}`), el("small", { class: "ct-mono " + clsS(difPos(p)) }, p.semCotacao ? "sem cotação" : rsPc(difPos(p), pctPos(p))),
+        p.geral ? el("small", { class: "ct-geral-l" }, "desde o começo ", el("span", { class: "ct-mono " + clsS(p.geral.resultado) }, rsS(p.geral.resultado))) : null,
         p.sinal && !p.sinal.tipo ? el("small", { class: "lim-falta", title: tituloFalta(p.sinal, limitesJ(cartJ)) }, faltaLimite(p.sinal)) : null,
-        porLote(p) && ctLotesAbertos.has(p.t) ? el("div", { class: "ct-lin-lotes" }, lotesEl(p)) : null),
+        ctSitAbertas.has(p.t) ? el("div", { class: "ct-lin-lotes" }, sitListaEl(p)) : null,
+        porLote(p) && ctLotesAbertos.has(p.t) ? el("div", { class: "ct-lin-lotes" }, lotesEl(p)) : null,
+        expandeCorr(p) ? el("div", { class: "ct-lin-lotes" }, corretorasEl(p)) : null),
     vazio: (comFiltro) => el("p", { class: "ct-nota" }, comFiltro ? "Nenhuma linha com esses filtros." : ctBusca ? "Nenhum papel com essa busca." : enc ? "Nenhuma posição encerrada." : "Nenhuma posição com esses filtros."),
     nota: () => el("span", {}, enc ? "Posições vendidas por inteiro: o que foi pago, o que voltou na venda, o resultado e os proventos que pagaram."
+      : ctModo === "corretora" ? "Por corretora: o que o app de cada corretora mostra. Para o imposto vale o preço médio de todas juntas. Desde o começo não muda com a chave: soma vendas, proventos e o valor de hoje contra tudo o que foi pago."
       : ctModo === "lote" ? "Por lote: cada compra é um lote e a venda baixa do mais antigo (FIFO). O preço médio é o que vale para o imposto. A seta ao lado do papel abre os lotes, cada um com a situação pelo preço dele. A Situação da posição segue o preço médio."
       : `Pago é o preço médio vezes a quantidade. Com proventos soma à diferença tudo o que o papel já pagou. Situação: passível de venda ou de compra pelo limite que você definiu (venda com +${limitesJ(cartJ).venda}%, compra com ${MENOS}${limitesJ(cartJ).compra}% sobre o preço médio). Clique no papel para abrir a ficha.`),
   });
@@ -7468,6 +7565,214 @@ function lotesEl(p) {
   if (!p.lotes.length) box.append(el("p", { class: "ct-nota" }, "Nenhum lote com quantidade."));
   return box;
 }
+/* ---- Conferência (pedido de 10/11): situações que mudam a conta, conta por corretora e ajustes da pessoa ----
+   A detecção e os textos são do Worker (src/carteira.js, calcular: p.situacoes [{ id, grave, texto, dados, ajuste? }],
+   p.porCorretora, j.ajustes). Aqui só o desenho: o ícone ao lado do papel (âmbar quando falta dado), a lista no toque,
+   as linhas por corretora, o bloco da janela do papel, o formulário do ajuste e o card Conferência da aba Mais. */
+const ICO_SIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.5h.01"/></svg>';
+const NOME_SIT = { "venda-sem-origem": "Venda sem origem", "quantidade-diverge": "Quantidade diferente da B3", "bonificacao-sem-custo": "Bonificação sem custo", transferencia: "Transferência entre corretoras", "varias-corretoras": "Mais de uma corretora", "evento-ignorado": "Linha que o cálculo não trata", "sem-cotacao": "Sem cotação", fracao: "Fração", subscricao: "Subscrição" };
+const ORDEM_SIT = Object.keys(NOME_SIT);
+const temGrave = (p) => (p.situacoes || []).some((x) => x.grave);
+function iconeSit(p) {
+  const l = p.situacoes || [];
+  if (!l.length) return null;
+  const g = temGrave(p), ab = ctSitAbertas.has(p.t), n = l.length;
+  const rot = `${n} ${n === 1 ? "situação" : "situações"} em ${p.t}${g ? ", com dado a completar" : ""}`;
+  const b = el("button", { type: "button", class: "cf-ico" + (g ? " grave" : ""), "data-sit": p.t, "aria-expanded": String(ab), "aria-label": (ab ? "Fechar " : "Ver ") + rot, title: l.map((x) => x.texto).join("\n"), html: ICO_SIT });
+  b.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (ctSitAbertas.has(p.t)) ctSitAbertas.delete(p.t); else ctSitAbertas.add(p.t);
+    if (ctTabAtual && ctTabAtual.vivo()) ctTabAtual.repintar();
+    const novo = [...document.querySelectorAll(`#ct-posicoes .cf-ico[data-sit="${p.t}"]`)].find((x) => x.offsetParent);
+    if (novo) novo.focus({ preventScroll: true });
+  });
+  return b;
+}
+/* A lista das situações de um papel, curta, com o link para a janela onde se completa o dado */
+function sitListaEl(p) {
+  const ul = el("ul", { class: "cf-lista", "aria-label": "Situações de " + p.t });
+  (p.situacoes || []).forEach((x) => ul.append(el("li", { class: x.grave ? "grave" : x.ajuste ? "ajustada" : "" }, x.texto)));
+  if (temGrave(p)) {
+    const b = el("button", { type: "button", class: "dd-btn dd-btn--link cf-abrir" }, "Completar na ficha do papel");
+    b.addEventListener("click", () => { ajForm = { t: p.t, i: (p.situacoes || []).findIndex((x) => x.grave) }; abrirDaCarteira(p.t); });
+    ul.append(el("li", { class: "cf-acao" }, b));
+  }
+  return ul;
+}
+/* Por corretora: uma linha por corretora (cotas, pago, preço médio, hoje, diferença e o que já realizou ali) */
+function corretorasEl(p) {
+  const box = el("div", { class: "ct-lotes ct-corr", role: "table", "aria-label": "Por corretora: " + p.t });
+  box.append(el("div", { class: "ct-lote cab", role: "row" }, ...["Corretora", "Cotas", "Pago", "Preço médio", "Hoje", "Diferença", "Realizado"].map((h) => el("span", { role: "columnheader" }, h))));
+  const rot = (t) => el("small", { class: "ct-rot" }, t);
+  linhasCorr(p).forEach((x) => {
+    const cls = x.q > 0 ? clsS(x.resultado) : clsS(x.realizado);
+    box.append(el("div", { class: "ct-lote " + (cls === "ct-pos" ? "ganha" : cls === "ct-neg" ? "perde" : ""), role: "row" },
+      el("span", { class: "ct-lote-d", role: "cell" }, el("i", { "aria-hidden": "true" }), el("b", {}, x.inst || "sem corretora"), x.q > 0 ? null : tagEl("zerada", "", "Sem cotas nesta corretora hoje")),
+      el("span", { class: "ct-mono", role: "cell" }, rot("Cotas"), qtd(x.q)),
+      el("span", { class: "ct-mono", role: "cell" }, rot("Pago"), x.q > 0 ? rs(x.custo) : "–"),
+      el("span", { class: "ct-mono", role: "cell" }, rot("Preço médio"), x.pm == null ? "–" : rs(x.pm, true)),
+      el("span", { class: "ct-mono", role: "cell" }, rot("Hoje"), x.q > 0 ? rs(x.valor) : "–"),
+      el("span", { class: "ct-mono " + clsS(x.resultado), role: "cell" }, rot("Diferença"), x.q > 0 && x.resultado != null ? rsS(x.resultado) : "–"),
+      el("span", { class: "ct-mono " + clsS(x.realizado), role: "cell" }, rot("Realizado"), Math.abs(x.realizado) >= 0.5 ? rsS(x.realizado) : "–")));
+  });
+  return box;
+}
+/* Os dois números do papel na janela: Agora (as cotas de hoje) e Desde o começo (tudo o que já passou por ele) */
+function blocosAgoraDesde(p, aberta) {
+  const lin = (rot, v, cls) => el("div", {}, el("dt", {}, rot), el("dd", { class: "ct-mono " + (cls || "") }, v));
+  const g = p.geral;
+  const desde = el("section", { class: "ag-bloco" }, el("h3", {}, "Desde o começo"), el("dl", {},
+    lin("Comprou", rs(g.comprado)), lin("Vendeu", rs(g.vendido)), lin("Proventos", rs(g.proventos)), lin("Vale hoje", rs(g.hoje)),
+    lin("Resultado", rsPc(g.resultado, g.pct), clsS(g.resultado))));
+  const blocos = [];
+  if (aberta) {
+    const dif = p.semCotacao || p.custo == null ? null : p.valor - p.custo;
+    blocos.push(el("section", { class: "ag-bloco" }, el("h3", {}, "Agora"), el("dl", {},
+      lin("Cotas", qtd(p.q)), lin("Pago", p.custo == null ? "–" : rs(p.custo)), lin("Hoje", rs(p.valor)),
+      lin("Diferença", dif == null ? "sem cotação" : rsPc(dif, p.resPct), clsS(dif)))));
+  }
+  blocos.push(desde);
+  const expl = aberta
+    ? `Agora conta só as ${qtd(p.q)} ${unidadeDe(p.classe, p.q)} que você tem e o que pagou por elas, pelo preço médio. Desde o começo soma tudo o que já passou pelo papel: o que voltou em vendas e proventos mais o valor de hoje, contra tudo o que foi pago. Esse não muda com preço médio, lote ou corretora.`
+    : "Você não tem mais o papel. Desde o começo soma o que voltou em vendas e proventos contra tudo o que foi pago.";
+  return [el("div", { class: "ag-blocos" }, ...blocos), el("p", { class: "nota ag-expl" }, expl)];
+}
+/* Formulário do ajuste: o que falta para a conta de hoje estar completa. Situação -> tipo de ajuste */
+let ajForm = null; // { t, i }: a situação com o formulário aberto na janela do papel
+const tipoAjuste = (x) => (x.id === "bonificacao-sem-custo" ? "custo-bonificacao" : x.id === "transferencia" ? "custo-transferencia" : "posicao-inicial");
+const BOTAO_AJ = { "custo-bonificacao": "Informar custo", "custo-transferencia": "Informar custo", "posicao-inicial": "Informar posição inicial" };
+const NOME_AJ = { "custo-bonificacao": "Custo da bonificação", "custo-transferencia": "Custo de cotas transferidas", "posicao-inicial": "Posição de antes do extrato" };
+function formAjuste(p, x, reabrir) {
+  const tipo = tipoAjuste(x), dd = x.dados || {}, id = "aj-" + p.t;
+  const f = el("form", { class: "aj-form", "aria-label": NOME_AJ[tipo] + " de " + p.t, novalidate: "" });
+  const campo = (sufixo, rot, inp, dica) => { inp.id = id + "-" + sufixo; return el("div", {}, el("label", { class: "rotulo", for: inp.id }, rot), inp, dica ? el("small", {}, dica) : null); };
+  const grade = el("div", { class: "aj-grade" });
+  const valor = Campo.ligar(el("input", { class: "dd-input", inputmode: "decimal", autocomplete: "off" }), { tipo: "moeda", casas: tipo === "custo-bonificacao" ? 4 : 2, min: 0.0001 });
+  let data = null, q = null, inst = null;
+  if (tipo === "posicao-inicial") {
+    data = Campo.ligar(el("input", { class: "dd-input", inputmode: "numeric", autocomplete: "off" }), { tipo: "data" });
+    q = Campo.ligar(el("input", { class: "dd-input", inputmode: "decimal", autocomplete: "off" }), { tipo: "numero", casas: 2, min: 0.01 });
+    if (dd.q) Campo.definir(q, dd.q);
+    const insts = [...new Set([dd.inst, ...(p.porCorretora || []).map((c) => c.inst)].filter(Boolean))];
+    inst = el("select", { class: "dd-input" }, ...insts.map((c) => el("option", { value: c }, c)));
+    grade.append(campo("d", "Data", data, "a primeira linha do papel no extrato ou antes"), campo("q", "Quantidade", q), campo("v", "Preço médio", valor), campo("i", "Corretora", inst));
+  } else grade.append(campo("v", tipo === "custo-bonificacao" ? "Custo por " + unidadeDe(p.classe, 1) : "Preço médio das que chegaram", valor, tipo === "custo-bonificacao" ? "o valor que a empresa informou no aviso da bonificação" : "o que você pagou na outra corretora"));
+  const nota = el("input", { class: "dd-input", maxlength: "140", autocomplete: "off" });
+  grade.append(campo("n", "Nota (opcional)", nota));
+  const status = el("p", { class: "nota", role: "status" });
+  const ok = el("button", { type: "submit", class: "dd-btn dd-btn--primary" }, "Salvar");
+  const can = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Cancelar");
+  can.addEventListener("click", () => { ajForm = null; reabrir(); });
+  f.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const corpo = { tipo, t: p.t, valor: Campo.valor(valor), nota: nota.value };
+    if (tipo === "posicao-inicial") Object.assign(corpo, { d: Campo.valor(data), q: Campo.valor(q), inst: inst.value });
+    else corpo.d = dd.d;
+    if (!(corpo.valor > 0)) { status.textContent = "Escreva um valor maior que zero."; valor.focus(); return; }
+    if (tipo === "posicao-inicial" && (!corpo.d || !(corpo.q > 0))) { status.textContent = "Preencha a data e a quantidade."; (corpo.d ? q : data).focus(); return; }
+    ok.disabled = true; status.textContent = "Salvando…";
+    try {
+      await apiCart("POST", "/ajustes", corpo);
+      ajForm = null; invalidarCarteira(); await lerCarteira(true);
+      if (inicio && carteiraVista && cartJ) desenharCarteira(cartJ);
+      reabrir();
+    } catch (err) { status.textContent = "Não deu para salvar: " + err.message; ok.disabled = false; }
+  });
+  f.append(grade, el("div", { class: "ct-acoes" }, ok, can), status);
+  return f;
+}
+/* "O que mexeu nesta posição" na janela do papel */
+function blocoSituacoes(p, reabrir) {
+  const l = p.situacoes || [];
+  if (!l.length) return null;
+  const sec = el("section", { class: "ativo-sec cf-bloco" }, el("h3", {}, "O que mexeu nesta posição"));
+  const ul = el("ul", { class: "cf-lista" });
+  l.forEach((x, i) => {
+    const li = el("li", { class: x.grave ? "grave" : x.ajuste ? "ajustada" : "" }, el("span", {}, x.texto));
+    if (x.grave) {
+      const ab = ajForm && ajForm.t === p.t && ajForm.i === i;
+      const b = el("button", { type: "button", class: "dd-btn dd-btn--link", "aria-expanded": String(!!ab) }, BOTAO_AJ[tipoAjuste(x)]);
+      b.addEventListener("click", () => { ajForm = ab ? null : { t: p.t, i }; reabrir(); });
+      li.append(" ", b);
+      if (ab) li.append(formAjuste(p, x, reabrir));
+    }
+    ul.append(li);
+  });
+  sec.append(ul);
+  if (l.some((x) => x.id === "varias-corretoras")) sec.append(el("p", { class: "nota" }, "O app de cada corretora mostra o preço médio só das cotas que estão nela. O Lookout junta as corretoras do seu CPF, que é a conta do imposto. Em Posições, a chave Por corretora mostra as duas contas."));
+  return sec;
+}
+function blocosCarteiraAtivo(x, aba, ficha) {
+  if (x.us || ABAS_EUA.has(aba) || !cartJ || cartJ.vazia || !Array.isArray(cartJ.posicoes)) return [];
+  const aberta = cartJ.posicoes.find((q) => q.t === x.t);
+  const p = aberta || ((cartJ.resumo && cartJ.resumo.encerradas) || []).find((q) => q.t === x.t);
+  if (!p || !p.geral) return [];
+  const reabrir = () => { const dd = $("ativo-dlg"); if (dd && dd.open && dd.dataset.papel === x.t) abrirAtivo(x, aba, ficha && ficha.carregando ? undefined : ficha); };
+  return [...blocosAgoraDesde(p, !!aberta), blocoSituacoes(p, reabrir)].filter(Boolean);
+}
+/* Card Conferência (aba Mais): o resumo, as situações agrupadas por tipo, os ajustes feitos e por que o número pode
+   diferir do app da corretora */
+let ctIrConf = false, ajExcluir = null;
+function cardConferencia(j) {
+  const r = j.resumo, cf = r.conferencia;
+  if (!cf) return null;
+  const todos = [...j.posicoes, ...(r.encerradas || [])];
+  const c = cardEl("Conferência", { id: "ct-conferencia", sub: cf.papeis ? `${cf.papeis} ${cf.papeis === 1 ? "papel com situação" : "papéis com situação"} · ${cf.graves} a completar` : "nenhuma situação" });
+  c.append(el("p", { class: "ct-nota" }, "O que muda a conta de cada papel: corretoras diferentes, transferência, bonificação, venda de cotas de antes do extrato. Nas marcadas em âmbar falta um dado que o extrato não traz; você completa na ficha do papel."));
+  const porTipo = new Map();
+  todos.forEach((p) => (p.situacoes || []).forEach((x) => { if (!porTipo.has(x.id)) porTipo.set(x.id, []); porTipo.get(x.id).push([p, x]); }));
+  ORDEM_SIT.filter((k) => porTipo.has(k)).forEach((k) => {
+    const l = porTipo.get(k), graves = l.filter(([, x]) => x.grave).length;
+    const det = el("details", { class: "cf-grupo", ...(graves ? { open: "" } : {}) }, el("summary", {}, NOME_SIT[k], el("span", { class: "ct-n" }, " " + l.length), graves ? tagEl(graves + " a completar", "warn") : null));
+    const ul = el("ul", { class: "cf-lista" });
+    l.forEach(([p, x]) => {
+      const li = el("li", { class: x.grave ? "grave" : x.ajuste ? "ajustada" : "" }, papelBtn(p.t, nomeDoPapel(p)), " ", el("span", {}, x.texto));
+      if (x.grave) {
+        const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, BOTAO_AJ[tipoAjuste(x)]);
+        b.addEventListener("click", () => { ajForm = { t: p.t, i: p.situacoes.indexOf(x) }; abrirDaCarteira(p.t); });
+        li.append(" ", b);
+      }
+      ul.append(li);
+    });
+    det.append(ul);
+    c.append(det);
+  });
+  /* ajustes feitos, com excluir confirmado aqui mesmo */
+  const aj = j.ajustes || [];
+  c.append(el("h4", { class: "cf-sub" }, "Dados que você completou", el("span", { class: "ct-n" }, " " + aj.length)));
+  if (!aj.length) c.append(el("p", { class: "ct-nota" }, "Nenhum ainda."));
+  else {
+    const ul = el("ul", { class: "cf-ajustes" });
+    aj.slice().sort((a, b) => (a.criado < b.criado ? 1 : -1)).forEach((a) => {
+      const txt = a.tipo === "posicao-inicial" ? `${qtd(a.q)} a ${rs(a.valor, true)} em ${dataBr(a.d)}${a.inst ? " na " + a.inst : ""}` : `${rs(a.valor, true)} por ${a.tipo === "custo-bonificacao" ? "cota bonificada" : "cota"}, linha de ${dataBr(a.d)}`;
+      const li = el("li", {}, el("span", {}, papelBtn(a.t), " ", el("b", {}, NOME_AJ[a.tipo]), " · " + txt, a.nota ? el("small", {}, " · " + a.nota) : null, a.aplicado ? null : el("small", { class: "ct-aviso" }, " · sem efeito: a linha do extrato não está mais lá")));
+      if (ajExcluir === a.id) {
+        const sim = el("button", { type: "button", class: "dd-btn dd-btn--perigo" }, "Excluir");
+        const nao = el("button", { type: "button", class: "dd-btn dd-btn--outline" }, "Manter");
+        const st = el("span", { class: "ct-nota", role: "status" });
+        nao.addEventListener("click", () => { ajExcluir = null; desenharCarteira(cartJ); });
+        sim.addEventListener("click", async () => {
+          sim.disabled = true; st.textContent = "Excluindo…";
+          try { await apiCart("DELETE", "/ajustes/" + encodeURIComponent(a.id)); ajExcluir = null; invalidarCarteira(); await lerCarteira(true); desenharCarteira(cartJ); const k = $("ct-conferencia"); if (k) k.focus({ preventScroll: true }); }
+          catch (e) { st.textContent = "Não deu para excluir: " + e.message; sim.disabled = false; }
+        });
+        li.append(el("span", { class: "cf-conf", role: "group", "aria-label": "Confirmar exclusão" }, el("span", {}, "A conta volta ao que o extrato diz."), sim, nao, st));
+        requestAnimationFrame(() => nao.focus({ preventScroll: true }));
+      } else {
+        const b = el("button", { type: "button", class: "dd-btn dd-btn--link" }, "Excluir");
+        b.addEventListener("click", () => { ajExcluir = a.id; desenharCarteira(cartJ); });
+        li.append(b);
+      }
+      ul.append(li);
+    });
+    c.append(ul);
+  }
+  c.append(el("h4", { class: "cf-sub" }, "Por que o número pode ser diferente do app da corretora"),
+    el("p", { class: "ct-nota" }, "O app de cada corretora calcula o preço médio só com as cotas que passaram por ela. O Lookout junta todas as corretoras do seu CPF, que é a regra da Receita. O total ganho ou perdido é o mesmo nas duas contas; muda quanto aparece como realizado e quanto aparece em aberto. Em Posições, a chave Por corretora mostra a conta de cada uma, e a coluna Desde o começo não depende de nenhuma das duas."));
+  c.tabIndex = -1;
+  return c;
+}
+
 /* Vendas: cada venda (parcial ou a que encerrou o papel), da mais recente, com o resultado pelo preço médio e pelo lote */
 function vendasDe(j) {
   const l = [];
@@ -7590,6 +7895,28 @@ const NOME_AREC = { rendimento: "Rendimento", dividendo: "Dividendo", jcp: "JCP"
 const porCotaTxt = (v) => "R$\u00a0" + Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 const dataAr = (d, hoje) => (d.slice(0, 4) === String(hoje || "").slice(0, 4) ? ddmm(d) : ddmm(d) + "/" + d.slice(0, 4));
 const somaV = (l) => l.reduce((s, x) => s + (x.valor || 0), 0);
+/* Soma do A receber: o que a B3 já provisionou (sem o que fica mais adiante) e a estimativa pela CVM, sempre separados;
+   noMes é a parte da B3 com data neste mês */
+function somaAReceber(l, hoje) {
+  const mes = String(hoje || "").slice(0, 7);
+  const b3 = (l || []).filter((x) => x.origem === "b3" && !x.adiante), est = (l || []).filter((x) => x.origem !== "b3");
+  return { b3: somaV(b3), est: somaV(est), noMes: somaV(b3.filter((x) => x.data && x.data.slice(0, 7) === mes)), nB3: b3.length, nEst: est.length };
+}
+/* O total em destaque no topo do card A receber */
+function topoAReceber(r) {
+  const sm = somaAReceber(r.aReceber, r.hoje);
+  if (!sm.nB3 && !sm.nEst) return null;
+  const big = sm.nB3 ? el("span", { class: "ar-big" }, el("b", { class: "ct-mono" }, rs(sm.b3, true)), el("small", {}, " pela B3")) : el("span", { class: "ar-big" }, el("b", { class: "ct-mono" }, "≈ " + rs(sm.est, true)), el("small", {}, " estimados"));
+  return el("div", { class: "ar-topo" }, el("div", {}, big, sm.nB3 && sm.nEst ? el("small", { class: "ar-est" }, "+ ≈ " + rs(sm.est, true) + " estimados") : null),
+    sm.noMes > 0.004 ? el("span", { class: "ar-mes" }, el("b", { class: "ct-mono" }, rs(sm.noMes, true)), " ainda em " + mesNome(r.hoje.slice(0, 7))) : null);
+}
+/* Linha de total no rodapé das listas resumidas (Agenda e widget): B3 e estimativa separadas */
+function linhaTotAReceber(r, rot) {
+  const sm = somaAReceber(r.aReceber, r.hoje);
+  if (!sm.nB3 && !sm.nEst) return null;
+  const v = (sm.nB3 ? rs(sm.b3, true) : "") + (sm.nB3 && sm.nEst ? " + " : "") + (sm.nEst ? "≈ " + rs(sm.est, true) : "");
+  return el("div", { class: "ct-linhas ar-tot" }, linhaEl(rot, v));
+}
 function linhaAr(x, hoje, curta) {
   const det = NOME_AREC[x.tipo] || "Rendimento";
   return el("div", {}, el("span", {}, el("span", { class: "ar-d" }, dataAr(x.data, hoje)), papelBtn(x.t), el("small", {}, " " + det + (!curta && x.porCota != null ? " · " + porCotaTxt(x.porCota) + "\u00a0por\u00a0cota" : ""))),
@@ -7614,7 +7941,7 @@ function agendaEl(r, n) {
   const notas = [];
   if (rt) notas.push(`Datas e valores do relatório Proventos a Receber da B3, retrato de ${ddmm(rt.dataRef)}.` + (rt.velho ? " O retrato tem mais de 45 dias: importe de novo." : ""));
   if (temEst) notas.push((rt ? "Os sem data são" : "Rendimentos") + " estimados pelo último informe da CVM vezes a sua quantidade. A CVM não traz a data de pagamento, então ela fica a confirmar.");
-  return [el("div", { class: "ct-linhas" }, ...l.map(linha)), grupoAdiante(adiante, r.hoje, true), ...notas.map((t) => el("p", { class: "ct-nota" }, t))].filter(Boolean);
+  return [el("div", { class: "ct-linhas" }, ...l.map(linha)), grupoAdiante(adiante, r.hoje, true), linhaTotAReceber(r, "a receber"), ...notas.map((t) => el("p", { class: "ct-nota" }, t))].filter(Boolean);
 }
 function rentabEl(r) {
   const x = r.rentabilidade;
@@ -7755,13 +8082,10 @@ function aReceberEl(r, j) {
     out.push(el("p", { class: "ct-nota" }, `O que a B3 já provisionou, pelo relatório Proventos a Receber de ${ddmm(rt.dataRef)}. O pagamento que já passou sai daqui e entra nos proventos recebidos na próxima importação do extrato.`));
     if (rt.velho) out.push(el("p", { class: "ct-nota ct-aviso", role: "note" }, `Retrato de ${ddmm(rt.dataRef)}, importe de novo.`));
   }
-  if (perto.length) {
-    const noMes = perto.filter((x) => x.data.slice(0, 7) === mes);
-    out.push(el("div", { class: "ct-linhas" }, ...perto.map((x) => linhaAr(x, r.hoje))));
-    out.push(el("div", { class: "ct-linhas ar-tot" },
-      noMes.length && noMes.length < perto.length ? linhaEl("Ainda em " + mesNome(mes), rs(somaV(noMes), true)) : null,
-      linhaEl(longe.length ? "Total, sem o que fica mais adiante" : "Total", rs(somaV(perto), true))));
-  } else if (rt) out.push(el("p", { class: "ct-nota" }, "Nada com data de hoje em diante no retrato."));
+  const topo = topoAReceber(r);
+  if (topo) out.unshift(topo);
+  if (perto.length) out.push(el("div", { class: "ct-linhas" }, ...perto.map((x) => linhaAr(x, r.hoje))));
+  else if (rt) out.push(el("p", { class: "ct-nota" }, "Nada com data de hoje em diante no retrato."));
   const ga = grupoAdiante(longe, r.hoje); if (ga) out.push(ga);
   if (est.length) {
     const ref = j.cotacoes && j.cotacoes.cvm;
@@ -8255,6 +8579,8 @@ function desenharMais(box, j) {
   if (j && j.desligada) esq.append(estadoCarteira(j)); else esq.append(solta);
   if (imp.erro) esq.append(el("p", { class: "ct-nota ct-neg", role: "alert" }, imp.erro));
   if (imp.fase !== "inicio") esq.append(previaImportacao());
+  const cardConf = j && !j.vazia && j.resumo ? cardConferencia(j) : null;
+  if (cardConf) esq.append(cardConf);
   // Importações anteriores
   const ant = cardEl("Importações anteriores");
   const lista = (j && j.importacoes) || [];
@@ -8316,6 +8642,8 @@ function desenharMais(box, j) {
   dir.append(passos, como, priv, apagar);
   dois.append(esq, dir);
   box.append(dois);
+  /* veio do alerta da Visão geral: rola até a Conferência depois que a página volta ao topo */
+  if (ctIrConf && cardConf) { ctIrConf = false; requestAnimationFrame(() => requestAnimationFrame(() => { cardConf.scrollIntoView({ block: "start" }); cardConf.focus({ preventScroll: true }); })); }
 }
 /* Retrato dos proventos a receber na prévia: substitui, igual ao guardado ou recusado por ser mais antigo */
 function statusRetrato(rt) {
@@ -8339,12 +8667,12 @@ function previaImportacao() {
     else if (r.novos) { st = `${fmtNum(r.novos, 0)} novos`; cls = "ct-pos"; novos += r.novos; }
     else { st = `${fmtNum(r.repetidos, 0)} já estavam · nada novo`; cls = "ct-aviso"; }
     const det = [];
-    let aviso = null;
+    let aviso = null, totPrev = null;
     if (r && r.retrato) {
       const rt = r.retrato;
       det.push(`retrato de ${ddmm(rt.dataRef)}`, `${fmtNum(r.linhas, 0)} ${r.linhas === 1 ? "pagamento previsto" : "pagamentos previstos"}`);
       if (r.de) det.push(r.de === r.ate ? ddmm(r.de) : `${dataAr(r.de, rt.dataRef)} a ${dataAr(r.ate, rt.dataRef)}`);
-      if (rt.confere === true) det.push(`soma ${rs(rt.total, true)}, igual ao Total líquido`);
+      totPrev = { v: rt.total, ok: rt.confere };
       if (rt.confere === false) aviso = `A soma das linhas (${rs(rt.total, true)}) não bate com o Total líquido do arquivo (${rs(rt.totalArquivo, true)}). Confira se o arquivo veio inteiro.`;
       if (rt.tipos && rt.tipos.outro) det.push(`${rt.tipos.outro} de tipo que o Lookout não separa (entra como outro evento)`);
       if (r.ignorados) det.push(`${fmtNum(r.ignorados, 0)} fora (código fora do padrão)`);
@@ -8357,6 +8685,7 @@ function previaImportacao() {
       if (tn.length) det.push("tipos que o Lookout ainda não conhece: " + tn.map(([k, n]) => `${k} (${n})`).join(", "));
     }
     l.append(el("div", { class: "ct-arq" }, tagEl(a.tipo ? NOME_TIPO_ARQ[a.tipo] : "?"), el("span", { class: "n", title: a.nome }, a.nome), el("span", { class: "st " + cls }, st), el("span", { class: "d" }, det.join(" · ")),
+      totPrev ? el("span", { class: "d ar-prev-tot" }, "Total ", el("b", { class: "ct-mono" }, rs(totPrev.v, true)), totPrev.ok === true ? " · igual ao Total líquido do arquivo" : "") : null,
       aviso ? el("span", { class: "d ct-aviso", role: "note" }, aviso) : null));
   });
   c.append(l);
@@ -8412,6 +8741,7 @@ corpos["carteira-pagamentos"] = (j, fm = { r: 1 }) => {
   if (!l.length) return [vazioW(todos.length ? "Nada nos próximos 12 meses." : "Nada a receber pelo que o Lookout conhece agora.")];
   const out = [el("div", { class: "ct-linhas" }, ...l.map((x) => (x.data ? linhaAr(x, r.hoje, true)
     : el("div", {}, el("span", {}, papelBtn(x.t), el("small", {}, " data a confirmar")), el("span", { class: "ct-mono" }, "≈ " + rs(x.valor, x.valor < 100))))))];
+  const tot = linhaTotAReceber(r, "Total"); if (tot) out.push(tot);
   if (r.retrato) out.push(el("span", { class: "ct-nota" + (r.retrato.velho ? " ct-aviso" : ""), style: "font-size:12px" }, r.retrato.velho ? `Retrato de ${ddmm(r.retrato.dataRef)}, importe de novo.` : `Pela B3, retrato de ${ddmm(r.retrato.dataRef)}.`));
   return out;
 };

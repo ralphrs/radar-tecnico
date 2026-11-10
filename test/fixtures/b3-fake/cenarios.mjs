@@ -57,6 +57,9 @@ export const PAPEIS = {
   NVDC34: { nome: "NVIDIA CORP DRN", ini: 6, vol: 0.08, min: 3, max: 25, drift: 0.03 },
   IFRA11: { nome: "BTG PACTUAL FI-INFRA CI", ini: 105, vol: 0.02, min: 85, max: 115 },
   KNCA11: { nome: "KINEA CREDITO AGRO FIAGRO-IMOBILIARIO", ini: 100, vol: 0.02, min: 85, max: 110 },
+  // cenários 16 e 17 (versão 1.2.0): preços sempre escritos no roteiro, o passeio só existe para o gerador não reclamar
+  EGIE3: { nome: "ENGIE BRASIL ENERGIA S.A.", ini: 40, vol: 0.03, min: 30, max: 50 },
+  WEGE3: { nome: "WEG S.A.", ini: 38, vol: 0.04, min: 25, max: 55 },
 };
 
 // Cotação e classe de 04/11/2026 (meta/b3 e meta/fii-resumo de produção), só dos papéis usados: o README e o teste
@@ -64,7 +67,8 @@ export const PAPEIS = {
 export const REF = {
   b3: {
     atualizado: "2026-11-04T14:05:26.416Z",
-    acoes: [["PETR4", 49.88], ["VALE3", 61.67], ["MGLU3", 5.35], ["ITSA4", 12.72], ["B3SA3", 13.95], ["BBAS3", 16.53], ["BBSE3", 39.58]],
+    // EGIE3 e WEGE3 (cenários 16 e 17) com cotação inventada, fixa aqui como as outras
+    acoes: [["PETR4", 49.88], ["VALE3", 61.67], ["MGLU3", 5.35], ["ITSA4", 12.72], ["B3SA3", 13.95], ["BBAS3", 16.53], ["BBSE3", 39.58], ["EGIE3", 36.4], ["WEGE3", 41.2]],
     fiis: [["KNIP11", 84.16], ["VILG11", 86.83], ["XPML11", 94.5], ["TRXF11", 62.85]],
     fiinfra: [["IFRA11", 83.38]],
     fiagro: [["KNCA11", 83.45]],
@@ -296,16 +300,46 @@ export const CENARIOS = [
       c.prov("2028-04-28", "ITSA4", "div", 0.04, { aviso: 900 });
     },
   },
+  {
+    id: 16, titulo: "Três corretoras: compra numa, giro noutra, portabilidade e bonificação com fração", papeis: ["EGIE3"],
+    testa: "102 ações compradas no Inter em 2021 e nunca vendidas; 1.147 compradas e vendidas na Nu Invest a preços menores; em ago/2023 as 102 saem do Inter numa segunda e chegam na Rico dois dias úteis depois (portabilidade em dias diferentes: casa como transferência, não é retirada); bonificação de 10,2 em 29/12/2025 (10 inteiras e 0,2 de fração, leiloada em jan/2026). A conta por corretora da Rico é a que o app dela mostra; a de todas juntas, a da Receita.",
+    espera: "EGIE3 aberta com 112 ações, só na Rico. Em Posições › Por corretora: Rico com 112 e o preço médio daquela custódia (mais alto que o de todas juntas), Nu Invest zerada com o realizado dela e Inter zerada. Situações: várias corretoras, transferência, bonificação sem custo (dado a completar) e fração.",
+    roteiro(c) {
+      c.compra("2021-03-10", "EGIE3", 102, INTER, { preco: 42 });
+      c.compra("2021-06-09", "EGIE3", 600, NU, { preco: 36.5 });
+      c.compra("2021-09-15", "EGIE3", 547, NU, { preco: 35.2 });
+      c.venda("2022-02-09", "EGIE3", 1147, NU, { preco: 33.9 });
+      c.mov("2023-08-14", "D", "Transferência", "EGIE3", 102, null, INTER, { dq: -102 });
+      c.mov("2023-08-16", "C", "Transferência", "EGIE3", 102, null, RICO, { dq: 102 });
+      c.mov("2025-12-29", "C", "Bonificação em Ativos", "EGIE3", 10, null, RICO, { dq: 10 });
+      c.mov("2025-12-29", "C", "Fração em Ativos", "EGIE3", 0.2, null, RICO);
+      c.mov("2026-01-20", "D", "Fração em Ativos", "EGIE3", 0.2, null, RICO);
+      c.mov("2026-01-20", "C", "Leilão de Fração", "EGIE3", 0.2, 37.15, RICO);
+    },
+  },
+  {
+    id: 17, titulo: "Venda sem origem: ações compradas antes do período do extrato", papeis: ["WEGE3"],
+    testa: "O extrato traz 30 ações compradas na XP em abr/2024 e a venda de 50 em mai/2025: 20 vieram de antes do período exportado. As linhas vão cruas (o gerador não deixa a quantidade ficar negativa). A quantidade dá negativa (aviso) e o papel fica encerrado com a situação 'venda sem origem', que a pessoa resolve informando a posição inicial.",
+    espera: "WEGE3 em Encerradas com a situação venda sem origem (20 ações, dado a completar); o aviso de quantidade negativa aparece uma vez.",
+    roteiro(c) {
+      const prod = "WEGE3 - " + PAPEIS.WEGE3.nome;
+      c.crua("negociacao", ["2024-04-10", "Compra", "Mercado à Vista", "-", XP, "WEGE3", 30, 38, 1140]);
+      c.crua("movimentacao", ["Credito", "2024-04-12", "Transferência - Liquidação", prod, XP, 30, 38, 1140]);
+      c.crua("negociacao", ["2025-05-14", "Venda", "Mercado à Vista", "-", XP, "WEGE3", 50, 45, 2250]);
+      c.crua("movimentacao", ["Debito", "2025-05-16", "Transferência - Liquidação", prod, XP, 50, 45, 2250]);
+    },
+  },
 ];
 
 // O que o README promete e o teste confere (independe da semente). Vale para --ate de 2026-10-13 a 2026-12-12
 // (empréstimo nos últimos 60 dias, rendimento menor nos últimos 45); fora disso só emprestadas e o alerta mudam.
 export const ESPERADO = {
-  abertas: ["AAPL34", "B3SA3", "BBAS3", "BBSE3", "BOVA11", "IFRA11", "ITSA4", "IVVB11", "KNCA11", "KNIP11", "NVDC34", "PETR4", "TRXF11", "VILG11", "XPML11", "XPTO3"],
-  encerradas: ["MGLU3", "VALE3"],
+  abertas: ["AAPL34", "B3SA3", "BBAS3", "BBSE3", "BOVA11", "EGIE3", "IFRA11", "ITSA4", "IVVB11", "KNCA11", "KNIP11", "NVDC34", "PETR4", "TRXF11", "VILG11", "XPML11", "XPTO3"],
+  encerradas: ["MGLU3", "VALE3", "WEGE3"],
   semCotacao: ["XPTO3"],
-  quantidade: { ITSA4: 4400, B3SA3: 159, BBAS3: 200, XPML11: 150 },
-  corretoras: { XPML11: ["XP"], VILG11: ["Rico"], BOVA11: ["Nu Invest"], AAPL34: ["Inter"] },
+  quantidade: { ITSA4: 4400, B3SA3: 159, BBAS3: 200, XPML11: 150, EGIE3: 112 },
+  corretoras: { XPML11: ["XP"], VILG11: ["Rico"], BOVA11: ["Nu Invest"], AAPL34: ["Inter"], EGIE3: ["Rico"] },
+  avisos: [{ k: "negativa", n: 1 }], // WEGE3, cenário 17
   classes: { IFRA11: "fiinfra", KNCA11: "fiagro", BOVA11: "etf", IVVB11: "etf", AAPL34: "bdr", NVDC34: "bdr", KNIP11: "fii", PETR4: "acao" },
   emprestadas: { VILG11: 30 },
   rendimentoMenor: ["KNIP11"],
@@ -325,4 +359,20 @@ export const ESPERADO_ARECEBER = {
   foraDoRetrato: ["TRXF11"],
   estimativa: [],
   tipos: { BBAS3: "jcp", PETR4: "dividendo", AAPL34: "dividendo", KNIP11: "rendimento", ITSA4: "dividendo" },
+};
+
+// Conferência (cenários 16 e 17, versão 1.2.0), com --ate 04/11/2026: situações por papel e a conta por corretora.
+// EGIE3 na Rico: 4.284 das 102 (a R$ 42), bonificação a zero, menos 0,2 de fração pelo preço médio da Rico.
+export const ESPERADO_CONFERENCIA = {
+  situacoes: {
+    EGIE3: ["bonificacao-sem-custo", "transferencia", "varias-corretoras", "fracao"],
+    WEGE3: ["venda-sem-origem"],
+    ITSA4: ["bonificacao-sem-custo"],
+    B3SA3: ["bonificacao-sem-custo", "fracao"],
+    XPML11: ["transferencia"],
+    XPTO3: ["sem-cotacao"],
+  },
+  graves: 4, // EGIE3, WEGE3, ITSA4 e B3SA3
+  porCorretora: { EGIE3: { Rico: { q: 112, custo: 4276.36 }, "Nu Invest": { q: 0, realizado: 1147 * 33.9 - (600 * 36.5 + 547 * 35.2) }, Inter: { q: 0, realizado: 0 } } },
+  vendaSemOrigem: { WEGE3: 20 },
 };

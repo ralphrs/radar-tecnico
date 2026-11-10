@@ -256,3 +256,26 @@ test("reembolso sem quantidade (\"-\" no relatório): a linha entra pelo valor l
   assert.equal(r.linha.q, null); assert.equal(r.linha.valor, 15.13); assert.equal(r.linha.tipo, "reembolso"); assert.equal(r.linha.d, "2026-12-31");
   assert.equal(normalizarAReceber(["ABCD3 - EMPRESA ABCD S.A.", "DIVIDENDO", "31/12/2026", "XP", "-5", 0.14, 15.13]).erro, "numero");
 });
+
+// Soma do A receber (pedido de 10/11): o total da B3 e o da estimativa nunca se misturam, o que fica mais adiante sai
+// da soma e "ainda neste mês" é só a parte da B3 com data no mês
+test("soma do A receber: B3 e estimativa separadas, sem o que fica mais adiante", () => {
+  const { somaAReceber } = new Function(`${trecho("const somaV = ", "\n")}\n${trecho("function somaAReceber(", "\n}\n")}\n}\nreturn { somaAReceber };`)();
+  const l = [
+    { t: "QRST11", origem: "b3", data: "2026-11-13", valor: 104.5 },
+    { t: "EFGH4", origem: "b3", data: "2026-11-28", valor: 66.9 },
+    { t: "ABCD3", origem: "b3", data: "2026-12-15", valor: 31 },
+    { t: "ABCD3", origem: "b3", data: "2028-03-10", valor: 52.5, adiante: true },
+    { t: "UVWX11", origem: "estimativa", data: null, valor: 9 },
+  ];
+  const s = somaAReceber(l, "2026-11-10");
+  perto(s.b3, 202.4); perto(s.est, 9); perto(s.noMes, 171.4);
+  assert.equal(s.nB3, 3); assert.equal(s.nEst, 1);
+  const so = somaAReceber(l.filter((x) => x.origem !== "b3"), "2026-11-10");
+  assert.deepEqual([so.b3, so.est, so.noMes], [0, 9, 0]);
+  // e o cálculo do Worker manda as duas origens marcadas, para a página somar separado
+  const c = calcCom(retratoFixo("proventos-a-receber-2026-11-10.xlsx"));
+  const sc = somaAReceber(c.resumo.aReceber, HOJE);
+  perto(sc.b3 + sc.est, c.resumo.aReceber.filter((x) => !x.adiante).reduce((a, x) => a + x.valor, 0));
+  perto(sc.b3, c.resumo.aReceber.filter((x) => x.origem === "b3" && !x.adiante).reduce((a, x) => a + x.valor, 0));
+});

@@ -10,6 +10,23 @@ A versão fica em `VERSAO` e vai para o `manifesto.json` de cada geração. Regr
 
 Em cada entrada: o que mudou, quais cenários e o que fazer na conta de teste.
 
+## 1.2.0 (10/11/2026)
+
+Cenários 16 e 17, para a Conferência da carteira. Só acrescenta: nenhuma linha dos arquivos de antes muda, e o
+retrato dos proventos a receber é o mesmo (os papéis novos não pagam provento).
+
+- 16, EGIE3 em três corretoras: 102 compradas no Inter (R$ 42), 1.147 compradas e vendidas na Nu Invest, portabilidade
+  Inter → Rico em 14/08/2023 e 16/08/2023 (dias diferentes), bonificação de 10 + 0,2 de fração em 29/12/2025 e leilão da
+  fração em 20/01/2026. Rico fica com 112 ações, custo R$ 4.276,36.
+- 17, WEGE3, venda sem origem: 30 compradas em 2024 e 50 vendidas em 2025 (linhas cruas). Fica em Encerradas e dá o
+  aviso de quantidade negativa, uma vez.
+- O que muda na conta de teste: 17 posições abertas (EGIE3) e 3 encerradas (WEGE3), patrimônio e totais com os dois
+  papéis, 4 papéis com dado a completar (EGIE3, WEGE3, ITSA4 e B3SA3) e o alerta de conferência. Os números de antes
+  em `test/b3-fake.test.mjs` não mudaram; o teste de "nenhum aviso" passou a esperar o aviso de WEGE3 (`ESPERADO.avisos`)
+  e o de por lote ganhou EGIE3 na exceção da fração, como B3SA3.
+- `cenarios.mjs`: `REF` com a cotação inventada de EGIE3 e WEGE3, `ESPERADO` atualizado e `ESPERADO_CONFERENCIA`.
+- Na conta de teste: gerar a correção (`--diff` com o manifesto da última importação) e importar os `correcao-*.xlsx`.
+
 ## 1.1.0 (10/11/2026)
 
 Cenário 15, Proventos a Receber. Só acrescenta: nenhuma linha dos arquivos de antes muda.

@@ -9,7 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mesclar, calcular, chaveLinha, retratoDe, aplicarRetrato } from "../src/carteira.js";
 import { gerar, manifesto, diferenca, escreverXlsx, lerXlsx, linhasDaPagina, simularImportacao, reduzirLinha } from "./fixtures/b3-fake/gerar.mjs";
-import { ESPERADO, ESPERADO_ARECEBER, refCalculo } from "./fixtures/b3-fake/cenarios.mjs";
+import { ESPERADO, ESPERADO_ARECEBER, ESPERADO_CONFERENCIA, refCalculo } from "./fixtures/b3-fake/cenarios.mjs";
 import { conferirLotes, compradoPorPapel } from "./fixtures-carteira.mjs";
 
 const ATE = "2026-11-04";
@@ -55,7 +55,7 @@ test("importação: nenhum tipo desconhecido, ignorados só Tesouro e CDB, nada 
   const ign = { negociacao: 0, movimentacao: 0, proventos: 0 };
   for (const a of m.porArquivo) { ign[a.tipo] += a.ignorados; if (a.ignorados) assert.deepEqual(Object.keys(a.motivos), ["papel"]); }
   assert.deepEqual(ign, ESPERADO.ignorados);
-  assert.deepEqual(calc.resumo.avisos, []);
+  assert.deepEqual(calc.resumo.avisos, ESPERADO.avisos); // só a venda sem origem do cenário 17
   for (const p of calc.posicoes) assert.ok(p.q > 0, p.t);
   assert.equal(calc.resumo.provDaMov, 0); // os arquivos de proventos cobrem todos os pagamentos da Movimentação
 });
@@ -109,9 +109,11 @@ test("por lote (FIFO): lotes somam a quantidade, o custo fecha com o comprado e 
   }
   assert.ok(calc.resumo.encerradas.every((e) => e.vendas.length > 0));
   // sem transferência de saída nem retirada nos dados falsos, aberto + realizado é o mesmo nos dois jeitos, papel a
-  // papel. A exceção é B3SA3: a fração que saiu baixa pelo preço médio num e, no outro, é o próprio lote de fração (zero).
+  // papel. As exceções são B3SA3 e EGIE3: a fração que saiu baixa pelo preço médio num e, no outro, é o próprio lote de
+  // fração (zero).
   const total = (p) => ({ pm: (p.resultado ?? 0) + p.realizado, lote: (p.preco != null ? p.valor - p.fifo.custo : 0) + p.fifo.realizado });
-  for (const p of calc.posicoes) { const x = total(p); if (p.t === "B3SA3") assert.ok(Math.abs(x.pm - x.lote - 0.65 * p.pm) < 0.01); else assert.ok(Math.abs(x.pm - x.lote) < 0.02, p.t); }
+  const FRACAO = { B3SA3: 0.65, EGIE3: 0.2 };
+  for (const p of calc.posicoes) { const x = total(p); if (FRACAO[p.t]) assert.ok(Math.abs(x.pm - x.lote - FRACAO[p.t] * (p.custo / p.q)) < 0.01, p.t); else assert.ok(Math.abs(x.pm - x.lote) < 0.02, p.t); }
   for (const e of calc.resumo.encerradas) assert.ok(Math.abs(e.resultado - e.fifo.realizado) < 0.02, e.t);
   // a bonificação de ITSA4 e a de B3SA3 são lotes a custo zero; a fração de B3SA3 entrou e saiu ela mesma
   assert.ok(pos(calc, "ITSA4").lotes.some((l) => l.origem === "bonificacao" && l.preco === 0));
@@ -220,4 +222,39 @@ test("a receber: a página reconhece o arquivo e manda a linha sem conta; a corr
   const c = d.arquivos.find((x) => x.tipo === "areceber");
   assert.equal(c.nome, "correcao-2026-11-04-proventos-a-receber.xlsx");
   assert.equal(c.linhas.length, EA.linhas + 1);
+});
+
+// ---------- Conferência (cenários 16 e 17) ----------
+const EC = ESPERADO_CONFERENCIA;
+
+test("conferência: situações por papel, conta por corretora de EGIE3 e venda sem origem de WEGE3", () => {
+  const { calc } = simularImportacao(g.arquivos, ATE);
+  const todos = [...calc.posicoes, ...calc.resumo.encerradas];
+  const porT = Object.fromEntries(todos.map((p) => [p.t, p]));
+  for (const [t, l] of Object.entries(EC.situacoes)) assert.deepEqual(porT[t].situacoes.map((s) => s.id), l, t);
+  assert.equal(calc.resumo.conferencia.graves, EC.graves);
+  assert.deepEqual(calc.resumo.alertas[0], { tipo: "conferencia", n: EC.graves });
+  for (const [t, cs] of Object.entries(EC.porCorretora)) for (const [inst, x] of Object.entries(cs)) {
+    const c = porT[t].porCorretora.find((y) => y.inst === inst);
+    assert.ok(c, t + " " + inst);
+    for (const [k, v] of Object.entries(x)) assert.ok(Math.abs(c[k] - v) < 0.01, `${t} ${inst} ${k}: ${c[k]} != ${v}`);
+  }
+  for (const [t, q] of Object.entries(EC.vendaSemOrigem)) assert.equal(porT[t].situacoes.find((s) => s.id === "venda-sem-origem").dados.q, q);
+  // a portabilidade em dias diferentes não é retirada
+  assert.equal(calc.resumo.saidas.retiradas.n, 0);
+});
+
+test("conferência: invariantes nos dados falsos (desde o começo = total; por corretora = consolidado, salvo a fração)", () => {
+  const { calc } = simularImportacao(g.arquivos, ATE);
+  const todos = [...calc.posicoes, ...calc.resumo.encerradas];
+  const soma = todos.reduce((s, p) => s + p.geral.resultado, 0);
+  assert.ok(Math.abs(soma - calc.resumo.total.ganho) < 0.05, `${soma} x ${calc.resumo.total.ganho}`);
+  for (const p of todos) {
+    const porCorr = p.porCorretora.reduce((s, x) => s + (x.resultado || 0) + x.realizado, 0);
+    // aberta: em aberto + realizado; encerrada: o resultado já é o realizado
+    const consolidado = p.q != null ? (p.resultado ?? 0) + p.realizado : p.resultado;
+    // a fração que sai baixa pelo preço médio de cada livro: a diferença é 0,2 × (PM da Rico − PM de todas juntas)
+    const tol = p.t === "EGIE3" ? 0.2 * Math.abs(p.porCorretora[0].pm - p.pm) + 0.02 : 0.05;
+    assert.ok(Math.abs(porCorr - consolidado) <= tol, `${p.t}: ${porCorr} x ${consolidado}`);
+  }
 });

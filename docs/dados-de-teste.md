@@ -4,7 +4,7 @@ A conta de teste (`ralph.viviane@gmail.com`) usa extratos falsos da B3, gerados 
 
 ## O que tem
 
-- `test/fixtures/b3-fake/cenarios.mjs`: o roteiro. Um cenário por situação que a carteira precisa tratar (fracionário, encerrada com lucro e com prejuízo, grupamento, bonificação, desdobro, subscrição exercida, não exercida e cedida, fração e leilão, amortização, empréstimo, transferência entre corretoras, ETF, BDR, FI-Infra, Fiagro, linhas ignoradas, compra repetida no mesmo dia, aportes recentes e papel sem cotação). No fim, `ESPERADO` diz o que a tela tem de mostrar.
+- `test/fixtures/b3-fake/cenarios.mjs`: o roteiro. Um cenário por situação que a carteira precisa tratar (fracionário, encerrada com lucro e com prejuízo, grupamento, bonificação, desdobro, subscrição exercida, não exercida e cedida, fração e leilão, amortização, empréstimo, transferência entre corretoras, ETF, BDR, FI-Infra, Fiagro, linhas ignoradas, compra repetida no mesmo dia, aportes recentes, papel sem cotação e, desde a versão 1.2.0, o papel em três corretoras com portabilidade e bonificação com fração e a venda sem origem). No fim, `ESPERADO` diz o que a tela tem de mostrar.
 - `gerar.mjs`: executa o roteiro e grava as planilhas. Preço é um passeio aleatório mensal com semente fixa, dentro de uma faixa por papel; não segue a cotação histórica.
 - `xlsx.py`: escreve e lê os .xlsx com openpyxl. O repositório não tem biblioteca de planilha e não vale pôr uma só para isso; o Node chama o Python.
 - `VERSAO` e `CHANGELOG.md`: versão do roteiro e o que mudou em cada uma.
@@ -35,7 +35,7 @@ Mesma versão, mesma semente e mesma data final geram os mesmos arquivos, byte a
 1. Entrar no Lookout com `ralph.viviane@gmail.com` ("Trocar de conta" no menu, se estiver logado com outra). A conta precisa ter Investimentos liberado no admin.
 2. Menu da conta → Importar extratos e soltar todos os .xlsx da pasta de uma vez.
 3. Conferir a prévia com o README: o número de linhas novas, as 5 ignoradas da Movimentação (Tesouro e CDB) e, no arquivo do A receber, "retrato novo" com a data e a soma igual ao Total líquido.
-4. Importar. A Minha carteira tem de mostrar as 16 posições abertas e as 2 encerradas do README.
+4. Importar. A Minha carteira tem de mostrar as 17 posições abertas e as 3 encerradas do README, e o alerta "4 papéis com dado a completar" (Conferência, na aba Mais).
 
 Importar de novo os mesmos arquivos dá 0 linhas novas (o A receber aparece como "igual ao retrato guardado").
 
@@ -63,4 +63,4 @@ A versão está em `test/fixtures/b3-fake/VERSAO` e vai no manifesto.
 - **minor** (1.1.0): cenário novo ou evento novo, sem mexer nas linhas que já existiam. Gerar a correção e importar.
 - **major** (2.0.0): alguma linha já gerada muda ou some (preço, quantidade, data, faixa do passeio de preço, semente padrão). Apagar a carteira da conta de teste e importar a pasta nova.
 
-Mudou um cenário: suba a versão, anote no `CHANGELOG.md` o que mudou e o que fazer na conta de teste, ajuste `ESPERADO` em `cenarios.mjs` se a tela muda, e rode `npm test`.
+Mudou um cenário: suba a versão, anote no `CHANGELOG.md` o que mudou e o que fazer na conta de teste, ajuste `ESPERADO` (e `ESPERADO_CONFERENCIA`, `ESPERADO_ARECEBER`) em `cenarios.mjs` se a tela muda, e rode `npm test`. Número que já estava em `test/b3-fake.test.mjs` só muda se o cenário novo mexer nele; nesse caso, diga no CHANGELOG qual e por quê (veja a 1.2.0).
