@@ -285,8 +285,8 @@ pages.push({
     ].join('')}</div>`,
 
     h2('esportes-decisoes', 'Decisões'),
-    dec('Sem escudo de clube e sem foto de jogador.',
-      'É regra fixa do projeto. Fica o nome do time e, onde falta espaço, a sigla de 3 letras, o que já basta para ler rodada e tabela no celular.'),
+    dec('Escudo de clube pode (ESPN, por link); foto de pessoa não.',
+      'Em 11/11 o dono liberou o escudo, que antes também era proibido. Vem da própria ESPN, carregado direto da pasta de escudos dela, sem copiar nada; sem escudo, fica a sigla. Foto de jogador, de técnico ou de qualquer pessoa continua fora: no Vai e vem o jogador vira um avatar de iniciais.', [PILL.feito('11/11')]),
     dec('O Internacional aparece como "Inter" no selo de clube e no título do grupo.',
       'Para não confundir com o filtro Nacional/Internacional do feed. O dado gravado não muda.', [PILL.feito('04/11')]),
   ],

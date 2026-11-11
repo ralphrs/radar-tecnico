@@ -5,7 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { lerJogo, lerJogos, lerScoreboard, lerStandings, lerGe, blocosJson, escolherRodada, proximosDe, ultimosDe, vencidos, quente,
   cronEsportes, cronSondaEsportes, atualizarLiga, ligasAtivas, listaSonda, novaFila, urlScoreboard, urlStandings, urlSchedule, diaSP, diasExtras,
-  lerTenis, lerPartida, partidasDoDia } from "../src/esportes.js";
+  lerTenis, lerPartida, partidasDoDia, lerEscudos, escudoDoTime, lerTimesEspn, atualizarCatalogoEscudos, urlTimes } from "../src/esportes.js";
 import { catalogoDe, validarPainel, formatosDe, respostaPainel } from "../src/painel.js";
 import { FEEDS, SECOES_COM_FORUM } from "../src/feeds.js";
 import { REDDIT } from "../src/coleta.js";
@@ -13,7 +13,7 @@ import "../public/esportes.js";
 import "../public/radar-filtro.js";
 import { d1Falso } from "./d1-falso.mjs";
 import { AGORA, T, scoreboardBra, scoreboardLib, standingsBra, standingsLib, scheduleInter, htmlGe, htmlGeTabela,
-  scoreboardNba, standingsNba, scoreboardAtp, scoreboardAtpDia, scoreboardWta } from "./fixtures-esportes.mjs";
+  scoreboardNba, standingsNba, scoreboardAtp, scoreboardAtpDia, scoreboardWta, timesEspn, ESCUDO } from "./fixtures-esportes.mjs";
 
 const E = globalThis.Esportes;
 const RF = globalThis.RadarFiltro;
@@ -251,6 +251,7 @@ function ambiente({ ligasEspn = null, status = {} } = {}) {
     const liga = m && m[1];
     if (ligasEspn && liga && !ligasEspn.includes(liga)) return new Response('{"code":400,"message":"league not found"}', { status: 400 });
     if (u.includes("/teams/1936/schedule")) return js(scheduleInter());
+    if (u.endsWith("/teams")) return js(timesEspn(liga));
     if (u.includes("/scoreboard")) return js(liga === "bra.1" ? scoreboardBra() : liga === "conmebol.libertadores" ? scoreboardLib() : { events: [] });
     if (u.includes("/standings")) return js(liga === "bra.1" ? standingsBra() : liga === "conmebol.libertadores" ? standingsLib() : { children: [] });
     return new Response("não", { status: 404 });
@@ -602,8 +603,10 @@ test("sonda pronta volta a andar só para as competições novas", async () => {
   const { env, doc, pedidos } = ambiente();
   // como estava em produção: pronta, sem o tênis e sem os RSS de padel
   const padel = (x) => x.tipo === "rss" && /padel/.test(x.url);
-  const antiga = listaSonda(AGORA).filter((x) => !["atp", "wta"].includes(x.liga) && !padel(x)).map((x, i) => ({ ...x, n: i, status: 200 }));
-  const nPadel = listaSonda(AGORA).filter(padel).length;
+  const de1111 = (x) => /^(escudos-|teams$|paises-tenis$)/.test(x.tipo);
+  const antiga = listaSonda(AGORA).filter((x) => !["atp", "wta"].includes(x.liga) && !padel(x) && !de1111(x)).map((x, i) => ({ ...x, n: i, status: 200 }));
+  const nPadel = listaSonda(AGORA).filter(padel).length, nEscudos = listaSonda(AGORA).filter(de1111).length;
+  assert.equal(nEscudos, 5 + E.LIGAS_ESCUDOS.length, "escudos no scoreboard e na standings, país no tênis e o endpoint de times de 13 ligas");
   assert.ok(nPadel >= 6, "candidatos de padel na sonda");
   env.DB.db.prepare("INSERT INTO docs (collection, id, data, coletado) VALUES ('_sistema', 'sonda-esportes', ?, '')").run(JSON.stringify({ inicio: "x", fim: "2026-11-04T15:00:00Z", pendentes: [], resultados: antiga }));
   let passadas = 0;
@@ -611,7 +614,7 @@ test("sonda pronta volta a andar só para as competições novas", async () => {
   const s = doc("_sistema", "sonda-esportes");
   assert.ok(s.fim && s.retomada);
   const novos = s.resultados.slice(antiga.length);
-  assert.equal(novos.length, 4 + nPadel);
+  assert.equal(novos.length, 4 + nPadel + nEscudos);
   assert.deepEqual(novos.slice(0, 4).map((x) => x.tipo + ":" + x.liga), ["scoreboard:atp", "scoreboard:wta", "scoreboard-dia:atp", "scoreboard-dia:wta"]);
   assert.deepEqual(novos.map((x) => x.n), novos.map((_, i) => antiga.length + i), "amostras com número novo");
   assert.equal(novos[0].url, "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard", "tênis: torneios em andamento, sem data");
@@ -626,4 +629,114 @@ test("sonda pronta volta a andar só para as competições novas", async () => {
   const n = pedidos.length;
   assert.equal(await cronSondaEsportes(env, { pausa: 0, agora: AGORA }), 0);
   assert.equal(pedidos.length, n);
+});
+
+// ---------- escudos (11/11) ----------
+test("escudos: team.logo no scoreboard, team.logos[] na standings; sem campo ou fora da ESPN = sem escudo", () => {
+  const sb = lerEscudos(scoreboardBra());
+  assert.equal(sb["1936"], ESCUDO(1936), "Inter pelo team.logo");
+  assert.equal(sb["2029"], ESCUDO(2029), "Palmeiras pelo logos[] (o default, não o dark)");
+  assert.ok(!("6273" in sb), "Grêmio com logo de outro site: descartado");
+  assert.ok(!("819" in sb), "Flamengo com http: descartado");
+  assert.ok(!("2674" in sb) && !("9967" in sb), "sem campo: sem escudo");
+  const st = lerEscudos(standingsBra());
+  assert.deepEqual(Object.keys(st).sort(), ["1936", "2029"]);
+  assert.deepEqual(lerEscudos(null), {});
+  assert.deepEqual(lerEscudos({ events: [null, { competitions: [{ competitors: [null, { team: { id: 1, logo: 7 } }] }] }] }), {});
+  // o que passa e o que não passa
+  for (const u of ["javascript:alert(1)", "https://a.espncdn.com.exemplo.dev/x.png", "https://a.espncdn.com/../x.png", "https://a.espncdn.com//x.png", 'https://a.espncdn.com/x.png" onerror="x', "https://b.espncdn.com/x.png", "data:image/png;base64,AAAA"])
+    assert.equal(escudoDoTime({ logo: u }), "", u);
+  assert.equal(escudoDoTime({ logo: "https://a.espncdn.com/i/teamlogos/nba/500/lal.png" }), "https://a.espncdn.com/i/teamlogos/nba/500/lal.png");
+  assert.equal(escudoDoTime({ logo: "https://a.espncdn.com/i/teamlogos/soccer/500/1936.png?w=40" }), "https://a.espncdn.com/i/teamlogos/soccer/500/1936.png?w=40");
+  assert.equal(escudoDoTime({ logo: "https://a.espncdn.com/i/headshots/soccer/players/full/1234.png" }), "", "foto de atleta da mesma origem: não");
+  assert.equal(escudoDoTime({ logo: "https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/1966.png" }), "", "nem pelo combiner");
+  // endpoint de times
+  const ts = lerTimesEspn(timesEspn("ita.1"));
+  assert.deepEqual(ts[0], { id: "110", nome: "Internazionale", curto: "Inter", sigla: "INT", escudo: ESCUDO(110) });
+  assert.equal(lerTimesEspn(timesEspn("bra.1")).find((t) => t.id === "9998").escudo, "", "logo de fora da ESPN");
+  assert.deepEqual(lerTimesEspn({ sports: "x" }), []);
+});
+
+test("escudos no doc da liga: por time, só a URL; os de antes ficam; nada de foto de jogador no doc", async () => {
+  const { env, doc } = ambiente({ ligasEspn: ["bra.1"] });
+  env.DB.db.prepare("INSERT INTO docs (collection, id, data, coletado) VALUES ('meta', 'esportes-bra.1', ?, '')").run(JSON.stringify({ escudos: { "555": ESCUDO(555), "6273": "https://imagens.exemplo.dev/6273.png" } }));
+  const fila = novaFila({ pausa: 0, orcamento: 30 });
+  await atualizarLiga(env, "bra.1", { fila, times: [{ id: "1936", nome: "Inter" }], agora: AGORA, forcar: { rodada: true, tabela: true, times: true } });
+  const d = doc("meta", "esportes-bra.1");
+  assert.deepEqual(d.escudos, { "555": ESCUDO(555), "1936": ESCUDO(1936), "2029": ESCUDO(2029) }, "o de antes fica, o de fora some");
+  assert.ok(!d.rodada.jogos.some((j) => "escudo" in j || "logo" in j), "nos jogos só os ids; o escudo fica no mapa do doc");
+  // tênis: país do jogador para a bandeira; a foto (headshot) que a ESPN manda não é lida
+  const t = lerTenis(scoreboardAtp(), "atp");
+  const p = Object.fromEntries(t.partidas.map((x) => [x.id, x]));
+  assert.deepEqual(p["9102"].paises, ["ES", "BR"], "citizenshipCountry ESP e flag.alt Brazil");
+  assert.deepEqual(p["9101"].paises, ["IT", ""], "pelo arquivo da bandeira; País desconhecido fica vazio");
+  assert.ok(!p["9107"].paises, "sem país conhecido: sem o campo");
+  assert.ok(!/headshot|foto/i.test(JSON.stringify(t)), "nenhuma foto de jogador");
+});
+
+test("catálogo de escudos: docs das ligas e o endpoint de times (até 4 por rodada, 1x por semana, falha espera 24 h)", async () => {
+  const { env, doc, pedidos } = ambiente({ ligasEspn: ["bra.1", "conmebol.libertadores", "bra.2", "ita.1", "mex.1", "esp.1", "usa.1", "eng.1", "arg.1", "ger.1", "fra.1", "por.1", "ned.1", "ksa.1"] });
+  // a sonda fica de fora da conta
+  env.DB.db.prepare("INSERT INTO docs (collection, id, data, coletado) VALUES ('_sistema', 'sonda-esportes', ?, '')").run(JSON.stringify({ fim: "x", pendentes: [], resultados: listaSonda(AGORA).map((x) => ({ ...x, status: 200 })) }));
+  const n0 = pedidos.length;
+  await cronEsportes(env, minuto(4), { pausa: 0, orcamento: 40 });
+  const times1 = pedidos.slice(n0).filter((u) => u.endsWith("/teams"));
+  assert.deepEqual(times1, E.LIGAS_ESCUDOS.slice(0, 4).map(urlTimes), "4 ligas na primeira rodada");
+  const est = doc("_sistema", "esportes-times");
+  assert.ok(est.ligas["bra.1"].em && est.ligas["bra.2"].em);
+  const cat = doc("meta", "esportes-escudos");
+  assert.ok(cat.atualizado);
+  assert.deepEqual(cat.times["1936"], { nome: "Internacional", sigla: "INT", escudo: ESCUDO(1936), liga: "bra.1", pais: "BR" });
+  assert.equal(cat.times["6154"].liga, "bra.2");
+  assert.ok(!cat.times["9999"] && !cat.times["9998"], "time sem escudo, ou com escudo de fora, não entra");
+  assert.deepEqual(cat.mapa["internacional"], ["1936"]);
+  assert.equal(E.escudoDe("Inter", cat, "BR"), ESCUDO(1936));
+  // segunda rodada (5 min depois): as próximas 4; o catálogo ganha a Internazionale
+  const n1 = pedidos.length;
+  await cronEsportes(env, minuto(4) + 5 * MIN, { pausa: 0, orcamento: 40 });
+  assert.deepEqual(pedidos.slice(n1).filter((u) => u.endsWith("/teams")), E.LIGAS_ESCUDOS.slice(4, 8).map(urlTimes));
+  assert.equal(E.escudoDe("Inter", doc("meta", "esportes-escudos"), "IT"), ESCUDO(110));
+  // até acabar: 13 ligas em 4 rodadas, depois nada por 7 dias
+  await cronEsportes(env, minuto(4) + 10 * MIN, { pausa: 0, orcamento: 40 });
+  await cronEsportes(env, minuto(4) + 15 * MIN, { pausa: 0, orcamento: 40 });
+  const n2 = pedidos.length;
+  await cronEsportes(env, minuto(4) + 20 * MIN, { pausa: 0, orcamento: 40 });
+  assert.equal(pedidos.slice(n2).filter((u) => u.endsWith("/teams")).length, 0, "todas pedidas: espera a semana");
+  assert.equal(Object.keys(doc("_sistema", "esportes-times").ligas).length, 13);
+  // uma semana depois volta a pedir, 4 por vez
+  const n3 = pedidos.length;
+  await cronEsportes(env, minuto(4) + 8 * 24 * 3600_000, { pausa: 0, orcamento: 40 });
+  assert.equal(pedidos.slice(n3).filter((u) => u.endsWith("/teams")).length, 4);
+  // falha: espera 24 h
+  const amb = ambiente({ ligasEspn: ["bra.1"], status: { "/teams": 503 } });
+  const fila = novaFila({ pausa: 0, orcamento: 30 });
+  const erros = {};
+  await atualizarCatalogoEscudos(amb.env, { fila, agora: AGORA, erros });
+  assert.match(erros["bra.1:times-escudos"], /HTTP 503/);
+  assert.ok(amb.doc("_sistema", "esportes-times").ligas["bra.1"].tentativa);
+  const r = await atualizarCatalogoEscudos(amb.env, { fila, agora: AGORA + 3600_000, erros: {} });
+  assert.equal(r.pedidas, 4, "as 4 seguintes; a que falhou espera");
+  assert.ok(!amb.pedidos.slice(-4).some((u) => u.includes("bra.1/")));
+  // passada que bateu no limite só remonta, sem pedir
+  const amb2 = ambiente();
+  const r2 = await atualizarCatalogoEscudos(amb2.env, { fila: novaFila({ pausa: 0 }), agora: AGORA, pedir: false });
+  assert.equal(r2.pedidas, 0);
+  assert.ok(amb2.doc("meta", "esportes-escudos"), "grava o catálogo (vazio) na primeira vez");
+  const r3 = await atualizarCatalogoEscudos(amb2.env, { fila: novaFila({ pausa: 0 }), agora: AGORA, pedir: false, mudou: true });
+  assert.equal(r3.gravou, false, "nada mudou: não regrava");
+});
+
+test("sonda: escudos no scoreboard e na standings, endpoint de times e país no tênis", async () => {
+  const { env, doc } = ambiente({ ligasEspn: ["bra.1", "eng.1", ...E.LIGAS_ESCUDOS] });
+  let passadas = 0;
+  while (!(doc("_sistema", "sonda-esportes") || {}).fim && passadas < 30) { await cronSondaEsportes(env, { pausa: 0, agora: AGORA }); passadas++; }
+  const s = doc("_sistema", "sonda-esportes");
+  const sb = s.resultados.find((x) => x.tipo === "escudos-scoreboard" && x.liga === "bra.1");
+  assert.deepEqual([sb.times, sb.comLogo, sb.comEscudo, sb.foraDaEspn, sb.campo], [6, 4, 2, 2, "logo"]);
+  assert.match(sb.exemplo, /a\.espncdn\.com/);
+  const tb = s.resultados.find((x) => x.tipo === "teams" && x.liga === "bra.1");
+  assert.deepEqual([tb.times, tb.comEscudo, tb.foraDaEspn, tb.tipoResposta], [6, 4, 1, "sports"]);
+  const pt = s.resultados.find((x) => x.tipo === "paises-tenis");
+  assert.equal(pt.comPais, 2);
+  assert.match(pt.exemplo, /Jannik Sinner IT/);
 });

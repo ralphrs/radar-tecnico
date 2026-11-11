@@ -4,6 +4,7 @@
 - Navegação: de qualquer página ou estado (admin, lista, ficha, carteira, esportes, convite, erro) dá para voltar ao Início pelo logotipo e pelo botão Voltar do navegador; nenhuma tela é beco sem saída
 - Dois temas e celular conferidos com print; celular conferido com emulação de toque (isMobile), não só janela estreita
 - Texto em pt-BR natural, sem "ticker", sem recomendação, sem o nome do dono
+- Esportes: escudo de clube pode (ESPN, por link); foto de pessoa não (jogador, técnico ou quem for, nem copiada nem por link)
 - `npm test` e `node --check` passando; mudou o cálculo da carteira, sobe a versão dos dados de teste e gera correção
 
 ## Agora
@@ -148,6 +149,11 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Agora e Desde o começo por papel: colunas em Posições, blocos na janela do papel e os mesmos rótulos no Paguei × hoje (10/11)
 - [x] A receber com a soma em destaque no topo (B3 e estimativa separadas, o que ainda cai no mês), no widget, na Agenda e na prévia da importação (10/11)
 - [x] Carteira: day trade com venda listada antes da compra, resgate da posição inteira fecha o papel, incorporação de fundo leva o custo para o sucessor (10/11)
+
+## Pedidos de 11/11
+- [x] Esportes: escudos dos times (ESPN) na rodada, tabela, widgets e Vai e vem; Vai e vem com uma negociação por card, etapas, filtros e widget (11/11)
+- [ ] Curadoria de Esportes: todo item de negociação com `transferencia`, etapas padronizadas, atualizar a negociação existente em vez de criar outra (ajuste no prompt da tarefa agendada)
+- [ ] Conferir na sonda de Esportes (`escudos-*`, `teams`, `paises-tenis`) se os escudos vêm em `a.espncdn.com/i/teamlogos/` em todas as ligas e se o endpoint de times responde nas 13 ligas do Vai e vem
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

@@ -112,7 +112,7 @@ node --check src/<span class="hl">&lt;arquivo&gt;</span>.js`),
       card('Segredos só no painel', `<p>Ficam em Workers &amp; Pages → ${C('lookout')} → Variables and Secrets, nunca no repositório. O ${C('wrangler.jsonc')} usa ${C('keep_vars: true')}, então um deploy não apaga nada.</p>`, { k: 'warn' }),
       card('Extratos reais fora do repositório', `<p>Os arquivos da B3 de verdade nunca entram no repositório. Na importação, o arquivo nem sai do navegador.</p>`, { k: 'warn' }),
       card('Dados falsos só na conta de teste', `<p>Os extratos gerados pelo ${C('b3-fake')} são importados só na conta de teste, nunca numa conta real.</p>`, { k: 'warn' }),
-      card('Sem escudo e sem foto', `<p>Esportes mostra o nome do time e, onde falta espaço, a sigla de 3 letras. Nada de escudo de clube nem foto de jogador.</p>`, { k: 'warn' }),
+      card('Escudo sim, foto não', `<p>Esportes mostra o escudo do time que a ESPN manda, por link, com a sigla no lugar quando falta. Foto de jogador, de técnico ou de qualquer pessoa, nunca, nem por link (regra de 11/11).</p>`, { k: 'warn' }),
       card('O prompt roda só o que lista', `<p>Cada tarefa agendada só executa os comandos que o próprio prompt lista.</p>`),
     ].join('')}</div>`,
 

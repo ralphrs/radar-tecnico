@@ -17,7 +17,7 @@
     "carteira-pagamentos": ["1x1", "1x2"], "carteira-agenda": ["1x1", "1x2"], "carteira-rentabilidade": ["1x1", "2x1"],
     "carteira-alertas": ["1x1", "1x2"], "carteira-simulacoes": ["1x1", "2x1"], "carteira-reinvestir": ["1x1", "2x1"], "carteira-limites": ["1x1", "2x1"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"],
     "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"],
-    "esportes-rodada": ["1x1", "2x1"], "esportes-tabela": ["1x1", "1x2"], "esportes-meu-time": ["1x1"],
+    "esportes-rodada": ["1x1", "2x1"], "esportes-tabela": ["1x1", "1x2"], "esportes-meu-time": ["1x1"], "esportes-vaivem": ["1x1", "2x1"],
   };
   const tipoEsportes = (id) => { const m = /^esportes-(rodada|tabela)-/.exec(String(id)); return m ? "esportes-" + m[1] : null; };
   const formatosDe = (id) => FORMATOS_DE[id] || FORMATOS_DE[tipoEsportes(id)] || FORMATOS_DE[String(id).replace(/-.*$/, "")] || ["1x1"];

@@ -12,10 +12,30 @@ const evento = (id, quando, casa, fora, estado, extra = {}) => ({
     status: { displayClock: extra.relogio || "0'", period: estado === "in" ? 2 : 0, type: { state: estado, completed: estado === "post", name: extra.nome || (estado === "post" ? "STATUS_FULL_TIME" : estado === "in" ? "STATUS_SECOND_HALF" : "STATUS_SCHEDULED"), shortDetail: extra.detalhe || (estado === "post" ? "FT" : estado === "in" ? extra.relogio || "67'" : "Thu, November 5th at 7:30 PM") } } }],
 });
 
+// Escudos (11/11): o Inter com team.logo (como no scoreboard), o Palmeiras com team.logos[] (como na standings), o
+// Grêmio com logo de fora da ESPN e o Flamengo com http (os dois descartados); Santos e Bahia sem campo.
+export const ESCUDO = (id) => `https://a.espncdn.com/i/teamlogos/soccer/500/${id}.png`;
 export const T = {
-  inter: time(1936, "Internacional", "INT"), gremio: time(6273, "Grêmio", "GRE"), palmeiras: time(2029, "Palmeiras", "PAL"),
-  flamengo: time(819, "Flamengo", "FLA"), santos: time(2674, "Santos", "SAN"), bahia: time(9967, "Bahia", "BAH"),
+  inter: { ...time(1936, "Internacional", "INT"), logo: ESCUDO(1936) },
+  gremio: { ...time(6273, "Grêmio", "GRE"), logo: "https://imagens.exemplo.dev/escudos/6273.png" },
+  palmeiras: { ...time(2029, "Palmeiras", "PAL"), logos: [{ href: "https://a.espncdn.com/i/teamlogos/soccer/500-dark/2029.png", rel: ["full", "dark"] }, { href: ESCUDO(2029), rel: ["full", "default"] }] },
+  flamengo: { ...time(819, "Flamengo", "FLA"), logos: [{ href: "http://a.espncdn.com/i/teamlogos/soccer/500/819.png", rel: ["full", "default"] }] },
+  santos: time(2674, "Santos", "SAN"), bahia: time(9967, "Bahia", "BAH"),
 };
+// Endpoint de times da ESPN (site.api.espn.com/apis/site/v2/sports/soccer/<liga>/teams), no formato conhecido
+const timeT = (id, nome, sigla, extra = {}) => ({ team: { id: String(id), uid: "s:600~t:" + id, displayName: nome, shortDisplayName: extra.curto || nome, name: extra.curto || nome, abbreviation: sigla, location: nome, color: extra.cor || "000000",
+  ...(extra.semLogo ? {} : { logos: [{ href: extra.logo || ESCUDO(id), width: 500, height: 500, rel: ["full", "default"] }] }) } });
+export function timesEspn(liga) {
+  const ts = {
+    "bra.1": [timeT(1936, "Internacional", "INT"), timeT(6273, "Grêmio", "GRE"), timeT(7632, "Atlético-MG", "CAM"), timeT(2029, "Palmeiras", "PAL"), timeT(9999, "Sem Escudo FC", "SEF", { semLogo: true }), timeT(9998, "Escudo de Fora", "EDF", { logo: "https://outro.site/9998.png" })],
+    "bra.2": [timeT(6154, "América-MG", "AME")],
+    "ita.1": [timeT(110, "Internazionale", "INT", { curto: "Inter" }), timeT(103, "AC Milan", "MIL")],
+    "mex.1": [timeT(227, "América", "AME")],
+    "esp.1": [timeT(83, "Barcelona", "BAR")],
+    "usa.1": [timeT(20232, "Inter Miami CF", "MIA")],
+  }[liga] || [];
+  return { sports: [{ id: "600", name: "Soccer", leagues: [{ id: "1", abbreviation: liga, teams: ts }] }] };
+}
 
 export function scoreboardBra() {
   return {
@@ -172,7 +192,11 @@ export function standingsNba() {
 // events[] = torneios, groupings[] = chaves (simples e duplas), competitions[] = partidas com competitors[] (order,
 // winner, athlete.displayName/shortName, seed, curatedRank.current, linescores[].value), status.type.state/name,
 // status.period e round.displayName. Jogadores reais, placares inventados; datas relativas a AGORA.
-const atleta = (nome, curto) => ({ displayName: nome, shortName: curto, flag: { alt: "País" } });
+// País (11/11): Alcaraz com citizenshipCountry (ESP), Fonseca com flag.alt em inglês, Sinner pelo arquivo da bandeira;
+// o resto com flag.alt "País" (não reconhecido: sem bandeira)
+const PAIS_ATLETA = { "Carlos Alcaraz": { citizenshipCountry: { abbreviation: "ESP" } }, "João Fonseca": { flag: { alt: "Brazil", href: "https://a.espncdn.com/i/teamlogos/countries/500/bra.png" } },
+  "Jannik Sinner": { flag: { alt: "País", href: "https://a.espncdn.com/i/teamlogos/countries/500/ita.png" } } };
+const atleta = (nome, curto) => ({ displayName: nome, shortName: curto, flag: { alt: "País" }, headshot: { href: "https://a.espncdn.com/i/headshots/tennis/players/full/0000.png" }, ...(PAIS_ATLETA[nome] || {}) });
 const jogador = (ordem, nome, curto, extra = {}) => ({ id: String(1000 + ordem + nome.length), order: ordem, type: "athlete", homeAway: ordem === 1 ? "home" : "away",
   athlete: atleta(nome, curto), ...(extra.seed != null ? { seed: String(extra.seed) } : {}), ...(extra.rank != null ? { curatedRank: { current: extra.rank } } : {}),
   ...(extra.sets ? { linescores: extra.sets.map((v) => ({ value: v })) } : {}), ...(extra.venceu != null ? { winner: extra.venceu } : {}) });

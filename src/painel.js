@@ -47,6 +47,8 @@ export const WIDGETS = [
     ...(ESP.LIGAS[l].tenis ? [] : [{ id: "esportes-tabela-" + l, titulo: ESP.LIGAS[l].curto + " · tabela", tamanho: 1, secao: "esportes", liga: l }]),
   ]),
   { id: "esportes-meu-time", titulo: "Meu time · próximo jogo", tamanho: 1, secao: "esportes" },
+  // Vai e vem (11/11): as negociações mais avançadas dos times da pessoa, com o escudo do destino e a etapa
+  { id: "esportes-vaivem", titulo: "Vai e vem", tamanho: 1, secao: "esportes" },
   // Minha carteira (src/carteira.js): pessoais, leem /api/carteira uma vez só para todos; aparecem para quem importou
   // os extratos (a página esconde enquanto a carteira estiver vazia). Fora do padrão: a pessoa fixa pelo alfinete.
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },

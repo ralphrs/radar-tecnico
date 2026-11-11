@@ -682,30 +682,89 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .lst-ordem .dd-btn--link { font: 500 11.5px var(--font-sans); height: auto; padding: 0; }
 .lst-tab tr.cai-antes td { box-shadow: inset 0 2px 0 var(--primary); }
 .cot-carregar { font: 500 12px var(--font-sans); height: auto; padding: 0; margin-left: 6px; }
-/* Vai e vem: um card por negociação, origem à esquerda e destino à direita */
+/* Vai e vem: uma negociação por card (11/11). Jogador em cima, origem → destino, etapa com a trilha de 5 passos,
+   a notícia mais recente e, embaixo, a linha do tempo do grupo. No celular origem e destino empilham. */
 .lista.cards { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 10px; }
 @media (min-width: 640px) { .lista.cards { grid-template-columns: 1fr 1fr; } }
-.transf { border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.transf-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.st { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; font: 600 11.5px/1 var(--font-sans); letter-spacing: .02em; background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); }
-.st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.transf { border: 1px solid var(--border); border-radius: var(--radius-lg, 12px); background: var(--card); display: flex; flex-direction: column; min-width: 0; }
+.vv-abre { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 10px; color: inherit; text-decoration: none; border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0; min-width: 0; }
+.vv-abre:hover .vv-tit { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.vv-abre:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.st { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; font: 600 11.5px/1 var(--font-sans); letter-spacing: .02em; background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); white-space: nowrap; }
+.st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); flex: none; }
+.st.st-p { height: 20px; padding: 0 7px; font-size: 10.5px; gap: 4px; }
+.st.st-p::before { width: 6px; height: 6px; }
 .transf-rota { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
 .clube-l { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; text-align: center; }
-.escudo { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: 700 12px/1 var(--font-sans); letter-spacing: .02em; color: #fff; background: var(--cc, var(--muted-foreground)); box-shadow: inset 0 0 0 2px color-mix(in srgb, #fff 25%, transparent); text-transform: uppercase; }
-.escudo.vazio { background: var(--secondary); color: var(--muted-foreground); box-shadow: inset 0 0 0 1px var(--border); }
 .clube-l .nome { font: 600 13px/1.25 var(--font-sans); color: var(--foreground); overflow-wrap: anywhere; }
+.clube-l.sem-clube .nome { color: var(--muted-foreground); font-weight: 500; }
 .clube-l .pais { font-size: 12px; color: var(--muted-foreground); }
 .seta { color: var(--muted-foreground); display: inline-flex; }
 .seta svg { width: 22px; height: 22px; }
-.jogador { display: flex; align-items: center; gap: 10px; min-width: 0; padding-top: 2px; border-top: 1px dashed var(--border); padding-top: 10px; }
-.avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--secondary); color: var(--foreground); display: inline-flex; align-items: center; justify-content: center; font: 600 13px/1 var(--font-sans); box-shadow: inset 0 0 0 1px var(--border); }
+.jogador { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .jogador .quem { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.jogador .quem b { font: 600 14px/1.25 var(--font-sans); overflow-wrap: anywhere; }
+.jogador .quem b { font: 600 15px/1.25 var(--font-sans); overflow-wrap: anywhere; }
 .jogador .quem span { font-size: 12.5px; color: var(--muted-foreground); }
-.transf-pe { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font: 400 11.5px/1.4 var(--font-mono); color: var(--muted-foreground); }
-.transf-pe .valor { font-family: var(--font-sans); font-weight: 600; font-size: 12.5px; color: var(--foreground); }
-.transf a.ver { font-size: 13px; color: var(--primary); text-decoration: none; overflow-wrap: anywhere; }
-.transf a.ver:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* avatar do jogador: iniciais desenhadas em CSS na cor do clube de destino, bandeira e posição; nunca foto */
+.vv-av { position: relative; flex: none; width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--secondary); color: var(--foreground); box-shadow: inset 0 0 0 1px var(--border); }
+.vv-av.com-cor { background: var(--cc); color: var(--cc-t, #fff); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--card) 30%, transparent); }
+.vv-av-ini { font: 700 15px/1 var(--font-display); letter-spacing: .02em; transform: translateY(-2px); }
+.vv-av-band { position: absolute; right: -4px; top: -3px; font-size: 14px; line-height: 1; }
+.vv-av-band .bandeira { margin: 0; opacity: 1; filter: none; }
+.vv-av-pos { position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); padding: 1px 5px; border-radius: 999px; background: var(--card); color: var(--foreground); box-shadow: 0 0 0 1px var(--border); font: 600 9px/12px var(--font-mono); letter-spacing: .04em; white-space: nowrap; }
+.vv-etapa { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.vv-etapa .valor { margin-left: auto; font: 700 15px/1.2 var(--font-display); color: var(--foreground); font-variant-numeric: tabular-nums; }
+.vv-trilha { display: inline-flex; align-items: center; gap: 0; margin: 0; padding: 0; list-style: none; }
+.vv-trilha li { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex: none; }
+.vv-trilha li + li { margin-left: 12px; position: relative; }
+.vv-trilha li + li::before { content: ""; position: absolute; right: 100%; top: 3px; width: 12px; height: 2px; background: var(--border); }
+.vv-trilha li.feito, .vv-trilha li.feito::before, .vv-trilha li.atual::before { background: color-mix(in srgb, var(--primary) 55%, var(--border)); }
+.vv-trilha li.atual { background: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent); }
+.vv-trilha.fim li { background: color-mix(in srgb, var(--muted-foreground) 35%, var(--border)); }
+.vv-tit { margin: 0; font: 500 13.5px/1.35 var(--font-sans); color: var(--foreground); overflow-wrap: anywhere; text-wrap: pretty; }
+.transf-pe { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font: 400 11.5px/1.4 var(--font-mono); color: var(--muted-foreground); }
+.vv-acoes { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 8px 6px 14px; min-height: 36px; border-top: 1px dashed var(--border); }
+.vv-acoes .fav { margin: 0; }
+.vv-tl-bt { font: 500 13px var(--font-sans); height: 32px; padding: 0; }
+.vv-tempo { list-style: none; margin: 0; padding: 4px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+.vv-tempo li { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 2px 8px; align-items: baseline; font-size: 13px; border-left: 2px solid var(--border); padding-left: 10px; }
+.vv-tempo li:first-child { border-left-color: var(--primary); }
+.vv-tempo .vv-quando, .vv-tempo .vv-fonte { font: 400 11.5px/1.4 var(--font-mono); color: var(--muted-foreground); white-space: nowrap; }
+.vv-tempo a { color: var(--foreground); text-decoration: none; overflow-wrap: anywhere; }
+.vv-tempo a:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.vv-filtros { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 4px 0 2px; }
+.vv-filtro { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.vv-rot { font: 500 11.5px var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .05em; }
+.vv-vazio { margin: 12px 0 4px; font-size: 13.5px; color: var(--muted-foreground); }
+.vv-vazio .dd-btn--link { font-size: 13.5px; height: auto; padding: 0; }
+.vv-antigos { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
+.vv-antigos summary { cursor: pointer; font: 600 13px/1.4 var(--font-sans); color: var(--muted-foreground); padding: 6px 0; border-radius: 4px; }
+.vv-antigos summary small { font-weight: 400; }
+.vv-antigos summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+@media (max-width: 639px) {
+  .transf-rota { grid-template-columns: minmax(0, 1fr); justify-items: start; gap: 4px; }
+  .transf-rota .clube-l { flex-direction: row; align-items: center; gap: 10px; text-align: left; flex-wrap: wrap; }
+  .transf-rota .clube-l .pais { flex-basis: 100%; padding-left: 46px; margin-top: -8px; }
+  .transf-rota .seta { padding-left: 7px; }
+  .transf-rota .seta svg { transform: rotate(90deg); }
+  .vv-filtro { width: 100%; }
+  .vv-filtro .seg { flex: 1 1 auto; min-width: 0; }
+  .vv-filtro .seg button { flex: 1 1 0; justify-content: center; padding: 0 6px; height: 32px; }
+  .vv-rot { width: 46px; flex: none; }
+  .vv-tempo li { grid-template-columns: auto minmax(0, 1fr); }
+  .vv-tempo li a { grid-column: 1 / -1; }
+}
+/* Escudos dos times (ESPN, por link) e o chip de sigla que fica no lugar sem escudo, com escudo desligado ou se a
+   imagem falhar. Tamanhos fixos: 20 em lista, 28 no card do jogo, 36 no Vai e vem. */
+.esc { flex: none; display: inline-block; vertical-align: middle; object-fit: contain; }
+.esc-20 { width: 20px; height: 20px; }
+.esc-28 { width: 28px; height: 28px; }
+.esc-36 { width: 36px; height: 36px; }
+.esc-chip { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--secondary); color: var(--muted-foreground); box-shadow: inset 0 0 0 1px var(--border); font-family: var(--font-sans); font-weight: 700; letter-spacing: 0; text-transform: uppercase; overflow: hidden; white-space: nowrap; }
+.esc-chip.com-cor { background: var(--cc); color: var(--cc-t, #fff); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--card) 25%, transparent); }
+.esc-chip.esc-20 { font-size: 7px; }
+.esc-chip.esc-28 { font-size: 9px; }
+.esc-chip.esc-36 { font-size: 11px; }
 .item { padding-block: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .item:first-child { border-top: 0; }
 .item a.titulo { font: 600 15.5px/1.35 var(--font-sans); color: var(--foreground); text-decoration: none; text-wrap: pretty; overflow-wrap: anywhere; }
@@ -1807,7 +1866,7 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
   .lp-acoes .dd-btn { height: 40px; flex: 1 1 auto; }
   .lp-hist > li { grid-template-columns: 46px minmax(0, 1fr); }
 }
-/* Esportes: um cartão por competição ligada, acima do feed (rodada, próximos e tabela). Sem escudos nem fotos. */
+/* Esportes: um cartão por competição ligada, acima do feed (rodada, próximos e tabela). Escudos da ESPN; foto de pessoa, nunca. */
 .esp { display: flex; flex-direction: column; gap: var(--space-3); }
 .esp-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .esp-topo h2 { margin: 0; font: 600 17px/1.25 var(--font-display); letter-spacing: -0.01em; }
@@ -1848,8 +1907,10 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .esp-torneio small { display: block; font-size: 12px; color: var(--muted-foreground); }
 .esp-torneio .esp-rod { font-size: 12.5px; color: var(--muted-foreground); text-align: right; white-space: nowrap; }
 .esp-q { grid-area: q; font: 400 12px/1.3 var(--font-mono); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.esp-m { grid-area: m; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.esp-v { grid-area: v; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-m { grid-area: m; display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; text-align: right; }
+.esp-v { grid-area: v; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.esp-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-tm { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .esp-p { grid-area: p; text-align: center; font-weight: 600; white-space: nowrap; }
 .esp-jogo.pre .esp-p { color: var(--muted-foreground); font-weight: 400; }
 .esp-jogo.in .esp-p { color: var(--err); }
@@ -1906,6 +1967,9 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .esp-cfg-setas { display: inline-flex; gap: 4px; }
 .esp-cfg h3 { margin: 6px 0 2px; font: 600 13px/1.3 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
 .esp-times { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.esp-chip-time { gap: 6px; }
+.esp-op-time { display: inline-flex; align-items: center; gap: 8px; }
+.esp-cfg-sw { padding: 6px 0 2px; }
 .esp-busca { position: relative; }
 .esp-busca .lst-sug { position: absolute; left: 0; right: 0; top: 100%; z-index: 2; }
 .esp-busca-jog { display: flex; gap: 8px; align-items: flex-start; }
@@ -1942,7 +2006,21 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .wdg-esp-tab tr.esp-pula td { border-top: 0; color: var(--muted-foreground); text-align: center; padding: 0; line-height: 1; }
 .wdg-meu { display: flex; flex-direction: column; gap: 10px; }
 .wdg-meu h4 { margin: 0 0 4px; font: 600 11px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
-.wdg-meu .placar { font: 600 20px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.wdg-meu .placar { font: 600 20px/1.2 var(--font-display); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wdg-meu .wdg-meu-prox { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.wdg-meu .wdg-meu-prox b { min-width: 0; overflow-wrap: anywhere; }
+/* Vai e vem no Início */
+.wdg-vv { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.wdg-vv li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 0 10px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.wdg-vv li:first-child { border-top: 0; }
+.wdg-vv-q { display: flex; flex-direction: column; min-width: 0; }
+.wdg-vv-q a { color: var(--foreground); font-weight: 600; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wdg-vv-q a:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.wdg-vv-q small { color: var(--muted-foreground); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 700px) {
+  .wdg[data-c="2"] .wdg-vv { display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px; }
+  .wdg[data-c="2"] .wdg-vv li:nth-child(2) { border-top: 0; }
+}
 .wdg-meu p { margin: 0; font-size: 13px; }
 .wdg-meu .n { color: var(--muted-foreground); font-size: 12px; }
 .wdg-meu .res-v { color: var(--ok); } .wdg-meu .res-d { color: var(--err); } .wdg-meu .res-e { color: var(--muted-foreground); }
@@ -4688,16 +4766,6 @@ function favBotao(i) {
 let resumosAbertos = false;
 try { resumosAbertos = localStorage.getItem("radar-resumos") === "expandido"; } catch (e) {}
 const resumoAberto = new Set();
-/* Status de uma negociação, do mais frio ao desfecho */
-const STATUS_TRANSF = {
-  interesse: { nome: "Interesse", c: "var(--muted-foreground)" },
-  rumor: { nome: "Rumor", c: "var(--muted-foreground)" },
-  negociacao: { nome: "Em negociação", c: "var(--info)" },
-  proposta: { nome: "Proposta feita", c: "var(--info)" },
-  acerto: { nome: "Falta assinar", c: "var(--warn)" },
-  fechado: { nome: "Fechado", c: "var(--ok)" },
-  melou: { nome: "Não rolou", c: "var(--err)" },
-};
 const SETA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
 const emojiPais = (cc) => {
   const c = String(cc || "").trim().toUpperCase();
@@ -4716,46 +4784,14 @@ const corValida = (c) => (/^#[0-9a-f]{3,8}$/i.test(String(c || "")) ? c : "");
    confundir com o filtro Nacional/Internacional. O campo gravado (clube, origem, destino) fica como veio. */
 const NOME_CLUBE = { "internacional": "Inter", "sport club internacional": "Inter", "sc internacional": "Inter" };
 const nomeClube = (n) => NOME_CLUBE[String(n || "").trim().toLowerCase()] || String(n || "");
-function clubeEl(c, papel) {
-  if (!c || !c.clube) return el("div", { class: "clube-l" }, el("span", { class: "escudo vazio", "aria-hidden": "true" }, "?"), el("span", { class: "nome" }, papel === "origem" ? "Origem a confirmar" : "Destino a confirmar"));
-  const cor = corValida(c.cor);
-  return el("div", { class: "clube-l" },
-    el("span", { class: "escudo", style: cor ? `--cc:${cor}` : "", "aria-hidden": "true" }, c.sigla ? String(c.sigla).slice(0, 4) : sigla(c.clube)),
-    el("span", { class: "nome", title: c.clube }, nomeClube(c.clube)),
-    c.pais ? el("span", { class: "pais" }, emojiPais(c.pais), " ", (nomesPais && nomesPais.of(String(c.pais).toUpperCase())) || c.pais) : null);
-}
-function cardTransf(i) {
-  const t = i.transferencia || {};
-  const st = STATUS_TRANSF[t.status] || STATUS_TRANSF.rumor;
-  const iniciais = String(t.jogador || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-  const detalhes = [t.posicao, t.idade ? t.idade + " anos" : ""].filter(Boolean).join(" · ");
-  const novo = meta && i.rodada === meta.ultimaRodada;
-  return el("li", { class: "transf" },
-    el("div", { class: "transf-topo" },
-      el("span", { class: "st", style: `--c:${st.c}` }, st.nome),
-      el("span", { style: "display:inline-flex;align-items:center;gap:6px" }, novo ? el("span", { class: "dd-badge b-novo" }, "Novo") : null, i._id ? favBotao(i) : null)),
-    el("div", { class: "transf-rota" }, clubeEl(t.origem, "origem"), el("span", { class: "seta", html: SETA }), clubeEl(t.destino, "destino")),
-    el("div", { class: "jogador" },
-      el("span", { class: "avatar", "aria-hidden": "true" }, iniciais),
-      el("div", { class: "quem" }, el("b", {}, t.jogador || i.titulo), el("span", {}, emojiPais(t.nacionalidade), t.nacionalidade ? " " : "", detalhes))),
-    el("div", { class: "transf-pe" },
-      t.valor ? el("span", { class: "valor" }, t.valor) : null,
-      fonteEl(i),
-      t.fontes > 1 ? el("span", {}, t.fontes + " fontes") : null,
-      el("span", {}, "atualizado " + fmtRel(t.atualizado || i.coletado))),
-    el("a", { class: "ver", href: i.url, target: "_blank", rel: "noopener" }, i.titulo || "Ver a notícia"));
-}
-/* Negociações viram cards em grade, antes das notícias comuns do mesmo grupo */
+/* Notícias comuns de um grupo do feed. As negociações (itens com `transferencia`) têm a seção própria do Vai e vem
+   (secaoVaiVem, no bloco de Esportes), com uma negociação por card; nos outros temas elas aparecem como notícia. */
 function listasDe(itensGrupo) {
-  const cards = itensGrupo.filter(ehTransf), resto = itensGrupo.filter((i) => !ehTransf(i));
-  const out = [];
-  if (cards.length) { const ul = el("ul", { class: "lista cards" }); cards.forEach((i) => ul.append(cardTransf(i))); out.push(ul); }
-  if (resto.length) { const ul = el("ul", { class: "lista" }); resto.forEach((i) => ul.append(itemEl(i))); out.push(ul); }
-  return out;
+  if (!itensGrupo.length) return [];
+  const ul = el("ul", { class: "lista" }); itensGrupo.forEach((i) => ul.append(itemEl(i)));
+  return [ul];
 }
-const ehTransf = (i) => !!(i && i.transferencia && (i.transferencia.jogador || i.transferencia.destino));
 function itemEl(i) {
-  if (ehTransf(i)) return cardTransf(i);
   const novo = meta && i.rodada === meta.ultimaRodada;
   const k = i._id || i.url || i.titulo;
   const ps = R().mercado ? papeisDe(i) : [];
@@ -4845,7 +4881,14 @@ function renderFeed() {
   const lista = ordenar(fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo)));
   const temas = temasSel.size ? TEMAS.filter((t) => temasSel.has(t.id)) : TEMAS;
   const bloco = el("div", { class: "secoes" });
+  /* Esportes: o Vai e vem junta as negociações de qualquer tema (uma por card); o resto dos temas segue como antes */
+  const comVaiVem = radar === "esportes" && TEMAS.some((t) => t.id === "mercado");
   for (const t of temas) {
+    if (comVaiVem && t.id === "mercado") {
+      const sec = secaoVaiVem(t, lista, expandidos.has(t.id) || temasSel.size > 0 || soFav);
+      if (sec) bloco.append(sec);
+      continue;
+    }
     const doTema = lista.filter((i) => grp(i) === t.id && passaTema(i));
     const subs = t.subs;
     if (!doTema.length) continue;
@@ -4860,8 +4903,7 @@ function renderFeed() {
         sec.append(el("div", { class: "subgrupo" }, el("h3", { class: "subsecao" }, g.nome, el("span", {}, String(doSub.length))), ...listasDe(doSub)));
       }
     } else {
-      const ord = doTema.some(ehTransf) ? [...doTema.filter(ehTransf), ...doTema.filter((i) => !ehTransf(i))] : doTema;
-      const mostra = aberto ? ord : ord.slice(0, LIMITE_POR_TEMA);
+      const mostra = aberto ? doTema : doTema.slice(0, LIMITE_POR_TEMA);
       sec.append(...listasDe(mostra));
     }
     if (!aberto && doTema.length > LIMITE_POR_TEMA) {
@@ -4996,7 +5038,10 @@ async function alternarFav(i) {
   const tirar = !!favs[id];
   let snap = null;
   if (tirar) delete favs[id];
-  else { snap = { favoritadoEm: agora() }; CAMPOS_FAV.forEach((k) => { if (i[k] != null) snap[k] = i[k]; }); favs[id] = snap; }
+  else { snap = { favoritadoEm: agora() }; CAMPOS_FAV.forEach((k) => { if (i[k] != null) snap[k] = i[k]; });
+    /* da negociação só os campos do card (Esportes.transferenciaLimpa): nada de foto nem de link de imagem */
+    if (snap.transferencia) { const t = window.Esportes.transferenciaLimpa(snap.transferencia); if (t) snap.transferencia = t; else delete snap.transferencia; }
+    favs[id] = snap; }
   render();
   if (favCol) {
     try { if (tirar) await favCol.doc(idNaConta(id)).delete(); else await favCol.doc(idNaConta(id)).set(snap); return; }
@@ -5454,6 +5499,7 @@ const CATALOGO_LOCAL = [
     ...(window.Esportes.LIGAS[l].tenis ? [] : [{ id: "esportes-tabela-" + l, titulo: window.Esportes.LIGAS[l].curto + " · tabela", tamanho: 1, secao: "esportes", liga: l }]),
   ]),
   { id: "esportes-meu-time", titulo: "Meu time · próximo jogo", tamanho: 1, secao: "esportes" },
+  { id: "esportes-vaivem", titulo: "Vai e vem", tamanho: 1, secao: "esportes" },
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },
   { id: "carteira-patrimonio", titulo: "Patrimônio", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-proventos-mes", titulo: "Proventos do mês", tamanho: 1, secao: "investimentos", pessoal: true },
@@ -10124,8 +10170,9 @@ $("lp-folha").addEventListener("keydown", (e) => {
 
 /* ---------- Esportes: competições acima do feed da aba, "Meus esportes" (#esportes/config) e widgets do Início ----------
    Uma cópia de meta/esportes-<liga> por competição ligada (lerMeta, a mesma memória do Início). As competições, as
-   zonas da tabela e a validação vêm de /esportes.js (window.Esportes), o mesmo arquivo do Worker. Sem escudo nem foto:
-   só o nome do time e a sigla. Horários no fuso de quem vê. */
+   zonas da tabela e a validação vêm de /esportes.js (window.Esportes), o mesmo arquivo do Worker. Escudo de clube sim
+   (11/11: a URL que a ESPN manda, carregada direto de a.espncdn.com, com o chip de sigla como reserva); foto de jogador,
+   de técnico ou de qualquer pessoa, não: no Vai e vem o jogador é um avatar de iniciais. Horários no fuso de quem vê. */
 var espPrefs = null, espPrefsLendo = null, espVisto = "", espTick = 0;
 var espDocs = new Map(), espLidoEm = new Map(), espLendo = new Set();
 const ES = window.Esportes;
@@ -10183,6 +10230,34 @@ setInterval(() => {
 /* ---- pedaços ---- */
 const nomeLiga = (liga) => (ES.LIGAS[liga] ? ES.LIGAS[liga].curto : liga);
 const fonteTxt = (d) => (d && d.fonte === "ge" ? "Globo Esporte" : "ESPN");
+/* ---- escudos ----
+   Tamanhos fixos: 20 px em lista, 28 px no card do jogo, 36 px no Vai e vem. A imagem vem só de a.espncdn.com
+   (Esportes.escudoOk de novo aqui, além do cron), preguiçosa, sem referrer, com width e height no HTML para não pular
+   o layout e alt vazio (o nome está ao lado). Sem escudo, com "Mostrar escudos" desligado ou se a imagem falhar: o chip
+   de sigla, com a cor do clube quando houver. */
+const mostrarEscudos = () => espPrefsOu().escudos !== false;
+/* texto escuro em cor clara, claro em cor escura */
+function corDoTexto(hex) {
+  const h = String(hex || "").replace("#", "");
+  const c = h.length === 3 ? h.split("").map((x) => x + x).join("") : h.slice(0, 6);
+  if (!/^[0-9a-f]{6}$/i.test(c)) return "";
+  const [r, g, b] = [0, 2, 4].map((k) => parseInt(c.slice(k, k + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? "#14141a" : "#ffffff";
+}
+function chipSigla(sig, nome, cor, tam) {
+  const c = corValida(cor);
+  const t = String(sig || "").trim().slice(0, 4) || sigla(nome);
+  return el("span", { class: "esc esc-chip esc-" + tam + (c ? " com-cor" : ""), style: c ? `--cc:${c};--cc-t:${corDoTexto(c)}` : "", "aria-hidden": "true" }, t === "?" ? "" : t);
+}
+function escudoEl(url, { sigla: sig = "", nome = "", cor = "", tam = 20 } = {}) {
+  const u = mostrarEscudos() ? ES.escudoOk(url) : "";
+  if (!u) return chipSigla(sig, nome, cor, tam);
+  const img = el("img", { class: "esc esc-" + tam, src: u, width: String(tam), height: String(tam), alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer" });
+  img.addEventListener("error", () => img.replaceWith(chipSigla(sig, nome, cor, tam)), { once: true });
+  return img;
+}
+/* escudo de um time de uma competição pelo id da ESPN (doc.escudos) */
+const escDoDoc = (d, id) => (d && d.escudos && id ? d.escudos[id] : "") || "";
 function quandoJogo(j) {
   if (j.estado === "in") return el("span", { class: "esp-vivo" }, "ao vivo" + (j.minuto ? " · " + j.minuto : ""));
   if (j.detalhe === "adiado") return "adiado";
@@ -10194,19 +10269,24 @@ function quandoJogo(j) {
 const ehMeu = (j, t) => !!t && (j.ids || []).includes(t.id);
 /* curto: sigla no lugar do nome (tela muito estreita, card 1x1); medio: o nome curto da ESPN quando houver (NBA no
    celular e no Início: "Lakers" em vez de "Los Angeles Lakers") */
-function jogoEl(j, t, curto, medio) {
+function jogoEl(j, t, curto, medio, d) {
   const p = ES.partesData(j.data);
   const meuM = ehMeu(j, t) && j.ids[0] === t.id, meuV = ehMeu(j, t) && j.ids[1] === t.id;
-  const nome = (n, sig, meu, k) => { const x = curto && sig ? sig : (medio && j.curtos && j.curtos[k]) || n; return meu ? el("b", {}, x) : x; };
+  const nome = (n, sig, meu, k) => {
+    const x = curto && sig ? sig : (medio && j.curtos && j.curtos[k]) || n;
+    const esc = escudoEl(escDoDoc(d, j.ids && j.ids[k]), { sigla: sig, nome: n, tam: 20 });
+    const txt = el("span", { class: "esp-n" }, meu ? el("b", {}, x) : x);
+    return k ? [esc, txt] : [txt, esc];
+  };
   const placar = j.placar ? j.placar[0] + " × " + j.placar[1] : p ? p.hora : "×";
   const tit = [j.mandante, j.visitante].join(" × ") + (j.estadio ? " · " + j.estadio : "") + (p ? " · " + p.semana + " " + p.ddmm + " " + p.hora : "");
   return el("li", { class: "esp-jogo " + j.estado + (ehMeu(j, t) ? " meu" : ""), title: tit },
     el("span", { class: "esp-q" }, quandoJogo(j)),
-    el("span", { class: "esp-m" }, nome(j.mandante, j.siglas && j.siglas[0], meuM, 0)),
+    el("span", { class: "esp-m" }, ...nome(j.mandante, j.siglas && j.siglas[0], meuM, 0)),
     el("span", { class: "esp-p", "aria-label": j.placar ? `${j.placar[0]} a ${j.placar[1]}` : "a jogar" }, j.estado === "pre" ? "×" : placar),
-    el("span", { class: "esp-v" }, nome(j.visitante, j.siglas && j.siglas[1], meuV, 1)));
+    el("span", { class: "esp-v" }, ...nome(j.visitante, j.siglas && j.siglas[1], meuV, 1)));
 }
-const listaJogos = (js, t, curto, medio) => el("ul", { class: "esp-jogos" }, ...js.map((j) => jogoEl(j, t, curto, medio)));
+const listaJogos = (js, t, curto, medio, d) => el("ul", { class: "esp-jogos" }, ...js.map((j) => jogoEl(j, t, curto, medio, d)));
 const celular = () => window.matchMedia("(max-width: 699px)").matches;
 const corZona = (z) => ES.ZONAS_COR[z] || "";
 const COLS_ESP = [
@@ -10242,7 +10322,7 @@ function tabelaEsp(liga, d) {
     celula: (c, r) => {
       const v = r[c.id];
       if (c.id === "pos") return el("td", { class: "esp-pos" }, v == null ? "–" : String(v));
-      if (c.id === "time") return el("td", { class: "esp-time", title: r.time }, (celular() && r.curto) || r.time);
+      if (c.id === "time") return el("td", { class: "esp-time", title: r.time }, el("span", { class: "esp-tm" }, escudoEl(escDoDoc(d, r.id), { sigla: r.sigla, nome: r.time, tam: 20 }), el("span", { class: "esp-n" }, (celular() && r.curto) || r.time)));
       if (c.id === "grupo") return el("td", { class: "esp-grupo" }, v || "–");
       if (c.id === "sg") return el("td", {}, v == null ? "–" : (v > 0 ? "+" : "") + v);
       if (c.id === "pct") return el("td", { class: "esp-pts", title: v == null ? "" : "Aproveitamento: " + fmtPctEsp(v) + "% das partidas" }, fmtPctEsp(v));
@@ -10263,7 +10343,9 @@ function nomeJogador(p, k, curto, seguidos) {
   const meu = seguidos.some((x) => ES.ladoDoJogador(p, x.nome) === k);
   const cls = [p.vencedor === k ? "ganhou" : "", meu ? "meu" : ""].filter(Boolean).join(" ");
   const cab = p.cabecas && p.cabecas[k] != null ? el("span", { class: "esp-cab-chave", title: "Cabeça de chave " + p.cabecas[k] }, " (" + p.cabecas[k] + ")") : null;
-  return [cls ? el("span", { class: cls }, nome) : nome, cab];
+  /* tênis não tem escudo: a bandeira do país do jogador, quando a ESPN manda */
+  const band = p.paises && p.paises[k] ? emojiPais(p.paises[k]) : null;
+  return [band, cls ? el("span", { class: cls }, nome) : nome, cab];
 }
 function quandoPartida(p) {
   if (p.estado === "in") return el("span", { class: "esp-vivo" }, "ao vivo" + (p.minuto ? " · " + p.minuto : ""));
@@ -10322,11 +10404,11 @@ function corpoEsp(liga, d, aba) {
     const dele = t && d.times && d.times[t.id] && d.times[t.id].proximos;
     const js = (dele && dele.length ? dele : d.proximos || []).slice(0, 10);
     const nota = el("p", { class: "esp-nota" }, dele && dele.length ? "Próximos jogos do " + t.nome : "Próximos jogos da competição");
-    return js.length ? [nota, listaJogos(js, t, curto, medio)] : [el("p", { class: "esp-vazio" }, "Nenhum jogo marcado para os próximos dias.")];
+    return js.length ? [nota, listaJogos(js, t, curto, medio, d)] : [el("p", { class: "esp-vazio" }, "Nenhum jogo marcado para os próximos dias.")];
   }
   const r = d.rodada || {}, js = r.jogos || [];
   if (!js.length) return [el("p", { class: "esp-vazio" }, "Sem jogos nesta semana.")];
-  return [listaJogos(js, t, curto, medio)];
+  return [listaJogos(js, t, curto, medio, d)];
 }
 function cartaoEsp(liga) {
   const def = ES.LIGAS[liga]; if (!def) return null;
@@ -10383,7 +10465,7 @@ var espP = null, espPAberto = false, espPAbridor = null, espArrasto = null;
 function abrirMeusEsportes() {
   if (!espLiberado()) return;
   const p = espPrefsOu();
-  espP = { on: new Set(p.competicoes || []), ordem: ES.ordemCompleta(p.ordem), times: (p.times || []).map((t) => ({ ...t })), jogadores: (p.jogadores || []).map((x) => ({ ...x })), busca: "", marcada: -1, buscaJ: "", marcadaJ: -1, ligaJ: "atp", erro: "", salvando: false };
+  espP = { on: new Set(p.competicoes || []), ordem: ES.ordemCompleta(p.ordem), times: (p.times || []).map((t) => ({ ...t })), jogadores: (p.jogadores || []).map((x) => ({ ...x })), escudos: p.escudos !== false, busca: "", marcada: -1, buscaJ: "", marcadaJ: -1, ligaJ: "atp", erro: "", salvando: false };
   if (!espPAberto) {
     espPAberto = true; espPAbridor = document.activeElement;
     const html = document.documentElement, sb = window.innerWidth - html.clientWidth;
@@ -10394,7 +10476,7 @@ function abrirMeusEsportes() {
   desenharMeusEsportes();
   $("esp-folha").focus({ preventScroll: true });
   /* os times do autocompletar vêm das tabelas e dos jogos das competições ligadas */
-  lerPrefsEsportes().then(() => { if (espPAberto && espP && !espP.mexeu && espPrefs) { espP.on = new Set(espPrefs.competicoes); espP.ordem = ES.ordemCompleta(espPrefs.ordem); espP.times = espPrefs.times.map((t) => ({ ...t })); espP.jogadores = (espPrefs.jogadores || []).map((x) => ({ ...x })); desenharMeusEsportes(); } });
+  lerPrefsEsportes().then(() => { if (espPAberto && espP && !espP.mexeu && espPrefs) { espP.on = new Set(espPrefs.competicoes); espP.ordem = ES.ordemCompleta(espPrefs.ordem); espP.times = espPrefs.times.map((t) => ({ ...t })); espP.jogadores = (espPrefs.jogadores || []).map((x) => ({ ...x })); espP.escudos = espPrefs.escudos !== false; desenharMeusEsportes(); } });
   Promise.all(ES.ORDEM_LIGAS.filter((l) => espP.on.has(l)).map((l) => (espDocs.has(l) ? null : lerEsp(l)))).then(() => { if (espPAberto) desenharMeusEsportes(); });
 }
 function fecharMeusEsportes() {
@@ -10446,6 +10528,14 @@ function sugerirJogadores(q) {
   return jogadoresConhecidos().filter((x) => !ja.has(x.liga + "|" + semAcento(x.nome).toLowerCase()) && semAcento(x.nome).toLowerCase().includes(s))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).slice(0, 8);
 }
+/* escudo de um time na folha de Meus esportes: o da competição dele (doc.escudos), conforme o interruptor da folha */
+function escudoP(t) {
+  const u = espP && espP.escudos ? ES.escudoOk(escDoDoc(espDocs.get(t.liga), t.id)) : "";
+  if (!u) return chipSigla(t.sigla || "", t.nome, "", 20);
+  const img = el("img", { class: "esc esc-20", src: u, width: "20", height: "20", alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer" });
+  img.addEventListener("error", () => img.replaceWith(chipSigla(t.sigla || "", t.nome, "", 20)), { once: true });
+  return img;
+}
 function moverEsp(id, para) {
   const o = espP.ordem.filter((x) => x !== id);
   o.splice(Math.max(0, Math.min(para, o.length)), 0, id);
@@ -10488,7 +10578,7 @@ function desenharMeusEsportes(foco) {
   corpo.append(el("h3", {}, "Times que eu acompanho"));
   const chips = el("div", { class: "esp-times" });
   espP.times.forEach((t, n) => {
-    const b = el("button", { type: "button", class: "chip", id: "esp-time-x-" + n, "aria-label": `Parar de acompanhar ${t.nome}`, title: "Tirar" }, el("span", {}, t.nome + " · " + nomeLiga(t.liga)), el("span", { "aria-hidden": "true" }, " ×"));
+    const b = el("button", { type: "button", class: "chip esp-chip-time", id: "esp-time-x-" + n, "aria-label": `Parar de acompanhar ${t.nome}`, title: "Tirar" }, escudoP(t), el("span", {}, t.nome + " · " + nomeLiga(t.liga)), el("span", { "aria-hidden": "true" }, " ×"));
     b.addEventListener("click", () => { espP.times.splice(n, 1); espP.mexeu = true; desenharMeusEsportes(espP.times.length ? "esp-time-x-" + Math.min(n, espP.times.length - 1) : "esp-time-q"); });
     chips.append(b);
   });
@@ -10501,7 +10591,7 @@ function desenharMeusEsportes(foco) {
   const pintarSug = () => {
     sug.textContent = "";
     opcoes.forEach((o, n) => {
-      const b = el("button", { type: "button", role: "option", tabindex: "-1", id: "esp-time-op" + n, "aria-selected": String(n === espP.marcada) }, el("b", {}, o.nome), el("span", {}, nomeLiga(o.liga)));
+      const b = el("button", { type: "button", role: "option", tabindex: "-1", id: "esp-time-op" + n, "aria-selected": String(n === espP.marcada) }, el("b", { class: "esp-op-time" }, escudoP(o), o.nome), el("span", {}, nomeLiga(o.liga)));
       b.addEventListener("mousedown", (e) => e.preventDefault());
       b.addEventListener("click", () => escolher(o));
       sug.append(el("li", {}, b));
@@ -10522,6 +10612,11 @@ function desenharMeusEsportes(foco) {
   const conhecidos = timesConhecidos().length;
   corpo.append(el("p", { class: "pers-dica" }, conhecidos ? "Os nomes vêm das tabelas e dos jogos das competições ligadas." : "Ligue uma competição e espere a primeira coleta: os times dela aparecem aqui."));
   desenharJogadores(corpo);
+  /* escudos: o interruptor vale para a aba, o Início e o Vai e vem; desligado, fica o chip de sigla */
+  corpo.append(el("h3", {}, "Escudos"));
+  const sw = el("button", { type: "button", class: "lp-switch", role: "switch", id: "esp-escudos", "aria-checked": String(espP.escudos) }, "Mostrar escudos");
+  sw.addEventListener("click", () => { espP.escudos = !espP.escudos; espP.mexeu = true; desenharMeusEsportes("esp-escudos"); });
+  corpo.append(el("div", { class: "esp-cfg-sw" }, sw), el("p", { class: "pers-dica" }, espP.escudos ? "Os escudos vêm da ESPN, direto do site dela. Desligado, aparece a sigla do time no lugar." : "Desligado: aparece a sigla do time no lugar do escudo."));
   if (espP.erro) corpo.append(el("p", { class: "esp-erro", role: "alert" }, espP.erro));
   const cancelar = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "esp-cancelar" }, "Cancelar");
   cancelar.addEventListener("click", fecharMeusEsportes);
@@ -10584,7 +10679,7 @@ function desenharJogadores(corpo) {
 }
 async function salvarMeusEsportes() {
   if (!espP || espP.salvando) return;
-  const corpo = { competicoes: espP.ordem.filter((id) => espP.on.has(id)), ordem: espP.ordem, times: espP.times, jogadores: espP.jogadores };
+  const corpo = { competicoes: espP.ordem.filter((id) => espP.on.has(id)), ordem: espP.ordem, times: espP.times, jogadores: espP.jogadores, escudos: espP.escudos };
   const v = ES.validarPrefs(corpo);
   if (v.erro) { espP.erro = v.erro; desenharMeusEsportes(); return; }
   espP.salvando = true; espP.erro = ""; desenharMeusEsportes("esp-salvar");
@@ -10596,6 +10691,7 @@ async function salvarMeusEsportes() {
     fecharMeusEsportes();
     [...wDados.keys()].forEach((k) => { if (k.startsWith("esportes-")) wDados.delete(k); });
     renderEsportes(true); carregarEsportes();
+    if (!inicio && radar === "esportes") renderFeed();
     if (inicio && !carteiraVista && painelMontado) montarGrade();
   } catch (e) { if (espP) { espP.salvando = false; espP.erro = e.message; desenharMeusEsportes(); } }
 }
@@ -10615,12 +10711,154 @@ function ajustarMenuEsportes() {
   $("conta-esportes").hidden = !ok; $("conta-sep-esp").hidden = !ok;
 }
 
+/* ---- Vai e vem (11/11): uma negociação por card ----
+   Os itens com `transferencia`, de qualquer tema, viram negociações (Esportes.agruparNegociacoes: jogador + clube de
+   destino). O card mostra o estado mais recente e a linha do tempo das notícias do grupo; os filtros de clube e de etapa
+   ficam no localStorage (radar-vaivem). Escudos pelo catálogo meta/esportes-escudos (Esportes.escudoDe, com o país do
+   item para desempatar); sem certeza, o chip de sigla com a cor do clube. O jogador nunca tem foto: avatar de
+   iniciais na cor do clube de destino, com a bandeira e a posição. */
+var vvCatalogo = null, vvCatalogoPedido = 0;
+const vvAbertos = new Set();
+let vvFiltro = { quem: "tudo", etapa: "tudo" };
+try { const f = JSON.parse(localStorage.getItem("radar-vaivem") || "null"); if (f && ES.QUEM_VV.includes(f.quem)) vvFiltro.quem = f.quem; if (f && ES.ETAPA_VV.includes(f.etapa)) vvFiltro.etapa = f.etapa; } catch (e) {}
+const guardarVv = () => { try { localStorage.setItem("radar-vaivem", JSON.stringify(vvFiltro)); } catch (e) {} };
+/* o catálogo é lido uma vez a cada 10 min enquanto a aba Esportes estiver aberta */
+function lerCatalogoVv() {
+  if (Date.now() - vvCatalogoPedido < 600000) return;
+  vvCatalogoPedido = Date.now();
+  lerMeta("esportes-escudos").then((d) => { if (d && d !== vvCatalogo) { vvCatalogo = d; if (!inicio && radar === "esportes") renderFeed(); } });
+}
+/* times de futebol de Meus esportes; sem nenhum, o Inter */
+const vvTimes = () => { const ts = espTimes().filter((t) => ES.LIGAS[t.liga] && ES.LIGAS[t.liga].esporte === "futebol"); return ts.length ? ts : [{ liga: "bra.1", id: "", nome: "Internacional" }]; };
+const nomeTimeVv = (t) => nomeClube(t.nome);
+const COR_ETAPA = { rumor: "var(--muted-foreground)", interesse: "var(--info)", proposta: "var(--primary)", acerto: "var(--warn)", oficial: "var(--ok)",
+  recusada: "var(--err)", melou: "var(--err)", renovou: "var(--brand-end)", fica: "var(--muted-foreground)", aberto: "var(--muted-foreground)" };
+const etapaChip = (id, extra) => { const e = ES.ETAPA[id] || ES.ETAPA.aberto; return el("span", { class: "st" + (extra ? " " + extra : ""), style: `--c:${COR_ETAPA[e.id] || COR_ETAPA.aberto}` }, e.nome); };
+/* trilha de 5 passos (rumor → oficial) com o atual marcado; desfecho e "em aberto" não marcam passo */
+function trilhaEtapa(id) {
+  const e = ES.ETAPA[id] || ES.ETAPA.aberto;
+  const rot = e.passo == null ? "Etapa: " + e.nome.toLowerCase() : `Etapa ${e.passo + 1} de 5: ${e.nome.toLowerCase()}`;
+  return el("ol", { class: "vv-trilha" + (e.desfecho ? " fim" : ""), role: "img", "aria-label": rot, title: ES.ETAPAS.map((x) => x.nome).join(" → ") },
+    ...ES.ETAPAS.map((x, k) => el("li", { class: e.passo != null && k < e.passo ? "feito" : e.passo === k ? "atual" : "" })));
+}
+/* posição em 3 letras para o avatar ("Atacante" vira ATA) */
+const POSICAO_CURTA = { goleiro: "GOL", zagueiro: "ZAG", lateral: "LAT", "lateral-direito": "LD", "lateral-esquerdo": "LE", volante: "VOL", meia: "MEI", "meio-campista": "MEI", "meia-atacante": "MEI", ponta: "PON", atacante: "ATA", centroavante: "CA", "segundo-volante": "VOL" };
+function posicaoCurta(p) {
+  const k = semAcento(p).toLowerCase().trim().replace(/\s+/g, "-");
+  return POSICAO_CURTA[k] || (k ? semAcento(p).replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() : "");
+}
+function avatarVv(t) {
+  const ini = String(t.jogador || "?").split(/\s+/).filter((w) => w && !/^(de|da|do|dos|das|e|jr\.?|junior|júnior)$/i.test(w)).slice(0, 2).map((w) => [...w][0]).join("").toUpperCase() || "?";
+  const cor = corValida((t.destino && t.destino.cor) || (t.origem && t.origem.cor));
+  const pos = posicaoCurta(t.posicao);
+  return el("span", { class: "vv-av" + (cor ? " com-cor" : ""), style: cor ? `--cc:${cor};--cc-t:${corDoTexto(cor)}` : "", "aria-hidden": "true" },
+    el("span", { class: "vv-av-ini" }, ini),
+    t.nacionalidade ? el("span", { class: "vv-av-band" }, emojiPais(t.nacionalidade)) : null,
+    pos ? el("span", { class: "vv-av-pos" }, pos) : null);
+}
+function clubeVv(c, papel, tam = 36) {
+  if (!c || !c.clube) return el("div", { class: "clube-l sem-clube" }, el("span", { class: "esc esc-chip esc-" + tam, "aria-hidden": "true" }, "?"), el("span", { class: "nome" }, papel === "origem" ? "Origem a confirmar" : "Destino a confirmar"));
+  return el("div", { class: "clube-l" },
+    escudoEl(ES.escudoDe(c.clube, vvCatalogo, c.pais), { sigla: c.sigla || sigla(c.clube), nome: c.clube, cor: c.cor, tam }),
+    el("span", { class: "nome", title: c.clube }, nomeClube(c.clube)),
+    c.pais ? el("span", { class: "pais" }, emojiPais(c.pais), " ", (nomesPais && nomesPais.of(c.pais)) || c.pais) : null);
+}
+const dataItemVv = (i) => (i.transferencia && i.transferencia.atualizado) || i.publicado || i.coletado || "";
+function cardNeg(n) {
+  const t = n.t, nova = n.itens[0];
+  const detalhes = [t.posicao, t.idade ? t.idade + " anos" : ""].filter(Boolean).join(" · ");
+  const valorNum = t.valor && /\d/.test(t.valor);
+  const idTl = "vv-tl-" + Math.abs([...n.chave].reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 7)).toString(36);
+  const aberto = vvAbertos.has(n.chave);
+  const rota = el("div", { class: "transf-rota" }, clubeVv(t.origem, "origem"),
+    el("span", { class: "seta", html: SETA }), clubeVv(t.destino, "destino"));
+  const link = el("a", { class: "vv-abre", href: nova.url, target: "_blank", rel: "noopener", "aria-label": `${t.jogador || "Negociação"}: abrir a notícia mais recente (${nova.fonte || hostDe(nova.url)})` },
+    el("div", { class: "jogador" }, avatarVv(t),
+      el("div", { class: "quem" }, el("b", {}, t.jogador || nova.titulo),
+        el("span", {}, detalhes, detalhes && t.nacionalidade ? " · " : "", t.nacionalidade ? emojiPais(t.nacionalidade) : null))),
+    rota,
+    el("div", { class: "vv-etapa" }, etapaChip(n.etapa), trilhaEtapa(n.etapa), valorNum ? el("span", { class: "valor" }, t.valor) : null),
+    el("p", { class: "vv-tit" }, nova.titulo || "Ver a notícia"),
+    el("div", { class: "transf-pe" },
+      t.valor && !valorNum ? el("span", {}, t.valor) : null,
+      el("span", {}, n.fontes === 1 ? "1 fonte" : n.fontes + " fontes"),
+      el("span", { title: fmtData(n.atualizado) }, "atualizado " + fmtRel(n.atualizado))));
+  const acoes = el("div", { class: "vv-acoes" });
+  let tempo = null;
+  if (n.itens.length > 1) {
+    const b = el("button", { type: "button", class: "dd-btn dd-btn--link vv-tl-bt", "aria-expanded": String(aberto), "aria-controls": idTl }, aberto ? "Esconder as notícias" : `Linha do tempo (${n.itens.length} notícias)`);
+    tempo = el("ol", { class: "vv-tempo", id: idTl, ...(aberto ? {} : { hidden: "" }) }, ...n.itens.map((i) => el("li", {},
+      el("span", { class: "vv-quando", title: fmtData(dataItemVv(i)) }, fmtRel(dataItemVv(i))),
+      el("span", { class: "vv-fonte" }, i.fonte || hostDe(i.url)),
+      el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo || "Notícia"))));
+    b.addEventListener("click", () => {
+      const abrir = !vvAbertos.has(n.chave);
+      if (abrir) vvAbertos.add(n.chave); else vvAbertos.delete(n.chave);
+      tempo.hidden = !abrir; b.setAttribute("aria-expanded", String(abrir));
+      b.textContent = abrir ? "Esconder as notícias" : `Linha do tempo (${n.itens.length} notícias)`;
+    });
+    acoes.append(b);
+  } else acoes.append(el("span", {}));
+  if (nova._id) acoes.append(favBotao(nova));
+  return el("li", { class: "transf vv-card", "data-etapa": n.etapa }, link, acoes, tempo);
+}
+function filtrosVv() {
+  const ts = vvTimes();
+  const grupo = (rot, campo, ops) => {
+    const seg = el("div", { class: "seg", role: "group", "aria-label": rot });
+    ops.forEach(([id, nome, dica]) => {
+      const b = el("button", { type: "button", id: `vv-${campo}-${id}`, "aria-pressed": String(vvFiltro[campo] === id), ...(dica ? { title: dica } : {}) }, nome);
+      b.addEventListener("click", () => { vvFiltro[campo] = id; guardarVv(); renderFeed(); const x = $(b.id); if (x) x.focus({ preventScroll: true }); });
+      seg.append(b);
+    });
+    return el("div", { class: "vv-filtro" }, el("span", { class: "vv-rot" }, rot), seg);
+  };
+  return el("div", { class: "vv-filtros" },
+    grupo("Clubes", "quem", [["tudo", "Tudo"], ["meu", ts.length > 1 ? "Meus times" : "Meu time", ts.map(nomeTimeVv).join(", ")], ["brasil", "Brasil"], ["fora", "Fora"]]),
+    grupo("Etapa", "etapa", [["tudo", "Tudo"], ["proposta", "Proposta ou mais", "Proposta, acordo encaminhado ou oficial"], ["oficial", "Oficiais"]]));
+}
+/* A seção do Vai e vem no feed de Esportes. `lista` é o feed já filtrado por busca, abrangência, relevância e tipo;
+   as notícias do tema sem negociação vêm depois dos cards. */
+function secaoVaiVem(tema, lista, aberto) {
+  lerCatalogoVv();
+  const negs = ES.agruparNegociacoes(lista.filter(ES.ehNegociacao));
+  const outras = lista.filter((i) => grp(i) === tema.id && passaTema(i) && !ES.ehNegociacao(i));
+  if (!negs.length && !outras.length) return null;
+  const filtradas = ES.filtrarNegociacoes(negs, { quem: vvFiltro.quem, etapa: vvFiltro.etapa, times: vvTimes(), catalogo: vvCatalogo });
+  const ativas = filtradas.filter((n) => !n.antigo), antigas = filtradas.filter((n) => n.antigo);
+  const sec = el("section", { class: "tema vv", style: `--c:${tema.cor}`, id: "vaivem" },
+    el("h2", {}, el("span", { class: "nome" }, tema.nome, el("small", {}, negs.length === 1 ? "1 negociação" : negs.length + " negociações"))));
+  if (negs.length) {
+    sec.append(filtrosVv());
+    const mostra = aberto ? ativas : ativas.slice(0, LIMITE_POR_TEMA);
+    if (mostra.length) { const ul = el("ul", { class: "lista cards" }); mostra.forEach((n) => ul.append(cardNeg(n))); sec.append(ul); }
+    else if (!antigas.length) {
+      const limpar = el("button", { type: "button", class: "dd-btn dd-btn--link", id: "vv-limpar" }, "Mostrar tudo");
+      limpar.addEventListener("click", () => { vvFiltro = { quem: "tudo", etapa: "tudo" }; guardarVv(); renderFeed(); const x = $("vv-quem-tudo"); if (x) x.focus({ preventScroll: true }); });
+      sec.append(el("p", { class: "vv-vazio" }, vvFiltro.quem === "meu" ? "Nenhuma negociação de " + vvTimes().map(nomeTimeVv).join(", ") + " com esses filtros. " : "Nenhuma negociação com esses filtros. ", limpar));
+    }
+    if (antigas.length && (aberto || ativas.length <= LIMITE_POR_TEMA)) {
+      const ul = el("ul", { class: "lista cards" }); antigas.forEach((n) => ul.append(cardNeg(n)));
+      sec.append(el("details", { class: "vv-antigos" }, el("summary", {}, `Rumores antigos (${antigas.length})`, el("small", {}, " · uma fonte só e nada novo há mais de 7 dias")), ul));
+    }
+  }
+  if (aberto && outras.length) sec.append(el("h3", { class: "subsecao" }, "Outras notícias do mercado", el("span", {}, String(outras.length))), ...listasDe(outras));
+  const escondidos = aberto ? 0 : Math.max(0, ativas.length - LIMITE_POR_TEMA) + outras.length + (ativas.length > LIMITE_POR_TEMA ? antigas.length : 0);
+  if (escondidos) {
+    const b = el("button", { class: "dd-btn dd-btn--link mais alvo", type: "button", id: "mais-" + tema.id }, `Ver mais ${escondidos}`);
+    b.addEventListener("click", () => { expandidos.add(tema.id); render(); });
+    sec.append(b);
+  }
+  return sec;
+}
+
 /* ---- widgets do Início: rodada e tabela de cada competição ligada, próximo jogo do time ---- */
 const ligaDoWidget = (id) => { const m = /^esportes-(?:rodada|tabela)-(.+)$/.exec(id); return m ? m[1] : null; };
 /* Só as competições ligadas em Meus esportes; "próximo jogo" só com time escolhido */
 function espOculto(id) {
   if (!id.startsWith("esportes-")) return false;
   if (id === "esportes-meu-time") return !espMeuTime();
+  if (id === "esportes-vaivem") return false;
   const l = ligaDoWidget(id);
   return !l || !espLigadas().includes(l);
 }
@@ -10631,6 +10869,14 @@ function leitorEsp(id) {
     if (!t) return { d: null, marca: "sem-time" };
     const d = await lerEsp(t.liga, f);
     return d === undefined ? undefined : { d, marca: marcaDe(d) + JSON.stringify(t) };
+  };
+  /* Vai e vem: as notícias mais recentes de Esportes (as negociações saem delas) e o catálogo de escudos */
+  if (id === "esportes-vaivem") return async (f) => {
+    await lerPrefsEsportes();
+    const [x, cat] = await Promise.all([lerFeedResumo("items-esportes", "", 300), lerMeta("esportes-escudos", f)]);
+    if (!x) return undefined;
+    if (cat) vvCatalogo = cat;
+    return { d: { itens: x.d.filter(ES.ehNegociacao) }, marca: x.marca + "|" + marcaDe(cat) + JSON.stringify(vvTimes()) + mostrarEscudos() };
   };
   const l = ligaDoWidget(id);
   if (!l) return null;
@@ -10661,7 +10907,7 @@ const corposEsp = {
     }
     if (!js.length) return [vazioW("Sem jogos nesta semana.")];
     const n = fm.c > 1 ? 10 : 5 * fm.r;
-    return [el("ul", { class: "wdg-esp" }, ...js.slice(0, n).map((j) => { const li = jogoEl(j, t, fm.c === 1, true); li.className = j.estado; return li; })),
+    return [el("ul", { class: "wdg-esp" }, ...js.slice(0, n).map((j) => { const li = jogoEl(j, t, fm.c === 1, true, d); li.className = j.estado; return li; })),
       js.length > n ? el("p", { class: "wdg-vazio" }, `+${js.length - n} jogos na rodada`) : null].filter(Boolean);
   },
   "esportes-tabela"(d, fm, id) {
@@ -10675,7 +10921,7 @@ const corposEsp = {
     /* futebol: jogos e pontos; NBA: campanha (V-D) e % */
     const futebol = !ES.LIGAS[liga] || ES.LIGAS[liga].esporte === "futebol";
     const campanha = (r) => (r.v == null || r.d == null ? "–" : r.v + "-" + r.d + (r.e ? "-" + r.e : ""));
-    const tr = (r) => { const z = corZona(r.zona); return el("tr", { class: (z ? "esp-z" : "") + (t && r.id === t.id ? " esp-meu" : ""), ...(z ? { style: "--z:" + z } : {}) }, el("td", {}, String(r.pos ?? "–")), el("td", { title: r.time }, r.curto || r.time),
+    const tr = (r) => { const z = corZona(r.zona); return el("tr", { class: (z ? "esp-z" : "") + (t && r.id === t.id ? " esp-meu" : ""), ...(z ? { style: "--z:" + z } : {}) }, el("td", {}, String(r.pos ?? "–")), el("td", { title: r.time }, el("span", { class: "esp-tm" }, escudoEl(escDoDoc(d, r.id), { sigla: r.sigla, nome: r.time, tam: 20 }), el("span", { class: "esp-n" }, r.curto || r.time))),
       futebol ? el("td", { title: "Jogos" }, String(r.j ?? "–")) : el("td", { title: "Vitórias e derrotas" }, campanha(r)),
       futebol ? el("td", { title: "Pontos" }, el("b", {}, String(r.pts ?? "–"))) : el("td", { title: "Aproveitamento (%)" }, el("b", {}, fmtPctEsp(r.pct)))); };
     const rows = topo.map(tr);
@@ -10697,23 +10943,39 @@ const corposEsp = {
       const casa = ult.ids[0] === t.id, [gm, gv] = ult.placar || [null, null];
       const res = gm == null ? "" : gm === gv ? "e" : (gm > gv) === casa ? "v" : "d";
       out.append(el("div", {}, el("h4", {}, ult.estado === "in" ? "Agora" : "Último resultado"),
-        el("p", { class: "placar res-" + res }, `${ult.siglas[0] || ult.mandante} ${gm ?? "–"} × ${gv ?? "–"} ${ult.siglas[1] || ult.visitante}`),
+        el("p", { class: "placar res-" + res }, escudoEl(escDoDoc(d, ult.ids[0]), { sigla: ult.siglas[0], nome: ult.mandante, tam: 28 }), el("span", {}, `${ult.siglas[0] || ult.mandante} ${gm ?? "–"} × ${gv ?? "–"} ${ult.siglas[1] || ult.visitante}`), escudoEl(escDoDoc(d, ult.ids[1]), { sigla: ult.siglas[1], nome: ult.visitante, tam: 28 })),
         el("p", { class: "n" }, (ult.estado === "in" ? el("span", { class: "esp-vivo" }, "ao vivo" + (ult.minuto ? " · " + ult.minuto : "")) : ES.rotuloDia(ult.data)), ult.estado === "in" ? null : " · " + ult.mandante + " × " + ult.visitante)));
     }
     if (prox) {
       const p = ES.partesData(prox.data);
-      out.append(el("div", {}, el("h4", {}, "Próximo jogo"), el("p", {}, el("b", {}, prox.mandante + " × " + prox.visitante)),
+      out.append(el("div", {}, el("h4", {}, "Próximo jogo"), el("p", { class: "wdg-meu-prox" }, escudoEl(escDoDoc(d, prox.ids && prox.ids[0]), { sigla: prox.siglas && prox.siglas[0], nome: prox.mandante, tam: 28 }), el("b", {}, prox.mandante + " × " + prox.visitante), escudoEl(escDoDoc(d, prox.ids && prox.ids[1]), { sigla: prox.siglas && prox.siglas[1], nome: prox.visitante, tam: 28 })),
         el("p", { class: "n" }, (ES.rotuloDia(prox.data) || "") + (p ? " · " + p.hora : "") + (prox.estadio ? " · " + prox.estadio : ""))));
     }
     if (!ult && !prox) out.append(vazioW("Nenhum jogo de " + t.nome + " por agora."));
     return [out];
   },
 };
+/* Vai e vem no Início: as negociações mais avançadas dos times da pessoa (3 no 1x1, 5 no 2x1), com o escudo do destino */
+corposEsp["esportes-vaivem"] = (d, fm) => {
+  const ts = vvTimes();
+  const negs = ES.filtrarNegociacoes(ES.agruparNegociacoes((d && d.itens) || []), { quem: "meu", times: ts, catalogo: vvCatalogo }).filter((n) => !n.antigo);
+  if (!negs.length) return [vazioW("Nenhuma negociação de " + ts.map(nomeTimeVv).join(", ") + " agora.")];
+  const n = fm.c > 1 ? 5 : 3;
+  return [el("ul", { class: "wdg-vv" }, ...negs.slice(0, n).map((x) => {
+    const t = x.t, c = t.destino || t.origem;
+    const rumo = t.destino ? "para " + nomeClube(t.destino.clube) : t.origem ? "sai do " + nomeClube(t.origem.clube) : "";
+    return el("li", {},
+      c ? escudoEl(ES.escudoDe(c.clube, vvCatalogo, c.pais), { sigla: c.sigla || sigla(c.clube), nome: c.clube, cor: c.cor, tam: 20 }) : chipSigla("?", "", "", 20),
+      el("span", { class: "wdg-vv-q" }, el("a", { href: x.itens[0].url, target: "_blank", rel: "noopener" }, t.jogador || x.itens[0].titulo), rumo ? el("small", {}, rumo) : null),
+      etapaChip(x.etapa, "st-p"));
+  })), negs.length > n ? el("p", { class: "wdg-vazio" }, `+${negs.length - n} no Vai e vem`) : null].filter(Boolean);
+};
 const tituloDoWidget = (id, def) => (id === "esportes-meu-time" && espMeuTime() ? espMeuTime().nome + " · próximo jogo" : def.titulo);
 function subtituloEsp(id, x) {
   const d = x && x.estado === "ok" ? x.d : null;
   if (!d) return "";
   if (id === "esportes-meu-time") { const t = espMeuTime(); return t ? nomeLiga(t.liga) : ""; }
+  if (id === "esportes-vaivem") return vvTimes().map(nomeTimeVv).join(", ");
   if (id.startsWith("esportes-rodada-")) {
     if (((d.rodada && d.rodada.jogos) || []).some((j) => j.estado === "in")) return el("span", { class: "esp-vivo" }, "ao vivo");
     const { hoje } = jogosDoCard(d);

@@ -31,6 +31,17 @@
 // partida: { id, data, torneio, torneioId, chave, rodada, jogadores: [a, b], curtos: [a, b], cabecas: [a, b], ranks: [a, b],
 //   sets: [[a, b], ...], vencedor: 0 | 1 | null, estado, minuto ("2º set"), quadra, detalhe }
 //
+// Escudos (11/11/2026): a URL que a ESPN manda em team.logo (scoreboard e schedule) ou team.logos[0].href (standings e
+//   endpoint de times), só de https://a.espncdn.com/i/teamlogos/ (Esportes.escudoOk; o resto, inclusive as fotos de atleta
+//   da mesma origem, é descartado). Fica no doc da liga em
+//   `escudos: { <id do time>: url }`. Nada é baixado nem copiado: a página carrega a imagem direto da ESPN.
+//   Catálogo para o Vai e vem em meta/esportes-escudos: { atualizado, times: { <id>: { nome, sigla, escudo, liga, pais } },
+//   mapa: { <nome normalizado>: [ids] } }, montado no cron com os docs das ligas de futebol e, 1 vez por semana, o
+//   endpoint de times da ESPN (site.api.espn.com/apis/site/v2/sports/soccer/<liga>/teams) das ligas de
+//   Esportes.LIGAS_ESCUDOS, no máximo 4 chamadas por rodada; o que já foi pedido fica em _sistema/esportes-times.
+//   Foto de pessoa (jogador, técnico): nunca. O athlete.headshot da ESPN não é lido.
+//   Tênis: sem escudo; o país do jogador (paises: [a, b], ISO2) quando a ESPN mandar, para a bandeira em emoji.
+//
 // Ritmo (cronEsportes, conferido a cada 5 min): rodada a cada 15 min quando há jogo ao vivo ou começando nas próximas
 // 2 h, senão 1x por hora; tabela 2x por dia; jogos dos times de interesse 1x por dia. Chamadas em fila, 400 ms entre
 // elas, 8 s de limite cada; 429 dobra a espera e tenta de novo uma vez. No máximo 30 chamadas por passada (a rodada de
@@ -59,6 +70,7 @@ const slug = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 const caminhoDe = (liga) => (E.LIGAS[liga] ? E.LIGAS[liga].caminho : String(liga).includes("/") ? String(liga) : "soccer/" + liga);
 export const urlScoreboard = (liga, dia) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/scoreboard${dia ? "?dates=" + dia : ""}`;
 export const urlStandings = (liga) => `https://site.api.espn.com/apis/v2/sports/${caminhoDe(liga)}/standings`;
+export const urlTimes = (liga) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/teams`;
 export const urlSchedule = (liga, time, proximos) => `https://site.api.espn.com/apis/site/v2/sports/${caminhoDe(liga)}/teams/${encodeURIComponent(time)}/schedule${proximos ? "?fixture=true" : ""}`;
 
 // AAAAMMDD em São Paulo, deslocado em dias
@@ -154,6 +166,85 @@ export function escolherRodada(jogos, agora = Date.now(), numero = null, raio = 
 export const proximosDe = (jogos, agora = Date.now(), n = 20) => jogos.filter((x) => x.estado !== "post" && (Date.parse(x.data) || 0) >= agora - 3 * HORA).sort(porData).slice(0, n);
 export const ultimosDe = (jogos, n = 20) => jogos.filter((x) => x.estado === "post").sort((a, b) => porData(b, a)).slice(0, n);
 
+// ---------- ESPN: escudos ----------
+// URL do escudo de um time da ESPN: team.logo (scoreboard, schedule) ou team.logos[0].href (standings, times). Só de
+// https://a.espncdn.com/i/teamlogos/; campo ausente, outra origem ou outra pasta (fotos de atleta) = sem escudo.
+export function escudoDoTime(t) {
+  if (!t || typeof t !== "object") return "";
+  const logos = Array.isArray(t.logos) ? t.logos.filter((l) => l && typeof l === "object") : [];
+  const padrao = logos.find((l) => Array.isArray(l.rel) && l.rel.includes("default")) || logos[0];
+  return E.escudoOk(typeof t.logo === "string" ? t.logo : "") || E.escudoOk(padrao && padrao.href) || "";
+}
+// { <id do time>: url } de qualquer resposta da ESPN com times: events[] (scoreboard, schedule), children[] com
+// standings.entries (standings) ou sports[].leagues[].teams (endpoint de times). Nunca lança.
+export function lerEscudos(j) {
+  const out = {};
+  const pega = (t) => { if (!t || typeof t !== "object" || t.id == null) return; const u = escudoDoTime(t); if (u) out[txt(t.id, 20)] = u; };
+  try {
+    for (const ev of j && Array.isArray(j.events) ? j.events : []) {
+      const c = ev && Array.isArray(ev.competitions) ? ev.competitions[0] : null;
+      for (const x of c && Array.isArray(c.competitors) ? c.competitors : []) pega(x && x.team);
+    }
+    const visitar = (no, prof = 0) => {
+      if (!no || typeof no !== "object" || prof > 4) return;
+      for (const e of no.standings && Array.isArray(no.standings.entries) ? no.standings.entries : []) pega(e && e.team);
+      if (Array.isArray(no.children)) no.children.forEach((ch) => visitar(ch, prof + 1));
+    };
+    visitar(j);
+    for (const t of lerTimesEspn(j)) if (t.escudo) out[t.id] = t.escudo;
+  } catch (e) {}
+  return out;
+}
+// Endpoint de times (site.api.espn.com/apis/site/v2/sports/soccer/<liga>/teams): sports[0].leagues[0].teams[].team
+// { id, displayName, shortDisplayName, name, abbreviation, logos }. Devolve [{ id, nome, curto, sigla, escudo }].
+export function lerTimesEspn(j) {
+  const out = [];
+  try {
+    for (const sp of j && Array.isArray(j.sports) ? j.sports : []) for (const lg of sp && Array.isArray(sp.leagues) ? sp.leagues : []) for (const x of lg && Array.isArray(lg.teams) ? lg.teams : []) {
+      const t = (x && x.team) || x;
+      if (!t || typeof t !== "object" || t.id == null) continue;
+      const nome = txt(t.displayName || t.name || t.shortDisplayName, 60);
+      if (!nome) continue;
+      const curto = txt(t.shortDisplayName || t.name, 60);
+      out.push({ id: txt(t.id, 20), nome, curto: curto && curto !== nome ? curto : "", sigla: txt(t.abbreviation, 4).toUpperCase(), escudo: escudoDoTime(t) });
+    }
+  } catch (e) {}
+  return out;
+}
+// Catálogo para o Vai e vem a partir de fontes [{ liga, times: [{ id, nome, curto?, sigla, escudo }] }]. As ligas
+// nacionais vêm antes das copas (o país de um time sai da liga dele); time sem escudo fica de fora; o mesmo id da ESPN
+// vale para todas as competições, então um time só entra uma vez, com todos os nomes no mapa.
+export function montarCatalogo(fontes) {
+  const times = {}, mapa = {};
+  const lista = (fontes || []).filter((f) => f && f.liga).slice().sort((a, b) => Number(!E.PAIS_LIGA[a.liga]) - Number(!E.PAIS_LIGA[b.liga]));
+  for (const f of lista) {
+    for (const t of f.times || []) {
+      const id = txt(t && t.id, 20), escudo = E.escudoOk(t && t.escudo);
+      if (!id || !/^[A-Za-z0-9-]+$/.test(id) || !escudo) continue;
+      if (!times[id]) times[id] = { nome: txt(t.nome, 60), sigla: txt(t.sigla, 4).toUpperCase(), escudo, liga: f.liga, pais: E.PAIS_LIGA[f.liga] || "" };
+      else if (!times[id].sigla && t.sigla) times[id].sigla = txt(t.sigla, 4).toUpperCase();
+      for (const n of [t.nome, t.curto]) {
+        const k = E.normClube(n);
+        if (!k) continue;
+        if (!mapa[k]) mapa[k] = [];
+        if (!mapa[k].includes(id)) mapa[k].push(id);
+      }
+    }
+  }
+  return { times, mapa };
+}
+// Times de um doc de liga de futebol (tabela e jogos), com o escudo guardado em doc.escudos
+export function timesDoDoc(doc) {
+  const esc = (doc && doc.escudos) || {}, out = new Map();
+  const add = (id, nome, sigla, curto) => { id = txt(id, 20); if (!id || !nome) return; const x = out.get(id) || { id, nome, sigla: "", curto: "", escudo: esc[id] || "" }; if (!x.sigla && sigla) x.sigla = sigla; if (!x.curto && curto && curto !== x.nome) x.curto = curto; out.set(id, x); };
+  for (const l of (doc && doc.tabela) || []) add(l.id, l.time, l.sigla, l.curto);
+  for (const j of [...((doc && doc.rodada && doc.rodada.jogos) || []), ...((doc && doc.proximos) || []), ...((doc && doc.ultimos) || [])]) {
+    if (!j || !Array.isArray(j.ids)) continue;
+    add(j.ids[0], j.mandante, j.siglas && j.siglas[0]); add(j.ids[1], j.visitante, j.siglas && j.siglas[1]);
+  }
+  return [...out.values()];
+}
+
 // ---------- ESPN: tênis ----------
 // Formato conhecido (sem amostra real ainda; conferir pela sonda): events[] = torneios (id, name, shortName, date,
 // endDate, venue?), cada um com groupings[] ({ grouping: { slug, displayName }, competitions[] }); cada competition é uma
@@ -172,6 +263,29 @@ function localDe(v) {
   const a = v.address || {};
   const partes = [a.city, a.country || a.state].map((x) => txt(x, 40)).filter(Boolean);
   return partes.length ? partes.join(", ") : txt(v.displayName || v.fullName || v.name, 60);
+}
+// País do jogador de tênis em ISO2, para a bandeira em emoji: código de 2 letras, código de 3 letras (ISO ou COI, como
+// a ESPN usa em citizenshipCountry e no nome do arquivo da bandeira) ou o nome do país em inglês. Sem certeza: "".
+// Só o código é lido; a imagem da bandeira e a foto do atleta (headshot) não.
+const PAISES3 = "ARG AR Argentina|AUS AU Australia|AUT AT Austria|BEL BE Belgium|BIH BA Bosnia and Herzegovina|BLR BY Belarus|BOL BO Bolivia|BRA BR Brazil|BUL BG Bulgaria|BGR BG Bulgaria|CAN CA Canada|CHI CL Chile|CHL CL Chile|CHN CN China|COL CO Colombia|CRO HR Croatia|HRV HR Croatia|CZE CZ Czechia|DEN DK Denmark|DNK DK Denmark|ECU EC Ecuador|ESP ES Spain|EST EE Estonia|FIN FI Finland|FRA FR France|GBR GB Great Britain|GEO GE Georgia|GER DE Germany|DEU DE Germany|GRE GR Greece|GRC GR Greece|HUN HU Hungary|IND IN India|IRL IE Ireland|ISR IL Israel|ITA IT Italy|JPN JP Japan|KAZ KZ Kazakhstan|KOR KR South Korea|LAT LV Latvia|LVA LV Latvia|LTU LT Lithuania|MEX MX Mexico|MON MC Monaco|MCO MC Monaco|NED NL Netherlands|NLD NL Netherlands|NOR NO Norway|NZL NZ New Zealand|PAR PY Paraguay|PRY PY Paraguay|PER PE Peru|POL PL Poland|POR PT Portugal|PRT PT Portugal|ROU RO Romania|RSA ZA South Africa|ZAF ZA South Africa|RUS RU Russia|SLO SI Slovenia|SVN SI Slovenia|SRB RS Serbia|SUI CH Switzerland|CHE CH Switzerland|SVK SK Slovakia|SWE SE Sweden|TPE TW Chinese Taipei|TUN TN Tunisia|TUR TR Turkey|UKR UA Ukraine|URU UY Uruguay|URY UY Uruguay|USA US United States|VEN VE Venezuela"
+  .split("|").map((x) => x.split(" ")).map(([a3, a2, ...nome]) => [a3, a2, nome.join(" ")]);
+const DE3 = Object.fromEntries(PAISES3.map(([a3, a2]) => [a3, a2]));
+const DE_NOME = Object.fromEntries([...PAISES3.map(([, a2, n]) => [n.toLowerCase(), a2]), ["united kingdom", "GB"], ["czech republic", "CZ"], ["usa", "US"], ["korea", "KR"], ["turkiye", "TR"]]);
+export function paisDoCodigo(v) {
+  const s = txt(v, 60);
+  if (!s) return "";
+  if (/^[A-Za-z]{2}$/.test(s)) return E.paisNorm(s);
+  if (/^[A-Za-z]{3}$/.test(s)) return DE3[s.toUpperCase()] || "";
+  return DE_NOME[s.toLowerCase()] || "";
+}
+function paisDoAtleta(x) {
+  const at = (x && x.athlete) || {};
+  const flag = at.flag && typeof at.flag === "object" ? at.flag : {};
+  const doArquivo = /\/countries\/\d+\/([a-z]{3})\.png/i.exec(String(flag.href || ""));
+  const cand = [at.citizenshipCountry && (at.citizenshipCountry.alpha2 || at.citizenshipCountry.abbreviation), at.country && (at.country.alpha2 || at.country.abbreviation),
+    typeof at.citizenshipCountry === "string" ? at.citizenshipCountry : "", typeof at.country === "string" ? at.country : "", at.citizenship, doArquivo && doArquivo[1], flag.alt, x && x.country];
+  for (const c of cand) { const p = paisDoCodigo(c); if (p) return p; }
+  return "";
 }
 export function lerPartida(c, ev, chave, liga) {
   if (!c || typeof c !== "object") return null;
@@ -208,6 +322,8 @@ export function lerPartida(c, ev, chave, liga) {
     sets, vencedor, estado, minuto: estado === "in" && setNo ? setNo + "º set" : "",
     quadra: txt(venue.court || venue.fullName || venue.displayName, 40), detalhe,
   };
+  const pa = paisDoAtleta(a), pb = paisDoAtleta(b);
+  if (pa || pb) p.paises = [pa, pb];
   return p;
 }
 // Devolve { partidas, torneios, temporada, chaves } (chaves: os nomes de todas as chaves vistas, para a sonda). Nunca lança.
@@ -531,6 +647,8 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
   doc.tentativas = { ...(antes.tentativas || {}) };
   const quandoIso = new Date(agora).toISOString();
   const erro = (parte, e) => { erros[liga + ":" + parte] = String((e && e.message) || e); doc.tentativas[parte] = quandoIso; };
+  // escudos vistos nesta passada; os de antes ficam (time que não jogou hoje continua com o dele)
+  const escudos = {};
   // ge direto quando a ESPN já falhou para esta competição nas últimas 24 h
   const viaGe = def.reserva === "ge" && doc.fonte === "ge" && antes.espnFalhouEm && agora - Date.parse(antes.espnFalhouEm) < 24 * HORA;
   let espnFalhou = false;
@@ -538,14 +656,16 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
     if (v.rodada) {
       try {
         // hoje e os dias com jogo
-        const sb = lerScoreboard((await fila(urlScoreboard(liga, diaSP(agora)))).json, liga);
+        const j0 = (await fila(urlScoreboard(liga, diaSP(agora)))).json;
+        const sb = lerScoreboard(j0, liga);
+        Object.assign(escudos, lerEscudos(j0));
         if (sb.temporada) doc.temporada = sb.temporada;
         const vistos = new Set(sb.jogos.map((x) => x.id));
         const juntar = (outro) => { for (const j of outro.jogos) if (!vistos.has(j.id)) { vistos.add(j.id); sb.jogos.push(j); } };
         // os outros dias com jogo; se o orçamento acabar no meio, fica com o que veio
         for (const dia of diasExtras(sb.calendario, agora, def.diasExtras ?? DIAS_EXTRA)) {
           let outro;
-          try { outro = lerScoreboard((await fila(urlScoreboard(liga, dia))).json, liga); }
+          try { const jd = (await fila(urlScoreboard(liga, dia))).json; outro = lerScoreboard(jd, liga); Object.assign(escudos, lerEscudos(jd)); }
           catch (e) { if (e.limite) break; continue; }
           juntar(outro);
           if (sb.numero == null && outro.numero != null) sb.numero = outro.numero;
@@ -560,7 +680,9 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
     }
     if (v.tabela && !espnFalhou && !def.semTabela) {
       try {
-        const st = lerStandings((await fila(urlStandings(liga))).json, liga);
+        const js = (await fila(urlStandings(liga))).json;
+        const st = lerStandings(js, liga);
+        Object.assign(escudos, lerEscudos(js));
         if (!st.tabela.length && def.reserva === "ge" && !(antes.tabela && antes.tabela.length)) espnFalhou = true;
         else { doc.tabela = st.tabela; if (st.temporada) doc.temporada = st.temporada; doc.tabelaEm = quandoIso; delete doc.tentativas.tabela; }
       } catch (e) { if (e.limite) throw e; if (def.reserva === "ge" && e.status >= 400 && e.status < 500) espnFalhou = true; else erro("tabela", e); }
@@ -589,7 +711,9 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
         let jogos;
         if (doc.fonte === "ge") jogos = (doc._jogosGe || [...(doc.ultimos || []), ...(doc.proximos || [])]).filter((x) => x.ids.includes(t.id) || x.mandante === t.nome || x.visitante === t.nome);
         else {
-          jogos = lerJogos((await fila(urlSchedule(liga, t.id))).json, liga);
+          const jt = (await fila(urlSchedule(liga, t.id))).json;
+          Object.assign(escudos, lerEscudos(jt));
+          jogos = lerJogos(jt, liga);
           if (!proximosDe(jogos, agora).length) { try { jogos = jogos.concat(lerJogos((await fila(urlSchedule(liga, t.id, true))).json, liga)); } catch (e) { if (e.limite) throw e; } }
         }
         const vistos = new Set();
@@ -605,9 +729,17 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
     if (algum) { doc.timesEm = quandoIso; if (!erros[liga + ":times"]) delete doc.tentativas.times; }
   }
   delete doc._jogosGe;
+  doc.escudos = juntarEscudos(antes.escudos, escudos);
   doc.atualizado = quandoIso;
   await gravar(env, "meta", idDoc(liga), doc);
   return doc;
+}
+
+// Escudos de antes mais os novos, conferidos de novo (origem fora da ESPN some), no máximo 300 times
+function juntarEscudos(antes, novos) {
+  const out = {};
+  for (const [id, u] of Object.entries({ ...(antes && typeof antes === "object" ? antes : {}), ...(novos || {}) })) { const ok = E.escudoOk(u); if (ok && /^[A-Za-z0-9-]{1,20}$/.test(id)) out[id] = ok; }
+  return Object.fromEntries(Object.entries(out).slice(-300));
 }
 
 // Tênis: o scoreboard sem data (torneios em andamento) e ontem, hoje e amanhã, cada um numa chamada; partidas juntadas
@@ -645,6 +777,49 @@ async function atualizarTenis(env, liga, def, antes, { fila, agora, erros }) {
   return doc;
 }
 
+// ---------- catálogo de escudos (Vai e vem) ----------
+// Uma passada: pede o endpoint de times das ligas de Esportes.LIGAS_ESCUDOS que estão há 7 dias sem (no máximo
+// `maxTimes` chamadas; falhou, espera 24 h) e remonta meta/esportes-escudos com os docs das ligas de futebol e os times
+// guardados em _sistema/esportes-times ({ ligas: { <liga>: { em, tentativa?, times } }, marca }). Só grava o catálogo
+// quando ele muda (marca). `pedir: false` (passada que bateu no limite) só remonta.
+const SEMANA = 7 * 24 * HORA;
+export async function atualizarCatalogoEscudos(env, { fila, docs = new Map(), agora = Date.now(), erros = {}, pedir = true, mudou = false, maxTimes = 4 } = {}) {
+  const est = (await lerDoc(env, "_sistema", "esportes-times")) || { ligas: {}, marca: "" };
+  if (!est.ligas || typeof est.ligas !== "object") est.ligas = {};
+  const quandoIso = new Date(agora).toISOString();
+  const idade = (v) => (v ? agora - Date.parse(v) : Infinity);
+  let pedidas = 0, novos = false;
+  if (pedir && fila) {
+    for (const liga of E.LIGAS_ESCUDOS) {
+      if (pedidas >= maxTimes) break;
+      const x = est.ligas[liga] || {};
+      if (idade(x.em) < SEMANA || idade(x.tentativa) < 24 * HORA) continue;
+      pedidas++;
+      try {
+        const ts = lerTimesEspn((await fila(urlTimes(liga))).json);
+        est.ligas[liga] = { em: quandoIso, times: ts };
+      } catch (e) {
+        if (e.limite) break;
+        est.ligas[liga] = { ...x, tentativa: quandoIso };
+        erros[liga + ":times-escudos"] = String((e && e.message) || e);
+      }
+      novos = true;
+    }
+  }
+  if (!novos && !mudou && est.marca) return { pedidas, gravou: false };
+  const fontes = [];
+  for (const [liga, d] of docs) if (d && E.LIGAS[liga] && E.LIGAS[liga].esporte === "futebol") fontes.push({ liga, times: timesDoDoc(d) });
+  for (const [liga, x] of Object.entries(est.ligas)) if (x && Array.isArray(x.times)) fontes.push({ liga, times: x.times });
+  const cat = montarCatalogo(fontes);
+  const marca = String(Object.keys(cat.times).length) + ":" + hash(JSON.stringify(cat));
+  const gravou = marca !== est.marca;
+  if (gravou) await gravar(env, "meta", "esportes-escudos", { atualizado: quandoIso, ...cat });
+  if (gravou || novos) { est.marca = marca; await gravar(env, "_sistema", "esportes-times", est); }
+  return { pedidas, gravou };
+}
+// djb2: só para saber se o catálogo mudou
+function hash(t) { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) >>> 0; return h.toString(36); }
+
 // ---------- sonda ----------
 // Na primeira execução monta a lista do que testar; anda 6 por minuto; cada resposta (até 20 KB) vai para
 // _sistema/sonda-esportes-aNN e o resumo (status, tamanho, tempo, o que o parser achou) para _sistema/sonda-esportes.
@@ -669,6 +844,14 @@ export function listaSonda(agora = Date.now()) {
   for (const liga of Object.keys(E.LIGAS)) if (E.LIGAS[liga].ge) l.push({ tipo: "ge", liga, url: E.LIGAS[liga].ge });
   const ja = new Set(FEEDS.map((f) => f[3]));
   for (const u of SONDA_RSS) l.push({ tipo: "rss", url: u, jaNaColeta: ja.has(u) });
+  // escudos (11/11): onde vem o logo no scoreboard e na standings, o endpoint de times das ligas do Vai e vem e o país
+  // dos jogadores de tênis. Tipos novos: a sonda pronta volta a andar só para eles.
+  l.push({ tipo: "escudos-scoreboard", liga: "bra.1", url: urlScoreboard("bra.1", diaSP(agora)) });
+  l.push({ tipo: "escudos-standings", liga: "bra.1", url: urlStandings("bra.1") });
+  l.push({ tipo: "escudos-standings", liga: "eng.1", url: urlStandings("eng.1") });
+  l.push({ tipo: "escudos-scoreboard", liga: "nba", url: urlScoreboard("nba", diaSP(agora)) });
+  l.push({ tipo: "paises-tenis", liga: "atp", url: urlScoreboard("atp", "") });
+  for (const liga of E.LIGAS_ESCUDOS) l.push({ tipo: "teams", liga, url: urlTimes(liga) });
   return l.map((x, i) => ({ ...x, n: i }));
 }
 function resumoSonda(x, r, agora) {
@@ -691,8 +874,26 @@ function resumoSonda(x, r, agora) {
     else if (x.tipo === "schedule") { const s = lerJogos(JSON.parse(r)); out.jogos = s.length; out.proximos = proximosDe(s, agora).length; }
     else if (x.tipo === "ge") { const g = lerGe(r, x.liga, agora); out.linhas = g ? g.tabela.length : 0; out.jogos = g ? g.jogos.length : 0; }
     else if (x.tipo === "rss") { out.itens = lerFeed(r).length; }
+    else if (x.tipo === "escudos-scoreboard" || x.tipo === "escudos-standings" || x.tipo === "teams") Object.assign(out, resumoEscudos(JSON.parse(r), x.tipo));
+    else if (x.tipo === "paises-tenis") { const p = lerTenis(JSON.parse(r), x.liga).partidas; out.partidas = p.length; out.comPais = p.filter((j) => j.paises && j.paises.some(Boolean)).length; const ex = p.find((j) => j.paises); if (ex) out.exemplo = ex.jogadores.map((n, k) => n + " " + (ex.paises[k] || "?")).join(" x "); }
   } catch (e) { out.parser = "falhou: " + String((e && e.message) || e).slice(0, 100); }
   return out;
+}
+// O que a sonda conta dos escudos: times com algum logo, com logo aceito (a.espncdn.com) e com logo de outra origem
+function resumoEscudos(j, tipo) {
+  const times = new Map();
+  const pega = (t) => { if (t && typeof t === "object" && t.id != null) times.set(String(t.id), t); };
+  for (const ev of Array.isArray(j && j.events) ? j.events : []) { const c = ev && Array.isArray(ev.competitions) ? ev.competitions[0] : null; for (const x of (c && c.competitors) || []) pega(x && x.team); }
+  const visitar = (no, p = 0) => { if (!no || typeof no !== "object" || p > 4) return; for (const e of (no.standings && no.standings.entries) || []) pega(e && e.team); (no.children || []).forEach((ch) => visitar(ch, p + 1)); };
+  visitar(j);
+  for (const sp of (j && j.sports) || []) for (const lg of (sp && sp.leagues) || []) for (const x of (lg && lg.teams) || []) pega((x && x.team) || x);
+  const ts = [...times.values()];
+  const algum = (t) => typeof t.logo === "string" || (Array.isArray(t.logos) && t.logos.length);
+  const aceitos = ts.filter((t) => escudoDoTime(t));
+  const ex = aceitos[0];
+  return { times: ts.length, comLogo: ts.filter(algum).length, comEscudo: aceitos.length, foraDaEspn: ts.filter((t) => algum(t) && !escudoDoTime(t)).length,
+    campo: ts.some((t) => typeof t.logo === "string") ? "logo" : ts.some((t) => Array.isArray(t.logos)) ? "logos" : "nenhum",
+    exemplo: ex ? `${txt(ex.displayName || ex.name, 40)} · ${txt(ex.abbreviation, 4)} · ${escudoDoTime(ex)}` : "", ...(tipo === "teams" ? { tipoResposta: Array.isArray(j && j.sports) ? "sports" : "outro" } : {}) };
 }
 export async function cronSondaEsportes(env, { pausa = PAUSA, agora = Date.now() } = {}) {
   let s = await lerDoc(env, "_sistema", "sonda-esportes");
@@ -754,10 +955,14 @@ export async function cronEsportes(env, quando, { pausa = PAUSA, orcamento = ORC
     const docs = new Map();
     for (const l of ligas) docs.set(l, await lerDoc(env, "meta", idDoc(l)));
     const ordem = ligas.slice().sort((a, b) => Number(quente(docs.get(b), agora)) - Number(quente(docs.get(a), agora)));
+    let parou = false;
     for (const liga of ordem) {
-      try { const d = await atualizarLiga(env, liga, { fila, times: times.get(liga) || [], agora, erros }); if (d) out.ligas.push(liga); }
-      catch (e) { if (e.limite) { erros[liga] = e.message; break; } erros[liga] = String((e && e.message) || e); }
+      try { const d = await atualizarLiga(env, liga, { fila, times: times.get(liga) || [], agora, erros }); if (d) { out.ligas.push(liga); docs.set(liga, d); } }
+      catch (e) { if (e.limite) { erros[liga] = e.message; parou = true; break; } erros[liga] = String((e && e.message) || e); }
     }
+    // catálogo de escudos do Vai e vem: depois das competições, com o que sobrou do orçamento (até 4 chamadas)
+    try { out.escudos = await atualizarCatalogoEscudos(env, { fila, docs, agora, erros, pedir: !parou, mudou: out.ligas.length > 0 }); }
+    catch (e) { erros.escudos = String((e && e.message) || e); }
   } catch (e) { erros.cron = String((e && e.message) || e); }
   try { await gravarErros(env, erros); } catch (e) {}
   out.erros = Object.keys(erros).length;

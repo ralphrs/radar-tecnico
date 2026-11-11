@@ -18,6 +18,7 @@ import { rotaLeitura, cronLeitura, lerFundamentos } from "./leitura.js";
 import "../public/radar-filtro.js";
 import { validarTabelas, mesclarTabelas, respostaTabelas, validarLayout, respostaLayout } from "./prefs.js";
 import { cronEsportes, validarPrefsEsportes, respostaPrefsEsportes } from "./esportes.js";
+import { comSeguranca } from "./seguranca.js";
 const RF = globalThis.RadarFiltro;
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
@@ -508,6 +509,15 @@ function servirAsset(request, env, caminho) {
 
 export default {
   async fetch(request, env, ctx) {
+    return comSeguranca(await atender(request, env, ctx));
+  },
+
+  // A cada minuto: importa o histórico (enquanto houver), lê alguns feeds RSS e, uma vez por hora, apaga o que venceu.
+  // Por último copia para o espelho de São Paulo o que mudou no D1.
+  scheduled: (evento, env) => agendado(evento, env),
+};
+
+async function atender(request, env, ctx) {
     env = Object.assign({}, env, { ctx });
     const url = new URL(request.url);
     const p = url.pathname;
@@ -620,11 +630,9 @@ export default {
 
     if (p.startsWith("/api/")) return json({ erro: "rota" }, 404);
     return env.ASSETS.fetch(request);
-  },
+}
 
-  // A cada minuto: importa o histórico (enquanto houver), lê alguns feeds RSS e, uma vez por hora, apaga o que venceu.
-  // Por último copia para o espelho de São Paulo o que mudou no D1.
-  async scheduled(evento, env) {
+async function agendado(evento, env) {
     const minuto = new Date(evento.scheduledTime || Date.now()).getUTCMinutes();
     let coleta = null;
     try { coleta = await coletar(env); } catch (e) { console.error("coleta", e); }
@@ -654,8 +662,7 @@ export default {
     }
     try { await importarHistorico(env); } catch (e) { console.error("historico", e); }
     await sincronizarEspelho(env);
-  },
-};
+}
 
 // Importa o histórico em partes (public/seed/NNN.json), uma por minuto, até acabar.
 async function importarHistorico(env) {
