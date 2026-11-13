@@ -387,6 +387,48 @@ A sonda (`_sistema/sonda-landscape`, 2 por minuto, amostras de até 20 KB em `so
 - o `x-ratelimit-resource` da busca (`search`) e do resto (`core`);
 - o formato das respostas do Algolia (`hits`, `objectID`, `points`, `num_comments`; `children` com `text` em HTML no `items`) e quantas histórias de fato citam a tecnologia.
 
+## Tradução
+
+Pedido de 13/11: "Todas as notícias têm que vir traduzidas." Todo texto de notícia que a tela mostra e que não está em português aparece em português, com o original a um toque. Vale nas seções (Tech, Negócios, Investimentos, Notícias e Política, Esportes), em Nos fóruns, nos destaques e no Landscape (notícias do Lookout, Hacker News, "O que estão dizendo", descrição do repositório, nome e notas de release, título de issue, trecho do README, blog). Código: `src/traducao.js` (cron, chamada ao modelo, gravação, estado), `public/traducao.js` (regras puras, as mesmas na página, no Worker e nos testes), testes em `test/traducao.test.mjs`.
+
+### Como traduz
+
+- **Modelo:** Workers AI pelo binding `AI` (`wrangler.jsonc`), `@cf/meta/m2m100-1.2b` (constante `MODELO` em `src/traducao.js`). Chamada: `env.AI.run(MODELO, { text, source_lang, target_lang: "pt" })`, resposta `{ translated_text }` (conferido em 13/11 na página do modelo e nos tipos do workerd que vêm com o wrangler). `source_lang` sai da heurística (`en` ou `es`). O lote do modelo (`requests[]`) é a fila assíncrona da Cloudflare, que devolve `request_id` e a resposta depois; não serve a um cron de um minuto, então vai um texto por chamada.
+- **Precisa traduzir?** `Traducao.precisaTraduzir(texto, dica)`: conta palavras funcionais do português (o, da, com, não, também...), do espanhol (el, los, y, pero, según...) e do inglês (the, and, of, with, why...), mais acentos (ã, õ, ç contam para o português; ñ, ¿, ¡ para o espanhol) e terminações (-ção e -mente; -ing, -tion e contrações). Empate fica com o português, para não gastar. A dica do feed (`pais` ou `idioma` do item) soma um ponto e meio para o idioma do país. Texto que, tirando os nomes protegidos, sobra com menos de duas palavras (nome próprio, número, versão, código, URL) não traduz. Sem palavra comum de nenhum idioma também não traduz.
+- **O que não se traduz:** antes de ir ao modelo, `Traducao.proteger` troca por `{0}`, `{1}`... os trechos entre crases, URLs, @menções, hashtags, versões (`2.0.2`, `v0.70.0`), nomes de tecnologia, empresa e produto (uma lista em `public/traducao.js` mais os nomes e repositórios do Landscape), CamelCase, `Node.js` e afins, snake_case, palavras com número (`gpt-4o`, `k8s`), siglas em maiúsculas e `dono/repositório`. Depois `Traducao.restaurar` devolve cada pedaço; se algum marcador sumiu, repetiu ou apareceu do nada, a tradução daquele texto é descartada e fica o original. Saída vazia, igual à entrada ou com tamanho fora de 0,3x a 3,5x também é descartada.
+- **Orçamento:** `_sistema/traducao-estado` guarda o dia (UTC), os neurons estimados (tokens ≈ caracteres / 4, entrada e saída, 31.050 neurons por milhão de tokens, preço do modelo na doc de 20/10/2026), traduzidos, iguais, falhas, descartadas, chamadas, a fila, a pausa e os textos desistidos. Teto de **8.000 neurons por dia** (a conta tem 10.000 grátis; zera 00:00 UTC). Chegou no teto: pausa até a virada. Textos longos (resumo, notas, trechos, sobre) só enquanto o dia está abaixo de 75% do teto; títulos sempre, até o teto.
+- **Pausa:** `429` ou `3040` do Workers AI pausam 10 min; `3036` (acabou a cota grátis do dia) pausa até 00:00 UTC. Outro erro conta como falha daquele texto, que tenta de novo nas rodadas seguintes, até 3 vezes; depois fica o original (`trad.f.<campo> = "x3"`).
+- **Sem `env.AI`** (testes, wrangler dev sem a conta): a etapa não faz nada, nem lê o banco.
+
+### Cron
+
+`cronTraducao` roda em `scheduled` uma vez por minuto, depois das coletas, da limpeza e do histórico, logo antes da sincronia do espelho. No máximo **8 chamadas ao AI por minuto**, e dentro dos subrequests que a invocação ainda tem: o cron inteiro passa por `envContado` (conta cada `first`, `all`, `run` e `batch` do D1) e um invólucro do `fetch` (conta cada pedido externo); a tradução calcula `1000 − 150 de reserva (espelho e histórico) − o que já foi gasto` e usa 5 fixos (estado, as duas consultas da fila, o batch das gravações) e 2 por chamada (a chamada e uma releitura do doc nos destaques e no Landscape). 1.000 é o limite de subrequests para serviços da Cloudflare no plano Free; no Paid são 10.000, então a conta folga.
+
+Fila, em ordem: (1) Landscape, (2) itens das seções e destaques, do mais novo para o mais velho, (3) Nos fóruns. Títulos de todos primeiro; os textos longos depois, na mesma ordem. Não entra item publicado (ou coletado, sem data de publicação) há mais de 3 dias, nem post de fórum que a limpeza vai apagar na próxima hora (coletado há mais de 3 dias menos 1 h). Cada minuto lê até 40 linhas por collection, só os campos de texto (`json_object` em SQL) e só docs sem `trad.ok`; o Landscape vem numa consulta só com os textos de cada tecnologia. Fila vazia: olha de novo em 5 min.
+
+### Banco
+
+Campos novos ao lado dos originais, nunca por cima, com `UPDATE docs SET data = json_patch(data, ?), atualizado = ? WHERE collection = ? AND id = ?`, uma chave por comando, todos num batch:
+- `items*` e `foruns-*`: `titulo_pt`, `resumo_pt` e `trad: { m: modelo, em, f: { titulo: "pt" | "igual" | "x<n>" }, ok?, igual?, velho? }`. `trad.ok` tira o doc da fila; `trad.igual: true` marca o que não precisou de tradução; `trad.velho` o que passou dos 3 dias sem ser traduzido.
+- `destaques*` (já vêm em português da curadoria, só passam pela checagem): `itens[k].titulo_pt`, `itens[k].porque_pt`, e `trad.ok` no doc quando não sobra nada. A curadoria regrava o doc inteiro; se regravar, ele volta à fila.
+- `landscape` (doc da tecnologia): `gh.descricao_pt`, `sobre_pt`, `releases[k].nome_pt` e `.notas_pt`, `hn.historias[k].titulo_pt`, `hn.comentarios[k].historia.titulo_pt` e `.itens[k].trecho_pt`, `gh_destaques[k].titulo_pt`, `blog[k].titulo_pt`. Como o `json_patch` troca array inteiro, a gravação relê o doc e só põe a tradução onde o original ainda é o que foi traduzido (`Traducao.aplicarLandscape`). O cron de coleta do Landscape regrava esses campos a cada rodada: antes de gravar, `Traducao.manterLandscape` compara cada texto novo com o antigo (por tag, id da história, id do comentário, URL da issue e do post do blog) e devolve o português dos que não mudaram; o que mudou perde o `_pt` (na descrição e no sobre, `null`, que o `json_patch` apaga) e volta para a fila.
+- O espelho enxerga a mudança: o `UPDATE` grava `atualizado` novo e o `data` muda de tamanho (a marca de versão de linha é `atualizado|coletado|length(data)`).
+- A tradução nunca toca em `data/users`, `favs/`, `listas/`, `prefs/`, `carteira/`, `leitura/` nem `landscape/<email>`.
+
+### Tela
+
+- Onde existe `_pt`, a tela mostra o português (`Traducao.vista`: troca o texto e guarda o original em `_orig`). No cartão de notícia, no post de fórum, no destaque do topo e em cada linha do Landscape vai uma marca miúda, "traduzido · ver original", em fonte mono pequena, fora do link (o clique no título continua abrindo a fonte, e o link sempre leva à fonte original). No toque troca para o original ("original · ver tradução") e volta. A área de toque tem 24 px, com margem negativa para a linha não crescer.
+- Listas compactas (Urgente, Novos nesta rodada, Destaques do dia na lateral, Seus favoritos, widgets do Início) mostram o português e deixam o original no `title` do link.
+- Enquanto a tradução não chegou, mostra o original, sem aviso. A página não relê o feed só por causa da tradução: ela aparece na próxima abertura (Nos fóruns e widgets, na próxima leitura de 2 min).
+- Busca do feed procura no original e na tradução. A busca do Landscape continua só pelo nome.
+- Favorito guarda o original e a tradução lado a lado (`titulo_pt`, `resumo_pt` em `CAMPOS_FAV`).
+- **Preferência:** "Notícias traduzidas" no menu da conta (`role="menuitemcheckbox"`, fica aberto como Aparência), ligada por padrão. Desligada, tudo aparece no original. Doc `prefs/<email>`, id `traducao`, `{ mostrar, atualizado }`; `GET /api/prefs/traducao` devolve `{ mostrar, salvo }` e `PUT` aceita só `{ mostrar: boolean }`. O `localStorage` (`radar-traducao`) só pinta certo já na abertura.
+- **Admin:** no card "Rendimento das fontes", a linha "Tradução: N traduzidos hoje · fila N · ~N de 8.000 neurons", com as falhas, a pausa e o motivo quando há, e a última etapa (vem em `/api/admin/fontes`, campo `traducao`). Sem o binding: "desligada".
+
+### O que só dá para ver em produção
+
+O formato da resposta do modelo, se ele aceita os códigos `en`/`es`/`pt` (a doc mostra códigos na descrição e nomes no exemplo), se devolve os marcadores `{0}` intactos (sem isso, quase toda tradução de título com nome próprio é descartada: ver `descartadas` na linha do Admin), a qualidade do português, os neurons de verdade no painel do Workers AI contra a estimativa e os erros de capacidade. Se a tradução sair dura, a troca é por um modelo de texto maior (só a constante `MODELO` e a chamada em `traduzirTexto` mudam).
+
 ## Minhas listas
 
 Collection `listas/<email>`, código em `src/listas.js` (modelo, regra, histórico, rota e cron) e na página (lateral `listaEl`/`renderListas`, página da lista `desenharPaginaLista`, lista de listas `desenharTodasListas`, painel `desenharPainelLista`). Aparecem na lateral da Bolsa e dos EUA (trilho direito a partir de 1200 px, abaixo da tabela antes disso), no widget do Início, na página de cada lista (`#lista/<id>`) e na lista de listas (`#listas`, também "Minhas listas" no menu da conta).
@@ -798,7 +840,7 @@ Toda tabela de dados da página usa o mesmo helper, `public/tabela.js` (script c
 
 ## Menu da conta
 
-Avatar no cabeçalho (página e `/admin`): nome e e-mail, Minha carteira, Minha meta, Importar extratos e Minhas listas (com Investimentos), Meus esportes (com Esportes), Aparência, Administração (só o Admin), **Trocar de conta** e Sair. "Trocar de conta" (ajuda: "Sai e abre o login para escolher outra conta do Google") vai para `/cdn-cgi/access/logout` e antes grava `radar-trocar=1` no `sessionStorage`. O Access não volta sozinho para o login depois do logout; ao abrir o site de novo ele pede o login e aí dá para escolher a outra conta. O `radar-trocar` fica só como marca, sem uso por enquanto.
+Avatar no cabeçalho (página e `/admin`): nome e e-mail, Minha carteira, Minha meta, Importar extratos e Minhas listas (com Investimentos), Meus esportes (com Esportes), Aparência, Notícias traduzidas (só na página; veja "Tradução"), Administração (só o Admin), **Trocar de conta** e Sair. "Trocar de conta" (ajuda: "Sai e abre o login para escolher outra conta do Google") vai para `/cdn-cgi/access/logout` e antes grava `radar-trocar=1` no `sessionStorage`. O Access não volta sozinho para o login depois do logout; ao abrir o site de novo ele pede o login e aí dá para escolher a outra conta. O `radar-trocar` fica só como marca, sem uso por enquanto.
 
 ## Colunas recolhíveis
 
@@ -806,7 +848,7 @@ A partir de 900 px, a coluna esquerda e a direita têm um botão no topo (chevro
 
 ## API
 
-`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas` com `/api/listas/<id>`, `/recalcular`, `/ordem` e `/mover` (veja "Minhas listas"), `/api/prefs/painel`, `/api/prefs/tabelas` e `/api/prefs/layout` (veja "Tabelas" e "Colunas recolhíveis"), `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/prefs/esportes` (veja "Esportes"), `/api/landscape` com `/api/landscape/<id>` e `/notas` (veja "Landscape"), `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. `/api/me` traz também `foruns`, as seções liberadas que têm subreddit. A página só lê as collections de itens, destaques, `foruns-*` e `meta` (com `meta/esportes-*`), e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
+`/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/listas` com `/api/listas/<id>`, `/recalcular`, `/ordem` e `/mover` (veja "Minhas listas"), `/api/prefs/painel`, `/api/prefs/tabelas` e `/api/prefs/layout` (veja "Tabelas" e "Colunas recolhíveis"), `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/prefs/esportes` (veja "Esportes"), `/api/prefs/traducao` (veja "Tradução"), `/api/landscape` com `/api/landscape/<id>` e `/notas` (veja "Landscape"), `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. `/api/me` traz também `foruns`, as seções liberadas que têm subreddit. A página só lê as collections de itens, destaques, `foruns-*` e `meta` (com `meta/esportes-*`), e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
 
 Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`) recarga manual da CVM (`POST /api/admin/cvm`) e o Landscape (`/api/admin/landscape`, `/api/admin/landscape/<id>`, `/api/admin/landscape-categorias`, que respondem 404 para quem não é Admin). Sem grupos criados, todo convidado vê tudo.
 
@@ -818,12 +860,12 @@ Ficam no painel da Cloudflare (Workers & Pages → `lookout` → Variables and S
 
 - Nunca `DROP`.
 - `UPDATE` e `DELETE` só com lista explícita de ids.
-- Coletores e curadoria não tocam em `favs/`, `listas/`, `prefs/`, `carteira/` nem `landscape/<email>`. As listas automáticas são gravadas pela rota da carteira da própria pessoa, não por coletor. Ninguém abre `carteira/` fora da rota da própria pessoa. `hist` só é gravado pela rota `/api/papel` e pelo cron dele.
+- Coletores, curadoria e a tradução não tocam em `favs/`, `listas/`, `prefs/`, `carteira/`, `leitura/` nem `landscape/<email>`. As listas automáticas são gravadas pela rota da carteira da própria pessoa, não por coletor. Ninguém abre `carteira/` fora da rota da própria pessoa. `hist` só é gravado pela rota `/api/papel` e pelo cron dele.
 - O prompt de cada tarefa só roda os comandos que ele mesmo lista.
 
 ## Custos
 
-Workers Paid desde 01/11: US$ 5 por mês mais o excedente. O card de custos do admin mostra o consumo contra os limites do mês. O que vai de tokens está nas tarefas de curadoria, não no Worker.
+Workers Paid desde 01/11: US$ 5 por mês mais o excedente. O card de custos do admin mostra o consumo contra os limites do mês. O que vai de tokens está nas tarefas de curadoria; no Worker, só a tradução (Workers AI, teto de 8.000 neurons por dia, abaixo dos 10.000 grátis; veja "Tradução").
 
 ## Tarefas agendadas de curadoria
 

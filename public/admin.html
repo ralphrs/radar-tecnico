@@ -316,10 +316,23 @@ async function carregar() {
   }
 }
 
+// Tradução das notícias (src/traducao.js): traduzidos hoje, fila, neurons estimados contra o teto do dia, pausa e motivo
+function linhaTraducao(t) {
+  if (!t) return "";
+  if (t.erro) return `<p class="dica" id="trad-linha"><strong>Tradução:</strong> não deu para ler o estado (${esc(t.erro)}).</p>`;
+  if (!t.ligada) return '<p class="dica" id="trad-linha"><strong>Tradução:</strong> <span class="mut">desligada (o Worker está sem o binding AI)</span></p>';
+  const n = (v) => Number(v || 0).toLocaleString("pt-BR");
+  const hora = (iso) => { const d = new Date(iso); return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); };
+  const partes = [`${n(t.traduzidos)} ${t.traduzidos === 1 ? "traduzido" : "traduzidos"} hoje`, `fila ${n(t.fila)}`, `~${n(t.neurons)} de ${n(t.teto)} neurons`];
+  if (t.falhas) partes.push(`${n(t.falhas)} ${t.falhas === 1 ? "falha" : "falhas"}`);
+  const pausa = t.pausa ? ` · <span class="falha" title="${esc(t.pausa.erro || "")}">em pausa até ${esc(hora(t.pausa.ate))}: ${esc(t.pausa.motivo || "")}</span>` : "";
+  const ult = t.ultima ? ` <span class="mut">· última etapa ${esc(hora(t.ultima.quando))}, ${n(t.ultima.chamadas)} ${t.ultima.chamadas === 1 ? "chamada" : "chamadas"}</span>` : "";
+  return `<p class="dica" id="trad-linha"><strong>Tradução:</strong> ${partes.map(esc).join(" · ")}${pausa}${ult}</p>`;
+}
 async function carregarFontes() {
   const box = $("fontes");
   try {
-    const { fontes, falhas, semCandidatos = [], bloqueio403 = 3, diasForum = 3 } = await api("/api/admin/fontes");
+    const { fontes, falhas, semCandidatos = [], bloqueio403 = 3, diasForum = 3, traducao = null } = await api("/api/admin/fontes");
     const NOME = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
     const pct = (a, b) => (b ? Math.round((100 * a) / b) + "%" : "–");
     // Status pelo feeds_estado: bloqueado (403 seguidos), esperando (429), falhando, ok ou ainda não lido
@@ -333,7 +346,8 @@ async function carregarFontes() {
     const nomeDe = (f) => `<td title="${esc(f.feed)}">${esc(f.fonte)}${f.tipo === "reddit" ? ' <span class="mut">· Reddit</span>' : ""}</td>`;
     // Subreddit: "No fórum" são os posts que estão em "Nos fóruns" agora (últimos dias), fora da curadoria
     const forumDe = (f) => (f.tipo === "reddit" ? `<td title="Posts deste subreddit em Nos fóruns (últimos ${esc(diasForum)} dias)">${f.forum || 0}</td>` : '<td class="mut">–</td>');
-    let h = `<table><thead><tr><th>Aba</th><th>Fonte</th><th>Status</th><th>Lidos</th><th>Publicados</th><th>Taxa</th><th>Repetido</th><th>Promo</th><th>Fora do tema</th><th>Antigo</th><th>Raso</th><th>Na fila</th><th title="Posts de subreddit em Nos fóruns">No fórum</th><th>Último erro</th></tr></thead><tbody>`;
+    let h = linhaTraducao(traducao);
+    h += `<table><thead><tr><th>Aba</th><th>Fonte</th><th>Status</th><th>Lidos</th><th>Publicados</th><th>Taxa</th><th>Repetido</th><th>Promo</th><th>Fora do tema</th><th>Antigo</th><th>Raso</th><th>Na fila</th><th title="Posts de subreddit em Nos fóruns">No fórum</th><th>Último erro</th></tr></thead><tbody>`;
     for (const f of fontes) {
       // Subreddit não passa pela curadoria: só o estado e os posts em Nos fóruns
       if (f.tipo === "reddit") { h += `<tr><td>${esc(NOME[f.radar] || f.radar)}</td>${nomeDe(f)}<td>${status(f)}</td><td colspan="9" class="mut" style="text-align:left">não passa pela curadoria</td>${forumDe(f)}${erroDe(f)}</tr>`; continue; }

@@ -84,6 +84,22 @@ A coleta do Landscape (Tech) lê a API do GitHub. Sem token são 60 pedidos por 
 
 Enquanto `ACCESS_TEAM_DOMAIN` e `ACCESS_AUD` não estiverem preenchidas, o site responde "Falta ligar o login" e não abre para ninguém.
 
+### Workers AI (`AI`, tradução das notícias)
+
+A tradução das notícias (`src/traducao.js`, docs/LOOKOUT.md, "Tradução") usa o Workers AI pelo binding `AI`, declarado no `wrangler.jsonc` (`"ai": { "binding": "AI" }`). Não tem secret nem variável: o deploy cria o binding. Modelo `@cf/meta/m2m100-1.2b`, uma constante em `src/traducao.js`.
+
+O que conferir no painel:
+1. Workers & Pages → `lookout` → **Settings → Bindings**: aparece `AI` (Workers AI). Sem ele, a tradução fica desligada e a linha do Admin diz "desligada".
+2. **AI → Workers AI** (no menu da conta): o uso de neurons por dia e por modelo. Compare com a estimativa da linha "Tradução" do Admin (card Rendimento das fontes). A estimativa conta caracteres / 4 como tokens; se o painel mostrar bem mais, baixe o `TETO_DIA` em `src/traducao.js`.
+3. Workers & Pages → `lookout` → **Logs** (observability ligada): linhas `traducao {...}` com chamadas, traduzidos, falhas, pausa e os subrequests da invocação (`d1`, `fetch`).
+
+Cota: 10.000 neurons grátis por dia na conta, zerando 00:00 UTC. O Lookout para em 8.000 estimados (`TETO_DIA`) e pausa até a virada. Se mesmo assim passar dos 10.000 (a estimativa errou para menos, ou outro projeto da conta usa Workers AI):
+- no plano **Free**, o AI responde erro `3036` ("used up your daily free allocation"), a tradução pausa até 00:00 UTC e nada é cobrado;
+- no plano **Paid** (o Lookout está no Paid desde 01/11, veja ROADMAP.md), não há erro: o excedente é cobrado a US$ 0,011 por 1.000 neurons. O teto de 8.000 é o que segura a conta.
+Erro `429` ou `3040` (capacidade) pausa 10 min.
+
+Desenvolvimento local: o wrangler não roda Workers AI local (o binding é sempre remoto). `npm run dev` e `npx wrangler dev ...` passam a precisar de login no wrangler (`wrangler login`) ou de `CLOUDFLARE_API_TOKEN`; sem isso o `wrangler dev` não sobe. Com login, o AI do dev é o da conta de verdade e gasta neurons se o cron for disparado à mão (`/cdn-cgi/local/scheduled`). Para só ver a página sem conta, use uma cópia do `wrangler.jsonc` sem o bloco `ai` com `-c` (foi assim que os prints de 13/11 foram feitos): a tradução fica desligada e o resto funciona.
+
 ## Validação do token (já implementada)
 
 A documentação do Cloudflare recomenda validar no Worker o JWT que o Access envia no cabeçalho `Cf-Access-Jwt-Assertion`; sem isso, alguém poderia chamar o Worker sem passar pelo login. O Lookout já faz isso em `src/auth.js`, sem a biblioteca `jose`, usando a Web Crypto do próprio Worker: confere a assinatura RS256 com as chaves públicas em `https://<equipe>.cloudflareaccess.com/cdn-cgi/access/certs`, o `aud`, o emissor e a validade. Token ausente ou inválido é recusado.

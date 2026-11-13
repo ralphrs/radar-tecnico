@@ -160,6 +160,12 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [ ] Landscape: resumo escrito pela curadoria (o que é, para quem serve, alternativas) e fontes além de GitHub e HN
 - [ ] Landscape: conferir na sonda (`_sistema/sonda-landscape`) o formato real do GitHub e do Algolia; pôr o `GITHUB_TOKEN` (docs/cloudflare.md)
 
+## Pedidos de 13/11
+- [x] Tudo em português: notícias, Nos fóruns, destaques e o Landscape (notícias, Hacker News, o que estão dizendo, descrição, releases, issues, trecho do README) traduzidos pelo Workers AI (`@cf/meta/m2m100-1.2b`) no cron, até 8 por minuto e 8.000 neurons por dia, com o original a um toque ("traduzido · ver original"), busca nos dois, "Notícias traduzidas" no menu da conta e a linha da tradução no Admin (docs/LOOKOUT.md, "Tradução") (13/11)
+- [ ] Tradução: qualidade do modelo. Se a tradução sair dura, trocar o m2m100 por um modelo de texto maior do Workers AI (a constante `MODELO` e a chamada em `traduzirTexto`, `src/traducao.js`) e refazer a conta do teto
+- [ ] Tradução: conferir em produção se o m2m100 aceita os códigos `en`/`es`/`pt`, se devolve os marcadores `{0}` intactos (contador `descartadas` na linha do Admin) e os neurons do painel do Workers AI contra a estimativa
+- [ ] Tradução: o feed não relê os itens já carregados quando a tradução chega; ela aparece na próxima abertura da página
+
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
 - [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)

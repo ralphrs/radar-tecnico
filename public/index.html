@@ -789,6 +789,13 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .fav[aria-pressed="true"] { color: var(--err); }
 .fav[aria-pressed="true"] svg { fill: currentColor; }
 .mais { align-self: flex-start; margin-top: var(--space-1); min-height: 24px; }
+/* Tradução: marca miúda "traduzido · ver original", fora do link da notícia. A área de toque tem 24 px de altura, mas a
+   margem negativa não deixa a linha crescer: o item traduzido e o original ocupam a mesma altura. */
+.trad-alt { appearance: none; border: 0; background: none; margin: -4px 0; padding: 4px 0; min-height: 24px; font: 400 11px/16px var(--font-mono); color: var(--muted-foreground); cursor: pointer; white-space: nowrap; text-decoration: underline dotted; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 3px; border-radius: var(--radius-sm); }
+.trad-alt:hover { color: var(--primary); }
+.trad-alt:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.ls-trad { display: flex; font: 400 12px/16px var(--font-mono); color: var(--muted-foreground); margin-top: 2px; }
+.ls-topo .ls-trad { grid-column: 1 / -1; margin-top: -2px; }
 
 .vazio { background: var(--card); border: 1px dashed var(--input); border-radius: var(--radius-xl); padding: var(--space-6); color: var(--muted-foreground); }
 .vazio strong { color: var(--foreground); display: block; margin-bottom: 4px; font: 600 16px var(--font-display); letter-spacing: -0.02em; }
@@ -2358,6 +2365,7 @@ html.tech-ls .barra-linha { display: none; }
   <a class="conta-item" role="menuitem" tabindex="-1" href="#esportes/config" id="conta-esportes" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m12 7 4 3-1.5 4.5h-5L8 10z"/><path d="M12 3v4M21 10l-5 0M18 19l-3-4.5M6 19l3-4.5M3 10h5"/></svg>Meus esportes</a>
   <div class="conta-sep" role="separator" id="conta-sep-esp" hidden></div>
   <button class="conta-item" type="button" role="menuitem" tabindex="-1" id="aparencia" data-fica></button>
+  <button class="conta-item" type="button" role="menuitemcheckbox" tabindex="-1" id="conta-traducao" aria-checked="true" data-fica></button>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/admin" id="conta-admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Administração</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout" id="conta-trocar" title="Sai e abre o login para escolher outra conta do Google" aria-description="Sai e abre o login para escolher outra conta do Google" onclick="try{sessionStorage.setItem('radar-trocar','1')}catch(e){}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>Trocar de conta</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sair</a>
@@ -2422,6 +2430,7 @@ html.tech-ls .barra-linha { display: none; }
 <script src="/tabela.js"></script>
 <script src="/esportes.js"></script>
 <script src="/landscape.js"></script>
+<script src="/traducao.js"></script>
 <script>
 /* Lookout: adaptador que imita o banco do artifact (window.claude.use) usando a API do Worker.
    Leituras viram GET em /api/q e /api/doc; "onSnapshot" vira consulta a cada 2 minutos e quando a aba volta ao foco.
@@ -2817,6 +2826,16 @@ const idNaConta = (k) => String(k).replace("/", ":");
 const idDaConta = (d) => (/^items-[a-z]+:/.test(d) ? d.replace(":", "/") : d);
 const favsDoRadar = () => Object.entries(favs).filter(([id]) => radarDoFav(id) === radar);
 
+/* Tradução das notícias (public/traducao.js, src/traducao.js): onde a notícia tem titulo_pt, resumo_pt ou porque_pt, a tela
+   mostra o português. "Mostrar notícias traduzidas" fica no menu da conta, salva em /api/prefs/traducao (ligada por padrão;
+   o localStorage só pinta certo já na abertura). tv(i) devolve o item como a tela mostra, com o original em _orig.
+   trOriginais: os textos que a pessoa voltou para o original nesta visita (por chave do item). */
+const TR = window.Traducao;
+let trLigada = true;
+try { trLigada = localStorage.getItem("radar-traducao") !== "0"; } catch (e) {}
+const tv = (i) => TR.vista(i, trLigada);
+const trOriginais = new Set();
+
 const $ = (id) => document.getElementById(id);
 const el = (tag, attrs = {}, ...kids) => {
   const n = document.createElement(tag);
@@ -2870,7 +2889,7 @@ const passaTipo = (i, t) => t === "todos" || tipoDe(i) === t;
 const passaRel = (i) => !soRel || Number(i.relevancia) >= 3;
 const passaBase = (i) => passaBusca(i) && passaRel(i) && passaEscopo(i);
 /* Lista de onde os filtros partem: o feed inteiro ou só os favoritos */
-const fonteItens = () => (soFav ? favsDoRadar().map(([id, f]) => ({ ...f, _id: id })).sort(ordem) : itens);
+const fonteItens = () => (soFav ? favsDoRadar().map(([id, f]) => tv({ ...f, _id: id })).sort(ordem) : itens);
 const agora = () => new Date().toISOString();
 /* Release futuro não passa na frente do que já saiu: ordena pela data de coleta até a data prevista chegar */
 const chave = (i) => { const p = i.publicado || ""; return p && p <= agora() ? p : (i.coletado || p); };
@@ -2880,7 +2899,8 @@ function ordenar(lista) {
   if (ordenacao === "entrada") return lista.slice().sort((a, b) => String(b.coletado || "").localeCompare(String(a.coletado || "")) || ordem(a, b));
   return lista;
 }
-const passaBusca = (i) => { const q = busca.trim().toLowerCase(); return !q || [i.titulo, i.resumo, i.fonte].join(" ").toLowerCase().includes(q); };
+/* a busca olha o original e a tradução */
+const passaBusca = (i) => { const q = busca.trim().toLowerCase(); return !q || TR.textoBusca(i).toLowerCase().includes(q); };
 
 function renderStatus() {
   const s = $("status"); s.textContent = "";
@@ -4643,12 +4663,14 @@ function renderDestaques() {
   const prox = el("button", { class: "dd-btn dd-btn--outline dd-btn--icon", type: "button", id: "dest-prox", "aria-label": "Próximo destaque", html: CHEV_R });
   const trilho = el("div", { class: "trilho", tabindex: "0", "aria-label": "Lista de destaques" });
   const pontos = el("div", { class: "pontos" });
-  lista.forEach((d, idx) => {
+  lista.forEach((d0, idx) => {
+    const d = tv(d0);
     const t = TEMA[GRUPO_DE[d.tema]];
+    const a = el("a", { href: d.url, target: "_blank", rel: "noopener" }, d.titulo || d.url), p = d.porque ? el("p", {}, d.porque) : null;
     trilho.append(el("article", { class: "dcard", "aria-roledescription": "slide", "aria-label": `${idx + 1} de ${lista.length}` },
-      el("div", { class: "n" }, el("span", {}, String(idx + 1).padStart(2, "0")), t ? el("span", { style: `color:${t.cor}` }, t.curto) : null, fonteEl(d)),
-      el("a", { href: d.url, target: "_blank", rel: "noopener" }, d.titulo || d.url),
-      d.porque ? el("p", {}, d.porque) : null));
+      el("div", { class: "n" }, el("span", {}, String(idx + 1).padStart(2, "0")), t ? el("span", { style: `color:${t.cor}` }, t.curto) : null, fonteEl(d),
+        d._trad ? trocaTrad("d:" + d.url, paresTrad(d, { titulo: a, porque: p })) : null),
+      a, p));
     const b = el("button", { type: "button", "aria-label": `Ir para o destaque ${idx + 1}` });
     b.addEventListener("click", () => ir(idx));
     pontos.append(b);
@@ -4826,12 +4848,15 @@ async function lerForuns(db, sec, n) {
   return { d: s.docs.map((x) => ({ ...x.data(), _id: x.id })), marca: s._txt };
 }
 /* Uma linha de post: título (abre o Reddit), "r/<sub> · há X" e, se o post aponta para fora, o link "fonte" */
-function liForum(i) {
+function liForum(i0) {
+  const i = tv(i0);
   const sub = i.sub ? "r/" + i.sub : "Reddit";
+  const a = el("a", { href: i.url, target: "_blank", rel: "noopener", title: i.resumo || i.titulo || "" }, i.titulo || i.url);
   return el("li", {},
-    el("a", { href: i.url, target: "_blank", rel: "noopener", title: i.resumo || i.titulo || "" }, i.titulo || i.url),
+    a,
     el("div", { class: "n" }, el("span", {}, sub + (i.publicado ? " · " + fmtRel(i.publicado) : "")),
-      i.linkExterno ? el("a", { class: "forum-fonte", href: i.linkExterno, target: "_blank", rel: "noopener", title: "Link original: " + (hostDe(i.linkExterno) || i.linkExterno) }, "fonte") : null));
+      i.linkExterno ? el("a", { class: "forum-fonte", href: i.linkExterno, target: "_blank", rel: "noopener", title: "Link original: " + (hostDe(i.linkExterno) || i.linkExterno) }, "fonte") : null,
+      i._trad ? trocaTrad("f:" + (i._id || i.url), paresTrad(i, { titulo: a })) : null));
 }
 function blocoForuns(idSec) {
   const docs = foruns && foruns.radar === radar ? foruns.docs : null;
@@ -4859,12 +4884,12 @@ function renderLateral() {
   renderForunsCentro();
   const forum = MQ_LARGA.matches && mostraForum() ? blocoForuns("lat-foruns") : null;
   const temaCurto = temaCurtoEl;
-  const link = (url, titulo) => el("a", { href: url, target: "_blank", rel: "noopener" }, titulo || url);
+  const link = (url, titulo, dica) => el("a", { href: url, target: "_blank", rel: "noopener", ...(dica ? { title: dica } : {}) }, titulo || url);
 
   const urg = urgentes();
   if (urg.length) {
     const ul = el("ul", {});
-    urg.forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" }, temaCurto(i.tema), fonteEl(i)))));
+    urg.forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo, tituloOriginal(i)), el("div", { class: "n" }, temaCurto(i.tema), fonteEl(i)))));
     box.append(el("section", { class: "bloco", id: "lat-urgente" }, el("h3", {}, "Urgente", el("small", {}, "últimas 24 h")), ul));
   }
 
@@ -4880,9 +4905,9 @@ function renderLateral() {
   const dest = destaque && Array.isArray(destaque.itens) ? destaque.itens.filter((d) => d && d.url) : [];
   if (dest.length) {
     const ol = el("ol", {});
-    dest.forEach((d, idx) => ol.append(el("li", {},
+    dest.map(tv).forEach((d, idx) => ol.append(el("li", {},
       el("div", { class: "n" }, el("b", {}, String(idx + 1).padStart(2, "0")), temaCurto(d.tema), fonteEl(d)),
-      link(d.url, d.titulo), d.porque ? el("p", {}, d.porque) : null)));
+      link(d.url, d.titulo, tituloOriginal(d)), d.porque ? el("p", {}, d.porque) : null)));
     box.append(el("section", { class: "bloco", id: "lat-destaques" }, el("h3", { class: "empilha" }, "Destaques do dia", el("small", {}, fmtDia(destaque.data))), ol));
   }
 
@@ -4891,7 +4916,7 @@ function renderLateral() {
     el("h3", {}, "Novos nesta rodada", novos.length > NOVOS_MAX ? el("small", {}, `+${novos.length - NOVOS_MAX}`) : null));
   if (novos.length) {
     const ul = el("ul", {});
-    novos.slice(0, NOVOS_MAX).forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" }, temaCurto(i.tema)))));
+    novos.slice(0, NOVOS_MAX).forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo, tituloOriginal(i)), el("div", { class: "n" }, temaCurto(i.tema)))));
     bNovos.append(ul);
   } else bNovos.append(el("p", { class: "nota" }, "Nada novo na última coleta."));
   box.append(bNovos);
@@ -4904,9 +4929,9 @@ function renderLateral() {
   if (lista.length) {
     const ul = el("ul", {});
     /* favoritos de todos os radares; os de outro radar levam o nome dele */
-    lista.slice(0, FAVS_MAX).forEach((i) => {
+    lista.slice(0, FAVS_MAX).map(tv).forEach((i) => {
       const r = radarDoFav(i._id);
-      ul.append(el("li", {}, link(i.url, i.titulo), el("div", { class: "n" },
+      ul.append(el("li", {}, link(i.url, i.titulo, tituloOriginal(i)), el("div", { class: "n" },
         r !== radar ? el("b", {}, RADARES[r].aba) : null, fonteEl(i))));
     });
     bFav.append(ul);
@@ -4927,6 +4952,24 @@ function favBotao(i) {
   b.addEventListener("click", () => alternarFav(i));
   return b;
 }
+/* "traduzido · ver original": marca miúda que, no toque, troca os textos do item para o original e volta. Fica fora do
+   link da notícia (o clique no título continua abrindo a fonte). alvos: [{ no, pt, orig }]; depois(orig) roda a cada troca. */
+function trocaTrad(chave, alvos, depois) {
+  const b = el("button", { type: "button", class: "trad-alt" });
+  const pintar = () => {
+    const orig = trOriginais.has(chave);
+    for (const a of alvos) if (a.no) a.no.textContent = orig ? a.orig : a.pt;
+    b.textContent = orig ? "original · ver tradução" : "traduzido · ver original";
+    if (depois) depois(orig);
+  };
+  b.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); if (trOriginais.has(chave)) trOriginais.delete(chave); else trOriginais.add(chave); pintar(); });
+  pintar();
+  return b;
+}
+/* Os pares texto traduzido / original de um item já passado por tv(): título e, se houver, o segundo campo */
+const paresTrad = (v, nos) => Object.entries(nos).filter(([c, no]) => no && v._orig && v._orig[c] != null).map(([c, no]) => ({ no, pt: v[c], orig: v._orig[c] }));
+const tituloOriginal = (v) => (v && v._orig && v._orig.titulo ? "Original: " + v._orig.titulo : null);
+
 /* Resumos: duas linhas por padrão, com "ler mais" por item; o painel liga o modo expandido para todos */
 let resumosAbertos = false;
 try { resumosAbertos = localStorage.getItem("radar-resumos") === "expandido"; } catch (e) {}
@@ -4978,9 +5021,13 @@ function itemEl(i) {
       });
     }
   }
+  const aTit = el("a", { class: "titulo", href: i.url, target: "_blank", rel: "noopener" }, i.titulo || i.url);
+  const trad = i._trad ? trocaTrad("i:" + k, paresTrad(i, { titulo: aTit, resumo }), (orig) => {
+    if (resumo && lerMais && !resumosAbertos && !resumoAberto.has(k)) lerMais.hidden = !resumoCorta(orig ? i._orig.resumo || i.resumo : i.resumo);
+  }) : null;
   return el("li", { class: "item" },
     el("div", { class: "item-topo" },
-      el("a", { class: "titulo", href: i.url, target: "_blank", rel: "noopener" }, i.titulo || i.url),
+      aTit,
       i._id ? favBotao(i) : null),
     el("div", { class: "meta" },
       el("span", { class: "tags" },
@@ -4990,7 +5037,8 @@ function itemEl(i) {
         i.urgente === true ? el("span", { class: "dd-badge b-urgente" }, "Urgente") : null,
         i.clube ? el("span", { class: "dd-badge b-clube", title: String(i.clube) }, nomeClube(i.clube)) : null),
       fonteEl(i),
-      el("span", {}, i.publicado ? (fmtRel(i.publicado).startsWith("em ") ? "previsto " : "publicado ") + fmtRel(i.publicado) : "coletado " + fmtRel(i.coletado))),
+      el("span", {}, i.publicado ? (fmtRel(i.publicado).startsWith("em ") ? "previsto " : "publicado ") + fmtRel(i.publicado) : "coletado " + fmtRel(i.coletado)),
+      trad),
     papeis, resumo, lerMais);
 }
 /* "ler mais" só aparece quando o resumo passa de duas linhas. A medida não força o layout da página: cada item é
@@ -5092,7 +5140,7 @@ function juntar() {
   const vistos = new Set(); const todos = [];
   for (const i of [...recentes, ...antigos]) { const k = i.url || i.titulo; if (k && !vistos.has(k)) { vistos.add(k); todos.push(i); } }
   todos.sort(ordem);
-  itens = todos;
+  itens = todos.map(tv);
   render();
 }
 
@@ -5196,14 +5244,15 @@ function render() {
 
 
 /* Favoritos: cada pessoa tem os seus. Na conta (data/users/<id>) quando a página permite gravar; senão, neste navegador. */
-const CAMPOS_FAV = ["titulo", "url", "tema", "subtema", "tipo", "fonte", "pais", "publicado", "coletado", "resumo", "relevancia", "clube", "transferencia"];
+const CAMPOS_FAV = ["titulo", "url", "tema", "subtema", "tipo", "fonte", "pais", "publicado", "coletado", "resumo", "relevancia", "clube", "transferencia", "titulo_pt", "resumo_pt"];
 function salvarLocal() { try { localStorage.setItem("radar-favoritos", JSON.stringify(favs)); } catch (e) {} }
 async function alternarFav(i) {
   const id = i._id; if (!id) return;
   const tirar = !!favs[id];
   let snap = null;
   if (tirar) delete favs[id];
-  else { snap = { favoritadoEm: agora() }; CAMPOS_FAV.forEach((k) => { if (i[k] != null) snap[k] = i[k]; });
+  /* o favorito guarda o original e a tradução lado a lado, como o item no banco (a tela pode estar mostrando o português) */
+  else { snap = { favoritadoEm: agora() }; const o = i._orig || {}; CAMPOS_FAV.forEach((k) => { const v = o[k] != null ? o[k] : i[k]; if (v != null) snap[k] = v; });
     /* da negociação só os campos do card (Esportes.transferenciaLimpa): nada de foto nem de link de imagem */
     if (snap.transferencia) { const t = window.Esportes.transferenciaLimpa(snap.transferencia); if (t) snap.transferencia = t; else delete snap.transferencia; }
     favs[id] = snap; }
@@ -5393,6 +5442,34 @@ $("aparencia").addEventListener("click", () => {
 });
 aplicarAparencia();
 
+/* Notícias traduzidas: item do menu da conta (fica aberto, como Aparência). Ligado mostra o português onde a notícia já
+   tem tradução; desligado mostra tudo no original. Vale nos outros aparelhos por /api/prefs/traducao. */
+const IC_TRAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8M8 3v2"/><path d="M10.5 5c-.8 3.8-3 6.8-6.5 8.5"/><path d="M6 9c1.2 2.2 3 3.8 5.5 4.8"/><path d="m13 21 4-9 4 9M14.4 18h5.2"/></svg>';
+let trMexido = false;
+function pintarTraducao() {
+  const b = $("conta-traducao");
+  b.innerHTML = IC_TRAD + "<span>Notícias traduzidas</span><small>" + (trLigada ? "ligado" : "desligado") + "</small>";
+  b.setAttribute("aria-checked", String(trLigada));
+  b.title = trLigada ? "Mostra em português as notícias que já foram traduzidas. Toque para ver tudo no original." : "Mostra tudo no original. Toque para ver as traduções.";
+}
+function aplicarTraducao(v) {
+  if (v === trLigada) return;
+  trLigada = v;
+  try { localStorage.setItem("radar-traducao", v ? "1" : "0"); } catch (e) {}
+  trOriginais.clear();
+  pintarTraducao();
+  /* redesenha o que já está na tela: feed (juntar refaz a vista dos itens), lateral, widgets do Início e Landscape */
+  try { juntar(); for (const id of wDados.keys()) pintarWidget(id); } catch (e) {}
+}
+$("conta-traducao").addEventListener("click", () => {
+  trMexido = true;
+  aplicarTraducao(!trLigada);
+  fetch("/api/prefs/traducao", { method: "PUT", credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({ mostrar: trLigada }) }).catch(() => {});
+});
+pintarTraducao();
+fetch("/api/prefs/traducao", { credentials: "same-origin", cache: "no-store", headers: { "X-Requested-With": "XMLHttpRequest" } })
+  .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && !trMexido && typeof j.mostrar === "boolean") aplicarTraducao(j.mostrar); }).catch(() => {});
+
 /* Conta: avatar (foto do Google via Cloudflare Access ou iniciais) e menu com aparência, administração e sair */
 const CORES_AVATAR = ["--primary", "--info", "--ok", "--warn", "--chart-1", "--brand-end"];
 function corDoEmail(s) {
@@ -5450,7 +5527,7 @@ function pintarAvatar(n, c) {
   n.classList.add("tem-foto"); n.append(img);
 }
 function montarMenuConta(botao, menu) {
-  const itens = () => [...menu.querySelectorAll('[role="menuitem"]')].filter((x) => !x.hidden);
+  const itens = () => [...menu.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"]')].filter((x) => !x.hidden);
   const aberto = () => botao.getAttribute("aria-expanded") === "true";
   const posicionar = () => {
     const r = botao.getBoundingClientRect();
@@ -5487,7 +5564,7 @@ function montarMenuConta(botao, menu) {
   });
   /* Aparência troca o tema na hora e deixa o menu aberto, para dar a volta nas três opções; os links fecham */
   menu.addEventListener("click", (e) => {
-    const it = e.target.closest('[role="menuitem"]');
+    const it = e.target.closest('[role="menuitem"], [role="menuitemcheckbox"]');
     if (it && !("fica" in it.dataset)) fechar();
   });
   document.addEventListener("pointerdown", (e) => {
@@ -5821,7 +5898,8 @@ async function carregarWidget(id, fresco) {
 /* ---- desenho ---- */
 const pctVar = (v) => (v == null ? "–" : (v > 0 ? "+" : "") + fmtNum(v, 2) + "%");
 const clsVar = (v) => (v > 0 ? "sobe" : v < 0 ? "desce" : "");
-const linkNoticia = (i) => el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo || i.url);
+/* widgets do Início: o português quando existe (o original fica no title do link) */
+const linkNoticia = (i0) => { const i = tv(i0); return el("a", { href: i.url, target: "_blank", rel: "noopener", ...(i._trad ? { title: tituloOriginal(i) } : {}) }, i.titulo || i.url); };
 const vazioW = (txt) => el("p", { class: "wdg-vazio" }, txt || "Nada por aqui ainda.");
 const ALCA = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
 function diaCurto(ymd) {
@@ -5853,7 +5931,7 @@ const corpos = {
   destaques(d, fm = { c: 1, r: 1 }) {
     const l = d && Array.isArray(d.itens) ? d.itens.filter((x) => x && x.url).slice(0, 3 * fm.r) : [];
     if (!l.length) return [vazioW()];
-    return [el("ul", { class: "wdg-lista" }, ...l.map((i) => el("li", {}, linkNoticia(i), i.porque || i.resumo ? el("p", { title: i.porque || i.resumo }, i.porque || i.resumo) : null)))];
+    return [el("ul", { class: "wdg-lista" }, ...l.map(tv).map((i) => el("li", {}, linkNoticia(i), i.porque || i.resumo ? el("p", { title: i.porque || i.resumo }, i.porque || i.resumo) : null)))];
   },
   ultimas(l, fm = { c: 1, r: 1 }) {
     if (!l || !l.length) return [vazioW()];
@@ -11258,7 +11336,7 @@ function cartao(t) {
   const selos = [];
   if (LS.ehNova(t.adicionado)) selos.push(el("span", { class: "dd-badge b-novo" }, "novo"));
   if (l.release && LS.releaseRecente(l.release)) selos.push(el("span", { class: "dd-badge b-release", title: "Versão nova nesta semana" }, l.release.tag));
-  const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : ""), href: "#tech/landscape/" + encodeURIComponent(t.id), id: "ls-c-" + t.id, title: t.descricao || t.repo },
+  const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : ""), href: "#tech/landscape/" + encodeURIComponent(t.id), id: "ls-c-" + t.id, title: (trLigada && t.descricao_pt) || t.descricao || t.repo },
     selos.length ? el("span", { class: "ls-selos" }, ...selos) : null, marcaEl(t), el("span", { class: "ls-nome" }, t.nome || t.repo),
     el("span", { class: "ls-dado" }, ...(l.coletando ? [t.erro ? "não achado" : "coletando…"] : [pontoEl(l.commit), estrelasTxt(l.estrelas)])));
   a.addEventListener("click", (e) => abrirTec(t.id, e));
@@ -11372,6 +11450,9 @@ function tabelaLs(l) {
   return el("div", { class: "ls-tabela" }, tab.el);
 }
 /* ---- detalhe ---- */
+/* Tradução no detalhe: cada texto com *_pt aparece em português, com "traduzido · ver original" ao lado */
+const lsV = (obj, campos) => TR.vista(obj, trLigada, campos);
+const lsTroca = (v, chave, nos) => (v && v._trad ? trocaTrad("ls:" + lsId + ":" + chave, paresTrad(v, nos)) : null);
 function spark(serie) {
   const s = (serie || []).filter((p) => Array.isArray(p) && Number.isFinite(p[1]));
   if (s.length < 2) return el("p", { class: "ls-spark-nota" }, "A série de estrelas começa no dia em que a tecnologia entrou; o gráfico aparece a partir do segundo dia.");
@@ -11408,16 +11489,22 @@ function blocoVersoes(t) {
   const rs = t.releases || [];
   const cad = rs.filter((r) => LS.idadeDias(r.data) <= 90).length;
   return el("section", { class: "ls-bloco", "aria-labelledby": "ls-h-ver" }, el("h3", { id: "ls-h-ver" }, "Versões", el("small", {}, cad === 1 ? "1 release nos últimos 90 dias" : cad + " releases nos últimos 90 dias")),
-    rs.length ? el("ul", { class: "ls-lista" }, ...rs.map((r) => el("li", {},
-      el("div", { class: "ls-rel" }, r.url ? el("a", { href: r.url, target: "_blank", rel: "noopener" }, el("code", {}, r.tag)) : el("code", {}, r.tag), r.nome && r.nome !== r.tag ? el("span", {}, r.nome) : null, r.pre ? el("span", { class: "dd-badge b-review" }, "pré-release") : null),
-      el("div", { class: "n" }, el("span", {}, r.data ? dataCurta(r.data) : "sem data"), r.data ? el("span", {}, fmtRel(r.data)) : null),
-      r.notas ? el("p", { class: "ls-trecho" }, r.notas) : null))) : el("p", { class: "ls-aviso" }, t.em && t.em.releases ? "O repositório não publica releases no GitHub." : "Ainda não coletado."),
+    rs.length ? el("ul", { class: "ls-lista" }, ...rs.map((r0) => {
+      const r = lsV(r0, ["nome", "notas"]);
+      const nome = r.nome && r0.nome !== r.tag ? el("span", {}, r.nome) : null, notas = r.notas ? el("p", { class: "ls-trecho" }, r.notas) : null;
+      return el("li", {},
+        el("div", { class: "ls-rel" }, r.url ? el("a", { href: r.url, target: "_blank", rel: "noopener" }, el("code", {}, r.tag)) : el("code", {}, r.tag), nome, r.pre ? el("span", { class: "dd-badge b-review" }, "pré-release") : null),
+        el("div", { class: "n" }, el("span", {}, r.data ? dataCurta(r.data) : "sem data"), r.data ? el("span", {}, fmtRel(r.data)) : null, lsTroca(r, "rel:" + r.tag, { nome, notas })),
+        notas);
+    })) : el("p", { class: "ls-aviso" }, t.em && t.em.releases ? "O repositório não publica releases no GitHub." : "Ainda não coletado."),
     fonteBloco("GitHub", t.em && t.em.releases));
 }
 function blocoSobre(t) {
   const g = t.gh || {};
+  const sv = lsV(t, ["sobre"]), ps = sv.sobre ? el("p", { class: "ls-sobre" }, sv.sobre) : null;
   return el("section", { class: "ls-bloco", "aria-labelledby": "ls-h-sobre" }, el("h3", { id: "ls-h-sobre" }, "Sobre"),
-    t.sobre ? el("p", { class: "ls-sobre" }, t.sobre) : el("p", { class: "ls-aviso" }, t.em && t.em.readme ? "O README não tem um parágrafo de apresentação." : "Ainda não coletado."),
+    ps || el("p", { class: "ls-aviso" }, t.em && t.em.readme ? "O README não tem um parágrafo de apresentação." : "Ainda não coletado."),
+    ps && sv._trad ? el("div", { class: "n ls-trad" }, lsTroca(sv, "sobre", { sobre: ps })) : null,
     el("a", { href: ghLink(t.repo, "#readme"), target: "_blank", rel: "noopener" }, "Ler o README completo no GitHub"),
     (g.topics || []).length ? el("div", { class: "ls-topics", "aria-label": "Topics" }, ...g.topics.map((x) => el("span", { class: "chip" }, x))) : null,
     fonteBloco("README do GitHub", t.em && t.em.readme));
@@ -11430,31 +11517,42 @@ function blocoNoticias(d) {
   const hnUrl = (h) => "https://news.ycombinator.com/item?id=" + encodeURIComponent(h.id);
   return el("section", { class: "ls-bloco largo", "aria-labelledby": "ls-h-not" }, el("h3", { id: "ls-h-not" }, "Notícias"),
     el("h4", {}, "No Lookout"),
-    d.noticias.length ? el("ul", { class: "ls-lista" }, ...d.noticias.map((n) => el("li", {}, el("a", { href: n.url, target: "_blank", rel: "noopener" }, n.titulo),
-      el("div", { class: "n" }, el("span", {}, RADARES[n.secao] ? RADARES[n.secao].aba : "Tech"), n.fonte ? el("span", {}, n.fonte) : null, el("span", {}, fmtRel(n.coletado || n.publicado))), n.resumo ? el("p", { class: "ls-trecho" }, n.resumo) : null)))
+    d.noticias.length ? el("ul", { class: "ls-lista" }, ...d.noticias.map((n0) => {
+      const n = lsV(n0, ["titulo", "resumo"]);
+      const a = el("a", { href: n.url, target: "_blank", rel: "noopener" }, n.titulo), p = n.resumo ? el("p", { class: "ls-trecho" }, n.resumo) : null;
+      return el("li", {}, a,
+        el("div", { class: "n" }, el("span", {}, RADARES[n.secao] ? RADARES[n.secao].aba : "Tech"), n.fonte ? el("span", {}, n.fonte) : null, el("span", {}, fmtRel(n.coletado || n.publicado)), lsTroca(n, "n:" + n.url, { titulo: a, resumo: p })), p);
+    }))
       : el("p", { class: "ls-aviso" }, "Nenhuma notícia do Lookout citou esta tecnologia nos últimos meses."),
     el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap" }, el("h4", {}, "Hacker News"), hist.length > 1 ? ord : null),
-    hist.length ? el("ul", { class: "ls-lista" }, ...hist.slice(0, 10).map((h) => el("li", {}, el("a", { href: h.url || hnUrl(h), target: "_blank", rel: "noopener" }, h.titulo),
-      el("div", { class: "n" }, el("span", {}, h.pontos + " pontos"), el("a", { href: hnUrl(h), target: "_blank", rel: "noopener" }, h.comentarios === 1 ? "1 comentário" : h.comentarios + " comentários"), el("span", {}, h.autor), el("span", {}, h.data ? dataCurta(h.data) : "")))))
+    hist.length ? el("ul", { class: "ls-lista" }, ...hist.slice(0, 10).map((h0) => {
+      const h = lsV(h0, ["titulo"]), a = el("a", { href: h.url || hnUrl(h), target: "_blank", rel: "noopener" }, h.titulo);
+      return el("li", {}, a,
+        el("div", { class: "n" }, el("span", {}, h.pontos + " pontos"), el("a", { href: hnUrl(h), target: "_blank", rel: "noopener" }, h.comentarios === 1 ? "1 comentário" : h.comentarios + " comentários"), el("span", {}, h.autor), el("span", {}, h.data ? dataCurta(h.data) : ""), lsTroca(h, "hn:" + h.id, { titulo: a })));
+    }))
       : el("p", { class: "ls-aviso" }, t.em && t.em.hn ? "Nenhuma história do Hacker News sobre esta tecnologia." : "Ainda não coletado."),
     t.blog && t.blog.length ? el("h4", {}, "Blog oficial") : null,
-    t.blog && t.blog.length ? el("ul", { class: "ls-lista" }, ...t.blog.slice(0, 6).map((b) => el("li", {}, el("a", { href: b.url, target: "_blank", rel: "noopener" }, b.titulo), el("div", { class: "n" }, el("span", {}, b.publicado ? dataCurta(b.publicado) : ""))))) : null,
+    t.blog && t.blog.length ? el("ul", { class: "ls-lista" }, ...t.blog.slice(0, 6).map((b0) => { const b = lsV(b0, ["titulo"]), a = el("a", { href: b.url, target: "_blank", rel: "noopener" }, b.titulo); return el("li", {}, a, el("div", { class: "n" }, el("span", {}, b.publicado ? dataCurta(b.publicado) : ""), lsTroca(b, "bl:" + b.url, { titulo: a }))); })) : null,
     fonteBloco("Lookout, Hacker News (Algolia)" + (t.feed ? " e o feed do site" : ""), t.em && t.em.hn));
 }
 function blocoDizendo(d) {
   const t = d.tec, grupos = (t.hn && t.hn.comentarios) || [], is = t.gh_destaques || [];
-  const com = (c) => el("li", {}, el("p", {}, c.trecho), el("div", { class: "n" }, el("span", {}, c.autor), el("span", {}, c.data ? dataCurta(c.data) : ""), el("span", {}, c.respostas === 1 ? "1 resposta" : c.respostas + " respostas"), el("a", { href: c.url, target: "_blank", rel: "noopener" }, "ver no HN")));
+  const com = (c0) => { const c = lsV(c0, ["trecho"]), p = el("p", {}, c.trecho); return el("li", {}, p, el("div", { class: "n" }, el("span", {}, c.autor), el("span", {}, c.data ? dataCurta(c.data) : ""), el("span", {}, c.respostas === 1 ? "1 resposta" : c.respostas + " respostas"), el("a", { href: c.url, target: "_blank", rel: "noopener" }, "ver no HN"), lsTroca(c, "cm:" + c.id, { trecho: p }))); };
+  const tituloHn = (g) => { const h = lsV(g.historia, ["titulo"]); return el("a", { href: "https://news.ycombinator.com/item?id=" + encodeURIComponent(h.id), target: "_blank", rel: "noopener", ...(h._trad ? { title: tituloOriginal(h) } : {}) }, h.titulo); };
   return el("section", { class: "ls-bloco largo", "aria-labelledby": "ls-h-diz" }, el("h3", { id: "ls-h-diz" }, "O que estão dizendo", el("small", {}, "trechos curtos, com link para o original")),
     el("h4", {}, "Hacker News"),
-    grupos.length ? el("div", {}, ...grupos.map((g) => el("div", {}, el("p", { class: "ls-grupo-hn" }, "Em ", el("a", { href: "https://news.ycombinator.com/item?id=" + encodeURIComponent(g.historia.id), target: "_blank", rel: "noopener" }, g.historia.titulo), ` (${g.historia.pontos} pontos)`),
+    grupos.length ? el("div", {}, ...grupos.map((g) => el("div", {}, el("p", { class: "ls-grupo-hn" }, "Em ", tituloHn(g), ` (${g.historia.pontos} pontos)`),
       el("ul", { class: "ls-lista" }, ...g.itens.map(com)))))
       : el("p", { class: "ls-aviso" }, "Sem comentários do Hacker News sobre esta tecnologia ainda."),
     el("h4", {}, "Reddit"),
-    d.reddit.length ? el("ul", { class: "ls-lista" }, ...d.reddit.map((r) => el("li", {}, el("a", { href: r.url, target: "_blank", rel: "noopener" }, r.titulo), el("div", { class: "n" }, el("span", {}, "r/" + r.sub), el("span", {}, fmtRel(r.publicado)), r.linkExterno ? el("a", { href: r.linkExterno, target: "_blank", rel: "noopener" }, "fonte") : null))))
+    d.reddit.length ? el("ul", { class: "ls-lista" }, ...d.reddit.map((r0) => { const r = lsV(r0, ["titulo"]), a = el("a", { href: r.url, target: "_blank", rel: "noopener" }, r.titulo); return el("li", {}, a, el("div", { class: "n" }, el("span", {}, "r/" + r.sub), el("span", {}, fmtRel(r.publicado)), r.linkExterno ? el("a", { href: r.linkExterno, target: "_blank", rel: "noopener" }, "fonte") : null, lsTroca(r, "rd:" + r.url, { titulo: a }))); }))
       : el("p", { class: "ls-aviso" }, "Nenhum post dos subreddits acompanhados citou esta tecnologia nos últimos dias."),
     el("h4", {}, "GitHub: issues e PRs com mais 👍 em 12 meses"),
-    is.length ? el("ul", { class: "ls-lista" }, ...is.map((i) => el("li", {}, i.url ? el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo) : el("span", {}, i.titulo),
-      el("div", { class: "n" }, el("span", {}, (i.tipo === "pr" ? "PR" : "issue") + " #" + i.numero), el("span", {}, "👍 " + i.reacoes), el("span", {}, i.comentarios === 1 ? "1 comentário" : i.comentarios + " comentários"), el("span", {}, i.estado), i.autor ? el("span", {}, i.autor) : null))))
+    is.length ? el("ul", { class: "ls-lista" }, ...is.map((i0) => {
+      const i = lsV(i0, ["titulo"]), a = i.url ? el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo) : el("span", {}, i.titulo);
+      return el("li", {}, a,
+        el("div", { class: "n" }, el("span", {}, (i.tipo === "pr" ? "PR" : "issue") + " #" + i.numero), el("span", {}, "👍 " + i.reacoes), el("span", {}, i.comentarios === 1 ? "1 comentário" : i.comentarios + " comentários"), el("span", {}, i.estado), i.autor ? el("span", {}, i.autor) : null, lsTroca(i, "is:" + (i.url || i.numero), { titulo: a })));
+    }))
       : el("p", { class: "ls-aviso" }, t.em && t.em.issues ? "Nenhuma issue com reações nos últimos 12 meses." : "Ainda não coletado."),
     fonteBloco("Hacker News, Reddit (fóruns do Lookout) e GitHub", t.em && t.em.comentarios));
 }
@@ -11519,7 +11617,8 @@ function desenharDetalhe(box, id) {
   const botoes = el("div", { class: "ls-botoes" }, el("a", { class: "dd-btn dd-btn--outline", href: ghLink(t.repo), target: "_blank", rel: "noopener" }, "GitHub"), site ? el("a", { class: "dd-btn dd-btn--outline", href: site, target: "_blank", rel: "noopener" }, "Site") : null);
   const topo = el("div", { class: "ls-topo" }, marcaEl(t, "g"),
     el("div", {}, el("h2", {}, t.nome || t.repo), el("span", { class: "ls-repo" }, el("a", { href: ghLink(t.repo), target: "_blank", rel: "noopener" }, t.repo)), site ? el("span", { class: "ls-repo" }, " · ", el("a", { href: site, target: "_blank", rel: "noopener" }, site.replace(/^https?:\/\//, "").replace(/\/$/, ""))) : null),
-    g.descricao ? el("p", { class: "ls-desc" }, g.descricao) : null, el("div", { class: "ls-chips" }, ...chips), botoes);
+    ...(() => { const gv = lsV(g, ["descricao"]); if (!gv.descricao) return [null]; const p = el("p", { class: "ls-desc" }, gv.descricao); return [p, gv._trad ? el("div", { class: "n ls-trad" }, lsTroca(gv, "desc", { descricao: p })) : null]; })(),
+    el("div", { class: "ls-chips" }, ...chips), botoes);
   if (lsAdmin) {
     const ed = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ls-editar", "aria-haspopup": "dialog", "aria-controls": "ls-folha" }, "Editar");
     ed.addEventListener("click", () => abrirFolhaLs("editar", t));

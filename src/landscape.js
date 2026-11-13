@@ -17,7 +17,11 @@
 // Regras do banco: nunca DROP; UPDATE e DELETE só com a chave explícita; o cron não toca em landscape/<email>.
 import { lerFeed } from "./coleta.js";
 import "../public/landscape.js";
+import "../public/traducao.js";
 const L = globalThis.Landscape;
+// Tradução (src/traducao.js): os campos *_pt que o cron de tradução grava ao lado dos textos. Antes de gravar uma rodada,
+// Traducao.manterLandscape devolve o português de cada texto que não mudou e tira o de quem mudou.
+const TR = globalThis.Traducao;
 
 const MIN = 60_000, HORA = 3_600_000, DIA = 86_400_000;
 export const UA = "Lookout/1.0 (radar pessoal de tecnologias; +https://lookout.ralph-renato.workers.dev)";
@@ -403,11 +407,11 @@ export async function rodadaLandscape(env, { agora = Date.now(), orcamento = ORC
     }
     return out;
   }
-  const docs = new Map(), patches = new Map(), marcas = new Map(), erros = {};
+  const docs = new Map(), antes = new Map(), patches = new Map(), marcas = new Map(), erros = {};
   let limite = null, pausa = null;
   const contar = () => { out.pedidos++; };
   for (const item of plano) {
-    if (!docs.has(item.id)) docs.set(item.id, await lerDoc(env, "landscape", item.id));
+    if (!docs.has(item.id)) { const d0 = await lerDoc(env, "landscape", item.id); docs.set(item.id, d0); antes.set(item.id, d0); }
     const doc = docs.get(item.id);
     if (!doc) continue;
     if (!marcas.has(item.id)) marcas.set(item.id, { ok: {}, falha: {}, feed: !!doc.feed });
@@ -435,6 +439,7 @@ export async function rodadaLandscape(env, { agora = Date.now(), orcamento = ORC
   const quando = agoraIso(agora);
   for (const [id, patch] of patches) {
     const leve = L.leveDe(docs.get(id), agora);
+    TR.manterLandscape(antes.get(id), patch);
     await patchDoc(env, id, { ...patch, leve, atualizado: quando }, quando);
   }
   const atual = await lerEstado(env);
@@ -539,7 +544,7 @@ const json = (dados, status = 200) => new Response(JSON.stringify(dados), { stat
 // o resto vem do UNION ALL, com json_object só dos campos da grade (o doc inteiro tem README, série e comentários).
 export const SQL_LEVE = "SELECT id, data FROM docs WHERE 0 UNION ALL SELECT id, json_object('repo', json_extract(data, '$.repo'), 'nome', json_extract(data, '$.nome'), "
   + "'categoria', json_extract(data, '$.categoria'), 'subcategoria', json_extract(data, '$.subcategoria'), 'site', json_extract(data, '$.site'), "
-  + "'adicionado', json_extract(data, '$.adicionado'), 'descricao', json_extract(data, '$.gh.descricao'), 'erro', json_extract(data, '$.erro'), "
+  + "'adicionado', json_extract(data, '$.adicionado'), 'descricao', json_extract(data, '$.gh.descricao'), 'descricao_pt', json_extract(data, '$.gh.descricao_pt'), 'erro', json_extract(data, '$.erro'), "
   + "'leve', json(json_extract(data, '$.leve'))) AS data FROM docs WHERE collection = 'landscape'";
 export async function listaLeve(env, deps) {
   const linhas = await deps.lerLinhas(env, SQL_LEVE, [], "landscape");
@@ -550,7 +555,7 @@ export async function listaLeve(env, deps) {
     if (!d || !L.ID_OK.test(r.id)) continue;
     const leve = d.leve && typeof d.leve === "object" ? { ...d.leve } : { coletando: true };
     if (leve.marca && !L.marcaOk(leve.marca, leve.dono)) leve.marca = "";
-    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", adicionado: d.adicionado || null, descricao: d.descricao || "", erro: d.erro || "", leve });
+    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", adicionado: d.adicionado || null, descricao: d.descricao || "", ...(d.descricao_pt ? { descricao_pt: d.descricao_pt } : {}), erro: d.erro || "", leve });
   }
   out.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
   return out;
@@ -597,9 +602,13 @@ export async function citacoes(env, deps, tec, { secoes = null, forum = false, a
     if (!L.cita(tec, { titulo: d.titulo, url: d.url, texto })) continue;
     const i = String(r.id).indexOf(":");
     const c = String(r.id).slice(0, i);
+    // a tradução (src/traducao.js) vai junto, quando existe; o trecho do resumo em português é cortado do mesmo jeito
+    const pt = {};
+    if (typeof d.titulo_pt === "string" && d.titulo_pt) pt.titulo_pt = txt(d.titulo_pt, 200);
+    if (!forum && typeof d.resumo_pt === "string" && d.resumo_pt && d.resumo) pt.resumo_pt = L.trecho(d.resumo_pt, 240);
     out.push(forum
-      ? { titulo: txt(d.titulo, 200), url: d.url, sub: txt(d.sub, 60), publicado: d.publicado || d.coletado || null, linkExterno: d.linkExterno || "" }
-      : { titulo: txt(d.titulo, 200), url: d.url, fonte: txt(d.fonte, 80), resumo: L.trecho(d.resumo || "", 240), publicado: d.publicado || null, coletado: d.coletado || null, secao: (COLECOES_ITENS.find(([x]) => x === c) || [])[1] || "tech" });
+      ? { titulo: txt(d.titulo, 200), url: d.url, sub: txt(d.sub, 60), publicado: d.publicado || d.coletado || null, linkExterno: d.linkExterno || "", ...pt }
+      : { titulo: txt(d.titulo, 200), url: d.url, fonte: txt(d.fonte, 80), resumo: L.trecho(d.resumo || "", 240), publicado: d.publicado || null, coletado: d.coletado || null, secao: (COLECOES_ITENS.find(([x]) => x === c) || [])[1] || "tech", ...pt });
   }
   out.sort((a, b) => String(b.coletado || b.publicado || "").localeCompare(String(a.coletado || a.publicado || "")));
   return out.slice(0, max);

@@ -29,5 +29,7 @@
     "bindings": [{ "name": "ESPELHO", "class_name": "Espelho" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Espelho"] }],
+  // Workers AI (src/traducao.js): tradução das notícias para o português, pelo cron. Modelo e teto diário em src/traducao.js.
+  "ai": { "binding": "AI" },
   "observability": { "enabled": true }
 }

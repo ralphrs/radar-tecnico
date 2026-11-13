@@ -20,7 +20,11 @@ import { validarTabelas, mesclarTabelas, respostaTabelas, validarLayout, respost
 import { cronEsportes, validarPrefsEsportes, respostaPrefsEsportes } from "./esportes.js";
 import { comSeguranca } from "./seguranca.js";
 import { cronLandscape, rotaLandscape, rotaAdminLandscape } from "./landscape.js";
+import { cronTraducao, estadoAdmin as estadoTraducao, envContado, contarFetch, contagens } from "./traducao.js";
+// Tradução das notícias: a preferência "Mostrar notícias traduzidas" (validação e padrão) mora em public/traducao.js
+import "../public/traducao.js";
 const RF = globalThis.RadarFiltro;
+const TRAD = globalThis.Traducao;
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
 export { Espelho } from "./espelho.js";
@@ -378,6 +382,34 @@ async function prefsEsportes(request, env, quem) {
   return json({ erro: "metodo" }, 405);
 }
 
+// Mostrar notícias traduzidas (src/traducao.js): { mostrar } em prefs/<email>, id "traducao". Ligada por padrão.
+// Mesmo caminho das outras prefs: leitura pelo espelho (D1 de reserva), gravação no D1 e write-through no espelho.
+async function prefsTraducao(request, env, quem) {
+  const col = "prefs/" + quem.email;
+  if (request.method === "GET") {
+    const linhas = await lerLinhas(env, "SELECT id, data FROM docs WHERE collection = ? AND id = ?", [col, "traducao"], "prefs");
+    let salvo = null;
+    try { salvo = linhas[0] ? JSON.parse(linhas[0].data) : null; } catch { salvo = null; }
+    return json(TRAD.respostaPrefs(salvo));
+  }
+  if (request.method === "PUT") {
+    const corpo = await request.text();
+    if (corpo.length > 200) return json({ erro: "grande" }, 413);
+    let b;
+    try { b = JSON.parse(corpo); } catch { return json({ erro: "json" }, 400); }
+    const v = TRAD.validarPrefs(b);
+    if (v.erro) return json({ erro: v.erro }, 400);
+    const doc = { ...v.prefs, atualizado: agoraIso() };
+    const data = JSON.stringify(doc);
+    await env.DB.prepare(
+      "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, 'traducao', ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
+    ).bind(col, data, doc.atualizado).run();
+    gravarNoEspelho(env, [{ collection: col, id: "traducao", data, coletado: "", atualizado: doc.atualizado }]);
+    return json({ ok: true, ...TRAD.respostaPrefs(doc) });
+  }
+  return json({ erro: "metodo" }, 405);
+}
+
 // Múltiplos (P/L, P/VP, DY, dividendo 12m, variação em 1 ano) das fichas de papel já guardadas em `hist`, compactos,
 // para o Radar filtrar ações da B3 e dos EUA. Igual para todo mundo: cache de 30 s no isolate e 3 min na borda.
 async function fundamentos(env, quem, request) {
@@ -461,7 +493,10 @@ async function adminFontes(env) {
   const atuais = new Set(FEEDS.map((f) => f[3]));
   const falhas = estados.filter((f) => f.erros_seguidos > 0 && !(ehReddit(f.feed) && !atuais.has(f.feed))).sort((a, b) => a.radar.localeCompare(b.radar) || a.fonte.localeCompare(b.fonte));
   const { fontes, semCandidatos } = juntarFontes(results, FEEDS, estados, forum);
-  return json({ fontes, falhas, semCandidatos, bloqueio403: REDDIT.BLOQUEIO_403, diasForum: REDDIT.DIAS_FORUM });
+  // Tradução das notícias (src/traducao.js): uma linha no card, ao lado do estado das coletas
+  let traducao = null;
+  try { traducao = await estadoTraducao(env); } catch (e) { traducao = { erro: String((e && e.message) || e).slice(0, 120) }; }
+  return json({ fontes, falhas, semCandidatos, bloqueio403: REDDIT.BLOQUEIO_403, diasForum: REDDIT.DIAS_FORUM, traducao });
 }
 
 async function adminUsuarios(request, env, email) {
@@ -515,7 +550,7 @@ export default {
   },
 
   // A cada minuto: importa o histórico (enquanto houver), lê alguns feeds RSS e, uma vez por hora, apaga o que venceu.
-  // Por último copia para o espelho de São Paulo o que mudou no D1.
+  // Depois traduz um pouco (src/traducao.js) e, por último, copia para o espelho de São Paulo o que mudou no D1.
   scheduled: (evento, env) => agendado(evento, env),
 };
 
@@ -580,6 +615,10 @@ async function atender(request, env, ctx) {
     if (p === "/api/prefs/esportes") {
       if (!corpoJson(request)) return json({ erro: "json" }, 415);
       return prefsEsportes(request, env, quem);
+    }
+    if (p === "/api/prefs/traducao") {
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      return prefsTraducao(request, env, quem);
     }
     if (p === "/api/radar/fundamentos" && request.method === "GET") return fundamentos(env, quem, request);
     // Leitura do dia (src/leitura.js): pessoal, cifrada, sem cache
@@ -651,7 +690,15 @@ async function atender(request, env, ctx) {
     return env.ASSETS.fetch(request);
 }
 
-async function agendado(evento, env) {
+async function agendado(evento, envOriginal) {
+    const conta = { d1: 0, fetch: 0 };
+    contarFetch();
+    contagens.add(conta);
+    const env = envContado(envOriginal, conta);
+    try { await etapas(evento, env, conta); } finally { contagens.delete(conta); }
+}
+
+async function etapas(evento, env, conta) {
     const minuto = new Date(evento.scheduledTime || Date.now()).getUTCMinutes();
     let coleta = null;
     try { coleta = await coletar(env); } catch (e) { console.error("coleta", e); }
@@ -682,6 +729,12 @@ async function agendado(evento, env) {
       try { console.log("limpeza", JSON.stringify(await limpar(env))); } catch (e) { console.error("limpeza", e); }
     }
     try { await importarHistorico(env); } catch (e) { console.error("historico", e); }
+    // Tradução das notícias (src/traducao.js): depois das coletas e da limpeza, até 8 chamadas ao Workers AI, dentro do
+    // que sobra de subrequests nesta invocação (conta.d1 + conta.fetch), com a reserva do espelho logo abaixo
+    try {
+      const r = await cronTraducao(env, { agora: evento.scheduledTime || Date.now(), gastos: conta.d1 + conta.fetch });
+      if (r && (r.chamadas || r.marcas || r.semFolga || (r.pausa && r.chamadas !== undefined))) console.log("traducao", JSON.stringify({ ...r, d1: conta.d1, fetch: conta.fetch }));
+    } catch (e) { console.error("traducao", String((e && e.message) || e).slice(0, 120)); }
     await sincronizarEspelho(env);
 }
 
