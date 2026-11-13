@@ -155,6 +155,11 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [ ] Curadoria de Esportes: todo item de negociação com `transferencia`, etapas padronizadas, atualizar a negociação existente em vez de criar outra (ajuste no prompt da tarefa agendada)
 - [ ] Conferir na sonda de Esportes (`escudos-*`, `teams`, `paises-tenis`) se os escudos vêm em `a.espncdn.com/i/teamlogos/` em todas as ligas e se o endpoint de times responde nas 13 ligas do Vai e vem
 
+## Pedidos de 12/11
+- [x] Landscape de tecnologias em Tech: grade por categoria no formato do landscape da CNCF, detalhe com números, versões, notícias e o que estão dizendo; o Admin põe e tira pela URL do GitHub (12/11)
+- [ ] Landscape: resumo escrito pela curadoria (o que é, para quem serve, alternativas) e fontes além de GitHub e HN
+- [ ] Landscape: conferir na sonda (`_sistema/sonda-landscape`) o formato real do GitHub e do Algolia; pôr o `GITHUB_TOKEN` (docs/cloudflare.md)
+
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
 - [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)

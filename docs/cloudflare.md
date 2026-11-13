@@ -73,6 +73,15 @@ Workers & Pages → `lookout` → Settings → **Variables and Secrets** → Add
 
 O `wrangler.jsonc` usa `keep_vars: true`, então os deploys seguintes não apagam essas variáveis. O e-mail fica fora do repositório de propósito.
 
+### `GITHUB_TOKEN` (opcional, Landscape)
+
+A coleta do Landscape (Tech) lê a API do GitHub. Sem token são 60 pedidos por hora por IP, e os IPs de Worker são compartilhados com outros sites: a coleta roda devagar (1 pedido ao GitHub a cada 2 minutos) e a grade mostra ao Admin "sem token do GitHub: coleta lenta". Com o token, 5.000 por hora.
+
+1. No GitHub: Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
+2. Nome "Lookout landscape", validade de até 1 ano, **Repository access: Public repositories (read-only)**. Não marque nenhuma permissão: o token só lê o que já é público.
+3. Workers & Pages → `lookout` → Settings → **Variables and Secrets** → Add, tipo **Secret**, nome `GITHUB_TOKEN`, cole o token e faça Deploy.
+4. Quando vencer, gere outro e troque o valor. Sem o secret, nada quebra: só volta a coleta lenta.
+
 Enquanto `ACCESS_TEAM_DOMAIN` e `ACCESS_AUD` não estiverem preenchidas, o site responde "Falta ligar o login" e não abre para ninguém.
 
 ## Validação do token (já implementada)

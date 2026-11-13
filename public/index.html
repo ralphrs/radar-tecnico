@@ -2038,6 +2038,150 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .wdg-lst li.lst-neg { background: color-mix(in srgb, var(--err) 8%, var(--card)); }
 .wdg-rk li.c4 { grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; }
 .wdg-lst .rk-q { color: var(--muted-foreground); white-space: nowrap; font-size: 12px; }
+/* Landscape (Tech, #tech/landscape): grade por categoria no formato do landscape da CNCF, tabela e detalhe.
+   Sem colunas laterais, como o Início: a barra de abas fica no topo, com a chave Notícias | Landscape embaixo. */
+html.tech-ls .nav-temas, html.tech-ls .lateral, html.tech-ls .centro > :not(#barra):not(#visoes-tech):not(#landscape), html.tech-ls header .status { display: none !important; }
+html.tech-ls .barra-linha { display: none; }
+@media (min-width: 900px) {
+  html.tech-ls .wrap { grid-template-columns: minmax(0, 1fr) !important; grid-template-areas: "topo" "centro" !important; }
+  html.tech-ls .barra { display: block; position: static; margin: 0; padding: 0; border: 0; background: none; }
+  html.tech-ls .barra-radares { height: auto; }
+  html.tech-ls .barra-radares .radares { width: auto; display: inline-flex; max-width: 100%; }
+  html.tech-ls .barra-radares .radares button { flex: none; padding-inline: 16px; }
+}
+.ls { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.ls-cab { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px var(--space-4); }
+.ls-cab h2 { font: 600 24px/1.15 var(--font-display); letter-spacing: -0.02em; margin: 0; }
+.ls-cab p { margin: 2px 0 0; color: var(--muted-foreground); font-size: 13.5px; }
+.ls-acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ls-ferr { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ls-ferr .dd-input { height: var(--control-h-sm); min-width: 0; width: auto; }
+.ls-ferr input.dd-input { flex: 1 1 200px; max-width: 320px; }
+.ls-ferr select.dd-input { flex: 0 1 auto; padding-right: 8px; }
+.ls-aviso { margin: 0; font-size: 13px; color: var(--muted-foreground); }
+.ls-aviso b { color: var(--warn); font-weight: 600; }
+.ls-aviso.erro { color: var(--err); }
+.ls-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: var(--space-4); align-items: start; }
+.ls-cat { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); min-width: 0; overflow: hidden; }
+.ls-cat > h3 { display: flex; align-items: baseline; gap: 8px; margin: 0; padding: 10px 14px; font: 600 15px/1.25 var(--font-display); background: color-mix(in srgb, var(--primary) 8%, var(--card)); border-bottom: 1px solid var(--border); }
+.ls-cat > h3 .k { font: 500 12px var(--font-mono); color: var(--muted-foreground); }
+.ls-sub { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px 12px; padding: 10px 12px; border-top: 1px solid var(--border); align-items: start; }
+.ls-cat > h3 + .ls-sub { border-top: 0; }
+.ls-sub > h4 { margin: 0; padding-top: 2px; font: 600 11.5px/15px var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .04em; overflow-wrap: anywhere; }
+.ls-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; min-width: 0; }
+.ls-card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; aspect-ratio: 1 / 1; min-width: 0; padding: 18px 6px 6px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); color: var(--foreground); text-decoration: none; text-align: center; }
+.ls-card:hover { border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); box-shadow: var(--shadow-sm); }
+.ls-card:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ls-card .ls-nome { font: 600 12.5px/15px var(--font-sans); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; max-width: 100%; }
+.ls-card .ls-dado { font: 500 11px/14px var(--font-mono); color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; margin-top: auto; }
+.ls-card.coletando { border-style: dashed; }
+.ls-card.coletando .ls-dado { font-family: var(--font-sans); font-style: italic; }
+.ls-card.arquivado { opacity: .7; }
+.ls-selos { position: absolute; top: 4px; left: 4px; right: 4px; display: flex; justify-content: space-between; gap: 4px; pointer-events: none; }
+.ls-selos .dd-badge { padding: 0 5px; font-size: 10px; line-height: 14px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
+.ls-selos .dd-badge:only-child { margin-left: auto; }
+.ls-ponto { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; background: color-mix(in srgb, var(--muted-foreground) 55%, transparent); }
+.ls-ponto.verde { background: var(--ok); } .ls-ponto.ambar { background: var(--warn); }
+.ls-marca { flex: none; width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: var(--secondary); }
+.ls-mono { flex: none; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; background: hsl(var(--h, 260) 52% 42%); color: #fff; font: 700 13px/1 var(--font-display); letter-spacing: .02em; }
+.ls-mono.g, .ls-marca.g { width: 56px; height: 56px; border-radius: 12px; font-size: 20px; }
+.ls-mono.p, .ls-marca.p { width: 24px; height: 24px; border-radius: 6px; font-size: 10px; }
+.ls-vazio { margin: 0; padding: 24px; text-align: center; color: var(--muted-foreground); background: var(--card); border: 1px dashed var(--border); border-radius: var(--radius-lg); }
+.ls-tab td a { color: inherit; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.ls-tab td a:hover { color: var(--primary); }
+.ls-tab td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 12.5px; }
+.ls-tab td.cat { color: var(--muted-foreground); font-size: 12.5px; }
+.ls-lin { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); }
+.ls-lin a { color: inherit; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.ls-lin small { color: var(--muted-foreground); font-size: 12px; grid-column: 1 / -1; }
+.ls-lin .num { font: 500 12.5px var(--font-mono); }
+.ls-celista { display: none; flex-direction: column; gap: 8px; }
+@media (max-width: 699px) { .ls-tabela .cot-caixa { display: none; } .ls-celista { display: flex; } }
+/* detalhe */
+.ls-volta { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; }
+.ls-topo { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; align-items: start; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-sm); }
+.ls-topo h2 { margin: 0; font: 600 26px/1.15 var(--font-display); letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.ls-topo .ls-repo { font: 500 13px var(--font-mono); color: var(--muted-foreground); }
+.ls-topo .ls-repo a { color: inherit; }
+.ls-topo .ls-desc { grid-column: 1 / -1; margin: 4px 0 0; font-size: 15px; line-height: 1.5; }
+.ls-topo .ls-chips { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ls-topo .ls-chips > * { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.ls-topo .ls-botoes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.ls-confirma { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--err) 45%, var(--border)); border-radius: var(--radius-md); background: color-mix(in srgb, var(--err) 6%, var(--card)); font-size: 13.5px; }
+.ls-confirma .dd-btn--perigo { background: var(--err); color: #fff; }
+.ls-blocos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+.ls-blocos > .largo { grid-column: 1 / -1; }
+@media (max-width: 899px) { .ls-blocos { grid-template-columns: minmax(0, 1fr); } }
+.ls-bloco { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; box-shadow: var(--shadow-sm); min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.ls-bloco > h3 { margin: 0; font: 600 16px/1.25 var(--font-display); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ls-bloco > h3 small { font: 400 12px var(--font-sans); color: var(--muted-foreground); }
+.ls-bloco h4 { margin: 6px 0 0; font: 600 12px/16px var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .05em; }
+.ls-pe { margin: 0; font: 400 11.5px/16px var(--font-mono); color: var(--muted-foreground); border-top: 1px solid var(--border); padding-top: 8px; }
+.ls-nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; margin: 0; }
+.ls-nums > div { padding: 8px 10px; border-radius: var(--radius-md); background: var(--secondary); min-width: 0; }
+.ls-nums dt { font-size: 11.5px; color: var(--muted-foreground); margin: 0; }
+.ls-nums dd { margin: 2px 0 0; font: 600 15px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ls-estrelas { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: center; }
+.ls-estrelas b { font: 600 28px/1 var(--font-display); }
+.ls-estrelas .ganhos { display: flex; gap: 12px; flex-wrap: wrap; font: 500 12.5px var(--font-mono); color: var(--muted-foreground); }
+.ls-estrelas .ganhos .sobe { color: var(--ok); }
+.ls-spark { grid-column: 1 / -1; width: 100%; height: 56px; display: block; }
+.ls-spark path.l { fill: none; stroke: var(--primary); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.ls-spark path.a { fill: color-mix(in srgb, var(--primary) 14%, transparent); stroke: none; }
+.ls-spark-nota { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted-foreground); }
+.ls-langs { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--secondary); }
+.ls-langs span { display: block; height: 100%; }
+.ls-langs-leg { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; padding: 0; list-style: none; font-size: 12px; color: var(--muted-foreground); }
+.ls-langs-leg i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+.ls-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ls-lista > li { padding: 8px 0; border-top: 1px solid var(--border); min-width: 0; }
+.ls-lista > li:first-child { border-top: 0; padding-top: 0; }
+.ls-lista a { color: var(--foreground); font-weight: 500; text-decoration: none; overflow-wrap: anywhere; }
+.ls-lista a:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.ls-lista .n { display: flex; flex-wrap: wrap; gap: 4px 10px; font: 400 12px/16px var(--font-mono); color: var(--muted-foreground); margin-top: 2px; }
+.ls-lista .n a { font-weight: 400; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.ls-lista p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--foreground); overflow-wrap: anywhere; }
+.ls-lista .ls-trecho { color: var(--muted-foreground); font-size: 13px; }
+.ls-rel { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ls-rel code { font: 600 13px var(--font-mono); }
+.ls-sobre { margin: 0; font-size: 14px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
+.ls-topics { display: flex; flex-wrap: wrap; gap: 6px; }
+.ls-topics .chip { height: 24px; padding: 0 9px; font-size: 12px; cursor: default; }
+.ls-grupo-hn { margin: 4px 0 0; font-size: 13px; }
+.ls-grupo-hn a { font-weight: 600; color: var(--primary); }
+.ls-nota-form { display: flex; flex-direction: column; gap: 10px; }
+.ls-nota-form textarea { min-height: 96px; resize: vertical; font: inherit; padding: 8px 10px; }
+.ls-nota-form .linha { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ls-par td { vertical-align: middle; }
+.ls-form { display: flex; flex-direction: column; gap: 14px; }
+.ls-form label.rotulo { display: block; margin-bottom: 6px; }
+.ls-form textarea { width: 100%; min-height: 96px; resize: vertical; font: 13px/1.5 var(--font-mono); padding: 8px 10px; box-sizing: border-box; }
+.ls-form .dd-input { width: 100%; box-sizing: border-box; }
+.ls-form .dica { font-size: 12px; color: var(--muted-foreground); margin: 4px 0 0; }
+.ls-form .erro { color: var(--err); font-size: 13px; margin: 0; }
+.ls-org { display: flex; flex-direction: column; gap: 12px; }
+.ls-org-cat { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.ls-org-lin { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.ls-org-lin .dd-input { flex: 1 1 auto; min-width: 0; height: var(--control-h-sm); }
+.ls-org-sub { margin-left: 14px; display: flex; flex-direction: column; gap: 6px; }
+.ls-org-tec { margin-left: 28px; display: flex; gap: 6px; align-items: center; font-size: 13px; min-width: 0; }
+.ls-org-tec span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ls-org-tec select { flex: 0 1 170px; min-width: 0; height: 30px; font-size: 12.5px; }
+/* widget do Início */
+.wdg-ls li a { display: block; }
+.wdg-ls li a b { font-weight: 600; }
+@media (max-width: 699px) {
+  .ls-cab h2 { font-size: 21px; }
+  .ls-cats { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+  .ls-sub { grid-template-columns: minmax(0, 1fr); padding: 8px 10px; }
+  .ls-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .ls-ferr input.dd-input { flex: 1 1 100%; max-width: none; }
+  .ls-ferr select.dd-input { flex: 1 1 140px; }
+  .ls-topo { padding: 12px; gap: 6px 12px; }
+  .ls-topo h2 { font-size: 21px; }
+  .ls-bloco { padding: 12px; }
+}
+@media (max-width: 370px) { .ls-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 
 <div class="wrap">
@@ -2159,6 +2303,11 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
     <button type="button" id="visao-radar" aria-pressed="false">Radar</button>
     <button type="button" id="visao-noticias" aria-pressed="false">Notícias</button>
   </div>
+  <div class="seg visoes" id="visoes-tech" role="group" aria-label="Visão de Tech" hidden>
+    <button type="button" id="visao-tech-noticias" aria-pressed="true">Notícias</button>
+    <button type="button" id="visao-tech-landscape" aria-pressed="false">Landscape</button>
+  </div>
+  <section class="ls" id="landscape" aria-label="Landscape" hidden></section>
   <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
   <div class="mercado-pe" id="mercado-pe" hidden></div>
   <section class="rankings" id="rankings" aria-label="Destaques do pregão" hidden></section>
@@ -2232,6 +2381,15 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
   <div class="painel-corpo" id="esp-folha-corpo"></div>
   <div class="painel-pe" id="esp-folha-pe"></div>
 </div>
+<div class="pers-veu" id="ls-veu" hidden></div>
+<div class="pers rd-folha ls-folha" id="ls-folha" role="dialog" aria-modal="true" aria-labelledby="ls-folha-titulo" tabindex="-1" hidden>
+  <div class="painel-topo">
+    <h2 id="ls-folha-titulo">Adicionar tecnologia</h2>
+    <button class="dd-btn dd-btn--ghost alvo" type="button" id="ls-folha-fechar">Fechar</button>
+  </div>
+  <div class="painel-corpo" id="ls-folha-corpo"></div>
+  <div class="painel-pe" id="ls-folha-pe"></div>
+</div>
 <div class="pers-veu" id="lp-veu" hidden></div>
 <div class="pers rd-folha lp-folha" id="lp-folha" role="dialog" aria-modal="true" aria-labelledby="lp-folha-titulo" tabindex="-1" hidden>
   <div class="painel-topo">
@@ -2263,6 +2421,7 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 <script src="/radar-filtro.js"></script>
 <script src="/tabela.js"></script>
 <script src="/esportes.js"></script>
+<script src="/landscape.js"></script>
 <script>
 /* Lookout: adaptador que imita o banco do artifact (window.claude.use) usando a API do Worker.
    Leituras viram GET em /api/q e /api/doc; "onSnapshot" vira consulta a cada 2 minutos e quando a aba volta ao foco.
@@ -3099,7 +3258,13 @@ function aplicarVisao() {
   if (bolsa && emEua() !== ABAS_EUA.has(cotAba)) {
     cotAba = emEua() ? cotAbaEua : cotAbaBr; cotBusca = "";
   }
-  const semFeed = bolsa || emRadar();
+  /* Tech: Notícias (o feed) ou Landscape (grade e detalhe, sem colunas laterais) */
+  const ls = emLandscape();
+  html.classList.toggle("tech-ls", ls);
+  $("visoes-tech").hidden = inicio || radar !== "tech";
+  $("visao-tech-noticias").setAttribute("aria-pressed", String(!ls));
+  $("visao-tech-landscape").setAttribute("aria-pressed", String(ls));
+  const semFeed = bolsa || emRadar() || ls;
   document.querySelector(".feed-topo").hidden = semFeed;
   $("feed").hidden = semFeed;
   document.querySelector("footer").hidden = semFeed;
@@ -5020,11 +5185,11 @@ function render() {
   aplicarModo();
   renderEsportes();
   /* no Início só a barra de abas e o card de favoritos dependem do estado geral */
-  if (inicio) { aplicarVisao(); renderRadares(); if (painelMontado) carregarWidget("favoritos"); return; }
+  if (inicio) { aplicarVisao(); renderLandscape(); renderRadares(); if (painelMontado) carregarWidget("favoritos"); return; }
   clearTimeout(tBusca); tBusca = 0;
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
-  aplicarVisao(); renderRadares(); renderPregao(); renderRadarVisao(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
+  aplicarVisao(); renderLandscape(); renderRadares(); renderPregao(); renderRadarVisao(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
   /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
@@ -5500,6 +5665,7 @@ const CATALOGO_LOCAL = [
   ]),
   { id: "esportes-meu-time", titulo: "Meu time · próximo jogo", tamanho: 1, secao: "esportes" },
   { id: "esportes-vaivem", titulo: "Vai e vem", tamanho: 1, secao: "esportes" },
+  { id: "tech-landscape", titulo: "Landscape", tamanho: 1, secao: "tech" },
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },
   { id: "carteira-patrimonio", titulo: "Patrimônio", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-proventos-mes", titulo: "Proventos do mês", tamanho: 1, secao: "investimentos", pessoal: true },
@@ -5559,6 +5725,7 @@ function guardarPainelLocal() { try { localStorage.setItem("radar-painel", JSON.
 /* Para onde leva o título (e o "Ver tudo") de cada widget */
 function destinoDe(id) {
   if (id.startsWith("esportes-")) return "#esportes";
+  if (id === "tech-landscape") return "#tech/landscape";
   if (id === "destaques-investimentos" || id === "ultimas-investimentos") return "#investimentos/noticias";
   if (id.startsWith("destaques-")) return "#" + id.slice(10);
   if (id.startsWith("ultimas-")) return "#" + id.slice(8);
@@ -5607,6 +5774,13 @@ function leitor(id) {
     return { d: ls, marca: JSON.stringify(ls) + marcaDe(d1, d2) + "|" + ((c && c._marca) || "") };
   };
   if (id === "favoritos") return async () => { const l = favoritosRecentes(); return { d: l, marca: JSON.stringify(l.slice(0, 5)) + l.length }; };
+  /* Landscape: a mesma lista leve da grade (/api/landscape); as novidades saem de Landscape.novidades */
+  if (id === "tech-landscape") return async () => {
+    const r = await fetch("/api/landscape", { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } });
+    if (!r.ok) return undefined;
+    const txt = await r.text();
+    return { d: JSON.parse(txt), marca: txt };
+  };
   if (id === "radar-meu" || id === "leitura-dia" || id === "carteira-contra-filtro") return (f) => lerWidgetRadar(id, f);
   if (id === "carteira-reinvestir") return async () => {
     const j = await lerCarteira();
@@ -5785,6 +5959,7 @@ function subtituloDe(id, x) {
   }
   if (t === "eua") return d ? horarioEua() : "";
   if (t === "hoje" || t === "foruns") return "últimas 24 h";
+  if (t === "tech-landscape") return "últimos 7 dias";
   if (t === "favoritos") return d && d.length ? (d.length === 1 ? "1 guardado" : d.length + " guardados") : "";
   if (t === "radar-meu" && d && rdPrefs) { const n = radarDoPadrao().r.passam.length; return n === 1 ? "1 passa hoje" : n + " passam hoje"; }
   if (t === "leitura-dia" && rdLeit && rdLeit.existe) return horaH(rdLeit.geradaEm);
@@ -6022,7 +6197,7 @@ function aplicarModo() {
   $("carteira").hidden = !inicio || !carteiraVista;
   if (inicio && carteiraVista) { document.title = (ehVistaLista(carteiraVista) ? "Minhas listas" : tituloCart(carteiraVista)) + " · Lookout"; h1.textContent = "Lookout"; }
   else if (inicio) { document.title = "Início · Lookout"; h1.textContent = "Lookout"; }
-  else { document.title = R().titulo + " · Lookout"; h1.textContent = R().titulo; }
+  else { document.title = (emLandscape() ? "Landscape" : R().titulo) + " · Lookout"; h1.textContent = R().titulo; }
 }
 $("marca").addEventListener("click", (e) => { if (inicio && !carteiraVista) { e.preventDefault(); window.scrollTo({ top: 0 }); } });
 
@@ -10985,11 +11160,606 @@ function subtituloEsp(id, x) {
   return d.atualizado ? "atualizado " + fmtRel(d.atualizado) : "";
 }
 
+/* ---- Landscape (Tech): #tech/landscape (a grade) e #tech/landscape/<id> (o detalhe) ----
+   Regras puras em public/landscape.js (window.Landscape). Dados de /api/landscape (campos leves de todas) e
+   /api/landscape/<id> (o detalhe). Quem tem a seção Tech vê; só o Admin põe, edita e tira (as rotas de escrita
+   respondem 404 para os outros). Marca: avatar do dono só quando é organização (LS.marcaOk); pessoa, monograma. */
+var LS = window.Landscape;
+var tvisao = "noticias", lsId = null, lsLista = null, lsCats = [], lsErro = "", lsCarregando = false, lsAdmin = false, lsEstadoAdmin = null;
+var lsDet = new Map(), lsDetErro = new Map(), lsRolagem = 0, lsDaGrade = false, lsAviso = "", lsConfirmaTirar = false, lsHnOrdem = "pontos";
+var lsF = { busca: "", ling: "", lic: "", ordem: "estrelas", modo: "grade" };
+try { const s = JSON.parse(localStorage.getItem("radar-landscape") || "null"); if (s) { if (["grade", "tabela"].includes(s.modo)) lsF.modo = s.modo; if (["estrelas", "crescimento", "atividade", "nome"].includes(s.ordem)) lsF.ordem = s.ordem; } } catch (e) {}
+const lsGuardar = () => { try { localStorage.setItem("radar-landscape", JSON.stringify({ modo: lsF.modo, ordem: lsF.ordem })); } catch (e) {} };
+/* lê #tech/landscape[/id] para as variáveis; devolve true se mudou algo */
+function techDoHash() {
+  const p = partesDoHash();
+  const v = p[0] === "tech" && p[1] === "landscape" ? "landscape" : "noticias";
+  let id = v === "landscape" && p[2] ? decodeURIComponent(p[2]) : null;
+  if (id && !LS.ID_OK.test(id)) id = null;
+  const mudou = v !== tvisao || id !== lsId;
+  tvisao = v; lsId = id;
+  return mudou;
+}
+if (radarDoHash() === "tech") techDoHash();
+const emLandscape = () => !inicio && radar === "tech" && tvisao === "landscape";
+const hashTech = () => (tvisao === "landscape" ? "/landscape" + (lsId ? "/" + encodeURIComponent(lsId) : "") : "");
+function trocarVisaoTech(v) {
+  if (radar !== "tech" || inicio) return;
+  if (v === tvisao && !lsId) return;
+  tvisao = v; lsId = null; lsConfirmaTirar = false;
+  escreverHash();
+  render(); window.scrollTo({ top: 0 });
+}
+$("visao-tech-noticias").addEventListener("click", () => trocarVisaoTech("noticias"));
+$("visao-tech-landscape").addEventListener("click", () => trocarVisaoTech("landscape"));
+/* abrir o detalhe cria entrada no histórico: o Voltar do navegador traz a grade de volta, na mesma rolagem */
+function abrirTec(id, e) {
+  if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)) return;
+  if (e) e.preventDefault();
+  if (!emLandscape()) return;
+  if (!lsId) lsRolagem = window.scrollY;
+  lsDaGrade = !lsId;
+  lsId = id; lsConfirmaTirar = false; lsHnOrdem = "pontos";
+  escreverHash(true);
+  renderLandscape(); window.scrollTo({ top: 0 });
+}
+function voltarGrade(e) {
+  if (e) e.preventDefault();
+  if (lsDaGrade && history.length > 1) { history.back(); return; }
+  lsId = null; lsConfirmaTirar = false; escreverHash(); renderLandscape();
+  voltarRolagem();
+}
+/* a grade volta na rolagem de antes; repete depois que o navegador termina a restauração dele (que mira o detalhe) */
+function voltarRolagem() {
+  const y = lsRolagem;
+  requestAnimationFrame(() => window.scrollTo({ top: y }));
+  setTimeout(() => { if (emLandscape() && !lsId && Math.abs(window.scrollY - y) > 2) window.scrollTo({ top: y }); }, 80);
+}
+async function apiLs(metodo, caminho, corpo) {
+  const r = await fetch(caminho, { method: metodo, credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: corpo ? JSON.stringify(corpo) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.erro && /\s/.test(j.erro) ? j.erro : r.status === 404 ? "Não encontrado." : "Não deu para falar com o servidor agora. Tente de novo."); e.status = r.status; e.dados = j; throw e; }
+  return j;
+}
+async function carregarLandscape(forcar) {
+  if (lsCarregando || (lsLista && !forcar)) return;
+  lsCarregando = true;
+  try {
+    const j = await apiLs("GET", "/api/landscape");
+    lsLista = j.tecnologias || []; lsCats = j.categorias || []; lsAdmin = !!j.admin; lsErro = "";
+    wDados.delete("tech-landscape");
+    if (lsAdmin && !lsEstadoAdmin) apiLs("GET", "/api/admin/landscape").then((x) => { lsEstadoAdmin = x; if (emLandscape() && !lsId) renderLandscape(); }).catch(() => {});
+  } catch (e) { if (!lsLista) lsErro = e.message; }
+  lsCarregando = false;
+  if (emLandscape()) renderLandscape();
+}
+async function carregarDetalhe(id) {
+  try { const j = await apiLs("GET", "/api/landscape/" + encodeURIComponent(id)); lsDet.set(id, j); lsDetErro.delete(id); if (j.categorias) lsCats = j.categorias; lsAdmin = !!j.admin; }
+  catch (e) { lsDetErro.set(id, e.status === 404 ? "Essa tecnologia não está mais no landscape." : e.message); }
+  if (emLandscape() && lsId === id) renderLandscape();
+}
+/* ---- pedaços ---- */
+function marcaEl(t, tam) {
+  const l = t.leve || {}, url = (t.gh && t.gh.marca) || l.marca, tipo = (t.gh && t.gh.dono && t.gh.dono.tipo) || l.dono;
+  const mono = () => { const m = LS.monograma(t.nome || t.repo); return el("span", { class: "ls-mono" + (tam ? " " + tam : ""), style: "--h:" + m.matiz, "aria-hidden": "true" }, m.iniciais); };
+  if (!LS.marcaOk(url, tipo)) return mono();
+  const px = tam === "g" ? 56 : tam === "p" ? 24 : 36;
+  const img = el("img", { class: "ls-marca" + (tam ? " " + tam : ""), src: url, width: String(px), height: String(px), alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer" });
+  img.addEventListener("error", () => img.replaceWith(mono()), { once: true });
+  return img;
+}
+const pontoEl = (iso) => { const a = LS.atividade(iso); return el("span", { class: "ls-ponto " + a, title: a === "verde" ? "Commit nos últimos 30 dias" : a === "ambar" ? "Último commit entre 30 e 180 dias" : "Sem commit há mais de 180 dias" }); };
+const nomeCat = (cid, sid) => { const c = lsCats.find((x) => x.id === cid); const s = c && c.subcategorias.find((x) => x.id === sid); return { c: c ? c.nome : "Sem categoria", s: s ? s.nome : "" }; };
+const estrelasTxt = (n) => (n == null ? "–" : "★ " + LS.formatoCurto(n));
+const dataCurta = (iso) => { const d = new Date(iso || ""); return isNaN(d) ? "–" : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }); };
+const fonteBloco = (fonte, iso) => el("p", { class: "ls-pe" }, fonte + (iso ? " · atualizado " + fmtRel(iso) : " · ainda não coletado"));
+function cartao(t) {
+  const l = t.leve || {};
+  const selos = [];
+  if (LS.ehNova(t.adicionado)) selos.push(el("span", { class: "dd-badge b-novo" }, "novo"));
+  if (l.release && LS.releaseRecente(l.release)) selos.push(el("span", { class: "dd-badge b-release", title: "Versão nova nesta semana" }, l.release.tag));
+  const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : ""), href: "#tech/landscape/" + encodeURIComponent(t.id), id: "ls-c-" + t.id, title: t.descricao || t.repo },
+    selos.length ? el("span", { class: "ls-selos" }, ...selos) : null, marcaEl(t), el("span", { class: "ls-nome" }, t.nome || t.repo),
+    el("span", { class: "ls-dado" }, ...(l.coletando ? [t.erro ? "não achado" : "coletando…"] : [pontoEl(l.commit), estrelasTxt(l.estrelas)])));
+  a.addEventListener("click", (e) => abrirTec(t.id, e));
+  return a;
+}
+function lsFiltradas() {
+  const q = semAcento(lsF.busca).toLowerCase().trim();
+  const l = (lsLista || []).filter((t) => (!q || semAcento(t.nome + " " + t.repo).toLowerCase().includes(q)) && (!lsF.ling || (t.leve && t.leve.linguagem) === lsF.ling) && (!lsF.lic || (t.leve && t.leve.licenca) === lsF.lic));
+  const v = (t) => t.leve || {};
+  const cmp = {
+    estrelas: (a, b) => (v(b).estrelas ?? -1) - (v(a).estrelas ?? -1),
+    crescimento: (a, b) => (v(b).ganho30 ?? -Infinity) - (v(a).ganho30 ?? -Infinity) || (v(b).estrelas ?? -1) - (v(a).estrelas ?? -1),
+    atividade: (a, b) => String(v(b).commit || "").localeCompare(String(v(a).commit || "")),
+    nome: () => 0,
+  }[lsF.ordem];
+  return l.sort((a, b) => cmp(a, b) || String(a.nome).localeCompare(String(b.nome), "pt-BR", { sensitivity: "base" }));
+}
+function selectLs(id, rotulo, opcoes, valor, aoMudar) {
+  const s = el("select", { class: "dd-input", id, "aria-label": rotulo });
+  opcoes.forEach(([v, t]) => { const o = el("option", { value: v }, t); if (v === valor) o.selected = true; s.append(o); });
+  s.addEventListener("change", () => aoMudar(s.value));
+  return s;
+}
+/* ---- grade e tabela ---- */
+function desenharGrade(box) {
+  const cab = el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Landscape"), el("p", {}, "tecnologias que eu acompanho")));
+  const modo = el("div", { class: "seg", role: "group", "aria-label": "Mostrar como" });
+  [["grade", "Grade"], ["tabela", "Tabela"]].forEach(([m, t]) => { const b = el("button", { type: "button", id: "ls-modo-" + m, "aria-pressed": String(lsF.modo === m) }, t); b.addEventListener("click", () => { lsF.modo = m; lsGuardar(); renderLandscape(); }); modo.append(b); });
+  const acoes = el("div", { class: "ls-acoes" }, modo);
+  if (lsAdmin) {
+    const add = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-adicionar", "aria-haspopup": "dialog", "aria-controls": "ls-folha" }, "Adicionar tecnologia");
+    add.addEventListener("click", () => abrirFolhaLs("adicionar"));
+    const org = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ls-organizar", "aria-haspopup": "dialog", "aria-controls": "ls-folha" }, "Organizar categorias");
+    org.addEventListener("click", () => abrirFolhaLs("organizar"));
+    acoes.append(org, add);
+  }
+  cab.append(acoes);
+  box.append(cab);
+  if (lsAdmin && lsEstadoAdmin) {
+    const p = [];
+    if (lsEstadoAdmin.semToken) p.push(el("b", {}, "sem token do GitHub: coleta lenta"));
+    const pg = lsEstadoAdmin.pausa && lsEstadoAdmin.pausa.github;
+    if (pg) p.push("GitHub pausado até " + fmtData(pg.ate));
+    if (p.length) box.append(el("p", { class: "ls-aviso", role: "status" }, ...p.flatMap((x, i) => (i ? [" · ", x] : [x]))));
+  }
+  if (lsAviso) box.append(el("p", { class: "ls-aviso", role: "status" }, lsAviso));
+  const todos = lsLista || [];
+  const lings = [...new Set(todos.map((t) => t.leve && t.leve.linguagem).filter(Boolean))].sort();
+  const lics = [...new Set(todos.map((t) => t.leve && t.leve.licenca).filter(Boolean))].sort();
+  const busca = el("input", { class: "dd-input", id: "ls-busca", type: "search", placeholder: "Buscar pelo nome", "aria-label": "Buscar tecnologia pelo nome", autocomplete: "off", value: lsF.busca });
+  busca.addEventListener("input", () => { lsF.busca = busca.value; pintarConteudo(); });
+  box.append(el("div", { class: "ls-ferr", role: "search" }, busca,
+    selectLs("ls-ling", "Linguagem", [["", "Toda linguagem"], ...lings.map((x) => [x, x])], lsF.ling, (v) => { lsF.ling = v; pintarConteudo(); }),
+    selectLs("ls-lic", "Licença", [["", "Toda licença"], ...lics.map((x) => [x, x])], lsF.lic, (v) => { lsF.lic = v; pintarConteudo(); }),
+    selectLs("ls-ordem", "Ordenar", [["estrelas", "Mais estrelas"], ["crescimento", "Mais crescimento em 30 dias"], ["atividade", "Atividade recente"], ["nome", "Nome"]], lsF.ordem, (v) => { lsF.ordem = v; lsGuardar(); pintarConteudo(); })));
+  const conteudo = el("div", { id: "ls-conteudo" });
+  box.append(conteudo);
+  function pintarConteudo() {
+    conteudo.textContent = "";
+    const l = lsFiltradas();
+    if (!todos.length) { conteudo.append(el("p", { class: "ls-vazio" }, lsAdmin ? "Nenhuma tecnologia ainda. Use Adicionar tecnologia e cole a URL do GitHub." : "Nenhuma tecnologia no landscape ainda.")); return; }
+    if (!l.length) { conteudo.append(el("p", { class: "ls-vazio" }, "Nenhuma tecnologia com esses filtros.")); return; }
+    if (lsF.modo === "tabela") { conteudo.append(tabelaLs(l)); return; }
+    const cats = el("div", { class: "ls-cats" });
+    const usados = new Set();
+    for (const c of lsCats) {
+      const subs = c.subcategorias.map((s) => ({ s, ts: l.filter((t) => t.categoria === c.id && t.subcategoria === s.id) })).filter((x) => x.ts.length);
+      if (!subs.length) continue;
+      const n = subs.reduce((k, x) => k + x.ts.length, 0);
+      subs.forEach((x) => x.ts.forEach((t) => usados.add(t.id)));
+      cats.append(el("section", { class: "ls-cat", "aria-label": c.nome }, el("h3", {}, c.nome, el("span", { class: "k" }, String(n))),
+        ...subs.map((x) => el("div", { class: "ls-sub" }, el("h4", {}, x.s.nome), el("div", { class: "ls-grade" }, ...x.ts.map(cartao))))));
+    }
+    const soltas = l.filter((t) => !usados.has(t.id));
+    if (soltas.length) cats.append(el("section", { class: "ls-cat", "aria-label": "Sem categoria" }, el("h3", {}, "Sem categoria", el("span", { class: "k" }, String(soltas.length))), el("div", { class: "ls-sub" }, el("h4", {}, "Outras"), el("div", { class: "ls-grade" }, ...soltas.map(cartao)))));
+    conteudo.append(cats);
+  }
+  pintarConteudo();
+}
+function tabelaLs(l) {
+  const v = (t) => t.leve || {};
+  const cols = [
+    { id: "nome", rotulo: "Nome", tipo: "texto", valor: (t) => t.nome, obrigatoria: true, filtravel: false },
+    { id: "categoria", rotulo: "Categoria", tipo: "texto", valor: (t) => { const n = nomeCat(t.categoria, t.subcategoria); return n.c + (n.s ? " › " + n.s : ""); } },
+    { id: "estrelas", rotulo: "Estrelas", tipo: "num", valor: (t) => v(t).estrelas, fmt: (x) => LS.formatoCurto(x) },
+    { id: "ganho30", rotulo: "+30 dias", tipo: "num", valor: (t) => v(t).ganho30 },
+    { id: "release", rotulo: "Último release", tipo: "data", valor: (t) => (v(t).release ? v(t).release.data : null) },
+    { id: "commit", rotulo: "Último commit", tipo: "data", valor: (t) => v(t).commit },
+    { id: "linguagem", rotulo: "Linguagem", tipo: "texto", valor: (t) => v(t).linguagem || null },
+    { id: "licenca", rotulo: "Licença", tipo: "texto", valor: (t) => v(t).licenca || null },
+    { id: "issues", rotulo: "Issues abertas", tipo: "num", valor: (t) => v(t).issues },
+  ];
+  const link = (t) => { const a = el("a", { href: "#tech/landscape/" + encodeURIComponent(t.id) }, marcaEl(t, "p"), t.nome); a.addEventListener("click", (e) => abrirTec(t.id, e)); return a; };
+  const tab = Tabela.criar({
+    id: "landscape", colunas: cols, linhas: l, rotuloConta: "tecnologias", classeTabela: "cot-tab ls-tab", padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 50 },
+    semOrdem: "Sem critério, vale a ordem escolhida em cima.",
+    celula: (c, t) => {
+      if (c.id === "nome") return el("td", {}, link(t));
+      if (c.id === "categoria") return el("td", { class: "cat" }, c.valor(t));
+      if (c.id === "estrelas") return el("td", { class: "num" }, v(t).estrelas == null ? "–" : LS.formatoCurto(v(t).estrelas));
+      if (c.id === "ganho30") return el("td", { class: "num" }, v(t).ganho30 == null ? "–" : (v(t).ganho30 > 0 ? "+" : "") + LS.formatoCurto(v(t).ganho30));
+      if (c.id === "release") return el("td", { class: "num", title: v(t).release ? v(t).release.tag : "" }, v(t).release ? v(t).release.tag + " · " + dataCurta(v(t).release.data) : "–");
+      if (c.id === "commit") return el("td", { class: "num" }, ...(v(t).commit ? [pontoEl(v(t).commit), " ", dataCurta(v(t).commit)] : ["–"]));
+      if (c.id === "issues") return el("td", { class: "num" }, v(t).issues == null ? "–" : v(t).issues.toLocaleString("pt-BR"));
+      return el("td", {}, c.valor(t) || "–");
+    },
+    cel: (t) => el("div", { class: "ls-lin" }, link(t), el("span", { class: "num" }, estrelasTxt(v(t).estrelas)),
+      el("small", {}, [nomeCat(t.categoria, t.subcategoria).s || nomeCat(t.categoria).c, v(t).linguagem, v(t).licenca, v(t).release ? "release " + v(t).release.tag : null, v(t).ganho30 != null ? "+" + LS.formatoCurto(v(t).ganho30) + " em 30 dias" : null].filter(Boolean).join(" · "))),
+    classeCel: "ls-celista",
+  });
+  return el("div", { class: "ls-tabela" }, tab.el);
+}
+/* ---- detalhe ---- */
+function spark(serie) {
+  const s = (serie || []).filter((p) => Array.isArray(p) && Number.isFinite(p[1]));
+  if (s.length < 2) return el("p", { class: "ls-spark-nota" }, "A série de estrelas começa no dia em que a tecnologia entrou; o gráfico aparece a partir do segundo dia.");
+  const ns = s.map((p) => p[1]), min = Math.min(...ns), max = Math.max(...ns), dx = 100 / (s.length - 1), alt = max - min || 1;
+  const pts = s.map((p, i) => [(i * dx).toFixed(2), (36 - ((p[1] - min) / alt) * 32 - 2).toFixed(2)]);
+  const d = "M" + pts.map((p) => p.join(" ")).join(" L");
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 100 36"); svg.setAttribute("preserveAspectRatio", "none"); svg.setAttribute("class", "ls-spark"); svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", `Estrelas de ${s[0][0]} a ${s[s.length - 1][0]}: de ${min.toLocaleString("pt-BR")} a ${max.toLocaleString("pt-BR")}`);
+  const a = document.createElementNS(svg.namespaceURI, "path"); a.setAttribute("class", "a"); a.setAttribute("d", d + ` L100 36 L0 36 Z`);
+  const l = document.createElementNS(svg.namespaceURI, "path"); l.setAttribute("class", "l"); l.setAttribute("d", d);
+  svg.append(a, l);
+  return svg;
+}
+const CORES_LING = ["var(--primary)", "var(--ok)", "var(--warn)", "var(--info)", "var(--err)", "var(--chart-1)", "var(--muted-foreground)"];
+const ghLink = (repo, cam = "") => "https://github.com/" + repo + cam;
+function blocoNumeros(t) {
+  const g = t.gh || {};
+  const g7 = LS.ganho(t.serie, 7), g30 = LS.ganho(t.serie, 30);
+  const ganhoEl = (rot, x) => el("span", { class: x > 0 ? "sobe" : "" }, rot + " " + (x == null ? "sem histórico ainda" : (x > 0 ? "+" : "") + x.toLocaleString("pt-BR")));
+  const num = (x) => (x == null ? "–" : Number(x).toLocaleString("pt-BR"));
+  const issues = g.issuesEPrs != null && g.prs != null ? Math.max(0, g.issuesEPrs - g.prs) : g.issuesEPrs;
+  const itens = [["Forks", num(g.forks)], ["Watchers", num(g.watchers)], ["Issues abertas", num(issues)], ["PRs abertos", num(g.prs)], ["Contribuidores", num(g.contribuidores)],
+    ["Tamanho", g.tamanho != null ? (g.tamanho >= 1024 ? (g.tamanho / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " MB" : g.tamanho + " KB") : "–"], ["Criado em", g.criado ? dataCurta(g.criado) : "–"], ["Último commit", g.ultimoCommit || g.push ? dataCurta(g.ultimoCommit || g.push) : "–"]];
+  const langs = g.linguagens || [];
+  return el("section", { class: "ls-bloco", "aria-labelledby": "ls-h-num" }, el("h3", { id: "ls-h-num" }, "Números"),
+    el("div", { class: "ls-estrelas" }, el("b", {}, g.estrelas == null ? "–" : "★ " + g.estrelas.toLocaleString("pt-BR")), el("div", { class: "ganhos" }, ganhoEl("7 dias", g7), ganhoEl("30 dias", g30)), spark(t.serie)),
+    el("dl", { class: "ls-nums" }, ...itens.map(([k, x]) => el("div", {}, el("dt", {}, k), el("dd", {}, x)))),
+    langs.length ? el("div", {}, el("h4", {}, "Linguagens"), el("div", { class: "ls-langs", role: "img", "aria-label": langs.map((x) => x.nome + " " + x.pct + "%").join(", ") }, ...langs.map((x, i) => el("span", { style: `width:${x.pct}%;background:${CORES_LING[i % CORES_LING.length]}`, title: x.nome + " " + x.pct + "%" }))),
+      el("ul", { class: "ls-langs-leg" }, ...langs.map((x, i) => el("li", {}, el("i", { style: "background:" + CORES_LING[i % CORES_LING.length] }), x.nome + " " + x.pct.toLocaleString("pt-BR") + "%")))) : null,
+    fonteBloco("GitHub", t.em && t.em.repo));
+}
+function blocoVersoes(t) {
+  const rs = t.releases || [];
+  const cad = rs.filter((r) => LS.idadeDias(r.data) <= 90).length;
+  return el("section", { class: "ls-bloco", "aria-labelledby": "ls-h-ver" }, el("h3", { id: "ls-h-ver" }, "Versões", el("small", {}, cad === 1 ? "1 release nos últimos 90 dias" : cad + " releases nos últimos 90 dias")),
+    rs.length ? el("ul", { class: "ls-lista" }, ...rs.map((r) => el("li", {},
+      el("div", { class: "ls-rel" }, r.url ? el("a", { href: r.url, target: "_blank", rel: "noopener" }, el("code", {}, r.tag)) : el("code", {}, r.tag), r.nome && r.nome !== r.tag ? el("span", {}, r.nome) : null, r.pre ? el("span", { class: "dd-badge b-review" }, "pré-release") : null),
+      el("div", { class: "n" }, el("span", {}, r.data ? dataCurta(r.data) : "sem data"), r.data ? el("span", {}, fmtRel(r.data)) : null),
+      r.notas ? el("p", { class: "ls-trecho" }, r.notas) : null))) : el("p", { class: "ls-aviso" }, t.em && t.em.releases ? "O repositório não publica releases no GitHub." : "Ainda não coletado."),
+    fonteBloco("GitHub", t.em && t.em.releases));
+}
+function blocoSobre(t) {
+  const g = t.gh || {};
+  return el("section", { class: "ls-bloco", "aria-labelledby": "ls-h-sobre" }, el("h3", { id: "ls-h-sobre" }, "Sobre"),
+    t.sobre ? el("p", { class: "ls-sobre" }, t.sobre) : el("p", { class: "ls-aviso" }, t.em && t.em.readme ? "O README não tem um parágrafo de apresentação." : "Ainda não coletado."),
+    el("a", { href: ghLink(t.repo, "#readme"), target: "_blank", rel: "noopener" }, "Ler o README completo no GitHub"),
+    (g.topics || []).length ? el("div", { class: "ls-topics", "aria-label": "Topics" }, ...g.topics.map((x) => el("span", { class: "chip" }, x))) : null,
+    fonteBloco("README do GitHub", t.em && t.em.readme));
+}
+function blocoNoticias(d) {
+  const t = d.tec, hist = ((t.hn && t.hn.historias) || []).slice();
+  hist.sort(lsHnOrdem === "data" ? (a, b) => String(b.data || "").localeCompare(String(a.data || "")) : (a, b) => b.pontos - a.pontos);
+  const ord = el("div", { class: "seg", role: "group", "aria-label": "Ordem das histórias" });
+  [["pontos", "Mais pontos"], ["data", "Mais recentes"]].forEach(([k, n]) => { const b = el("button", { type: "button", "aria-pressed": String(lsHnOrdem === k) }, n); b.addEventListener("click", () => { lsHnOrdem = k; renderLandscape(); }); ord.append(b); });
+  const hnUrl = (h) => "https://news.ycombinator.com/item?id=" + encodeURIComponent(h.id);
+  return el("section", { class: "ls-bloco largo", "aria-labelledby": "ls-h-not" }, el("h3", { id: "ls-h-not" }, "Notícias"),
+    el("h4", {}, "No Lookout"),
+    d.noticias.length ? el("ul", { class: "ls-lista" }, ...d.noticias.map((n) => el("li", {}, el("a", { href: n.url, target: "_blank", rel: "noopener" }, n.titulo),
+      el("div", { class: "n" }, el("span", {}, RADARES[n.secao] ? RADARES[n.secao].aba : "Tech"), n.fonte ? el("span", {}, n.fonte) : null, el("span", {}, fmtRel(n.coletado || n.publicado))), n.resumo ? el("p", { class: "ls-trecho" }, n.resumo) : null)))
+      : el("p", { class: "ls-aviso" }, "Nenhuma notícia do Lookout citou esta tecnologia nos últimos meses."),
+    el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap" }, el("h4", {}, "Hacker News"), hist.length > 1 ? ord : null),
+    hist.length ? el("ul", { class: "ls-lista" }, ...hist.slice(0, 10).map((h) => el("li", {}, el("a", { href: h.url || hnUrl(h), target: "_blank", rel: "noopener" }, h.titulo),
+      el("div", { class: "n" }, el("span", {}, h.pontos + " pontos"), el("a", { href: hnUrl(h), target: "_blank", rel: "noopener" }, h.comentarios === 1 ? "1 comentário" : h.comentarios + " comentários"), el("span", {}, h.autor), el("span", {}, h.data ? dataCurta(h.data) : "")))))
+      : el("p", { class: "ls-aviso" }, t.em && t.em.hn ? "Nenhuma história do Hacker News sobre esta tecnologia." : "Ainda não coletado."),
+    t.blog && t.blog.length ? el("h4", {}, "Blog oficial") : null,
+    t.blog && t.blog.length ? el("ul", { class: "ls-lista" }, ...t.blog.slice(0, 6).map((b) => el("li", {}, el("a", { href: b.url, target: "_blank", rel: "noopener" }, b.titulo), el("div", { class: "n" }, el("span", {}, b.publicado ? dataCurta(b.publicado) : ""))))) : null,
+    fonteBloco("Lookout, Hacker News (Algolia)" + (t.feed ? " e o feed do site" : ""), t.em && t.em.hn));
+}
+function blocoDizendo(d) {
+  const t = d.tec, grupos = (t.hn && t.hn.comentarios) || [], is = t.gh_destaques || [];
+  const com = (c) => el("li", {}, el("p", {}, c.trecho), el("div", { class: "n" }, el("span", {}, c.autor), el("span", {}, c.data ? dataCurta(c.data) : ""), el("span", {}, c.respostas === 1 ? "1 resposta" : c.respostas + " respostas"), el("a", { href: c.url, target: "_blank", rel: "noopener" }, "ver no HN")));
+  return el("section", { class: "ls-bloco largo", "aria-labelledby": "ls-h-diz" }, el("h3", { id: "ls-h-diz" }, "O que estão dizendo", el("small", {}, "trechos curtos, com link para o original")),
+    el("h4", {}, "Hacker News"),
+    grupos.length ? el("div", {}, ...grupos.map((g) => el("div", {}, el("p", { class: "ls-grupo-hn" }, "Em ", el("a", { href: "https://news.ycombinator.com/item?id=" + encodeURIComponent(g.historia.id), target: "_blank", rel: "noopener" }, g.historia.titulo), ` (${g.historia.pontos} pontos)`),
+      el("ul", { class: "ls-lista" }, ...g.itens.map(com)))))
+      : el("p", { class: "ls-aviso" }, "Sem comentários do Hacker News sobre esta tecnologia ainda."),
+    el("h4", {}, "Reddit"),
+    d.reddit.length ? el("ul", { class: "ls-lista" }, ...d.reddit.map((r) => el("li", {}, el("a", { href: r.url, target: "_blank", rel: "noopener" }, r.titulo), el("div", { class: "n" }, el("span", {}, "r/" + r.sub), el("span", {}, fmtRel(r.publicado)), r.linkExterno ? el("a", { href: r.linkExterno, target: "_blank", rel: "noopener" }, "fonte") : null))))
+      : el("p", { class: "ls-aviso" }, "Nenhum post dos subreddits acompanhados citou esta tecnologia nos últimos dias."),
+    el("h4", {}, "GitHub: issues e PRs com mais 👍 em 12 meses"),
+    is.length ? el("ul", { class: "ls-lista" }, ...is.map((i) => el("li", {}, i.url ? el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo) : el("span", {}, i.titulo),
+      el("div", { class: "n" }, el("span", {}, (i.tipo === "pr" ? "PR" : "issue") + " #" + i.numero), el("span", {}, "👍 " + i.reacoes), el("span", {}, i.comentarios === 1 ? "1 comentário" : i.comentarios + " comentários"), el("span", {}, i.estado), i.autor ? el("span", {}, i.autor) : null))))
+      : el("p", { class: "ls-aviso" }, t.em && t.em.issues ? "Nenhuma issue com reações nos últimos 12 meses." : "Ainda não coletado."),
+    fonteBloco("Hacker News, Reddit (fóruns do Lookout) e GitHub", t.em && t.em.comentarios));
+}
+function blocoParecidas(d) {
+  const ps = d.parecidas || [];
+  const corpo = ps.length ? el("ul", { class: "ls-lista" }, ...ps.map((p) => { const a = el("a", { href: "#tech/landscape/" + encodeURIComponent(p.id) }, p.nome); a.addEventListener("click", (e) => abrirTec(p.id, e));
+    const l = p.leve || {}; return el("li", {}, el("div", { class: "ls-rel" }, marcaEl(p, "p"), a), el("div", { class: "n" }, el("span", {}, estrelasTxt(l.estrelas)), el("span", {}, pontoEl(l.commit), " " + (l.commit ? "commit " + fmtRel(l.commit) : "sem dado")), el("span", {}, l.licenca || "licença ?"))); }))
+    : el("p", { class: "ls-aviso" }, "Nenhuma outra tecnologia nesta subcategoria ainda.");
+  const t = d.tec, l = t.leve || {};
+  return el("section", { class: "ls-bloco", "aria-labelledby": "ls-h-par" }, el("h3", { id: "ls-h-par" }, "Parecidas", el("small", {}, nomeCat(t.categoria, t.subcategoria).s)),
+    ps.length ? el("p", { class: "ls-aviso" }, `Esta: ${estrelasTxt(l.estrelas)} · ${l.licenca || "licença ?"}`) : null, corpo);
+}
+var lsNotas = new Map();
+function blocoNotas(t) {
+  const sec = el("section", { class: "ls-bloco", "aria-labelledby": "ls-h-notas" }, el("h3", { id: "ls-h-notas" }, "Minhas notas", el("small", {}, "só você vê")));
+  const n = lsNotas.get(t.id);
+  if (n === undefined) {
+    sec.append(el("p", { class: "ls-aviso" }, "Carregando…"));
+    lsNotas.set(t.id, null);
+    apiLs("GET", "/api/landscape/" + encodeURIComponent(t.id) + "/notas").then((j) => { lsNotas.set(t.id, j.notas || {}); if (lsId === t.id) renderLandscape(); }).catch(() => { lsNotas.set(t.id, {}); if (lsId === t.id) renderLandscape(); });
+    return sec;
+  }
+  const v = n || {};
+  const sit = selectLs("ls-n-sit", "Situação", [["", "Sem situação"], ...LS.SITUACOES.map((s) => [s.id, s.nome])], v.situacao || "", () => {});
+  const nota = el("textarea", { class: "dd-input", id: "ls-n-nota", "aria-label": "Nota", maxlength: String(LS.NOTA_MAX), placeholder: "O que eu achei, onde testei, o que falta ver" });
+  nota.value = v.nota || "";
+  const link = el("input", { class: "dd-input", id: "ls-n-link", type: "url", "aria-label": "Link para onde uso", placeholder: "https:// onde eu uso", value: v.link || "" });
+  const msg = el("span", { class: "ls-aviso", role: "status" }, v.atualizado ? "salvo " + fmtRel(v.atualizado) : "");
+  const salvar = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-n-salvar" }, "Salvar notas");
+  salvar.addEventListener("click", async () => {
+    salvar.disabled = true; msg.textContent = "Salvando…"; msg.classList.remove("erro");
+    try { const j = await apiLs("PUT", "/api/landscape/" + encodeURIComponent(t.id) + "/notas", { situacao: sit.value, nota: nota.value, link: link.value.trim() }); lsNotas.set(t.id, j.notas || {}); msg.textContent = "Salvo."; }
+    catch (e) { msg.textContent = e.message; msg.classList.add("erro"); }
+    salvar.disabled = false;
+  });
+  sec.append(el("div", { class: "ls-nota-form" }, el("div", { class: "linha" }, sit), nota, link, el("div", { class: "linha" }, salvar, msg)));
+  return sec;
+}
+function desenharDetalhe(box, id) {
+  const volta = el("a", { class: "dd-btn dd-btn--link ls-volta", href: "#tech/landscape", id: "ls-voltar" }, "← Landscape");
+  volta.addEventListener("click", voltarGrade);
+  box.append(volta);
+  const d = lsDet.get(id);
+  if (!d) {
+    const erro = lsDetErro.get(id);
+    if (erro) { box.append(el("p", { class: "ls-vazio" }, erro)); return; }
+    const leve = (lsLista || []).find((x) => x.id === id);
+    box.append(el("div", { class: "ls-topo" }, leve ? marcaEl(leve, "g") : el("span"), el("div", {}, el("h2", {}, leve ? leve.nome : LS.repoDoId(id)), el("span", { class: "ls-repo" }, leve ? leve.repo : LS.repoDoId(id)))), esqueleto(6));
+    return;
+  }
+  const t = { ...d.tec, id };
+  const g = t.gh || {};
+  const n = nomeCat(t.categoria, t.subcategoria);
+  const site = t.site || g.site || "";
+  document.title = (t.nome || t.repo) + " · Landscape · Lookout";
+  const chips = [el("span", { class: "dd-badge b-clube" }, n.c + (n.s ? " › " + n.s : ""))];
+  if (g.linguagem) chips.push(el("span", { class: "dd-badge b-noticia" }, g.linguagem));
+  if (g.licenca) chips.push(el("span", { class: "dd-badge b-noticia", title: "Licença" }, g.licenca));
+  if (g.arquivado) chips.push(el("span", { class: "dd-badge b-review" }, "arquivado"));
+  if (t.erro) chips.push(el("span", { class: "dd-badge b-video" }, t.erro));
+  if (!t.gh && !t.erro) chips.push(el("span", { class: "dd-badge b-novo" }, "coletando…"));
+  const botoes = el("div", { class: "ls-botoes" }, el("a", { class: "dd-btn dd-btn--outline", href: ghLink(t.repo), target: "_blank", rel: "noopener" }, "GitHub"), site ? el("a", { class: "dd-btn dd-btn--outline", href: site, target: "_blank", rel: "noopener" }, "Site") : null);
+  const topo = el("div", { class: "ls-topo" }, marcaEl(t, "g"),
+    el("div", {}, el("h2", {}, t.nome || t.repo), el("span", { class: "ls-repo" }, el("a", { href: ghLink(t.repo), target: "_blank", rel: "noopener" }, t.repo)), site ? el("span", { class: "ls-repo" }, " · ", el("a", { href: site, target: "_blank", rel: "noopener" }, site.replace(/^https?:\/\//, "").replace(/\/$/, ""))) : null),
+    g.descricao ? el("p", { class: "ls-desc" }, g.descricao) : null, el("div", { class: "ls-chips" }, ...chips), botoes);
+  if (lsAdmin) {
+    const ed = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ls-editar", "aria-haspopup": "dialog", "aria-controls": "ls-folha" }, "Editar");
+    ed.addEventListener("click", () => abrirFolhaLs("editar", t));
+    const tirar = el("button", { class: "dd-btn dd-btn--ghost", type: "button", id: "ls-tirar" }, "Tirar do landscape");
+    tirar.addEventListener("click", () => { lsConfirmaTirar = true; renderLandscape(); const b = $("ls-tirar-sim"); if (b) b.focus(); });
+    botoes.append(ed, tirar);
+    if (lsConfirmaTirar) {
+      const sim = el("button", { class: "dd-btn dd-btn--perigo", type: "button", id: "ls-tirar-sim" }, "Tirar");
+      const nao = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ls-tirar-nao" }, "Cancelar");
+      const msg = el("span", { role: "status" });
+      nao.addEventListener("click", () => { lsConfirmaTirar = false; renderLandscape(); const b = $("ls-tirar"); if (b) b.focus(); });
+      sim.addEventListener("click", async () => {
+        sim.disabled = true; msg.textContent = "Tirando…";
+        try {
+          await apiLs("DELETE", "/api/admin/landscape/" + encodeURIComponent(id));
+          lsLista = (lsLista || []).filter((x) => x.id !== id); lsDet.delete(id); wDados.delete("tech-landscape");
+          lsAviso = `${t.nome || t.repo} saiu do landscape.`; lsConfirmaTirar = false; lsId = null; lsDaGrade = false;
+          escreverHash(); renderLandscape(); window.scrollTo({ top: 0 });
+        } catch (e) { msg.textContent = e.message; sim.disabled = false; }
+      });
+      topo.append(el("div", { class: "ls-confirma", role: "alertdialog", "aria-label": "Confirmar" }, el("span", {}, `Tirar ${t.nome || t.repo} do landscape? Os dados coletados saem junto.`), sim, nao, msg));
+    }
+  }
+  box.append(topo);
+  const blocos = el("div", { class: "ls-blocos" }, blocoNumeros(t), blocoVersoes(t), blocoSobre(t), blocoParecidas(d), blocoNoticias(d), blocoDizendo(d));
+  if (lsAdmin) blocos.append(blocoNotas(t));
+  box.append(blocos);
+}
+function renderLandscape() {
+  let box = $("landscape");
+  const on = emLandscape();
+  box.hidden = !on;
+  if (!on) return;
+  /* monta fora da página e troca de uma vez: limpar antes encolheria a página e perderia a rolagem */
+  const real = box;
+  box = document.createElement("div");
+  document.title = "Landscape · Lookout";
+  if (!lsLista && !lsErro) carregarLandscape();
+  if (lsId) {
+    desenharDetalhe(box, lsId);
+    real.replaceChildren(...box.childNodes);
+    carregarDetalheUmaVez(lsId);
+    return;
+  }
+  if (lsErro && !lsLista) { const b = el("button", { class: "dd-btn dd-btn--link", type: "button" }, "Tentar de novo"); b.addEventListener("click", () => { lsErro = ""; carregarLandscape(true); renderLandscape(); }); box.append(el("p", { class: "ls-vazio" }, "Não deu para carregar o landscape agora. ", b)); real.replaceChildren(...box.childNodes); return; }
+  if (!lsLista) { box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Landscape"), el("p", {}, "tecnologias que eu acompanho"))), esqueleto(6)); real.replaceChildren(...box.childNodes); return; }
+  desenharGrade(box);
+  real.replaceChildren(...box.childNodes);
+  /* recém-adicionada aparece como "coletando…": relê a lista a cada minuto enquanto houver alguma assim */
+  clearTimeout(lsReler);
+  if (lsLista.some((t) => t.leve && t.leve.coletando && !t.erro)) lsReler = setTimeout(() => { if (emLandscape() && !lsId) carregarLandscape(true); }, 60000);
+}
+var lsReler = 0;
+var lsPedidos = new Set();
+function carregarDetalheUmaVez(id) { if (lsPedidos.has(id)) return; lsPedidos.add(id); carregarDetalhe(id).finally(() => setTimeout(() => lsPedidos.delete(id), 60000)); }
+/* ---- folha do Admin: adicionar, editar e organizar categorias ---- */
+var lsP = null, lsPAbridor = null;
+function abrirFolhaLs(modo, t) {
+  lsP = { modo, t: t || null, erro: "", salvando: false };
+  if ($("ls-folha").hidden) {
+    lsPAbridor = document.activeElement;
+    const html = document.documentElement, sb = window.innerWidth - html.clientWidth;
+    if (sb > 0) html.style.paddingRight = sb + "px";
+    html.classList.add("trava");
+    $("ls-veu").hidden = false; $("ls-folha").hidden = false;
+  }
+  if (modo === "organizar") lsP.cats = lsCats.map((c) => ({ ...c, subcategorias: c.subcategorias.map((s) => ({ ...s })) }));
+  desenharFolhaLs();
+  $("ls-folha").focus({ preventScroll: true });
+}
+function fecharFolhaLs() {
+  if ($("ls-folha").hidden) return;
+  lsP = null;
+  $("ls-veu").hidden = true; $("ls-folha").hidden = true;
+  const html = document.documentElement; html.classList.remove("trava"); html.style.paddingRight = "";
+  $("ls-folha-corpo").textContent = ""; $("ls-folha-pe").textContent = "";
+  if (lsPAbridor && lsPAbridor.isConnected && lsPAbridor.focus) lsPAbridor.focus({ preventScroll: true });
+}
+$("ls-veu").addEventListener("click", fecharFolhaLs);
+$("ls-folha-fechar").addEventListener("click", fecharFolhaLs);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("ls-folha").hidden) { e.preventDefault(); fecharFolhaLs(); } });
+/* categoria e subcategoria: escolher uma que existe ou criar ("Nova…") */
+function camposCategoria(cidIni, sidIni) {
+  const NOVA = "__nova";
+  const wrap = el("div", { class: "ls-form" });
+  const cSel = el("select", { class: "dd-input", id: "ls-f-cat" }), cNova = el("input", { class: "dd-input", id: "ls-f-cat-nova", placeholder: "Nome da categoria nova", maxlength: "60", hidden: true });
+  const sSel = el("select", { class: "dd-input", id: "ls-f-sub" }), sNova = el("input", { class: "dd-input", id: "ls-f-sub-nova", placeholder: "Nome da subcategoria nova", maxlength: "60", hidden: true });
+  lsCats.forEach((c) => cSel.append(el("option", { value: c.id }, c.nome)));
+  cSel.append(el("option", { value: NOVA }, "Nova categoria…"));
+  if (cidIni && lsCats.some((c) => c.id === cidIni)) cSel.value = cidIni; else if (!lsCats.length) cSel.value = NOVA;
+  const pintarSubs = (sid) => {
+    sSel.textContent = "";
+    const c = lsCats.find((x) => x.id === cSel.value);
+    (c ? c.subcategorias : []).forEach((s) => sSel.append(el("option", { value: s.id }, s.nome)));
+    sSel.append(el("option", { value: NOVA }, "Nova subcategoria…"));
+    if (sid && c && c.subcategorias.some((s) => s.id === sid)) sSel.value = sid; else if (!c || !c.subcategorias.length) sSel.value = NOVA;
+    cNova.hidden = cSel.value !== NOVA; sNova.hidden = sSel.value !== NOVA;
+  };
+  cSel.addEventListener("change", () => pintarSubs());
+  sSel.addEventListener("change", () => { sNova.hidden = sSel.value !== NOVA; if (!sNova.hidden) sNova.focus(); });
+  pintarSubs(sidIni);
+  wrap.append(el("div", {}, el("label", { class: "rotulo", for: "ls-f-cat" }, "Categoria"), cSel, cNova), el("div", {}, el("label", { class: "rotulo", for: "ls-f-sub" }, "Subcategoria"), sSel, sNova));
+  const valor = () => {
+    const out = {};
+    if (cSel.value === NOVA) out.novaCategoria = cNova.value.trim(); else out.categoria = cSel.value;
+    if (sSel.value === NOVA || cSel.value === NOVA) out.novaSubcategoria = sNova.value.trim(); else out.subcategoria = sSel.value;
+    if (cSel.value === NOVA) sNova.hidden = false;
+    return out;
+  };
+  return { el: wrap, valor };
+}
+function desenharFolhaLs() {
+  const corpo = $("ls-folha-corpo"), pe = $("ls-folha-pe");
+  corpo.textContent = ""; pe.textContent = "";
+  if (!lsP) return;
+  const erroEl = el("p", { class: "erro", role: "alert" }, lsP.erro || "");
+  const cancelar = el("button", { class: "dd-btn dd-btn--outline", type: "button" }, "Cancelar");
+  cancelar.addEventListener("click", fecharFolhaLs);
+  if (lsP.modo === "adicionar" || lsP.modo === "editar") {
+    const ed = lsP.modo === "editar", t = lsP.t || {};
+    $("ls-folha-titulo").textContent = ed ? "Editar " + (t.nome || t.repo) : "Adicionar tecnologia";
+    const f = el("div", { class: "ls-form" });
+    let urls = null, nome, site, feed;
+    if (!ed) {
+      urls = el("textarea", { class: "dd-input", id: "ls-f-urls", placeholder: "https://github.com/dono/repositorio", spellcheck: "false", autocomplete: "off" });
+      f.append(el("div", {}, el("label", { class: "rotulo", for: "ls-f-urls" }, "URL do GitHub"), urls, el("p", { class: "dica" }, "Uma por linha para adicionar várias de uma vez. Nome, site e feed só valem quando é uma só.")));
+    }
+    const cat = camposCategoria(ed ? t.categoria : lsCats[0] && lsCats[0].id, ed ? t.subcategoria : null);
+    nome = el("input", { class: "dd-input", id: "ls-f-nome", maxlength: "60", placeholder: ed ? "" : "o nome do repositório, se ficar vazio", value: ed ? t.nome || "" : "" });
+    site = el("input", { class: "dd-input", id: "ls-f-site", type: "url", placeholder: "https://", value: ed ? t.site || "" : "" });
+    feed = el("input", { class: "dd-input", id: "ls-f-feed", type: "url", placeholder: "https:// do RSS ou Atom do blog", value: ed ? t.feed || "" : "" });
+    f.append(cat.el, el("div", {}, el("label", { class: "rotulo", for: "ls-f-nome" }, "Nome de exibição"), nome),
+      el("div", {}, el("label", { class: "rotulo", for: "ls-f-site" }, "Site oficial (opcional)"), site, el("p", { class: "dica" }, "Vazio usa o site que o GitHub informa.")),
+      el("div", {}, el("label", { class: "rotulo", for: "ls-f-feed" }, "Feed do blog ou changelog (opcional)"), feed), erroEl);
+    corpo.append(f);
+    const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-f-salvar" }, ed ? "Salvar" : "Adicionar");
+    ok.disabled = lsP.salvando;
+    ok.addEventListener("click", async () => {
+      const b = { ...cat.valor(), nome: nome.value.trim(), site: site.value.trim(), feed: feed.value.trim() };
+      if (!ed) b.urls = urls.value;
+      lsP.salvando = true; ok.disabled = true; erroEl.textContent = "";
+      try {
+        if (ed) {
+          const j = await apiLs("PUT", "/api/admin/landscape/" + encodeURIComponent(t.id), b);
+          if (j.categorias) lsCats = j.categorias;
+          const x = (lsLista || []).find((y) => y.id === t.id); if (x) Object.assign(x, { nome: j.nome || x.nome, categoria: j.categoria || x.categoria, subcategoria: j.subcategoria || x.subcategoria, site: j.site ?? x.site });
+          const dd = lsDet.get(t.id); if (dd) Object.assign(dd.tec, { nome: j.nome || dd.tec.nome, categoria: j.categoria || dd.tec.categoria, subcategoria: j.subcategoria || dd.tec.subcategoria, site: j.site ?? dd.tec.site, feed: j.feed ?? dd.tec.feed });
+          fecharFolhaLs(); renderLandscape(); carregarDetalhe(t.id);
+        } else {
+          const j = await apiLs("POST", "/api/admin/landscape", b);
+          if (j.categorias) lsCats = j.categorias;
+          lsLista = (lsLista || []).concat(j.adicionadas || []);
+          wDados.delete("tech-landscape");
+          const partes = [];
+          if (j.adicionadas.length) partes.push(j.adicionadas.length === 1 ? `${j.adicionadas[0].nome} entrou; os dados chegam na próxima passada da coleta.` : `${j.adicionadas.length} tecnologias entraram; os dados chegam nas próximas passadas da coleta.`);
+          if (j.repetidas.length) partes.push(j.repetidas.length === 1 ? "1 já estava no landscape." : j.repetidas.length + " já estavam no landscape.");
+          if (j.recusadas.length) partes.push((j.recusadas.length === 1 ? "1 linha recusada: " : j.recusadas.length + " linhas recusadas: ") + j.recusadas.map((r) => r.linha + " (" + r.erro + ")").join("; "));
+          lsAviso = partes.join(" ");
+          fecharFolhaLs(); renderLandscape();
+          const prim = j.adicionadas[0] && $("ls-c-" + j.adicionadas[0].id); if (prim) prim.scrollIntoView({ block: "center" });
+        }
+      } catch (e) { lsP.salvando = false; ok.disabled = false; erroEl.textContent = e.message; }
+    });
+    pe.append(cancelar, ok);
+    (urls || nome).focus();
+    return;
+  }
+  /* organizar: renomear, subir e descer, subcategoria nova e mover tecnologia entre subcategorias */
+  $("ls-folha-titulo").textContent = "Organizar categorias";
+  const cats = lsP.cats;
+  const lista = el("div", { class: "ls-org" });
+  const mover = (arr, i, d) => { const j = i + d; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; desenharFolhaLs(); };
+  const setas = (arr, i, nome, idb) => {
+    const s = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon", type: "button", "aria-label": "Subir " + nome, title: "Subir", id: idb + "-cima" }, "▲");
+    const d = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon", type: "button", "aria-label": "Descer " + nome, title: "Descer", id: idb + "-baixo" }, "▼");
+    s.disabled = i === 0; d.disabled = i === arr.length - 1;
+    s.addEventListener("click", () => mover(arr, i, -1)); d.addEventListener("click", () => mover(arr, i, 1));
+    return [s, d];
+  };
+  const opcoesSub = () => lsCats.flatMap((c) => c.subcategorias.map((s) => [c.id + "|" + s.id, c.nome + " › " + s.nome]));
+  cats.forEach((c, i) => {
+    const nomeC = el("input", { class: "dd-input", value: c.nome, maxlength: "60", "aria-label": "Nome da categoria" });
+    nomeC.addEventListener("input", () => { c.nome = nomeC.value; });
+    const bloco = el("div", { class: "ls-org-cat" }, el("div", { class: "ls-org-lin" }, nomeC, ...setas(cats, i, c.nome, "ls-oc-" + i)));
+    const subs = el("div", { class: "ls-org-sub" });
+    c.subcategorias.forEach((s, k) => {
+      const nomeS = el("input", { class: "dd-input", value: s.nome, maxlength: "60", "aria-label": "Nome da subcategoria" });
+      nomeS.addEventListener("input", () => { s.nome = nomeS.value; });
+      const techs = (lsLista || []).filter((t) => t.categoria === c.id && t.subcategoria === s.id);
+      const tirar = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon", type: "button", "aria-label": "Tirar a subcategoria " + s.nome, title: techs.length ? "Mova as tecnologias antes de tirar" : "Tirar" }, "×");
+      tirar.disabled = !!techs.length;
+      tirar.addEventListener("click", () => { c.subcategorias.splice(k, 1); desenharFolhaLs(); });
+      subs.append(el("div", { class: "ls-org-lin" }, nomeS, ...setas(c.subcategorias, k, s.nome, "ls-os-" + i + "-" + k), tirar));
+      techs.forEach((t) => {
+        const sel = selectLs("ls-om-" + t.id, "Mover " + t.nome, opcoesSub(), c.id + "|" + s.id, async (v) => {
+          const [cid, sid] = v.split("|");
+          sel.disabled = true;
+          try { await apiLs("PUT", "/api/admin/landscape/" + encodeURIComponent(t.id), { categoria: cid, subcategoria: sid }); t.categoria = cid; t.subcategoria = sid; lsDet.delete(t.id); desenharFolhaLs(); renderLandscape(); }
+          catch (e) { lsP.erro = e.message; desenharFolhaLs(); }
+        });
+        subs.append(el("div", { class: "ls-org-tec" }, el("span", { title: t.repo }, t.nome), sel));
+      });
+    });
+    const novaS = el("input", { class: "dd-input", placeholder: "Subcategoria nova", maxlength: "60", "aria-label": "Subcategoria nova em " + c.nome });
+    const addS = el("button", { class: "dd-btn dd-btn--outline", type: "button" }, "Pôr");
+    addS.addEventListener("click", () => { const n = novaS.value.trim(); if (!n) return; c.subcategorias.push({ nome: n }); desenharFolhaLs(); });
+    subs.append(el("div", { class: "ls-org-lin" }, novaS, addS));
+    const tirarC = el("button", { class: "dd-btn dd-btn--link", type: "button" }, "Tirar a categoria");
+    tirarC.disabled = (lsLista || []).some((t) => t.categoria === c.id);
+    tirarC.title = tirarC.disabled ? "Mova as tecnologias antes de tirar" : "";
+    tirarC.addEventListener("click", () => { cats.splice(i, 1); desenharFolhaLs(); });
+    bloco.append(subs, tirarC);
+    lista.append(bloco);
+  });
+  const novaC = el("input", { class: "dd-input", placeholder: "Categoria nova", maxlength: "60", "aria-label": "Categoria nova" });
+  const addC = el("button", { class: "dd-btn dd-btn--outline", type: "button" }, "Pôr");
+  addC.addEventListener("click", () => { const n = novaC.value.trim(); if (!n) return; cats.push({ nome: n, subcategorias: [] }); desenharFolhaLs(); });
+  lista.append(el("div", { class: "ls-org-lin" }, novaC, addC));
+  corpo.append(el("p", { class: "ls-aviso" }, "Renomeie, mude a ordem e mova cada tecnologia para outra subcategoria (a mudança de lugar vale na hora). Nomes e ordem valem ao salvar."), lista, erroEl);
+  const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-org-salvar" }, "Salvar");
+  ok.addEventListener("click", async () => {
+    ok.disabled = true; erroEl.textContent = "";
+    try { const j = await apiLs("PUT", "/api/admin/landscape-categorias", { categorias: cats.filter((c) => String(c.nome).trim()).map((c) => ({ ...c, subcategorias: c.subcategorias.filter((s) => String(s.nome).trim()) })) }); lsCats = j.categorias; fecharFolhaLs(); renderLandscape(); }
+    catch (e) { ok.disabled = false; erroEl.textContent = e.message; }
+  });
+  pe.append(cancelar, ok);
+}
+/* ---- widget do Início: o que mudou nas tecnologias acompanhadas ---- */
+corpos["tech-landscape"] = (d, fm = { c: 1, r: 1 }) => {
+  const n = LS.novidades((d && d.tecnologias) || [], Date.now(), fm.c > 1 ? 5 : 3);
+  if (!n.length) return [vazioW(d && d.tecnologias && d.tecnologias.length ? "Nada novo nas tecnologias acompanhadas nesta semana." : "Nenhuma tecnologia no landscape ainda.")];
+  return [el("ul", { class: "wdg-lista wdg-ls" }, ...n.map((x) => el("li", {}, el("a", { href: "#tech/landscape/" + encodeURIComponent(x.id) }, el("b", {}, x.nome), " " + x.texto),
+    el("div", { class: "n" }, el("span", {}, x.tipo === "release" ? "release" : x.tipo === "hn" ? "Hacker News" : "estrelas"), el("span", {}, x.tipo === "estrelas" ? "nesta semana" : fmtRel(x.data))))))];
+};
+
 /* push: sair do Início para uma seção (ou voltar a ele pela aba) cria uma entrada no histórico, para o "voltar"
    do navegador trazer o Início de volta. Entre seções e visões o endereço é só trocado, como antes. */
 function escreverHash(push) {
   const config = !inicio && radar === "esportes" && (espPAberto || partesDoHash()[1] === "config");
-  const alvo = inicio && carteiraVista ? hashCarteira() : inicio ? "#inicio" : config ? "#esportes/config" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
+  const alvo = inicio && carteiraVista ? hashCarteira() : inicio ? "#inicio" : config ? "#esportes/config" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "") + (radar === "tech" ? hashTech() : "");
   if ((location.hash || "") === alvo) return;
   try { history[push ? "pushState" : "replaceState"](null, "", location.pathname + location.search + alvo); }
   catch (e) { try { location.hash = alvo; } catch (e2) {} }
@@ -11003,6 +11773,8 @@ function trocarRadar(id, porHash) {
   radar = id;
   /* Investimentos abre sempre na Bolsa, a não ser que o endereço peça os EUA ou as notícias */
   visao = porHash && RADARES[id].mercado ? visaoDoHash() : "bolsa";
+  /* Tech abre nas notícias, a não ser que o endereço peça o Landscape (#tech/landscape[/id]) */
+  if (id === "tech") { if (porHash) techDoHash(); else { tvisao = "noticias"; lsId = null; } }
   try { localStorage.setItem("radar-atual", id); } catch (e) {}
   if (!porHash) escreverHash(doInicio);
   aplicarRadar();
@@ -11026,6 +11798,12 @@ window.addEventListener("hashchange", () => {
   const h = radarDoHash();
   if (!h) { irInicio(true); if (location.hash !== "#inicio") escreverHash(); return; }
   const querConfig = h === "esportes" && partesDoHash()[1] === "config";
+  if (!inicio && h === radar && h === "tech") {
+    const ia = lsId, y = window.scrollY;
+    if (techDoHash()) {
+      if (!ia && lsId) { lsRolagem = y; lsDaGrade = true; } lsConfirmaTirar = false; fecharFolhaLs(); render(); if (ia && !lsId) voltarRolagem(); else window.scrollTo({ top: 0 }); }
+    return;
+  }
   if (!inicio && h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); else if (querConfig) abrirMeusEsportes(); else fecharMeusEsportes(); return; }
   /* seção não liberada: o endereço volta para o radar aberto em vez de ficar apontando para outro */
   if (!radaresVisiveis().includes(h)) { escreverHash(); return; }

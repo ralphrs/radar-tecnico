@@ -19,6 +19,7 @@ import "../public/radar-filtro.js";
 import { validarTabelas, mesclarTabelas, respostaTabelas, validarLayout, respostaLayout } from "./prefs.js";
 import { cronEsportes, validarPrefsEsportes, respostaPrefsEsportes } from "./esportes.js";
 import { comSeguranca } from "./seguranca.js";
+import { cronLandscape, rotaLandscape, rotaAdminLandscape } from "./landscape.js";
 const RF = globalThis.RadarFiltro;
 
 // O Durable Object do espelho de leitura em São Paulo (src/espelho.js) precisa sair exportado daqui.
@@ -482,10 +483,11 @@ async function adminUsuarios(request, env, email) {
     return json({ ok: true });
   }
   if (request.method === "DELETE" && email) {
-    // carteira/<email>: os três docs cifrados da Minha carteira saem junto (sem abrir); leitura/<email>, a Leitura do dia
-    const cols = ["favs/", "listas/", "prefs/", "carteira/", "leitura/"].map((p) => p + email.toLowerCase());
+    // carteira/<email>: os três docs cifrados da Minha carteira saem junto (sem abrir); leitura/<email>, a Leitura do dia;
+    // landscape/<email>, as notas do Landscape (só o Admin tem, mas a limpeza vale para todos)
+    const cols = ["favs/", "listas/", "prefs/", "carteira/", "leitura/", "landscape/"].map((p) => p + email.toLowerCase());
     // As chaves saem antes do DELETE para o espelho apagar as mesmas linhas logo depois
-    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?, ?, ?, ?)").bind(...cols).all();
+    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?, ?, ?, ?, ?)").bind(...cols).all();
     await env.DB.prepare("DELETE FROM usuarios WHERE email = ?").bind(email.toLowerCase()).run();
     for (const c of cols) await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind(c).run();
     removerDoEspelho(env, chaves);
@@ -603,6 +605,23 @@ async function atender(request, env, ctx) {
       return rotaCarteira(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho, sincronizarListas: sincronizarListasCarteira });
     }
 
+    // Landscape (Tech, src/landscape.js): grade e detalhe para quem tem a seção Tech; as notas e as rotas de escrita
+    // são só do Admin e respondem 404 para os outros, antes do bloqueio genérico do /api/admin/ (que dá 403).
+    if (p === "/api/landscape" || p.startsWith("/api/landscape/")) {
+      if (!libera(quem.secoes, "tech")) return json({ erro: "secao" }, 403);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      const resto = p.length > 15 ? decodificar(p.slice(15)) : "";
+      if (resto === null) return json({ erro: "id" }, 400);
+      return rotaLandscape(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
+    }
+    if (p === "/api/admin/landscape" || p.startsWith("/api/admin/landscape/") || p === "/api/admin/landscape-categorias") {
+      if (!quem.admin) return json({ erro: "rota" }, 404);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      const id = p.startsWith("/api/admin/landscape/") ? decodificar(p.slice(21)) : "";
+      if (id === null) return json({ erro: "id" }, 400);
+      return rotaAdminLandscape(request, env, quem, p === "/api/admin/landscape-categorias" ? "categorias" : "", id, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
+    }
+
     if (p === "/admin" || p === "/admin.html" || p.startsWith("/api/admin/")) {
       if (!quem.admin) return p.startsWith("/api/") ? json({ erro: "admin" }, 403) : pagina("Sem permissão", "<h1>Área do administrador</h1><p>Só quem cuida do Lookout acessa esta página.</p><p><a href=\"/\">Voltar ao radar</a></p>", 403);
       if (p.startsWith("/api/admin/") && p !== "/api/admin/cvm" && !corpoJson(request)) return json({ erro: "json" }, 415);
@@ -642,6 +661,8 @@ async function agendado(evento, env) {
     try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
     // Esportes (src/esportes.js): sonda no começo e, a cada 5 min, rodada, tabela e jogos dos times das competições ligadas
     try { const r = await cronEsportes(env, evento.scheduledTime || Date.now()); if (r && (r.ligas.length || r.erros)) console.log("esportes", JSON.stringify(r)); } catch (e) { console.error("esportes", String((e && e.message) || e).slice(0, 120)); }
+    // Landscape (src/landscape.js): semente (uma vez), sonda e coleta do GitHub e do HN, no máximo 6 pedidos por minuto
+    try { const r = await cronLandscape(env, evento.scheduledTime || Date.now()); if (r && (r.pedidos || r.semente || r.erro || r.parou)) console.log("landscape", JSON.stringify(r)); } catch (e) { console.error("landscape", String((e && e.message) || e).slice(0, 120)); }
     // Reddit: uma URL por minuto somando coleta e sonda; se a coleta falhou antes de saber, a sonda não arrisca
     try { await cronSonda(env, { redditLivre: !!coleta && !coleta.reddit }); } catch (e) { console.error("sonda", e); }
     try { const r = await cronPapel(env, evento.scheduledTime || Date.now()); if (r && r.candidatos) console.log("papel", JSON.stringify(r)); } catch (e) { console.error("papel", e); }

@@ -18,6 +18,8 @@
     "carteira-alertas": ["1x1", "1x2"], "carteira-simulacoes": ["1x1", "2x1"], "carteira-reinvestir": ["1x1", "2x1"], "carteira-limites": ["1x1", "2x1"], "radar-meu": ["1x1", "2x1", "2x2"], "leitura-dia": ["1x1", "1x2", "2x1"],
     "carteira-contra-filtro": ["1x1"], foruns: ["1x1", "1x2"],
     "esportes-rodada": ["1x1", "2x1"], "esportes-tabela": ["1x1", "1x2"], "esportes-meu-time": ["1x1"], "esportes-vaivem": ["1x1", "2x1"],
+    /* Landscape (Tech, 12/11): 3 novidades em 1x1, 5 em 2x1 */
+    "tech-landscape": ["1x1", "2x1"],
   };
   const tipoEsportes = (id) => { const m = /^esportes-(rodada|tabela)-/.exec(String(id)); return m ? "esportes-" + m[1] : null; };
   const formatosDe = (id) => FORMATOS_DE[id] || FORMATOS_DE[tipoEsportes(id)] || FORMATOS_DE[String(id).replace(/-.*$/, "")] || ["1x1"];
@@ -27,6 +29,7 @@
   const GRUPOS = [
     { id: "noticias", nome: "Notícias" }, { id: "mercado", nome: "Mercado" }, { id: "carteira", nome: "Minha carteira" },
     { id: "analises", nome: "Análises" }, { id: "foruns", nome: "Fóruns" }, { id: "esportes", nome: "Esportes" },
+    { id: "tech", nome: "Tech" },
   ];
   const NOME_GRUPO = Object.fromEntries(GRUPOS.map((g) => [g.id, g.nome]));
   /* Grupo padrão de cada widget (o catálogo manda o mesmo valor em `grupo`) */
@@ -34,6 +37,7 @@
     id = String(id);
     if (id.startsWith("esportes-") || id === "destaques-esportes" || id === "ultimas-esportes") return "esportes";
     if (id.startsWith("foruns-")) return "foruns";
+    if (id.startsWith("tech-")) return "tech";
     if (id === "radar-meu" || id === "leitura-dia" || id === "carteira-contra-filtro") return "analises";
     if (id.startsWith("carteira-")) return "carteira";
     if (id === "mercado" || id === "pregao" || id === "fiis" || id === "eua" || id === "listas") return "mercado";

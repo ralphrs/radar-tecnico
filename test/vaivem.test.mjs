@@ -169,8 +169,8 @@ test("Início: widget Vai e vem (1x1 e 2x1), só para quem tem Esportes", () => 
   assert.match(validarPainel({ widgets: [{ id: "esportes-vaivem", formato: "1x2" }] }, null).erro, /Formato/);
 });
 
-test("CSP: img-src só daqui, de data:, da pasta de escudos da ESPN e da foto da conta; nada de *", async () => {
-  assert.equal(CSP, "img-src 'self' data: https://a.espncdn.com/i/teamlogos/ https://lh3.googleusercontent.com");
+test("CSP: img-src só daqui, de data:, da pasta de escudos da ESPN, da foto da conta e dos avatares por id do GitHub (Landscape); nada de *", async () => {
+  assert.equal(CSP, "img-src 'self' data: https://a.espncdn.com/i/teamlogos/ https://lh3.googleusercontent.com https://avatars.githubusercontent.com/u/");
   assert.ok(!CSP.includes("*"));
   assert.ok(!/headshots/.test(CSP));
   const html = comSeguranca(new Response("<!doctype html><p>oi</p>", { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } }));

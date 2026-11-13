@@ -30,6 +30,8 @@ export const COLECOES_ESPELHO = [
   "hist", // fichas de papel (src/papel.js): gravadas sob demanda no D1, com write-through para cá
   // Nos fóruns: posts de subreddit gravados pela coleta (src/coleta.js), 3 dias no máximo
   "foruns-tech", "foruns-negocios", "foruns-investimentos", "foruns-politica", "foruns-esportes",
+  // Landscape (src/landscape.js): um doc por tecnologia, gravado pelo cron e pelo Admin
+  "landscape",
 ];
 
 const LOTE = 90;              // ids por consulta ao D1, como na limpeza (coleta.js)
@@ -43,7 +45,8 @@ const AMOSTRA_LOG = 20;       // leitura que deu certo no espelho: loga 1 em cad
 // Collections por pessoa que também vêm para o espelho. No D1 a busca é por faixa da chave primária
 // (collection >= 'favs/' AND collection < 'favs0', '0' é o caractere seguinte a '/'), que usa o índice;
 // um LIKE 'favs/%' varreria a tabela inteira a cada minuto.
-const PREFIXOS_PESSOAIS = ["favs/", "listas/", "prefs/", "carteira/", "leitura/"]; // carteira/ e leitura/: cifradas como estão no D1
+// landscape/<email>: as notas do Admin no Landscape (Tech), doc "notas"
+const PREFIXOS_PESSOAIS = ["favs/", "listas/", "prefs/", "carteira/", "leitura/", "landscape/"]; // carteira/ e leitura/: cifradas como estão no D1
 const faixa = (p) => [p, p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1)];
 
 // Marca de versão de cada linha, calculada igual dos dois lados. Só o `atualizado` não basta: quem grava
