@@ -166,6 +166,9 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [ ] Tradução: conferir em produção se o m2m100 aceita os códigos `en`/`es`/`pt`, se devolve os marcadores `{0}` intactos (contador `descartadas` na linha do Admin) e os neurons do painel do Workers AI contra a estimativa
 - [ ] Tradução: o feed não relê os itens já carregados quando a tradução chega; ela aparece na próxima abertura da página
 
+## Pedidos de 16/11
+- [x] Meta e reinvestimento: Meta de renda só para leitura com lápis para editar; embaixo, o aportado no mês e quanto falta do aporte planejado
+
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
 - [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)

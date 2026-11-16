@@ -1348,7 +1348,14 @@ a.ct-paguei:hover .ct-seta { color: var(--primary); }
 .ct-dois { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
 .ct-kpi .tipos { font-size: 13.5px; line-height: 1.6; }
 /* Meta */
-.ct-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 12px 16px; align-items: end; }
+.ct-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 12px 16px; align-items: start; }
+.ct-form .ct-meta-lida { height: var(--control-h); flex-wrap: nowrap; }
+.ct-form .ct-meta-lida b { font-size: 16px; white-space: nowrap; }
+.ct-form .ct-meta-lida span { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ct-form .ct-meta-lida .dd-btn { flex: none; }
+.ct-meta-mes { display: grid; gap: 4px; margin-top: 8px; font-size: 13px; }
+.ct-meta-mes > div { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.ct-meta-mes span { color: var(--muted-foreground); }
 .ct-form label.rotulo { display: block; margin-bottom: 6px; }
 .ct-form .campo { display: flex; align-items: center; gap: 8px; }
 .ct-form .campo span { font-size: 12.5px; color: var(--muted-foreground); white-space: nowrap; }
@@ -8440,15 +8447,33 @@ function desenharSoMeta(box, j) {
   const chk = el("input", { type: "checkbox", id: "mt-reinv" }); chk.checked = cfg.reinvestir !== false;
   const salvar = el("button", { type: "button", class: "dd-btn dd-btn--primary" }, "Salvar meta");
   const aviso = el("p", { class: "ct-nota", role: "status" });
+  // Meta de renda: só leitura com um lápis para editar; embaixo, o aportado no mês e o que falta do aporte planejado
+  const celAlvo = campo("mt-alvo", "Meta de renda", cfg.alvo != null ? String(cfg.alvo) : "", "R$ 5.000,00", "por mês em proventos", { tipo: "moeda", min: 0 });
+  if (cfg.alvo != null) {
+    const edicao = celAlvo.querySelector(".campo");
+    const lapis = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon alvo", type: "button", id: "mt-alvo-editar", "aria-label": "Editar a meta de renda", title: "Editar", html: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' });
+    const leitura = el("div", { class: "campo ct-meta-lida", id: "mt-alvo-lido" }, el("b", { class: "ct-mono" }, rs(cfg.alvo)), el("span", {}, "por mês"), lapis);
+    edicao.hidden = true;
+    edicao.before(leitura);
+    lapis.addEventListener("click", () => { leitura.hidden = true; edicao.hidden = false; const i = $("mt-alvo"); i.focus(); i.select(); });
+    const p = m.mesPlano;
+    if (p) {
+      const falta = Math.max(0, (p.planejado || 0) - p.aportado);
+      const mes = mesLongo(m.mes);
+      celAlvo.append(el("div", { class: "ct-meta-mes" },
+        el("div", {}, el("span", {}, "Aportado em " + mes), el("b", { class: "ct-mono" }, rs(p.aportado))),
+        p.planejado > 0 ? el("div", {}, el("span", {}, falta > 0 ? "Falta aportar" : "Aporte do mês"), el("b", { class: "ct-mono " + (falta > 0 ? "" : "ct-pos") }, falta > 0 ? rs(falta) : "completo")) : null));
+    }
+  }
   const form = el("div", { class: "ct-form" },
-    campo("mt-alvo", "Meta de renda", cfg.alvo != null ? String(cfg.alvo) : "", "R$ 5.000,00", "por mês em proventos", { tipo: "moeda", min: 0 }),
+    celAlvo,
     campo("mt-aporte", "Aporte mensal", cfg.aporte != null ? String(cfg.aporte) : "", "R$ 2.000,00", "", { tipo: "moeda", min: 0 }),
     campo("mt-yield", "Yield esperado", cfg.yield != null ? String(Math.round(cfg.yield * 1e4) / 100) : "", yc ? fmtNum(yc * 100, 1) + " % (o da carteira)" : "10,0 %", "ao ano", { tipo: "percentual", casas: 1, min: 0, max: 100 }),
     el("div", {}, el("span", { class: "rotulo", style: "display:block;margin-bottom:6px" }, "Proventos"), el("label", { class: "check", for: "mt-reinv" }, chk, "reinvestir tudo")),
-    salvar);
+    el("div", {}, el("span", { class: "rotulo", style: "display:block;margin-bottom:6px", "aria-hidden": "true" }, "\u00a0"), salvar));
   salvar.addEventListener("click", async () => {
     const inv = ["mt-alvo", "mt-aporte", "mt-yield"].find((id) => Campo.invalido($(id)));
-    if (inv) { aviso.textContent = "Confira o campo marcado."; $(inv).focus(); return; }
+    if (inv) { aviso.textContent = "Confira o campo marcado."; if (inv === "mt-alvo" && $("mt-alvo-editar")) $("mt-alvo-editar").click(); $(inv).focus(); return; }
     const alvo = Campo.valor($("mt-alvo")), aporte = Campo.valor($("mt-aporte")), y = Campo.valor($("mt-yield"));
     if (!alvo || alvo <= 0) { aviso.textContent = "Escreva quanto quer receber por mês."; $("mt-alvo").focus(); return; }
     salvar.disabled = true; aviso.textContent = "Salvando…";
