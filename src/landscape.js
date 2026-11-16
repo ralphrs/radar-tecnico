@@ -591,8 +591,12 @@ export async function citacoes(env, deps, tec, { secoes = null, forum = false, a
   const termos = termosDe(tec);
   if (!cols.length || !termos.length) return [];
   const corte = agoraIso(agora - (forum ? 7 : 120) * DIA);
-  const { sql, args } = sqlCitacoes(cols, termos, corte);
-  const linhas = await deps.lerLinhas(env, sql, args, "landscape-citacoes");
+  // O D1 aceita no máximo 5 termos num SELECT composto: quatro collections por consulta (mais o "WHERE 0" da frente)
+  const linhas = [];
+  for (let i = 0; i < cols.length; i += 4) {
+    const { sql, args } = sqlCitacoes(cols.slice(i, i + 4), termos, corte);
+    linhas.push(...((await deps.lerLinhas(env, sql, args, "landscape-citacoes")) || []));
+  }
   const out = [];
   for (const r of linhas || []) {
     let d;

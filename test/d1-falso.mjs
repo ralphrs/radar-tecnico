@@ -7,6 +7,19 @@ export function d1Falso({ schema = readFileSync(new URL("../schema.sql", import.
   const db = new DatabaseSync(":memory:");
   if (schema) db.exec(schema);
   const log = [];
+  // O D1 de verdade recusa SELECT composto com mais de 5 termos ("too many terms in compound SELECT"); o SQLite do
+  // Node aceita 500. Conta os UNION, EXCEPT e INTERSECT fora de parênteses e de texto entre aspas, e recusa igual.
+  const conferirComposto = (sql) => {
+    let nivel = 0, termos = 1, i = 0;
+    while (i < sql.length) {
+      const ch = sql[i];
+      if (ch === "'" || ch === '"') { const f = sql.indexOf(ch, i + 1); i = f < 0 ? sql.length : f + 1; continue; }
+      if (ch === "(") nivel++; else if (ch === ")") nivel--;
+      else if (nivel === 0 && /^(UNION|EXCEPT|INTERSECT)\b/i.test(sql.slice(i, i + 10)) && (i === 0 || /\W/.test(sql[i - 1]))) termos++;
+      i++;
+    }
+    if (termos > 5) throw new Error("too many terms in compound SELECT: SQLITE_ERROR");
+  };
   const stmt = (sql, args = []) => ({
     sql, args,
     bind: (...a) => stmt(sql, a),
@@ -16,7 +29,7 @@ export function d1Falso({ schema = readFileSync(new URL("../schema.sql", import.
   });
   return {
     db, log,
-    prepare: (sql) => stmt(sql),
+    prepare: (sql) => { conferirComposto(sql); return stmt(sql); },
     async batch(lista) {
       db.exec("BEGIN");
       try { const out = []; for (const s of lista) out.push(await s.run()); db.exec("COMMIT"); return out; }

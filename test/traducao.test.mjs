@@ -138,6 +138,12 @@ test("fila: Landscape, depois itens do mais novo ao mais velho, depois fóruns; 
   const { sql, args } = sqlFila(AGORA);
   assert.ok(!/favs\/|listas\/|prefs\/|carteira\/|leitura\/|data\/users|sombra/.test(sql + args.join(" ")));
   assert.ok(args.includes(iso(AGORA - 3 * DIA)));
+  // O D1 recusa SELECT composto com mais de 5 termos: cada consulta da fila respeita o limite e nenhuma parte se perde
+  const { consultas } = sqlFila(AGORA);
+  assert.ok(consultas.length > 1);
+  for (const q of consultas) { assert.ok(q.sql.split(" UNION ALL ").length <= 5); assert.equal((q.sql.match(/\?/g) || []).length, q.args.length); }
+  assert.equal(consultas.map((q) => q.sql).join(" UNION ALL "), sql);
+  assert.deepEqual(consultas.flatMap((q) => q.args), args);
 });
 
 // ---------- cron: gravação, orçamento e pausa ----------
@@ -187,8 +193,8 @@ test("cron: no máximo 8 chamadas por minuto e dentro dos subrequests que sobram
   assert.equal(ai.chamadas.length, POR_MINUTO);
   // invocação que já gastou quase tudo: cabe menos
   const ai2 = aiFalso();
-  const r = await cronTraducao({ ...env, AI: ai2 }, { agora: AGORA + MIN, gastos: LIMITE_SUBREQ - RESERVA_SUBREQ - 9 });
-  assert.equal(ai2.chamadas.length, 2, "(9 - 5 fixos) / 2 por chamada");
+  const r = await cronTraducao({ ...env, AI: ai2 }, { agora: AGORA + MIN, gastos: LIMITE_SUBREQ - RESERVA_SUBREQ - 11 });
+  assert.equal(ai2.chamadas.length, 2, "(11 - 7 fixos) / 2 por chamada");
   assert.equal(r.chamadas, 2);
   const ai3 = aiFalso();
   assert.equal((await cronTraducao({ ...env, AI: ai3 }, { agora: AGORA + 2 * MIN, gastos: LIMITE_SUBREQ })).semFolga, true);

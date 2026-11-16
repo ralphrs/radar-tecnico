@@ -167,6 +167,7 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [ ] Tradução: o feed não relê os itens já carregados quando a tradução chega; ela aparece na próxima abertura da página
 
 ## Pedidos de 16/11
+- [x] Correção: a tradução e as notícias do Landscape nunca rodaram em produção. O D1 recusa SELECT composto com mais de 5 termos e as duas consultas tinham 15 e 6. Divididas em blocos; o banco de teste (`test/d1-falso.mjs`) passou a recusar igual
 - [x] Meta e reinvestimento: Meta de renda só para leitura com lápis para editar; embaixo, o aportado no mês e quanto falta do aporte planejado
 
 ## Fila em ordem (04/11)

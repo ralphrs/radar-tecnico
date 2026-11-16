@@ -28,7 +28,8 @@ export const POR_MINUTO = 8;           // chamadas ao AI por minuto, no máximo
 export const FRACAO_LONGOS = 0.75;     // resumo, notas e trechos só enquanto o gasto do dia está abaixo de 75% do teto
 export const LIMITE_SUBREQ = 1000;     // subrequests por invocação que a conta aceita sem susto (Free: 1.000 internos; Paid: 10.000)
 export const RESERVA_SUBREQ = 150;     // o que fica guardado para o espelho e o histórico, que rodam depois
-const CUSTO_FIXO = 5;                  // estado (ler e gravar), as duas consultas da fila e o batch das gravações
+const CUSTO_FIXO = 7;                  // estado (ler e gravar), as quatro consultas da fila (três de itens, uma do Landscape) e o batch das gravações
+export const MAX_COMPOSTO = 5;         // termos por SELECT composto que o D1 aceita
 const MIN = 60_000, DIA = 86_400_000;
 const PAUSA_CURTA = 10 * MIN;
 const DIAS = 3;                        // não traduz o que foi publicado há mais de 3 dias
@@ -94,7 +95,14 @@ export function sqlFila(agora) {
   for (const c of COLECOES_ITENS) { partes.push(`SELECT * FROM (SELECT ? AS c, id, ${campos} AS data, coletado FROM docs WHERE collection = ? AND coletado >= ? AND json_extract(data, '$.trad.ok') IS NULL ORDER BY coletado DESC LIMIT ?)`); args.push(c, c, corte(agora, DIAS), POR_COLECAO); }
   for (const c of COLECOES_DESTAQUES) { partes.push(`SELECT * FROM (SELECT ? AS c, id, json_object('itens', json(json_extract(data, '$.itens')), 'data', json_extract(data, '$.data')) AS data, coletado FROM docs WHERE collection = ? AND id >= ? AND json_extract(data, '$.trad.ok') IS NULL ORDER BY id DESC LIMIT 4)`); args.push(c, c, "d" + diaUtc(agora - DIAS * DIA)); }
   for (const c of COLECOES_FORUM) { partes.push(`SELECT * FROM (SELECT ? AS c, id, ${campos} AS data, coletado FROM docs WHERE collection = ? AND coletado >= ? AND json_extract(data, '$.trad.ok') IS NULL ORDER BY coletado DESC LIMIT ?)`); args.push(c, c, iso(agora - DIAS * DIA + 60 * MIN), POR_COLECAO); }
-  return { sql: partes.join(" UNION ALL "), args };
+  // O D1 aceita no máximo 5 termos num SELECT composto ("too many terms in compound SELECT"): a fila vai em consultas
+  // de até 5 partes. `sql` e `args` juntam tudo (para conferência nos testes); quem lê o banco usa `consultas`.
+  const consultas = [];
+  for (let i = 0, a = 0; i < partes.length; i += MAX_COMPOSTO) {
+    const fatia = partes.slice(i, i + MAX_COMPOSTO), n = fatia.reduce((t, p) => t + (p.match(/\?/g) || []).length, 0);
+    consultas.push({ sql: fatia.join(" UNION ALL "), args: args.slice(a, a + n) }); a += n;
+  }
+  return { sql: partes.join(" UNION ALL "), args, consultas };
 }
 // Só os campos de texto de cada tecnologia (o doc inteiro tem série, README e o resto)
 export const SQL_LANDSCAPE = "SELECT id, json_object('nome', json_extract(data, '$.nome'), 'repo', json_extract(data, '$.repo'), "
@@ -210,8 +218,9 @@ export async function cronTraducao(env, { agora = Date.now(), gastos = 0, limite
   }
   if (est.vazioAte && Date.parse(est.vazioAte) > agora) return { ...out, vazia: true };
 
-  const { sql, args } = sqlFila(agora);
-  const [{ results: linhas }, { results: lsLinhas }] = [await env.DB.prepare(sql).bind(...args).all(), await env.DB.prepare(SQL_LANDSCAPE).all()];
+  const linhas = [];
+  for (const q of sqlFila(agora).consultas) linhas.push(...((await env.DB.prepare(q.sql).bind(...q.args).all()).results || []));
+  const { results: lsLinhas } = await env.DB.prepare(SQL_LANDSCAPE).all();
   const fila = montarFila({ linhas: linhas || [], landscape: lsLinhas || [], estado: est, agora });
   const longosOk = est.neurons < TETO_DIA * FRACAO_LONGOS;
   const escolhidas = fila.tarefas.filter((t) => t.curto || longosOk);
