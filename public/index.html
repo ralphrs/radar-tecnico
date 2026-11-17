@@ -459,6 +459,15 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .rankings .nota, .cotacoes .nota { margin: 0; font-size: 12px; color: var(--muted-foreground); }
 .cotacoes .cot-topo h3 { margin: 0; font: 600 15px/1.25 var(--font-display); letter-spacing: -0.01em; }
 .rk-val.sobe { color: var(--ok); } .rk-val.desce { color: var(--err); }
+/* Bloco Cripto: o mesmo cartão das listas do pregão, um só e na largura toda; duas colunas de moedas quando cabe */
+.cripto-cot .rk-grade { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: minmax(0, 1fr) !important; overflow: visible; padding-bottom: 0; }
+.cripto-cot .rk-card li { grid-template-columns: minmax(0, 1fr) auto 4.6em; }
+.cr-nome { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cr-nome small { font: 400 11px var(--font-mono); color: var(--muted-foreground); }
+@media (min-width: 640px) {
+  .cripto-cot .rk-card ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+  .cripto-cot .rk-card li:nth-child(2) { border-top: 0; }
+}
 .rk-vazio { color: var(--muted-foreground); display: block !important; font-size: 12.5px; }
 /* Investimentos: três visões, Bolsa e EUA (pregão, tabela e listas, com o mesmo esqueleto) e Notícias (feed como nas outras abas) */
 .visoes { align-self: flex-start; }
@@ -2356,6 +2365,7 @@ html.tech-ls .barra-linha { display: none; }
   <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
   <div class="mercado-pe" id="mercado-pe" hidden></div>
   <section class="rankings" id="rankings" aria-label="Destaques do pregão" hidden></section>
+  <section class="rankings cripto-cot" id="cripto-cot" aria-label="Cotações de cripto" hidden></section>
   <section class="cotacoes" id="cotacoes" aria-label="Cotações da B3" hidden></section>
   <section class="rd" id="radar" aria-label="Radar de dividendos" hidden></section>
   <div id="listas-centro"></div>
@@ -2657,7 +2667,13 @@ const TEMAS_INVESTIMENTOS = [
   { id: "fiis", curto: "FIIs", nome: "Fundos imobiliários", cor: G.ops, temas: ["fiis"] },
   { id: "rendafixa", curto: "Renda fixa", nome: "Renda fixa e juros", cor: G.pag, temas: ["rendafixa"] },
   { id: "macro", curto: "Macro", nome: "Juros, inflação e câmbio", cor: G.doc, temas: ["macro"] },
-  { id: "cripto", curto: "Cripto", nome: "Criptomoedas", cor: G.ia, temas: ["cripto"] },
+  /* Cripto com subtemas desde 17/11; os ids são os que a curadoria grava em "subtema". Item antigo sem subtema cai em "Outros" */
+  { id: "cripto", curto: "Cripto", nome: "Criptomoedas", cor: G.ia, temas: ["cripto"],
+    subs: [
+      { id: "bitcoin", nome: "Bitcoin" }, { id: "ethereum", nome: "Ethereum" }, { id: "altcoins", nome: "Outras moedas" },
+      { id: "defi", nome: "DeFi e tokenização" }, { id: "stablecoins", nome: "Stablecoins e Drex" }, { id: "etfs", nome: "ETFs e institucional" },
+      { id: "regulacao", nome: "Regulação e impostos" }, { id: "corretoras", nome: "Corretoras e segurança" }, { id: "mercado", nome: "Mercado" },
+    ] },
   { id: "regulacao", curto: "Regras e IR", nome: "CVM, Banco Central e Imposto de Renda", cor: G.seg, temas: ["regulacao"] },
   { id: "mundo", curto: "Mercados lá fora", nome: "Mercados lá fora", cor: G.set, temas: ["mundo"] },
 ];
@@ -2742,8 +2758,8 @@ const RADARES = {
   investimentos: { id: "investimentos", aba: "Investimentos", titulo: "Investimentos", items: "items-investimentos", destaques: "destaques-investimentos", status: "meta/status-investimentos", sufixo: "-investimentos", mercado: true,
     escopo: (i) => (i.tema === "mundo" ? "internacional" : "nacional"),
     temas: TEMAS_INVESTIMENTOS, tipos: TIPOS_INVESTIMENTOS,
-    rodape: "Notícias três vezes por dia; cotações a cada 30 minutos (com atraso) e indicadores do Banco Central duas vezes por dia. Nada aqui é recomendação de investimento.",
-    vazio: "A curadoria roda três vezes por dia e traz bolsa, FIIs, renda fixa, juros, câmbio e cripto. Os itens aparecem aqui depois da primeira rodada." },
+    rodape: "Notícias três vezes por dia; cotações e cripto a cada 30 minutos (com atraso) e indicadores do Banco Central duas vezes por dia. Nada aqui é recomendação de investimento.",
+    vazio: "A curadoria roda três vezes por dia e traz bolsa, FIIs, renda fixa, juros, câmbio e o mundo das criptomoedas: bitcoin, ethereum e outras moedas, DeFi, stablecoins, ETFs, regulação e corretoras. Os itens aparecem aqui depois da primeira rodada." },
   politica: { id: "politica", aba: "Notícias", titulo: "Notícias e Política", escopo: (i) => (i.tema === "mundo" ? "internacional" : "nacional"), items: "items-politica", destaques: "destaques-politica", status: "meta/status-politica", sufixo: "-politica",
     temas: TEMAS_POLITICA, tipos: TIPOS_POLITICA,
     rodape: "Atualizado automaticamente várias vezes por dia, com fontes oficiais (Planalto, DOU, Câmara, Senado, STF, TSE, governo do RS) e imprensa de referência. Notícias ficam 30 dias; análises, vídeos e podcasts, 3 meses; publicações oficiais, 12 meses.",
@@ -3301,6 +3317,41 @@ function renderRankings() {
   if (ABAS_FICHA.has(cotAba)) nota += " FI-Infra e Fiagro não entregam o informe mensal de FII na CVM; DY e rendimento vêm da ficha (Yahoo).";
   if (cotAba === "fiis") nota += " Líquidos são os fundos com mais de R$ 1 mi negociados por dia; abaixo disso DY e P/VP distorcem." + (fiiCvm && fiiCvm.ref ? " Informe da CVM de " + fmtMes(fiiCvm.ref) + "." : "") + " Mandato, gestão e administrador vêm do informe mensal da CVM.";
   box.append(el("p", { class: "nota" }, nota));
+}
+/* Bloco Cripto (17/11): meta/mercado traz em "cripto" as principais moedas em reais com a variação de 24 h (CoinGecko;
+   com ele fora, só bitcoin e ether da reserva). Painel antigo, sem "cripto": bitcoin e ether do letreiro.
+   Aparece na Bolsa (não nos EUA) e em Notícias quando o tema Cripto está escolhido. */
+const criptoDoPainel = (p) => {
+  const l = p && Array.isArray(p.cripto) && p.cripto.length ? p.cripto : ((p && p.itens) || []).filter((i) => i.id === "btc" || i.id === "eth");
+  return l.filter((i) => i && typeof i.valor === "number");
+};
+const verCripto = () => !inicio && !!R().mercado && ((emBolsa() && !emEua()) || (visao === "noticias" && temasSel.has("cripto")));
+let criptoVisto = null;
+function renderCripto() {
+  const box = $("cripto-cot"), ver = verCripto(), lista = ver ? criptoDoPainel(painelMercado) : [];
+  const k = ver && lista.length ? JSON.stringify(lista) + MQ_NAV.matches : "";
+  if (k === criptoVisto) return;
+  criptoVisto = k; box.textContent = "";
+  if (!k) { box.hidden = true; return; }
+  box.hidden = false;
+  /* horário: o dado mais recente (a data da fonte ou, sem ela, a hora em que o cron leu) */
+  const quando = lista.map((i) => i.data || i.lido || "").filter((x) => !isNaN(Date.parse(x))).sort().pop() || "";
+  const d = quando ? new Date(quando) : null;
+  const hora = d ? (d.toDateString() !== new Date().toDateString() ? d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " : "") + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+  const fontes = [...new Set(lista.map((i) => i.fonte).filter(Boolean))];
+  const fonte = fontes.length > 1 ? fontes.slice(0, -1).join(", ") + " e " + fontes[fontes.length - 1] : fontes[0] || "";
+  box.append(el("div", { class: "cot-topo rk-topo" }, el("h2", {}, "Cripto", el("span", { class: "rk-quando", title: "Fonte e horário da cotação" }, [fonte, hora].filter(Boolean).join(" · ")))));
+  const pct = (v) => (typeof v !== "number" ? "–" : (v > 0 ? "+" : "") + fmtNum(v, 2) + "%");
+  const ol = el("ol", {});
+  for (const i of lista) {
+    const ref = i.data || i.lido;
+    ol.append(el("li", { title: i.nome + " · " + (i.fonte || "") + (ref ? " · " + fmtData(ref) : "") },
+      el("span", { class: "cr-nome" }, i.nome, i.sigla && i.sigla !== i.nome ? el("small", {}, i.sigla) : null),
+      el("span", { class: "rk-preco" }, "R$ " + fmtNum(i.valor, i.casas)),
+      el("span", { class: "rk-val " + (i.variacao > 0 ? "sobe" : i.variacao < 0 ? "desce" : "") }, pct(i.variacao))));
+  }
+  box.append(el("div", { class: "rk-grade", "data-n": "1" }, el("article", { class: "rk-card" }, el("h3", {}, "Moedas", el("small", {}, "preço em reais · variação em 24 h")), ol)));
+  box.append(el("p", { class: "nota" }, "Cotações a cada 30 minutos, com atraso." + (lista.some((i) => i.id === "usdt") ? " Tether (USDT) é uma stablecoin atrelada ao dólar." : "")));
 }
 /* Visões de Investimentos. Bolsa: pregão, tabela, filtros de papel à esquerda e listas, destaques e notícias do dia à direita.
    Notícias: o feed com o layout das outras abas. Trocar de visão só muda o que aparece; as assinaturas do feed continuam. */
@@ -4629,7 +4680,7 @@ async function atualizarMercado() {
 const fmtNum = Fmt.num;
 function renderMercado() {
   const box = $("mercado"), pe = $("mercado-pe");
-  if (!R().mercado || inicio) { box.hidden = true; pe.hidden = true; return; }
+  if (!R().mercado || inicio) { box.hidden = true; pe.hidden = true; renderCripto(); return; }
   box.hidden = false; pe.hidden = false; pe.textContent = "";
   const p = painelMercado;
   const itensM = (p && p.itens) || [];
@@ -4666,6 +4717,7 @@ function renderMercado() {
     el("span", {}, itensM.length ? (p.atualizado ? "Atualizado " + fmtRel(p.atualizado) + ". " : "") + (itensM.some((i) => i.pais === "US") ? "Fontes: brapi, Banco Central e Yahoo Finance." : "Fontes: brapi e Banco Central.") + (p.temBolsa ? "" : " Ibovespa e IFIX ainda não entram.") : "As cotações aparecem aqui depois da primeira consulta."),
     b);
   if (!itensM.length) box.hidden = true;
+  renderCripto();
 }
 function renderUrgente() {
   const box = $("urgente"); box.textContent = "";
@@ -5336,11 +5388,11 @@ function render() {
   aplicarModo();
   renderEsportes();
   /* no Início só a barra de abas e o card de favoritos dependem do estado geral */
-  if (inicio) { aplicarVisao(); renderLandscape(); renderRadares(); if (painelMontado) carregarWidget("favoritos"); return; }
+  if (inicio) { aplicarVisao(); renderLandscape(); renderRadares(); renderCripto(); if (painelMontado) carregarWidget("favoritos"); return; }
   clearTimeout(tBusca); tBusca = 0;
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
-  aplicarVisao(); renderLandscape(); renderRadares(); renderPregao(); renderRadarVisao(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
+  aplicarVisao(); renderLandscape(); renderRadares(); renderPregao(); renderCripto(); renderRadarVisao(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
   /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }

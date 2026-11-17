@@ -16,7 +16,8 @@ Detalhes da coleta e da limpeza: `docs/coleta.md`. Comparação das duas curador
 
 | O quê | Fonte | Quando |
 |---|---|---|
-| Moedas e cripto (`meta/mercado`) | AwesomeAPI; se recusar, PTAX do BC, CoinGecko e por último Mercado Bitcoin | a cada 30 min |
+| Dólar e euro (`meta/mercado`) | AwesomeAPI; se recusar, PTAX do BC | a cada 30 min (minutos 3 e 33) |
+| Cripto (`meta/mercado`, `cripto` e, só bitcoin e ether, no letreiro) | CoinGecko, oito moedas numa chamada; reserva de bitcoin e ether: AwesomeAPI e por último Mercado Bitcoin | a cada 30 min (minutos 16 e 46) |
 | Selic, CDI, IPCA 12m (`meta/mercado`) | Banco Central, SGS | duas vezes por dia |
 | Ibovespa (`meta/mercado`) | brapi, só com o secret `BRAPI_TOKEN` | a cada 30 min no pregão |
 | Tabelas de ações, FIIs, FI-Infra, Fiagro, ETFs e BDRs (`meta/b3`) | brapi, rota de lista, sem token | a cada 30 min no pregão e às 21h35 UTC |
@@ -171,6 +172,18 @@ Modo de edição (botão Editar, `html.inicio-editando`):
 - Fora da edição, recolher um grupo pelo título grava na hora (o `PUT` sai logo depois).
 
 Dados: cada widget faz no máximo uma leitura, todas em paralelo, pelas mesmas rotas da página (cache de memória e de borda, ETag). Os `meta/*` (mercado, b3, eua) ficam numa cópia em memória por 2 min, usada pelo Início e por Investimentos, nos dois sentidos; os ciclos de atualização pedem o doc de novo. A cada 2 min o Início atualiza só os cards que estão na tela (IntersectionObserver), e ao voltar para a aba atualiza os da tela com mais de 1 min.
+
+## Cripto em Investimentos
+
+Pedido de 17/11: "tudo sobre o mundo das criptomoedas" em Investimentos. A curadoria (texto da tarefa agendada) fica com o dono; aqui está o site e a coleta.
+
+- **Subtemas** (`TEMAS_INVESTIMENTOS` em `public/index.html`, mesmo desenho de Bolsa e empresas). O tema `cripto` ganhou nove, com ids fixos que a curadoria grava em `subtema`: `bitcoin` (Bitcoin), `ethereum` (Ethereum), `altcoins` (Outras moedas), `defi` (DeFi e tokenização), `stablecoins` (Stablecoins e Drex), `etfs` (ETFs e institucional), `regulacao` (Regulação e impostos), `corretoras` (Corretoras e segurança) e `mercado` (Mercado). Item sem subtema, ou com um id que não é desses, continua no tema Cripto, no subgrupo "Outros", e some quando a pessoa escolhe um subtema. Chips e lateral mostram só os subtemas que têm item. O texto de vazio da aba cita as áreas novas; o rodapé diz que cripto atualiza a cada 30 min. "Nada aqui é recomendação" segue só no rodapé.
+- **Fontes.** Já estavam Livecoins, CoinDesk e Cointelegraph. Nenhum feed novo entrou: o proxy do ambiente de desenvolvimento recusou todos os candidatos e o leitor da coleta não leu nenhum. A lista para conferir em produção (cole em admin › Sondar feeds) é `CRIPTO_PARA_SONDAR` em `src/feeds.js`: CriptoFácil, Cointelegraph Brasil, Portal do Bitcoin (dois caminhos alternativos, porque `/feed/` dá 403), InfoMoney (criptomoedas), Exame (Future of Money), Money Times (criptomoedas), BeInCrypto Brasil, The Block, Decrypt, Blockworks, Bitcoin Magazine, DL News, The Defiant, CryptoSlate, Bitcoin.com News e Coin Center. Os que responderem com itens recentes vão para `FEEDS` como `["investimentos", fonte, país, url]`.
+- **Nos fóruns.** Seis subreddits em Investimentos, lidos daqui com o leitor do Reddit da coleta, todos com posts do dia: r/BitcoinBrasil, r/CryptoCurrency, r/Bitcoin, r/ethereum, r/defi e r/CryptoMarkets. Com eles são 44 subreddits: a volta completa leva 44 min, um por minuto, e cada um continua relido a cada 120 min (cabem 120). r/CriptomoedasBrasil não existe; r/criptomoedas tinha 2 posts no dia.
+- **Cotações.** `cripto()` em `src/mercado.js` busca no CoinGecko, numa chamada só, bitcoin, ether, solana, BNB, XRP, cardano, dogecoin e tether (USDT), em reais e com a variação de 24 h (`CRIPTO`, `URL_COINGECKO`). Moeda que não vem, ou vem sem preço, fica de fora. Se faltarem bitcoin ou ether (CoinGecko fora ou resposta parcial), entram só eles pela reserva de antes: AwesomeAPI e, se ela recusar, Mercado Bitcoin. Com o CoinGecko fora o bloco fica só com bitcoin e ether, e `erros.cripto` guarda o motivo. Se nada responder, a lista anterior fica. Grava em `meta/mercado` o campo `cripto` (`{ id, nome, sigla, valor, variacao, unidade, casas, fonte, data, lido }`) e põe só bitcoin e ether em `itens`, então o letreiro e o widget Mercado do Início não crescem.
+- **Ritmo.** A parte cripto roda nos minutos 16 e 46 (`MINUTO_CRIPTO`), em que nenhuma outra parte de mercado, B3, EUA, CVM ou Esportes consulta fora; dólar e euro seguem no minuto 3 e 33, agora só os dois na AwesomeAPI. Nenhum minuto passou a ter mais de um pedido de mercado. "Atualizar agora" consulta cripto junto com o resto.
+- **Bloco Cripto** (`renderCripto`, seção `#cripto-cot`). O mesmo cartão das listas do pregão, na largura toda e com as moedas em duas colunas a partir de 640 px: nome e sigla, preço em reais e a variação de 24 h; no título, a fonte e o horário do dado mais novo (cada linha tem os dois no `title`). Aparece na Bolsa, entre o Pregão e as Cotações, e em Notícias quando o tema Cripto está escolhido, acima do feed. Painel antigo, sem `cripto`, mostra bitcoin e ether do letreiro.
+- **Só em produção:** se o CoinGecko responde ao IP do Worker sem 429 a cada 30 min (o plano grátis sem chave aceita uns 30 pedidos por minuto, mas os IPs são compartilhados), os feeds de `CRIPTO_PARA_SONDAR` na sonda, e o ritmo dos 44 subreddits sem 429 frequente.
 
 ## Nos fóruns
 

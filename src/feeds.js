@@ -5,6 +5,9 @@
 // Uber Engineering e CNN Brasil Política sumiram (HTTP 404); Record não publica itens reconhecíveis. A busca da curadoria cobre essas fontes.
 // Fora também: Lance!, Correio do Povo, Di Marzio e KrASIA (404); InfoMoney Negócios e LABS (sem itens reconhecíveis).
 // Investimentos fora: Clube FII (404), E-Investidor e Portal do Bitcoin (403).
+// Cripto (17/11/2026): Livecoins, CoinDesk e Cointelegraph já estavam aqui. Nenhum feed novo de cripto entrou, porque o
+// proxy do ambiente de desenvolvimento recusa todos os sites candidatos (o leitor da coleta não chegou a ler nenhum).
+// A lista para a sonda de produção (admin › Sondar feeds) é CRIPTO_PARA_SONDAR, logo abaixo de FEEDS.
 // Fora em 01/11/2026: feeds de FII de InfoMoney, Money Times e Suno (404) e de Seu Dinheiro (sem itens reconhecíveis).
 // Transfermarkt não tem RSS e bloqueia robôs: o mercado vem das buscas da curadoria de Esportes.
 export const FEEDS = [
@@ -210,8 +213,8 @@ export const FEEDS = [
   ["negocios", "r/smallbusiness", "", "https://www.reddit.com/r/smallbusiness/top/.rss?t=day", "reddit"],
   ["negocios", "r/TheFinanceCareer", "", "https://www.reddit.com/r/TheFinanceCareer/top/.rss?t=day", "reddit"],
   ["politica", "r/EspacoPolitica", "BR", "https://www.reddit.com/r/EspacoPolitica/top/.rss?t=day", "reddit"],
-  // Acrescentados em 04/11/2026: 38 subreddits no total. Com 1 leitura por minuto e cada um relido a cada 120 min,
-  // cabem até 120; se o recuo por 429 ficar frequente, subir REDDIT.INTERVALO_MIN para 180 (src/coleta.js, docs/coleta.md).
+  // Acrescentados em 04/11/2026: 38 subreddits no total (44 desde 17/11). Com 1 leitura por minuto e cada um relido a
+  // cada 120 min, cabem até 120; se o recuo por 429 ficar frequente, subir REDDIT.INTERVALO_MIN para 180 (src/coleta.js, docs/coleta.md).
   ["tech", "r/programming", "", "https://www.reddit.com/r/programming/top/.rss?t=day", "reddit"],
   ["tech", "r/netsec", "", "https://www.reddit.com/r/netsec/top/.rss?t=day", "reddit"],
   ["tech", "r/MachineLearning", "", "https://www.reddit.com/r/MachineLearning/top/.rss?t=day", "reddit"],
@@ -233,6 +236,15 @@ export const FEEDS = [
   ["investimentos", "r/investing", "", "https://www.reddit.com/r/investing/top/.rss?t=day", "reddit"],
   ["investimentos", "r/stocks", "", "https://www.reddit.com/r/stocks/top/.rss?t=day", "reddit"],
   ["investimentos", "r/ValueInvesting", "", "https://www.reddit.com/r/ValueInvesting/top/.rss?t=day", "reddit"],
+  // Cripto (17/11/2026), lidos daqui com pegar + lerReddit (src/coleta.js), todos com posts do dia: 44 subreddits no
+  // total, então a volta completa leva 44 min e cada um continua relido a cada 120 min (cabem até 120).
+  // r/CriptomoedasBrasil não existe (404); r/criptomoedas responde, mas com 2 posts no dia fica de fora.
+  ["investimentos", "r/BitcoinBrasil", "BR", "https://www.reddit.com/r/BitcoinBrasil/top/.rss?t=day", "reddit"],
+  ["investimentos", "r/CryptoCurrency", "", "https://www.reddit.com/r/CryptoCurrency/top/.rss?t=day", "reddit"],
+  ["investimentos", "r/Bitcoin", "", "https://www.reddit.com/r/Bitcoin/top/.rss?t=day", "reddit"],
+  ["investimentos", "r/ethereum", "", "https://www.reddit.com/r/ethereum/top/.rss?t=day", "reddit"],
+  ["investimentos", "r/defi", "", "https://www.reddit.com/r/defi/top/.rss?t=day", "reddit"],
+  ["investimentos", "r/CryptoMarkets", "", "https://www.reddit.com/r/CryptoMarkets/top/.rss?t=day", "reddit"],
   ["politica", "r/worldnews", "", "https://www.reddit.com/r/worldnews/top/.rss?t=day", "reddit"],
   ["politica", "r/geopolitics", "", "https://www.reddit.com/r/geopolitics/top/.rss?t=day", "reddit"],
   ["politica", "r/brasil", "BR", "https://www.reddit.com/r/brasil/top/.rss?t=day", "reddit"],
@@ -240,6 +252,30 @@ export const FEEDS = [
   ["esportes", "r/soccer", "", "https://www.reddit.com/r/soccer/top/.rss?t=day", "reddit"],
   ["esportes", "r/brasileirao", "BR", "https://www.reddit.com/r/brasileirao/top/.rss?t=day", "reddit"],
   ["esportes", "r/SCInternacional", "BR", "https://www.reddit.com/r/SCInternacional/top/.rss?t=day", "reddit"],
+];
+
+// Feeds de cripto que não deram para ler daqui (o proxy recusa o site): colar em admin › Sondar feeds e, os que
+// responderem com itens recentes, passar para FEEDS como ["investimentos", fonte, país, url]. País como na lista acima.
+// Portal do Bitcoin dava 403 em /feed/: vão dois caminhos alternativos do WordPress. Nenhum é casa de análise com
+// recomendação de compra nem site de afiliados.
+export const CRIPTO_PARA_SONDAR = [
+  ["CriptoFácil", "BR", "https://www.criptofacil.com/feed/"],
+  ["Cointelegraph Brasil", "BR", "https://br.cointelegraph.com/rss"],
+  ["Portal do Bitcoin", "BR", "https://portaldobitcoin.uol.com.br/feed/atom/"],
+  ["Portal do Bitcoin", "BR", "https://portaldobitcoin.uol.com.br/?feed=rss2"],
+  ["InfoMoney", "BR", "https://www.infomoney.com.br/mercados/criptomoedas/feed/"],
+  ["Exame", "BR", "https://exame.com/future-of-money/feed/"],
+  ["Money Times", "BR", "https://www.moneytimes.com.br/criptomoedas/feed/"],
+  ["BeInCrypto Brasil", "BR", "https://br.beincrypto.com/feed/"],
+  ["The Block", "US", "https://www.theblock.co/rss.xml"],
+  ["Decrypt", "US", "https://decrypt.co/feed"],
+  ["Blockworks", "US", "https://blockworks.co/feed"],
+  ["Bitcoin Magazine", "US", "https://bitcoinmagazine.com/feed"],
+  ["DL News", "GB", "https://www.dlnews.com/arc/outboundfeeds/rss/"],
+  ["The Defiant", "US", "https://thedefiant.io/feed"],
+  ["CryptoSlate", "GB", "https://cryptoslate.com/feed/"],
+  ["Bitcoin.com News", "", "https://news.bitcoin.com/feed/"],
+  ["Coin Center", "US", "https://www.coincenter.org/feed/"],
 ];
 
 // Seções com pelo menos um subreddit: são as que têm o bloco "Nos fóruns" e o widget foruns-<secao> no Início.

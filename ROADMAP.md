@@ -172,6 +172,9 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 
 ## Pedidos de 17/11
 - [x] Marcar notícia como lida: ✓ ao lado do coração em cada notícia e em cada post de Nos fóruns, a lida vai para o fim da lista em qualquer ordem e filtro ("Lidas · N"), chip Lidas e "Suas lidas" no trilho como os favoritos, por pessoa em `lidas/<email>` com limpeza de 90 dias (docs/LOOKOUT.md, "Lidas") (17/11)
+- [x] Investimentos: tudo sobre cripto. Nove subtemas no tema Cripto (ids fixos para a curadoria), seis subreddits de cripto em Nos fóruns (44 no total, volta de 44 min), bloco Cripto com oito moedas em reais e variação de 24 h numa chamada só ao CoinGecko, nos minutos 16 e 46, com a reserva de bitcoin e ether; letreiro continua só com os dois (docs/LOOKOUT.md, "Cripto em Investimentos") (17/11)
+- [ ] Cripto: sondar em produção os feeds de `CRIPTO_PARA_SONDAR` (`src/feeds.js`), que o ambiente de desenvolvimento não alcança, e passar para `FEEDS` os que responderem com itens recentes
+- [ ] Curadoria de Investimentos: gravar `subtema` nos itens de cripto com os ids de docs/LOOKOUT.md (ajuste no prompt da tarefa agendada, com o dono)
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

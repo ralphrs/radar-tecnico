@@ -217,10 +217,10 @@ test("Início: rodada e tabela por competição, próximo jogo do time; só para
   assert.equal(respostaPainel(null, null).catalogo.find((w) => w.id === "esportes-rodada-eng.1").liga, "eng.1");
 });
 
-test("subreddits: 38, um por URL, todas as seções com fórum, e o ritmo comporta", () => {
+test("subreddits: 44 (6 de cripto desde 17/11), um por URL, todas as seções com fórum, e o ritmo comporta", () => {
   const subs = FEEDS.filter((f) => f[4] === "reddit");
-  assert.equal(subs.length, 38);
-  assert.equal(new Set(subs.map((f) => f[3].toLowerCase())).size, 38, "sem URL repetida");
+  assert.equal(subs.length, 44);
+  assert.equal(new Set(subs.map((f) => f[3].toLowerCase())).size, 44, "sem URL repetida");
   assert.deepEqual([...SECOES_COM_FORUM].sort(), ["esportes", "investimentos", "negocios", "politica", "tech"]);
   for (const s of ["r/futebol", "r/soccer", "r/brasileirao", "r/SCInternacional"]) assert.ok(subs.some((f) => f[0] === "esportes" && f[1] === s), s);
   for (const s of ["r/investimentos", "r/farialimabets", "r/dividends", "r/investing", "r/stocks", "r/ValueInvesting"]) assert.ok(subs.some((f) => f[0] === "investimentos" && f[1] === s), s);
