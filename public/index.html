@@ -249,6 +249,9 @@ h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: 
 .t-fav[aria-pressed="true"] svg, .t-rel[aria-pressed="true"] svg { fill: currentColor; }
 .t-fav[aria-pressed="true"] { border-color: color-mix(in srgb, var(--err) 55%, transparent); background: color-mix(in srgb, var(--err) 10%, var(--card)); color: var(--err); }
 .t-fav[aria-pressed="true"] .k { color: var(--err); }
+/* Lidas: o mesmo ✓ dos cartões, cheio quando ligado */
+.t-lida[aria-pressed="true"] .v-c { fill: currentColor; }
+.t-lida[aria-pressed="true"] .v-p { stroke: var(--card); }
 .sub { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-left: var(--space-3); border-left: 2px solid color-mix(in srgb, var(--primary) 40%, transparent); }
 .dd-input { display: flex; height: var(--control-h); width: 100%; border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--card); padding: 4px var(--space-3); font: 400 14px/20px var(--font-sans); color: var(--foreground); box-shadow: var(--shadow-sm); }
 .dd-input::placeholder { color: var(--muted-foreground); }
@@ -788,6 +791,33 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .fav:hover { background: var(--accent); color: var(--err); }
 .fav[aria-pressed="true"] { color: var(--err); }
 .fav[aria-pressed="true"] svg { fill: currentColor; }
+/* Lida (17/11): o ✓ (.visto) ao lado do coração, mesmo tamanho e mesmo traço. Os dois ficam juntos num grupo e a área de toque
+   de cada um (44 px de altura) encolhe na largura para não invadir a do vizinho. */
+.acoes-item { flex: none; display: inline-flex; gap: 2px; margin: -5px -6px 0 0; }
+.acoes-item > .fav, .acoes-item > .visto { margin: 0; }
+.acoes-item > .fav::before, .acoes-item > .visto::before { width: max(100%, 34px); }
+.visto { position: relative; flex: none; width: 32px; height: 32px; margin: -5px -6px 0 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--muted-foreground); cursor: pointer; }
+.visto::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, var(--toque)); height: max(100%, var(--toque)); transform: translate(-50%, -50%); }
+.visto svg { width: 18px; height: 18px; fill: none; }
+.visto:hover { background: var(--accent); color: var(--ok); }
+.visto[aria-pressed="true"] { color: var(--ok); }
+.visto[aria-pressed="true"] .v-c { fill: currentColor; }
+.visto[aria-pressed="true"] .v-p { stroke: var(--card); }
+.visto:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+/* Cartão lido: título na cor do texto secundário, nada muda de tamanho */
+.item.lida a.titulo, .bloco li.lida .forum-topo > a { color: var(--muted-foreground); }
+/* Linha fina entre as não lidas e as lidas, com "Lidas · N" */
+.lidas-sep { display: flex; align-items: center; gap: var(--space-2); margin: 10px 0 2px; font: 500 11px/16px var(--font-mono); color: var(--muted-foreground); letter-spacing: .02em; }
+.lidas-sep::after { content: ""; flex: 1; border-top: 1px solid var(--border); }
+.lista > .lidas-sep:first-child { margin-top: 4px; }
+.lidas-sep + .item, .bloco li.lidas-sep + li { border-top: 0; }
+.bloco li.lidas-sep { padding: 0; border-top: 0; flex-direction: row; }
+/* Nos fóruns: título e ✓ na mesma linha; a margem negativa segura a altura da linha */
+.forum-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); min-width: 0; }
+.forum-topo > a { min-width: 0; }
+.forum-topo > .visto { margin: -7px -6px -7px 0; }
+/* Aviso curto quando a marca não foi gravada */
+.aviso-lida { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 60; max-width: min(420px, calc(100vw - 32px)); padding: 10px 14px; border-radius: var(--radius-lg); background: var(--foreground); color: var(--background); font: 500 13px/1.4 var(--font-sans); box-shadow: var(--shadow-md); }
 .mais { align-self: flex-start; margin-top: var(--space-1); min-height: 24px; }
 /* Tradução: marca miúda "traduzido · ver original", fora do link da notícia. A área de toque tem 24 px de altura, mas a
    margem negativa não deixa a linha crescer: o item traduzido e o original ocupam a mesma altura. */
@@ -2267,6 +2297,7 @@ html.tech-ls .barra-linha { display: none; }
           <div class="chips">
             <button class="chip t-rel" type="button" id="so-relevantes" aria-pressed="false"></button>
             <button class="chip t-fav" type="button" id="so-favoritos" aria-pressed="false"></button>
+            <button class="chip t-lida" type="button" id="so-lidas" aria-pressed="false"></button>
             <button class="chip" type="button" id="modo-resumos"></button>
           </div>
         </div>
@@ -2342,6 +2373,7 @@ html.tech-ls .barra-linha { display: none; }
     <div class="feed-mostrar">
       <button class="chip t-rel" type="button" id="topo-relevantes" aria-pressed="false"></button>
       <button class="chip t-fav" type="button" id="topo-favoritos" aria-pressed="false"></button>
+      <button class="chip t-lida" type="button" id="topo-lidas" aria-pressed="false"></button>
       <span class="feed-div" aria-hidden="true"></span>
       <button class="chip" type="button" id="topo-resumos"></button>
     </div>
@@ -2438,6 +2470,7 @@ html.tech-ls .barra-linha { display: none; }
 <script src="/esportes.js"></script>
 <script src="/landscape.js"></script>
 <script src="/traducao.js"></script>
+<script src="/lidas.js"></script>
 <script>
 /* Lookout: adaptador que imita o banco do artifact (window.claude.use) usando a API do Worker.
    Leituras viram GET em /api/q e /api/doc; "onSnapshot" vira consulta a cada 2 minutos e quando a aba volta ao foco.
@@ -2745,6 +2778,8 @@ let dbRef = null, recentes = [], antigos = [], podeMais = false, carregando = fa
 let itens = [], meta = null, destaque = null, tipo = "todos", busca = "", expandidos = new Set(), slide = 0;
 let tBusca = 0; /* busca do feed esperando o usuário parar de digitar */
 let soRel = false, soFav = false, favs = {}, favCol = null;
+/* Lidas (public/lidas.js, src/lidas.js): ids marcados na conta, mais recente primeiro. soLidas: o chip "Lidas" ligado. */
+let soLidas = false, lidas = new Set(), lidasOrdem = [];
 /* Ordem dos itens dentro de cada tema */
 const ORDENS = [
   { id: "data", nome: "Data", dica: "Publicados mais recentemente primeiro" },
@@ -2814,7 +2849,7 @@ function aplicarRadar() {
   if (tipo === "alta") { tipo = "todos"; soRel = true; }
   if (tipo === "youtube") tipo = "video";
   if (!TIPOS.some((t) => t.id === tipo)) tipo = "todos";
-  busca = ""; soFav = false; slide = 0;
+  busca = ""; soFav = false; soLidas = false; slide = 0;
   recentes = []; antigos = []; itens = []; meta = null; destaque = null; podeMais = false; carregando = false; carregado = false;
   expandidos = new Set();
   document.title = r.titulo + " · Lookout";
@@ -2832,6 +2867,12 @@ const radarDoFav = (k) => { const i = String(k).indexOf("/"); if (i < 0) return 
 const idNaConta = (k) => String(k).replace("/", ":");
 const idDaConta = (d) => (/^items-[a-z]+:/.test(d) ? d.replace(":", "/") : d);
 const favsDoRadar = () => Object.entries(favs).filter(([id]) => radarDoFav(id) === radar);
+/* id da marca de lida: o dos favoritos na conta (idNaConta); os posts de Nos fóruns trazem o deles em _lid */
+const LD = window.Lidas;
+const chaveLida = (i) => (i && (i._lid || (i._id ? idNaConta(i._id) : ""))) || "";
+const ehLida = (i) => { const k = chaveLida(i); return !!k && lidas.has(k); };
+/* quantas lidas há no feed carregado desta seção (a contagem do chip) */
+const lidasDoRadar = () => itens.filter(ehLida);
 
 /* Tradução das notícias (public/traducao.js, src/traducao.js): onde a notícia tem titulo_pt, resumo_pt ou porque_pt, a tela
    mostra o português. "Mostrar notícias traduzidas" fica no menu da conta, salva em /api/prefs/traducao (ligada por padrão;
@@ -2896,16 +2937,16 @@ const passaTipo = (i, t) => t === "todos" || tipoDe(i) === t;
 const passaRel = (i) => !soRel || Number(i.relevancia) >= 3;
 const passaBase = (i) => passaBusca(i) && passaRel(i) && passaEscopo(i);
 /* Lista de onde os filtros partem: o feed inteiro ou só os favoritos */
-const fonteItens = () => (soFav ? favsDoRadar().map(([id, f]) => tv({ ...f, _id: id })).sort(ordem) : itens);
+/* Com o chip Lidas ligado, só as lidas (dos favoritos, se o chip Favoritos também estiver ligado) */
+const fonteItens = () => { const l = soFav ? favsDoRadar().map(([id, f]) => tv({ ...f, _id: id })).sort(ordem) : itens; return soLidas ? l.filter(ehLida) : l; };
 const agora = () => new Date().toISOString();
-/* Release futuro não passa na frente do que já saiu: ordena pela data de coleta até a data prevista chegar */
-const chave = (i) => { const p = i.publicado || ""; return p && p <= agora() ? p : (i.coletado || p); };
-const ordem = (a, b) => String(chave(b)).localeCompare(String(chave(a)));
-function ordenar(lista) {
-  if (ordenacao === "relevancia") return lista.slice().sort((a, b) => (Number(b.relevancia) || 0) - (Number(a.relevancia) || 0) || ordem(a, b));
-  if (ordenacao === "entrada") return lista.slice().sort((a, b) => String(b.coletado || "").localeCompare(String(a.coletado || "")) || ordem(a, b));
-  return lista;
-}
+/* Release futuro não passa na frente do que já saiu: ordena pela data de coleta até a data prevista chegar (public/lidas.js) */
+const chave = (i) => LD.chave(i, agora());
+const ordem = (a, b) => LD.comparar(a, b, agora());
+/* A ordem escolhida. comLidas: as lidas vão para depois de todas as não lidas, cada bloco na mesma ordem. */
+function ordenar(lista, comLidas) { return LD.ordenarComLidas(lista, ordenacao, comLidas ? ehLida : null, agora()); }
+/* As lidas vão para o fim e ganham a linha "Lidas · N" fora dos favoritos e do chip Lidas */
+const regraLidas = () => !soFav && !soLidas;
 /* a busca olha o original e a tradução */
 const passaBusca = (i) => { const q = busca.trim().toLowerCase(); return !q || TR.textoBusca(i).toLowerCase().includes(q); };
 
@@ -2922,7 +2963,7 @@ function renderStatus() {
 
 /* Urgentes (política): itens com urgente: true coletados nas últimas 24 h */
 const URGENTE_MS = 24 * 3600 * 1000;
-const urgentes = () => itens.filter((i) => i.urgente === true && i.coletado && Date.now() - new Date(i.coletado) <= URGENTE_MS);
+const urgentes = () => itens.filter((i) => i.urgente === true && i.coletado && Date.now() - new Date(i.coletado) <= URGENTE_MS && !ehLida(i));
 /* Painel de mercado: lê meta/mercado e permite pedir uma atualização (no máximo uma a cada 5 minutos) */
 /* Lê um documento de meta para o mercado. Devolve undefined quando a leitura falhou (fica o que já estava).
    Sem "fresco", uma cópia lida há menos de 2 min serve (o Início e Investimentos não pedem o mesmo doc duas vezes);
@@ -4852,15 +4893,17 @@ const mostraForum = () => !inicio && !emRadar() && temForum(radar);
 const corteForum = () => new Date(Math.floor(Date.now() / 600000) * 600000 - 86400000).toISOString();
 async function lerForuns(db, sec, n) {
   const s = await db.collection("foruns-" + sec).where("publicado", ">=", corteForum()).orderBy("publicado", "desc").limit(n).get();
-  return { d: s.docs.map((x) => ({ ...x.data(), _id: x.id })), marca: s._txt };
+  return { d: s.docs.map((x) => ({ ...x.data(), _id: x.id, _lid: LD.idDe("foruns-" + sec, x.id) })), marca: s._txt };
 }
 /* Uma linha de post: título (abre o Reddit), "r/<sub> · há X" e, se o post aponta para fora, o link "fonte" */
-function liForum(i0) {
+/* comLida: o ✓ ao lado do título (o bloco Nos fóruns da seção); os widgets do Início não têm */
+function liForum(i0, comLida) {
   const i = tv(i0);
   const sub = i.sub ? "r/" + i.sub : "Reddit";
   const a = el("a", { href: i.url, target: "_blank", rel: "noopener", title: i.resumo || i.titulo || "" }, i.titulo || i.url);
-  return el("li", {},
-    a,
+  const lida = comLida && ehLida(i0);
+  return el("li", comLida ? { class: lida && !soLidas ? "lida" : "", "data-lid": chaveLida(i0) } : {},
+    comLida ? el("div", { class: "forum-topo" }, a, lidaBotao(i0)) : a,
     el("div", { class: "n" }, el("span", {}, sub + (i.publicado ? " · " + fmtRel(i.publicado) : "")),
       i.linkExterno ? el("a", { class: "forum-fonte", href: i.linkExterno, target: "_blank", rel: "noopener", title: "Link original: " + (hostDe(i.linkExterno) || i.linkExterno) }, "fonte") : null,
       i._trad ? trocaTrad("f:" + (i._id || i.url), paresTrad(i, { titulo: a })) : null));
@@ -4869,8 +4912,17 @@ function blocoForuns(idSec) {
   const docs = foruns && foruns.radar === radar ? foruns.docs : null;
   const sec = el("section", { class: "bloco", id: idSec }, el("h3", {}, "Nos fóruns", el("small", {}, "últimas 24 h")));
   if (docs && docs.length) {
-    sec.append(el("ul", {}, ...docs.slice(0, forunsMais ? FORUNS_MAIS : FORUNS_MAX).map(liForum)));
-    if (docs.length > FORUNS_MAX) {
+    /* as lidas vão para o fim, depois da linha "Lidas · N"; com o chip Lidas ligado, só elas */
+    const { naoLidas, lidas: lidasF } = LD.separar(docs, ehLida);
+    const vis = (soLidas ? lidasF : naoLidas.concat(lidasF)).slice(0, forunsMais ? FORUNS_MAIS : FORUNS_MAX);
+    const ul = el("ul", {});
+    vis.forEach((d, n) => {
+      if (!soLidas && n === naoLidas.length && n < vis.length) ul.append(sepLidas(lidasF.length));
+      ul.append(liForum(d, true));
+    });
+    if (vis.length) sec.append(ul);
+    else sec.append(el("p", { class: "nota" }, "Nenhum post lido nas últimas 24 h."));
+    if ((soLidas ? lidasF.length : docs.length) > FORUNS_MAX) {
       const b = el("button", { class: "dd-btn dd-btn--link ver-todos", type: "button", id: idSec + "-mais", "aria-expanded": String(forunsMais) }, forunsMais ? "Ver menos" : "Ver mais");
       b.addEventListener("click", () => { forunsMais = !forunsMais; renderLateral(); const x = $(idSec + "-mais"); if (x) x.focus({ preventScroll: true }); });
       sec.append(b);
@@ -4918,7 +4970,7 @@ function renderLateral() {
     box.append(el("section", { class: "bloco", id: "lat-destaques" }, el("h3", { class: "empilha" }, "Destaques do dia", el("small", {}, fmtDia(destaque.data))), ol));
   }
 
-  const novos = meta && meta.ultimaRodada ? itens.filter((i) => i.rodada === meta.ultimaRodada) : [];
+  const novos = meta && meta.ultimaRodada ? itens.filter((i) => i.rodada === meta.ultimaRodada && !ehLida(i)) : [];
   const bNovos = el("section", { class: "bloco", id: "lat-novos" },
     el("h3", {}, "Novos nesta rodada", novos.length > NOVOS_MAX ? el("small", {}, `+${novos.length - NOVOS_MAX}`) : null));
   if (novos.length) {
@@ -4949,10 +5001,33 @@ function renderLateral() {
       bFav.append(ver);
     }
   } else bFav.append(el("p", { class: "nota" }, "Toque no coração ao lado de um título para guardar o item. Ele aparece aqui."));
-  box.append(bFav, bColeta);
+  /* Lidas: o mesmo desenho de "Seus favoritos", com as últimas marcadas desta seção (a marca guarda só o id, então
+     a lista sai do feed carregado aqui) e "Ver todas", que liga o chip Lidas */
+  const lidasAqui = lidasRecentes();
+  const bLidas = el("section", { class: "bloco", id: "lat-lidas" },
+    el("h3", {}, "Suas lidas", lidasAqui.length ? el("small", {}, String(lidasAqui.length)) : null));
+  if (lidasAqui.length) {
+    const ul = el("ul", {});
+    lidasAqui.slice(0, FAVS_MAX).forEach((i) => ul.append(el("li", {}, link(i.url, i.titulo, tituloOriginal(i)), el("div", { class: "n" }, temaCurto(i.tema), fonteEl(i)))));
+    bLidas.append(ul);
+    const ver = el("button", { class: "dd-btn dd-btn--link ver-todos", type: "button", id: "lat-ver-lidas" }, soLidas ? "Mostrando no feed" : "Ver todas");
+    if (soLidas) ver.disabled = true;
+    ver.addEventListener("click", () => { soLidas = true; render(); irParaFeed(); });
+    bLidas.append(ver);
+  } else bLidas.append(el("p", { class: "nota" }, "Toque no ✓ ao lado de um título para marcar a notícia como lida. Ela vai para o fim da lista e aparece aqui."));
+  box.append(bFav, bLidas, bColeta);
 }
 
 const CORACAO = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></svg>';
+/* ✓ de lida: fora do link da notícia; tocar de novo desmarca. Abrir a notícia não marca. */
+const VISTO = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="v-c" cx="12" cy="12" r="9"/><path class="v-p" d="m8.2 12.4 2.6 2.6 5-5.6"/></svg>';
+function lidaBotao(i) {
+  const on = ehLida(i);
+  const rot = on ? "Marcar como não lida" : "Marcar como lida";
+  const b = el("button", { class: "visto", type: "button", "aria-pressed": String(on), "aria-label": rot, title: rot, html: VISTO });
+  b.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); alternarLida(i, b); });
+  return b;
+}
 function favBotao(i) {
   const on = !!favs[i._id];
   const b = el("button", { class: "fav", type: "button", "aria-pressed": String(on), "aria-label": on ? "Remover dos favoritos" : "Favoritar", title: on ? "Remover dos favoritos" : "Favoritar", html: CORACAO });
@@ -5001,12 +5076,21 @@ const NOME_CLUBE = { "internacional": "Inter", "sport club internacional": "Inte
 const nomeClube = (n) => NOME_CLUBE[String(n || "").trim().toLowerCase()] || String(n || "");
 /* Notícias comuns de um grupo do feed. As negociações (itens com `transferencia`) têm a seção própria do Vai e vem
    (secaoVaiVem, no bloco de Esportes), com uma negociação por card; nos outros temas elas aparecem como notícia. */
-function listasDe(itensGrupo) {
+/* comLidas: cada cartão ganha o ✓, as lidas (que já vêm no fim, por ordenar) ficam esmaecidas e, antes da primeira, a
+   linha "Lidas · N" (N: as lidas do grupo inteiro, mesmo as escondidas atrás do "Ver mais"). lidasNoGrupo vale N.
+   Sem comLidas (favoritos, chip Lidas, Vai e vem), o cartão tem o ✓ só onde vem botaoLida. */
+function listasDe(itensGrupo, op = {}) {
   if (!itensGrupo.length) return [];
-  const ul = el("ul", { class: "lista" }); itensGrupo.forEach((i) => ul.append(itemEl(i)));
+  const ul = el("ul", { class: "lista" });
+  let sep = false;
+  itensGrupo.forEach((i) => {
+    if (op.comLidas && !sep && ehLida(i)) { sep = true; ul.append(sepLidas(op.lidasNoGrupo ?? itensGrupo.filter(ehLida).length)); }
+    ul.append(itemEl(i, { botaoLida: op.comLidas || op.botaoLida, esmaecer: op.comLidas }));
+  });
   return [ul];
 }
-function itemEl(i) {
+const sepLidas = (n) => el("li", { class: "lidas-sep", role: "separator", "aria-label": `Lidas, ${n}` }, `Lidas · ${n}`);
+function itemEl(i, op = {}) {
   const novo = meta && i.rodada === meta.ultimaRodada;
   const k = i._id || i.url || i.titulo;
   const ps = R().mercado ? papeisDe(i) : [];
@@ -5032,10 +5116,12 @@ function itemEl(i) {
   const trad = i._trad ? trocaTrad("i:" + k, paresTrad(i, { titulo: aTit, resumo }), (orig) => {
     if (resumo && lerMais && !resumosAbertos && !resumoAberto.has(k)) lerMais.hidden = !resumoCorta(orig ? i._orig.resumo || i.resumo : i.resumo);
   }) : null;
-  return el("li", { class: "item" },
+  const lida = op.esmaecer && ehLida(i);
+  const acoes = i._id ? (op.botaoLida ? el("div", { class: "acoes-item" }, lidaBotao(i), favBotao(i)) : favBotao(i)) : null;
+  return el("li", { class: lida ? "item lida" : "item", ...(op.botaoLida && i._id ? { "data-lid": chaveLida(i) } : {}) },
     el("div", { class: "item-topo" },
       aTit,
-      i._id ? favBotao(i) : null),
+      acoes),
     el("div", { class: "meta" },
       el("span", { class: "tags" },
         NOME_TIPO[i.tipo] ? el("span", { class: "dd-badge b-" + tipoDe(i) }, NOME_TIPO[i.tipo]) : null,
@@ -5092,27 +5178,33 @@ function medirFeed() {
 
 function renderFeed() {
   const f = $("feed"); f.textContent = "";
+  if (soLidas && !lidasNoFeed()) { f.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhuma lida ainda"), soFav ? "Nenhum favorito desta seção está marcado como lido." : "Toque no ✓ ao lado de um título para marcar a notícia como lida. Ela vai para o fim da lista, e aqui você vê só as lidas.")); return; }
   if (soFav && !favsDoRadar().length) { f.append(el("div", { class: "vazio" }, el("strong", {}, "Nenhum favorito ainda"), "Toque no coração ao lado de um título para guardar o item aqui. Favoritos continuam na lista mesmo depois que o item sai do feed.")); return; }
   if (!soFav && !itens.length) {
     if (!carregado) f.append(el("div", { class: "vazio" }, el("strong", {}, "Carregando o feed"), "As notícias aparecem aqui, agrupadas por tema e resumidas em português."));
     else f.append(el("div", { class: "vazio", id: "feed-vazio" }, el("strong", {}, meta ? "O feed ainda está vazio" : "A primeira coleta ainda não rodou"), R().vazio));
     return;
   }
-  const lista = ordenar(fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo)));
+  const filtrados = fonteItens().filter((i) => passaBase(i) && passaTipo(i, tipo));
+  const comLidas = regraLidas();
+  const lista = ordenar(filtrados, comLidas);
+  /* o ✓ aparece no feed e com o chip Lidas; nos favoritos (sem o chip Lidas) a lista fica como era */
+  const opLista = { comLidas, botaoLida: comLidas || soLidas };
   const temas = temasSel.size ? TEMAS.filter((t) => temasSel.has(t.id)) : TEMAS;
   const bloco = el("div", { class: "secoes" });
   /* Esportes: o Vai e vem junta as negociações de qualquer tema (uma por card); o resto dos temas segue como antes */
   const comVaiVem = radar === "esportes" && TEMAS.some((t) => t.id === "mercado");
   for (const t of temas) {
     if (comVaiVem && t.id === "mercado") {
-      const sec = secaoVaiVem(t, lista, expandidos.has(t.id) || temasSel.size > 0 || soFav);
+      /* o Vai e vem não muda: recebe a lista na ordem escolhida, sem as lidas no fim */
+      const sec = secaoVaiVem(t, comLidas ? ordenar(filtrados, false) : lista, expandidos.has(t.id) || temasSel.size > 0 || soFav);
       if (sec) bloco.append(sec);
       continue;
     }
     const doTema = lista.filter((i) => grp(i) === t.id && passaTema(i));
     const subs = t.subs;
     if (!doTema.length) continue;
-    const aberto = expandidos.has(t.id) || temasSel.size > 0 || soFav;
+    const aberto = expandidos.has(t.id) || temasSel.size > 0 || soFav || soLidas;
     const sec = el("section", { class: "tema", style: `--c:${t.cor}` },
       el("h2", {}, el("span", { class: "nome" }, t.nome, el("small", {}, String(doTema.length)))));
     if (subs && aberto) {
@@ -5120,11 +5212,11 @@ function renderFeed() {
       for (const g of grupos) {
         const doSub = doTema.filter((i) => g.id === "__outros" ? !subs.some((x) => x.id === subDe(i)) : subDe(i) === g.id);
         if (!doSub.length) continue;
-        sec.append(el("div", { class: "subgrupo" }, el("h3", { class: "subsecao" }, g.nome, el("span", {}, String(doSub.length))), ...listasDe(doSub)));
+        sec.append(el("div", { class: "subgrupo" }, el("h3", { class: "subsecao" }, g.nome, el("span", {}, String(doSub.length))), ...listasDe(doSub, opLista)));
       }
     } else {
       const mostra = aberto ? doTema : doTema.slice(0, LIMITE_POR_TEMA);
-      sec.append(...listasDe(mostra));
+      sec.append(...listasDe(mostra, { ...opLista, lidasNoGrupo: doTema.filter(ehLida).length }));
     }
     if (!aberto && doTema.length > LIMITE_POR_TEMA) {
       const b = el("button", { class: "dd-btn dd-btn--link mais alvo", type: "button", id: "mais-" + t.id }, `Ver mais ${doTema.length - LIMITE_POR_TEMA}`);
@@ -5135,6 +5227,7 @@ function renderFeed() {
   }
   f.append(bloco.children.length ? bloco : el("div", { class: "vazio" }, el("strong", {}, "Nada encontrado"), "Nenhum item corresponde aos filtros ou à busca. Tente outro tipo ou tema, ou limpe os filtros."));
   if (podeMais && !soFav) {
+    /* carregar mais: as não lidas novas entram antes do bloco das lidas (ordenar refaz a lista inteira) */
     const b = el("button", { class: "dd-btn dd-btn--outline alvo", type: "button", id: "carregar-antigos", style: "align-self:center;margin-top:var(--space-6)" }, carregando ? "Carregando…" : "Carregar mais antigos");
     if (carregando) b.disabled = true;
     b.addEventListener("click", carregarAntigos);
@@ -5208,12 +5301,15 @@ function renderAlternancias() {
     const f = $(fid); f.textContent = "";
     f.setAttribute("aria-pressed", String(soFav));
     f.insertAdjacentHTML("beforeend", CORACAO); f.append("Favoritos", el("span", { class: "k" }, String(favsDoRadar().length)));
+    const l = $(fid.replace("favoritos", "lidas")); l.textContent = "";
+    l.setAttribute("aria-pressed", String(soLidas));
+    l.insertAdjacentHTML("beforeend", VISTO); l.append("Lidas", el("span", { class: "k" }, String(lidasDoRadar().length)));
     $(mid).textContent = resumosAbertos ? "Recolher resumos" : "Expandir resumos";
   });
 }
 /* Contador de filtros ativos no botão da barra e total no rodapé do painel */
 function renderContador() {
-  const n = temasSel.size + subsSel.size + (escopo !== "todos") + soRel + soFav + (busca.trim() ? 1 : 0);
+  const n = temasSel.size + subsSel.size + (escopo !== "todos") + soRel + soFav + soLidas + (busca.trim() ? 1 : 0);
   const c = $("contador"), b = $("abrir-filtros");
   c.hidden = !n; c.textContent = String(n);
   b.dataset.ativo = String(n > 0);
@@ -5297,32 +5393,145 @@ async function ligarFavoritosNaConta(db) {
   } catch (e) {}
 }
 
+/* ---------- Lidas (17/11) ----------
+   Na conta, em /api/lidas (src/lidas.js): GET na abertura e quando a aba volta depois de 2 min; PUT e DELETE por id.
+   Otimista: a tela muda na hora e a gravação vai em segundo plano; se falhar, desfaz e mostra o aviso. */
+const lidasPend = new Map(); /* id -> { quer, vez }: a última intenção ainda sem resposta do servidor */
+let lidasVez = 0, lidasLidoEm = 0, lidasLendo = false;
+const lidasNoFeed = () => fonteItens().length;
+/* as lidas desta seção que estão no feed carregado, da marcada por último para a primeira */
+function lidasRecentes() {
+  const pos = new Map(lidasOrdem.map((id, n) => [id, n]));
+  return itens.filter(ehLida).sort((a, b) => (pos.get(chaveLida(a)) ?? 1e9) - (pos.get(chaveLida(b)) ?? 1e9));
+}
+const apiLidas = async (metodo, id) => {
+  const r = await fetch("/api/lidas" + (id ? "/" + encodeURIComponent(id) : ""), { method: metodo, credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } });
+  if (r.status === 401) { location.reload(); throw new Error("sessão"); }
+  if (!r.ok) throw new Error("http " + r.status);
+  return r.json();
+};
+function aplicarMarca(id, quer) {
+  if (quer) { lidas.add(id); lidasOrdem = [id, ...lidasOrdem.filter((x) => x !== id)]; }
+  else { lidas.delete(id); lidasOrdem = lidasOrdem.filter((x) => x !== id); }
+}
+/* depois de mudar as lidas: a seção aberta redesenha; no Início, só os widgets de lista compacta */
+function lidasMudaram() {
+  if (inicio) { for (const id of wDados.keys()) if (id.startsWith("ultimas-") || id.startsWith("foruns-")) pintarWidget(id); return; }
+  render();
+}
+async function lerLidas() {
+  if (lidasLendo) return;
+  lidasLendo = true; lidasLidoEm = Date.now();
+  try {
+    const j = await apiLidas("GET");
+    const ids = Array.isArray(j.ids) ? j.ids.map(String) : [];
+    const novo = new Set(ids);
+    /* o que ainda está indo para o servidor vale como a pessoa deixou na tela */
+    for (const [id, p] of lidasPend) { if (p.quer) novo.add(id); else novo.delete(id); }
+    const antes = [...lidas].sort().join("\n"), depois = [...novo].sort().join("\n");
+    lidasOrdem = [...[...lidasPend.keys()].filter((id) => novo.has(id)), ...ids.filter((id) => novo.has(id) && !lidasPend.has(id))];
+    lidas = novo;
+    if (antes !== depois) lidasMudaram();
+  } catch (e) {}
+  finally { lidasLendo = false; }
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - lidasLidoEm > 120000) lerLidas(); });
+let tAvisoLida = 0;
+function avisoLida(txt) {
+  const a = $("aviso-lida"); a.textContent = txt; a.hidden = false;
+  $("anuncio-lida").textContent = txt;
+  clearTimeout(tAvisoLida); tAvisoLida = setTimeout(() => { a.hidden = true; }, 5000);
+}
+/* Onde o cartão estava e quem vem depois dele: depois de redesenhar, o seguinte ocupa o lugar do que saiu (a rolagem
+   não pula) e recebe o foco. Ao marcar, o seguinte é o próximo não lido; ao desmarcar, o próximo da lista. */
+function alvoDepois(li, marcar) {
+  const caixa = li.closest("#feed, #lat-blocos, #foruns-centro") || document;
+  const todos = [...caixa.querySelectorAll("[data-lid]")];
+  const k = todos.indexOf(li);
+  const seg = todos.slice(k + 1).find((x) => !marcar || !x.classList.contains("lida") && !lidas.has(x.dataset.lid));
+  return { caixa: caixa.id || "", top: li.getBoundingClientRect().top, seg: seg ? seg.dataset.lid : "" };
+}
+function rolarPara(antes, idProprio) {
+  const caixa = antes.caixa ? $(antes.caixa) : document;
+  if (!caixa) return;
+  const achar = (id) => [...caixa.querySelectorAll("[data-lid]")].find((x) => x.dataset.lid === id);
+  const no = (antes.seg && achar(antes.seg)) || null;
+  if (no) {
+    const acertar = () => {
+      if (!no.isConnected) return;
+      const delta = Math.round(no.getBoundingClientRect().top - antes.top);
+      if (!delta) return;
+      const lat = no.closest(".lateral");
+      if (lat && lat.scrollHeight > lat.clientHeight && getComputedStyle(lat).overflowY !== "visible") lat.scrollTop += delta;
+      else window.scrollBy({ top: delta, behavior: "instant" });
+    };
+    acertar();
+    /* o "ler mais" dos cartões redesenhados se acerta no quadro seguinte (IntersectionObserver): confere de novo */
+    requestAnimationFrame(() => requestAnimationFrame(acertar));
+    const a = no.querySelector("a");
+    if (a) a.focus({ preventScroll: true });
+    return;
+  }
+  /* não há seguinte: o foco fica no ✓ do próprio cartão, onde ele estiver agora */
+  const meu = achar(idProprio);
+  const b = meu && meu.querySelector("button.visto");
+  if (b) b.focus({ preventScroll: true });
+}
+async function alternarLida(i, botao) {
+  const id = chaveLida(i); if (!LD.idOk(id)) return;
+  const quer = !lidas.has(id);
+  const li = botao && botao.closest("[data-lid]");
+  const antes = li ? alvoDepois(li, quer) : null;
+  const vez = ++lidasVez;
+  lidasPend.set(id, { quer, vez });
+  aplicarMarca(id, quer);
+  render();
+  if (antes) rolarPara(antes, id);
+  $("anuncio-lida").textContent = quer ? "Marcada como lida." : "Marcada como não lida.";
+  try { await apiLidas(quer ? "PUT" : "DELETE", id); }
+  catch (e) {
+    const p = lidasPend.get(id);
+    if (p && p.vez === vez) {
+      lidasPend.delete(id);
+      aplicarMarca(id, !quer);
+      lidasMudaram();
+      avisoLida(quer ? "Não deu para marcar como lida agora. Tente de novo." : "Não deu para desmarcar agora. Tente de novo.");
+    }
+    return;
+  }
+  const p = lidasPend.get(id);
+  if (p && p.vez === vez) lidasPend.delete(id);
+}
+
 function alternarRel() { soRel = !soRel; try { localStorage.setItem("radar-relevantes", soRel ? "1" : "0"); } catch (e) {} render(); }
 function alternarSoFav() { soFav = !soFav; render(); }
+function alternarSoLidas() { soLidas = !soLidas; render(); }
 function alternarResumos() {
   resumosAbertos = !resumosAbertos; resumoAberto.clear();
   try { localStorage.setItem("radar-resumos", resumosAbertos ? "expandido" : "recolhido"); } catch (e) {}
   render();
 }
 function limparFiltros() {
-  temasSel.clear(); subsSel.clear(); escopo = "todos"; soRel = false; soFav = false; busca = "";
+  temasSel.clear(); subsSel.clear(); escopo = "todos"; soRel = false; soFav = false; soLidas = false; busca = "";
   try { localStorage.setItem("radar-escopo" + R().sufixo, "todos"); } catch (e) {}
   try { localStorage.setItem("radar-filtro" + R().sufixo, "todos"); localStorage.setItem("radar-relevantes", "0"); } catch (e) {}
   render();
 }
 $("so-relevantes").addEventListener("click", alternarRel);
 $("so-favoritos").addEventListener("click", alternarSoFav);
+$("so-lidas").addEventListener("click", alternarSoLidas);
 $("modo-resumos").addEventListener("click", alternarResumos);
 $("limpar-filtros").addEventListener("click", limparFiltros);
 /* Na navegação lateral os mesmos botões levam de volta ao começo do feed */
 $("topo-relevantes").addEventListener("click", alternarRel);
 $("topo-favoritos").addEventListener("click", alternarSoFav);
+$("topo-lidas").addEventListener("click", alternarSoLidas);
 $("topo-resumos").addEventListener("click", alternarResumos);
 $("nav-limpar").addEventListener("click", () => { limparFiltros(); irParaFeed(); $("nav-todos").focus({ preventScroll: true }); });
 
 /* Painel de filtros */
 let abridor = null, assinatura = "";
-const estado = () => [[...temasSel].join(","), [...subsSel].join(","), ordenacao, escopo, soRel, soFav, busca, tipo].join("|");
+const estado = () => [[...temasSel].join(","), [...subsSel].join(","), ordenacao, escopo, soRel, soFav, soLidas, busca, tipo].join("|");
 function abrirPainel(foco) {
   const p = $("painel");
   if (p.hidden) {
@@ -5940,8 +6149,10 @@ const corpos = {
     if (!l.length) return [vazioW()];
     return [el("ul", { class: "wdg-lista" }, ...l.map(tv).map((i) => el("li", {}, linkNoticia(i), i.porque || i.resumo ? el("p", { title: i.porque || i.resumo }, i.porque || i.resumo) : null)))];
   },
-  ultimas(l, fm = { c: 1, r: 1 }) {
-    if (!l || !l.length) return [vazioW()];
+  ultimas(l0, fm = { c: 1, r: 1 }) {
+    /* notícias lidas saem da lista compacta */
+    const l = (l0 || []).filter((i) => !ehLida(i));
+    if (!l.length) return [vazioW()];
     return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5 * fm.r).map((i) => el("li", {}, linkNoticia(i), el("div", { class: "n" }, fonteEl(i), el("span", {}, fmtRel(chave(i)))))))];
   },
   mercado(p) {
@@ -6016,8 +6227,10 @@ const corpos = {
     }))];
   },
   foruns(l, fm = { c: 1, r: 1 }) {
-    if (!l || !l.length) return [vazioW("Nada novo nos fóruns hoje.")];
-    return [el("ul", { class: "wdg-lista" }, ...l.slice(0, 5 * fm.r).map(liForum))];
+    /* posts lidos saem da lista compacta */
+    const v = (l || []).filter((i) => !ehLida(i));
+    if (!v.length) return [vazioW("Nada novo nos fóruns hoje.")];
+    return [el("ul", { class: "wdg-lista" }, ...v.slice(0, 5 * fm.r).map((i) => liForum(i)))];
   },
   favoritos(l, fm = { c: 1, r: 1 }) {
     if (!l || !l.length) return [vazioW("Nada por aqui ainda. Toque no coração ao lado de uma notícia para guardar.")];
@@ -11949,6 +12162,7 @@ if (inicio) entrarInicio();
   /* no Início nenhuma seção é assinada: os widgets leem só o resumo de cada uma */
   if (!inicio) ligarRadar();
   ligarFavoritosNaConta(db);
+  lerLidas();
   const me = (await pMe) || {};
   if (Array.isArray(me.secoes)) secoesLiberadas = me.secoes;
   meuNome = String(me.nome || "").trim();
@@ -11995,5 +12209,6 @@ if (inicio) entrarInicio();
   ciclarMercado();
 })();
 </script>
-
+<div class="aviso-lida" id="aviso-lida" hidden aria-hidden="true"></div>
+<p class="sr" id="anuncio-lida" aria-live="polite"></p>
 </body></html>

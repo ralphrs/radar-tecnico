@@ -6,6 +6,7 @@
 import { FEEDS } from "./feeds.js";
 import { histParaApagar } from "./papel.js";
 import { leiturasParaApagar } from "./leitura.js";
+import { limparLidas } from "./lidas.js";
 
 const INTERVALO_MIN = 90;      // cada feed é lido no máximo a cada 90 minutos
 const FEEDS_POR_MINUTO = 6;    // o cron roda de minuto em minuto
@@ -380,6 +381,7 @@ export async function forunsParaApagar(env, c, t = Date.now()) {
 }
 
 // Só mexe nas collections de itens e destaques, em foruns-*, em hist (fichas de papel) e em candidatos: favs/, listas/, prefs/ e carteira/ (de cada pessoa) ficam de fora; de leitura/ saem só os dias com mais de 30 dias.
+// lidas/ (src/lidas.js) tem a limpeza própria, chamada no fim: só as marcas com mais de 90 dias, até 200 por rodada, por lista de ids.
 export async function limpar(env) {
   const t = Date.now();
   const relatorio = {};
@@ -430,6 +432,8 @@ export async function limpar(env) {
     }
     relatorio.leitura = velhas.length;
   } catch (e) { relatorio.leitura = "erro: " + String(e.message || e).slice(0, 100); }
+  // Notícias lidas (src/lidas.js) com mais de 90 dias: por collection e lista de ids, no máximo 200 por rodada
+  try { relatorio.lidas = (await limparLidas(env, t)).length; } catch (e) { relatorio.lidas = "erro: " + String(e.message || e).slice(0, 100); }
   const r = await env.DB.prepare("DELETE FROM candidatos WHERE visto < ?").bind(new Date(t - 10 * DIA).toISOString()).run();
   relatorio.candidatos = r.meta?.changes ?? 0;
   await env.DB.prepare(

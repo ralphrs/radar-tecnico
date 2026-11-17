@@ -170,6 +170,9 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Correção: a tradução e as notícias do Landscape nunca rodaram em produção. O D1 recusa SELECT composto com mais de 5 termos e as duas consultas tinham 15 e 6. Divididas em blocos; o banco de teste (`test/d1-falso.mjs`) passou a recusar igual
 - [x] Meta e reinvestimento: Meta de renda só para leitura com lápis para editar; embaixo, o aportado no mês e quanto falta do aporte planejado
 
+## Pedidos de 17/11
+- [x] Marcar notícia como lida: ✓ ao lado do coração em cada notícia e em cada post de Nos fóruns, a lida vai para o fim da lista em qualquer ordem e filtro ("Lidas · N"), chip Lidas e "Suas lidas" no trilho como os favoritos, por pessoa em `lidas/<email>` com limpeza de 90 dias (docs/LOOKOUT.md, "Lidas") (17/11)
+
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
 - [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)

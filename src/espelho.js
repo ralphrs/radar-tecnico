@@ -6,14 +6,14 @@
 // as mudanças para cá a cada minuto. Se o espelho falhar, demorar ou ainda estiver vazio, a leitura vai ao D1.
 //
 // O que fica aqui:
-// - docs: as collections que a página lê (itens, destaques, foruns-*, meta e hist), _sistema, e favs/<email>, listas/<email>, prefs/<email>
+// - docs: as collections que a página lê (itens, destaques, foruns-*, meta e hist), _sistema, e favs/<email>, lidas/<email>, listas/<email>, prefs/<email>
 //   carteira/<email> (a Minha carteira, copiada cifrada como está no D1) e leitura/<email> (a Leitura do dia, cifrada também);
 // - usuarios, grupos e usuario_grupo, inteiras, para conferir convite e seções;
 // - estado: última sincronia, duração, linhas, erro, as últimas medições de tempo, a trava da sincronia,
 //   as sincronias puladas e os fallbacks para o D1 do dia.
 // O resto do D1 (candidatos, feeds_estado, sombra-*) não vem para cá.
 //
-// favs/, listas/ e prefs/ (o painel do Início) são gravados pela própria pessoa. A gravação vai ao D1 (com await) e, logo depois, a mesma linha
+// favs/, lidas/, listas/ e prefs/ (o painel do Início) são gravados pela própria pessoa. A gravação vai ao D1 (com await) e, logo depois, a mesma linha
 // vai para cá por write-through (gravarNoEspelho / removerDoEspelho, em ctx.waitUntil), para a leitura seguinte já
 // mostrar a mudança sem esperar o cron. Como o D1 grava antes do write-through (await), o espelho nunca recebe
 // uma linha que o D1 ainda não tem. Sobra uma janela curta: o cron leu a lista do D1 um instante antes da gravação
@@ -45,8 +45,9 @@ const AMOSTRA_LOG = 20;       // leitura que deu certo no espelho: loga 1 em cad
 // Collections por pessoa que também vêm para o espelho. No D1 a busca é por faixa da chave primária
 // (collection >= 'favs/' AND collection < 'favs0', '0' é o caractere seguinte a '/'), que usa o índice;
 // um LIKE 'favs/%' varreria a tabela inteira a cada minuto.
-// landscape/<email>: as notas do Admin no Landscape (Tech), doc "notas"
-const PREFIXOS_PESSOAIS = ["favs/", "listas/", "prefs/", "carteira/", "leitura/", "landscape/"]; // carteira/ e leitura/: cifradas como estão no D1
+// landscape/<email>: as notas do Admin no Landscape (Tech), doc "notas"; lidas/<email>: as notícias marcadas como lidas (src/lidas.js).
+// A mesma lista diz o que sai junto quando o admin apaga um convidado (adminUsuarios, src/index.js).
+export const PREFIXOS_PESSOAIS = ["favs/", "listas/", "prefs/", "carteira/", "leitura/", "landscape/", "lidas/"]; // carteira/ e leitura/: cifradas como estão no D1
 const faixa = (p) => [p, p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1)];
 
 // Marca de versão de cada linha, calculada igual dos dois lados. Só o `atualizado` não basta: quem grava
@@ -309,7 +310,7 @@ export async function doEspelho(env, rotulo, chamar) {
   }
 }
 
-// Write-through de favs/, listas/, prefs/ e carteira/: chamado depois que o D1 gravou. Nunca lança; erro só vai para o log.
+// Write-through de favs/, lidas/, listas/, prefs/ e carteira/: chamado depois que o D1 gravou. Nunca lança; erro só vai para o log.
 export function gravarNoEspelho(env, docs) {
   if (!env.ESPELHO || !docs.length) return;
   const p = stubEspelho(env).aplicar(docs).catch((e) => console.error("espelho write-through", String(e && e.message || e)));

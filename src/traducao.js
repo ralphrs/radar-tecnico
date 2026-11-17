@@ -17,7 +17,7 @@
 //   hn.comentarios[k].historia.titulo_pt e .itens[k].trecho_pt, gh_destaques[k].titulo_pt, blog[k].titulo_pt.
 //   O cron do Landscape mantém o português quando o original não mudou (Traducao.manterLandscape, em src/landscape.js).
 // - _sistema/traducao-estado: o dia (UTC), neurons estimados, contadores, a fila, a pausa e os textos desistidos.
-// Nunca toca em data/users, favs/, listas/, prefs/, carteira/, leitura/ nem landscape/<email>.
+// Nunca toca em data/users, favs/, listas/, prefs/, carteira/, leitura/, lidas/ nem landscape/<email>.
 import "../public/traducao.js";
 const T = globalThis.Traducao;
 

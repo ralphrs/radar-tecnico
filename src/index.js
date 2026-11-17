@@ -7,7 +7,8 @@ import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
 import { adminCustos } from "./custos.js";
 import { secoesDe, secaoDe, libera, adminGrupos, adminMembro, guardarSecoes, SECOES } from "./grupos.js";
 import { cronSonda, adminSonda } from "./sonda.js";
-import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1, gravarNoEspelho, removerDoEspelho } from "./espelho.js";
+import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1, gravarNoEspelho, removerDoEspelho, PREFIXOS_PESSOAIS } from "./espelho.js";
+import { rotaLidas } from "./lidas.js";
 import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
 import { rotaPapel, cronPapel, ID_OK as PAPEL_ID_OK } from "./papel.js";
 import { BDR_DE_US, US_DE_BDR } from "./bdr.js";
@@ -518,11 +519,12 @@ async function adminUsuarios(request, env, email) {
     return json({ ok: true });
   }
   if (request.method === "DELETE" && email) {
-    // carteira/<email>: os três docs cifrados da Minha carteira saem junto (sem abrir); leitura/<email>, a Leitura do dia;
-    // landscape/<email>, as notas do Landscape (só o Admin tem, mas a limpeza vale para todos)
-    const cols = ["favs/", "listas/", "prefs/", "carteira/", "leitura/", "landscape/"].map((p) => p + email.toLowerCase());
+    // As collections pessoais do espelho (PREFIXOS_PESSOAIS, src/espelho.js): favs/, listas/, prefs/, carteira/<email> (os três
+    // docs cifrados da Minha carteira saem junto, sem abrir), leitura/<email> (a Leitura do dia), landscape/<email> (as notas
+    // do Landscape; só o Admin tem, mas a limpeza vale para todos) e lidas/<email> (as notícias marcadas como lidas)
+    const cols = PREFIXOS_PESSOAIS.map((p) => p + email.toLowerCase());
     // As chaves saem antes do DELETE para o espelho apagar as mesmas linhas logo depois
-    const { results: chaves } = await env.DB.prepare("SELECT collection, id FROM docs WHERE collection IN (?, ?, ?, ?, ?, ?)").bind(...cols).all();
+    const { results: chaves } = await env.DB.prepare(`SELECT collection, id FROM docs WHERE collection IN (${cols.map(() => "?").join(", ")})`).bind(...cols).all();
     await env.DB.prepare("DELETE FROM usuarios WHERE email = ?").bind(email.toLowerCase()).run();
     for (const c of cols) await env.DB.prepare("DELETE FROM docs WHERE collection = ?").bind(c).run();
     removerDoEspelho(env, chaves);
@@ -599,6 +601,9 @@ async function atender(request, env, ctx) {
     }
     if (p === "/api/favs" || p.startsWith("/api/favs/"))
       return favoritos(request, env, quem, p.length > 10 ? decodeURIComponent(p.slice(10)) : "");
+    // Notícias lidas (src/lidas.js): mesmo desenho dos favoritos, em lidas/<email>
+    if (p === "/api/lidas" || p.startsWith("/api/lidas/"))
+      return rotaLidas(request, env, quem, p.length > 11 ? decodificar(p.slice(11)) : "", { lerLinhas, gravarNoEspelho, removerDoEspelho });
     if (p === "/api/prefs/painel") {
       if (!corpoJson(request)) return json({ erro: "json" }, 415);
       return prefsPainel(request, env, quem);
