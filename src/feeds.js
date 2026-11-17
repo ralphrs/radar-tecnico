@@ -129,6 +129,15 @@ export const FEEDS = [
   ["investimentos", "FIIs", "BR", "https://fiis.com.br/feed/"],
   ["investimentos", "Livecoins", "BR", "https://livecoins.com.br/feed/"],
   ["investimentos", "CoinDesk", "US", "https://www.coindesk.com/arc/outboundfeeds/rss/"],
+  // Cripto: confirmados pela sonda de produção em 17/11/2026 (respondem e têm item recente)
+  ["investimentos", "Money Times", "BR", "https://www.moneytimes.com.br/criptomoedas/feed/"],
+  ["investimentos", "BeInCrypto Brasil", "BR", "https://br.beincrypto.com/feed/"],
+  ["investimentos", "The Block", "US", "https://www.theblock.co/rss.xml"],
+  ["investimentos", "Decrypt", "US", "https://decrypt.co/feed"],
+  ["investimentos", "Bitcoin Magazine", "US", "https://bitcoinmagazine.com/feed"],
+  ["investimentos", "The Defiant", "US", "https://thedefiant.io/feed"],
+  ["investimentos", "Bitcoin.com News", "", "https://news.bitcoin.com/feed/"],
+  ["investimentos", "Coin Center", "US", "https://www.coincenter.org/feed/"],
   ["investimentos", "Cointelegraph", "US", "https://cointelegraph.com/rss"],
   ["investimentos", "CNBC", "US", "https://www.cnbc.com/id/15839069/device/rss/rss.html"],
   // Sondados em 01/11/2026 pelo próprio Worker (admin › Sondar feeds): respondem RSS com itens recentes.
@@ -258,6 +267,10 @@ export const FEEDS = [
 // responderem com itens recentes, passar para FEEDS como ["investimentos", fonte, país, url]. País como na lista acima.
 // Portal do Bitcoin dava 403 em /feed/: vão dois caminhos alternativos do WordPress. Nenhum é casa de análise com
 // recomendação de compra nem site de afiliados.
+// Resultado da sonda em 17/11/2026: entraram em FEEDS Money Times, BeInCrypto Brasil, The Block, Decrypt, Bitcoin Magazine,
+// The Defiant, Bitcoin.com News e Coin Center. Ficaram de fora: Cointelegraph Brasil (410), InfoMoney e Exame de cripto (404),
+// Portal do Bitcoin (403 nos dois caminhos), CryptoSlate (429), e os parados: CriptoFácil (último item de set/2026),
+// Blockworks (jan/2026) e DL News (out/2026).
 export const CRIPTO_PARA_SONDAR = [
   ["CriptoFácil", "BR", "https://www.criptofacil.com/feed/"],
   ["Cointelegraph Brasil", "BR", "https://br.cointelegraph.com/rss"],
@@ -265,17 +278,9 @@ export const CRIPTO_PARA_SONDAR = [
   ["Portal do Bitcoin", "BR", "https://portaldobitcoin.uol.com.br/?feed=rss2"],
   ["InfoMoney", "BR", "https://www.infomoney.com.br/mercados/criptomoedas/feed/"],
   ["Exame", "BR", "https://exame.com/future-of-money/feed/"],
-  ["Money Times", "BR", "https://www.moneytimes.com.br/criptomoedas/feed/"],
-  ["BeInCrypto Brasil", "BR", "https://br.beincrypto.com/feed/"],
-  ["The Block", "US", "https://www.theblock.co/rss.xml"],
-  ["Decrypt", "US", "https://decrypt.co/feed"],
   ["Blockworks", "US", "https://blockworks.co/feed"],
-  ["Bitcoin Magazine", "US", "https://bitcoinmagazine.com/feed"],
   ["DL News", "GB", "https://www.dlnews.com/arc/outboundfeeds/rss/"],
-  ["The Defiant", "US", "https://thedefiant.io/feed"],
   ["CryptoSlate", "GB", "https://cryptoslate.com/feed/"],
-  ["Bitcoin.com News", "", "https://news.bitcoin.com/feed/"],
-  ["Coin Center", "US", "https://www.coincenter.org/feed/"],
 ];
 
 // Seções com pelo menos um subreddit: são as que têm o bloco "Nos fóruns" e o widget foruns-<secao> no Início.
