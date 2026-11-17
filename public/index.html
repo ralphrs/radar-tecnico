@@ -3876,6 +3876,8 @@ const COLS_LISTA = [
   /* da carteira importada: quantidade e valor (quantidade × preço atual); "–" para quem não tem o papel */
   { id: "q", rotulo: "Qtd", tipo: "num", valor: (d) => (d.pos ? d.pos.q : null) },
   { id: "valor", rotulo: "Valor", tipo: "num", valor: (d) => (d.pos ? d.pos.valor : null) },
+  /* quanto a posição ganha ou perde contra o preço médio, em reais: é o que pinta a linha de verde ou vermelho */
+  { id: "res", rotulo: "Resultado", tipo: "num", valor: (d) => (d.pos ? d.pos.res : null) },
   { id: "dy", rotulo: "DY 12m", tipo: "num", valor: (d) => d.dy },
   { id: "pvp", rotulo: "P/VP", tipo: "num", valor: (d) => d.pvp },
 ];
@@ -3947,7 +3949,8 @@ function listaEl(l) {
     const ordem = ordemDaLista(l), personalizada = !ordem.length;
     const dados = new Map(l.papeis.map((t) => [t, dadosLista(t)]));
     const temDy = [...dados.values()].some((d) => d.dy != null), temPvp = [...dados.values()].some((d) => d.pvp != null);
-    const cols = COLS_LISTA.filter((c) => (c.id !== "dy" || temDy) && (c.id !== "pvp" || temPvp));
+    const temRes = [...dados.values()].some((d) => d.pos && d.pos.res != null);
+    const cols = COLS_LISTA.filter((c) => (c.id !== "dy" || temDy) && (c.id !== "pvp" || temPvp) && (c.id !== "res" || temRes));
     papeisOrdenados(l).forEach((t) => {
       const d = dados.get(t), x = d.x;
       const papel = el("button", { type: "button", class: "cot-papel", "aria-haspopup": "dialog", title: (x && x.nome) || t }, papelEl(t, x));
@@ -3972,6 +3975,12 @@ function listaEl(l) {
         var: () => el("td", { class: x && x.var > 0 ? "sobe" : x && x.var < 0 ? "desce" : "" }, x && x.var != null ? (x.var > 0 ? "+" : "") + fmtNum(x.var, 2) + "%" : x ? "–" : sem()),
         q: () => el("td", { class: d.pos ? "lst-q" : "lst-vazia", title: d.pos ? "Na sua carteira" : "Fora da sua carteira" }, d.pos ? qtd(d.pos.q) : "–"),
         valor: () => el("td", { class: d.pos ? "lst-valor" : "lst-vazia", title: d.pos ? "Quantidade × preço atual" + (d.pos.resPct != null ? " · resultado " + (d.pos.resPct > 0 ? "+" : "") + fmtNum(d.pos.resPct, 2) + "% sobre o preço médio" : "") : "" }, d.pos && d.pos.valor != null ? rs(d.pos.valor) : "–"),
+        res: () => {
+          const r = d.pos ? d.pos.res : null;
+          if (r == null) return el("td", { class: "lst-vazia", title: d.pos ? "Sem preço médio para comparar" : "Fora da sua carteira" }, "–");
+          const pct = d.pos.resPct != null ? ` (${d.pos.resPct > 0 ? "+" : ""}${fmtNum(d.pos.resPct, 2)}%)` : "";
+          return el("td", { class: "lst-res " + (r > 0 ? "sobe" : r < 0 ? "desce" : ""), title: `Valor de hoje menos o que você pagou (quantidade × preço médio de ${rs(d.pos.pm)})${pct}` }, (r > 0 ? "+" : r < 0 ? "\u2212" : "") + rs(Math.abs(r)));
+        },
         dy: () => el("td", { title: d.dy == null ? "" : (d.dyAnual ? "Menos de 12 meses de informes: valor anualizado. " : "") + "Fonte: " + d.fonte }, d.dy == null ? "–" : fmtNum(d.dy, 2) + "%" + (d.dyAnual ? "*" : "")),
         pvp: () => el("td", { title: d.pvp == null ? "" : "Fonte: " + d.fonte }, d.pvp == null ? "–" : fmtNum(d.pvp, 2)),
       };

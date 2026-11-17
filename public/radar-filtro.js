@@ -393,7 +393,9 @@
     const pr = Number.isFinite(preco) && preco > 0 ? preco : Number.isFinite(p.preco) && p.preco > 0 ? p.preco : null;
     const valor = pr != null ? Math.round(p.q * pr * 100) / 100 : Number.isFinite(p.valor) ? p.valor : null;
     const resPct = p.pm > 0 && pr != null ? Math.round((pr / p.pm - 1) * 1e4) / 100 : Number.isFinite(p.resPct) ? p.resPct : null;
-    return { q: p.q, valor, pm: p.pm ?? null, resPct };
+    // resultado em reais contra o preço médio: o que a linha verde ou vermelha da lista está dizendo
+    const res = p.pm > 0 && valor != null ? Math.round((valor - p.q * p.pm) * 100) / 100 : Number.isFinite(p.resultado) ? p.resultado : null;
+    return { q: p.q, valor, pm: p.pm ?? null, resPct, res };
   }
   // Cor da linha: o resultado da posição para quem tem o papel; sem ele, a variação do dia. "pos", "neg" ou "".
   const tomLista = (pos, varDia) => { const v = pos ? pos.resPct : varDia; return v > 0 ? "pos" : v < 0 ? "neg" : ""; };

@@ -176,10 +176,12 @@ test("Meus esportes: validação contra LIGAS, padrão e ordem", () => {
 test("Minhas listas: Qtd, Valor e a cor da linha com e sem carteira", () => {
   const posicoes = [{ t: "HGLG11", q: 30, pm: 160.2, preco: 140, valor: 4200, resPct: -12.6 }, { t: "MXRF11", q: 600, pm: 9.81, preco: 9.5 }, { t: "KNRI11", q: 0, pm: 139.5 }];
   const h = RF.posicaoLista("HGLG11", posicoes, 144.19);
-  assert.deepEqual(h, { q: 30, valor: 4325.7, pm: 160.2, resPct: -9.99 }, "valor e resultado pelo preço atual da lista");
+  assert.deepEqual(h, { q: 30, valor: 4325.7, pm: 160.2, resPct: -9.99, res: -480.3 }, "valor e resultado pelo preço atual da lista");
   assert.equal(RF.tomLista(h, 2), "neg", "com o papel, vale o resultado da posição, não o dia");
   const m = RF.posicaoLista("MXRF11", posicoes, null);
   assert.equal(m.valor, 5700, "sem cotação na lista, o preço da carteira");
+  assert.equal(m.res, -186, "resultado em reais: valor de hoje menos quantidade × preço médio");
+  assert.equal(RF.posicaoLista("X", [{ t: "X", q: 2, preco: 10 }], 10).res, null, "sem preço médio, sem resultado");
   assert.equal(RF.posicaoLista("KNRI11", posicoes, 146), null, "posição zerada não conta");
   assert.equal(RF.posicaoLista("PETR4", posicoes, 36), null, "sem o papel");
   assert.equal(RF.posicaoLista("HGLG11", null, 144), null, "sem carteira");
