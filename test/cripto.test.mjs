@@ -146,23 +146,25 @@ test("resposta cheia: um pedido só, oito moedas no bloco, bitcoin e ether no le
   });
 });
 
-test("resposta parcial: entra o que veio, na ordem, sem buraco; sem bitcoin, a reserva completa só o que faltou", async () => {
+test("resposta parcial: entra o que veio, na ordem, sem buraco; o Mercado Bitcoin completa o que faltou e a AwesomeAPI, bitcoin e ether", async () => {
   const parcial = { ethereum: RESPOSTA_CHEIA.ethereum, solana: RESPOSTA_CHEIA.solana, dogecoin: RESPOSTA_CHEIA.dogecoin, bitcoin: RESPOSTA_CHEIA.bitcoin };
-  await comFetch({ [CG]: parcial }, async (pedidos) => {
+  await comFetch({ [CG]: parcial, [MBH]: [...MB, { pair: "XRP-BRL", last: "12.5", open: "12", date: 1763380000 }] }, async (pedidos) => {
     const r = await cripto();
-    assert.deepEqual(r.lista.map((i) => i.id), ["btc", "eth", "sol", "doge"]);
-    assert.equal(pedidos.length, 1, "bitcoin e ether vieram: a reserva não é chamada");
+    assert.deepEqual(r.lista.map((i) => [i.id, i.fonte]), [["btc", "CoinGecko"], ["eth", "CoinGecko"], ["sol", "CoinGecko"], ["xrp", "Mercado Bitcoin"], ["doge", "CoinGecko"]]);
+    assert.equal(pedidos.length, 2, "CoinGecko e uma chamada ao Mercado Bitcoin com a lista inteira");
+    assert.match(pedidos[1], /BTC-BRL,ETH-BRL,SOL-BRL,BNB-BRL,XRP-BRL,ADA-BRL,DOGE-BRL,USDT-BRL/);
+    assert.equal(r.lista.find((i) => i.id === "xrp").casas, 2);
   });
+  // Mercado Bitcoin fora e sem bitcoin no CoinGecko: a AwesomeAPI traz o bitcoin
   const semBtc = { ethereum: RESPOSTA_CHEIA.ethereum, solana: RESPOSTA_CHEIA.solana };
   await comFetch({ [CG]: semBtc, [AW]: AWESOME_CRIPTO }, async (pedidos) => {
     const r = await cripto();
     assert.deepEqual(r.lista.map((i) => [i.id, i.fonte]), [["btc", "AwesomeAPI"], ["eth", "CoinGecko"], ["sol", "CoinGecko"]]);
-    assert.equal(pedidos.length, 2);
-    assert.match(pedidos[1], /BTC-BRL,ETH-BRL/);
+    assert.match(pedidos[pedidos.length - 1], /economia\.awesomeapi/);
   });
 });
 
-test("queda para a reserva: CoinGecko fora, o bloco fica só com BTC e ETH da AwesomeAPI e, sem ela, do Mercado Bitcoin", async () => {
+test("queda para a reserva: CoinGecko fora, o Mercado Bitcoin traz o que negocia; sem ele, BTC e ETH da AwesomeAPI", async () => {
   await comFetch({ [CG]: new Response("muitos pedidos", { status: 429 }), [AW]: AWESOME_CRIPTO }, async () => {
     const env = { DB: d1Falso() };
     const p = await atualizarMercado(env, { cripto: true });
@@ -173,7 +175,7 @@ test("queda para a reserva: CoinGecko fora, o bloco fica só com BTC e ETH da Aw
   await comFetch({ [MBH]: MB }, async (pedidos) => {
     const r = await cripto();
     assert.deepEqual(r.lista.map((i) => [i.id, i.fonte]), [["btc", "Mercado Bitcoin"], ["eth", "Mercado Bitcoin"]]);
-    assert.equal(pedidos.length, 3, "CoinGecko, AwesomeAPI e Mercado Bitcoin");
+    assert.equal(pedidos.length, 2, "CoinGecko e Mercado Bitcoin");
     const btc = r.lista[0];
     assert.ok(Math.abs(btc.variacao - ((511000 - 515000) / 515000) * 100) < 1e-9);
   });

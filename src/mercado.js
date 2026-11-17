@@ -83,7 +83,7 @@ export function lerCoingecko(d) {
   }
   return out;
 }
-// Reservas de bitcoin e ether, as mesmas de antes: AwesomeAPI e, se ela recusar, Mercado Bitcoin.
+// Última reserva, só bitcoin e ether: AwesomeAPI.
 async function criptoAwesome() {
   const d = await pegar("https://economia.awesomeapi.com.br/json/last/BTC-BRL,ETH-BRL");
   const um = (k, id, nome, sigla) => {
@@ -92,32 +92,37 @@ async function criptoAwesome() {
   };
   return [um("BTCBRL", "btc", "Bitcoin", "BTC"), um("ETHBRL", "eth", "Ether", "ETH")].filter(Boolean);
 }
-// Último recurso: API pública do Mercado Bitcoin (corretora brasileira), variação desde a abertura de 24 h.
-async function criptoMercadoBitcoin() {
-  const d = await pegar("https://api.mercadobitcoin.net/api/v4/tickers?symbols=BTC-BRL,ETH-BRL");
+// Mercado Bitcoin (corretora brasileira, API pública em reais): todas as moedas de CRIPTO numa chamada, variação desde
+// a abertura de 24 h. É a reserva principal: o CoinGecko recusa com 429 boa parte dos pedidos que saem do Worker
+// (visto em produção em 17/11). Par que a corretora não negocia simplesmente não vem.
+export const URL_MERCADO_BITCOIN = "https://api.mercadobitcoin.net/api/v4/tickers?symbols=" + CRIPTO.map((c) => c[3] + "-BRL").join(",");
+export function lerMercadoBitcoin(d) {
   const por = Object.fromEntries((Array.isArray(d) ? d : []).map((x) => [x.pair, x]));
-  const um = (k, id, nome, sigla) => {
-    const x = por[k]; if (!x) return null;
+  const out = [];
+  for (const [, id, nome, sigla, casas] of CRIPTO) {
+    const x = por[sigla + "-BRL"]; if (!x) continue;
     const v = num(x.last), o = num(x.open);
+    if (v === null || v <= 0) continue;
     const t = x.date ? new Date(Number(x.date) * 1000) : null;
-    return v === null ? null : { id, nome, sigla, valor: v, variacao: o ? ((v - o) / o) * 100 : null, unidade: "R$", casas: 0, fonte: "Mercado Bitcoin", data: t && !isNaN(t) ? t.toISOString() : "" };
-  };
-  return [um("BTC-BRL", "btc", "Bitcoin", "BTC"), um("ETH-BRL", "eth", "Ether", "ETH")].filter(Boolean);
+    out.push({ id, nome, sigla, valor: v, variacao: o ? ((v - o) / o) * 100 : null, unidade: "R$", casas, fonte: "Mercado Bitcoin", data: t && !isNaN(t) ? t.toISOString() : "" });
+  }
+  return out;
 }
-// Devolve { lista, erro }. Normal: um pedido só (CoinGecko). Se o CoinGecko falhar ou vier sem bitcoin ou ether, a
-// reserva entra só para o que faltou; com o CoinGecko fora, a lista fica só com o que a reserva traz (BTC e ETH).
-// Lança quando nada veio, para o painel manter o último valor bom.
+async function criptoMercadoBitcoin() {
+  try { return lerMercadoBitcoin(await pegar(URL_MERCADO_BITCOIN)); }
+  catch (e) { return lerMercadoBitcoin(await pegar("https://api.mercadobitcoin.net/api/v4/tickers?symbols=BTC-BRL,ETH-BRL")); } // se um par da lista derrubar o pedido
+}
+// Devolve { lista, erro }. Normal: um pedido só (CoinGecko). Se ele falhar ou vier incompleto, o Mercado Bitcoin
+// completa o que faltou (qualquer moeda da lista); se ainda faltar bitcoin ou ether, a AwesomeAPI. Lança quando nada
+// veio, para o painel manter o último valor bom.
 export async function cripto() {
   let lista = [], erro = "";
   try { lista = lerCoingecko(await pegar(URL_COINGECKO)); if (!lista.length) erro = "CoinGecko: resposta sem moedas"; }
   catch (e) { erro = "CoinGecko: " + String(e.message || e).slice(0, 200); }
   const tem = new Set(lista.map((i) => i.id));
-  if (!tem.has("btc") || !tem.has("eth")) {
-    let reserva = [];
-    try { reserva = await criptoAwesome(); } catch (e) {}
-    if (reserva.length < 2) { try { const mb = await criptoMercadoBitcoin(); reserva = [...reserva, ...mb.filter((x) => !reserva.some((r) => r.id === x.id))]; } catch (e) {} }
-    for (const r of reserva) if (!tem.has(r.id)) { lista.push(r); tem.add(r.id); }
-  }
+  const completar = (reserva) => { for (const r of reserva) if (!tem.has(r.id)) { lista.push(r); tem.add(r.id); } };
+  if (tem.size < CRIPTO.length) { try { completar(await criptoMercadoBitcoin()); } catch (e) {} }
+  if (!tem.has("btc") || !tem.has("eth")) { try { completar(await criptoAwesome()); } catch (e) {} }
   lista.sort((a, b) => posCripto(a.id) - posCripto(b.id));
   if (!lista.length) throw new Error(erro || "cripto: nenhuma fonte respondeu");
   return { lista, erro };
