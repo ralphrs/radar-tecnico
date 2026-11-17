@@ -111,6 +111,48 @@ textarea{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:inheri
 .conta-item:hover,.conta-item:focus-visible{background:color-mix(in srgb,var(--fg) 6%,transparent);outline:none}
 .conta-item:focus-visible{box-shadow:inset 0 0 0 2px var(--pri)}
 @media (pointer:coarse){.conta-item{min-height:44px}}
+/* Curadoria: seções, editor de instruções, pedidos e a leitura forçada dos feeds */
+select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:44px;max-width:100%}
+.cur li .quem,.ped li .quem,.hist li .quem{flex:1 1 240px;min-width:0}
+.cur .quem small,.ped .quem small,.hist .quem small{display:block}
+.cur .pedida{color:var(--pri);font-weight:600}
+.cur button:disabled,.ped button:disabled,.hist button:disabled,#coleta-agora:disabled{opacity:.5;cursor:default}
+.chip.alerta{background:color-mix(in srgb,var(--err) 14%,transparent);color:var(--err);margin-left:0}
+.instr-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.instr-topo h2{margin:0}
+.aviso-fixo{margin:0 0 10px;padding:10px 12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--pri) 35%,var(--line));background:var(--chip);font-size:14px}
+textarea.instr-area{min-height:min(60vh,560px);font-size:13px;tab-size:2}
+.instr-rodape{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.instr-rodape .sonda-acoes{margin-top:0}
+.conta-txt{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
+.conta-txt.fora{color:var(--err);font-weight:600}
+.card h3{font-size:14px;margin:18px 0 4px}
+textarea.instr-ver{flex-basis:100%;min-height:220px;margin-top:4px}
+form.ped-form{display:block}
+.ped-form textarea{font:inherit;min-height:76px}
+.ped-linha{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:8px}
+.ped-linha .pri{margin-left:auto}
+.interruptor{display:inline-flex;align-items:center;gap:8px;cursor:pointer;min-height:44px;font-size:14px;user-select:none}
+.interruptor input{appearance:none;-webkit-appearance:none;width:40px;height:24px;min-height:0;padding:0;margin:0;border:0;border-radius:999px;background:color-mix(in srgb,var(--fg) 22%,transparent);position:relative;cursor:pointer;flex:none;transition:background 120ms}
+.interruptor input::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform 120ms}
+.interruptor input:checked{background:var(--pri)}
+.interruptor input:checked::after{transform:translateX(16px)}
+.interruptor input:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.interruptor input,.interruptor input::after{transition:none}}
+.ped .ped-texto{overflow-wrap:anywhere;white-space:pre-wrap;font-weight:600}
+.ped .ped-texto.mut{color:var(--mut);font-weight:600}
+.ped .resposta{color:var(--fg);margin-top:2px;overflow-wrap:anywhere}
+.est{font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px;display:inline-block;margin-right:4px}
+.est-pendente{background:var(--chip);color:var(--pri)}
+.est-atendido{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.est-sem-resultado{background:color-mix(in srgb,#c2410c 14%,transparent);color:#c2410c}
+.est-cancelado{background:color-mix(in srgb,var(--fg) 8%,transparent);color:var(--mut)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .est-sem-resultado{color:#fb923c}}
+:root[data-theme=dark] .est-sem-resultado{color:#fb923c}
+.chip.leve{background:none;border:1px solid var(--line);color:var(--mut);margin-left:4px}
+.coleta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px}
+.coleta .conta-txt{flex:1 1 220px;min-width:0}
+.coleta .barra{max-width:260px;margin-top:4px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -161,9 +203,45 @@ textarea{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:inheri
     <ul id="lista"><li class="vazio">Carregando…</li></ul>
   </section>
 
+  <section class="card cur" id="curadoria-card">
+    <h2>Curadoria</h2>
+    <p class="dica" style="margin-top:0">Cada seção é escrita por uma tarefa agendada, três vezes ao dia. As instruções que ela segue e os pedidos ficam aqui. "Rodar agora" pede uma rodada fora de hora.</p>
+    <ul id="curadoria"><li class="vazio">Carregando…</li></ul>
+    <p class="msg" id="msg-curadoria" role="status"></p>
+  </section>
+
+  <section class="card hist" id="instr-card" hidden aria-labelledby="instr-titulo">
+    <div class="instr-topo"><h2 id="instr-titulo">Instruções</h2><button type="button" id="instr-fechar">Fechar</button></div>
+    <p class="aviso-fixo">As regras de segurança ficam na própria tarefa e não são editadas aqui: em qual seção ela grava e o que nunca toca.</p>
+    <p class="dica" id="instr-estado" style="margin:0 0 8px"></p>
+    <textarea id="instr-texto" class="instr-area" spellcheck="false" aria-label="Instruções da seção" aria-describedby="instr-conta"></textarea>
+    <div class="instr-rodape"><span class="conta-txt" id="instr-conta" aria-live="polite"></span><div class="sonda-acoes"><button type="button" id="instr-desfazer" hidden>Descartar mudanças</button><button class="pri" type="button" id="instr-salvar" disabled>Salvar</button></div></div>
+    <p class="msg" id="msg-instr" role="status"></p>
+    <h3>Versões anteriores</h3>
+    <p class="dica" style="margin:0 0 4px">Restaurar só traz o texto para a área acima. Quem grava é o Salvar, como versão nova.</p>
+    <ul id="instr-hist"></ul>
+  </section>
+
+  <section class="card ped" id="pedidos-card">
+    <h2>Pedidos à curadoria</h2>
+    <form id="ped-form" class="ped-form">
+      <textarea id="ped-texto" maxlength="500" placeholder="Procure sobre…, inclua este link…, olhe esta fonte…" aria-label="O que pedir à curadoria" aria-describedby="ped-conta"></textarea>
+      <div class="ped-linha">
+        <select id="ped-secao" aria-label="Seção"></select>
+        <label class="interruptor"><input type="checkbox" role="switch" id="ped-fixo">Vale em toda rodada</label>
+        <span class="conta-txt" id="ped-conta">0 de 500</span>
+        <button class="pri" type="submit">Adicionar</button>
+      </div>
+    </form>
+    <p class="msg" id="msg-ped" role="status"></p>
+    <ul id="pedidos"><li class="vazio">Carregando…</li></ul>
+  </section>
+
   <section class="card">
     <h2>Rendimento das fontes</h2>
     <p class="dica">Dos links que o robô trouxe nos últimos 10 dias, quantos a curadoria publicou e quantos descartou, por quê. Fonte que nunca emplaca nada é candidata a sair da lista. Subreddits aparecem só com os posts em Nos fóruns.</p>
+    <div class="coleta"><button type="button" id="coleta-agora">Ler os feeds agora</button><div class="conta-txt" id="coleta-andamento" aria-live="polite"></div></div>
+    <p class="msg" id="msg-coleta" role="status"></p>
     <div id="fontes" class="fontes"><p class="vazio">Carregando…</p></div>
   </section>
 
@@ -205,7 +283,7 @@ function textoConvite(u) {
 async function api(caminho, opt) {
   const r = await fetch(caminho, Object.assign({ credentials: "same-origin", cache: "no-store" }, opt || {}));
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.erro || "Não deu certo (" + r.status + ").");
+  if (!r.ok) { const e = new Error(j.erro || "Não deu certo (" + r.status + ")."); e.status = r.status; e.dados = j; throw e; }
   return j;
 }
 
@@ -724,6 +802,223 @@ montarMenuConta($("conta"), $("conta-menu"));
   const id = await pIdent;
   if (id) pintar(id);
 })();
+
+/* Curadoria (src/curadoria.js): uma linha por seção, o editor de instruções (#instrucoes/<secao>), os pedidos e o
+   "Ler os feeds agora" do card Rendimento das fontes (src/coleta.js). Tudo só do Admin; o resto do Lookout não vê. */
+const SECOES_CUR = ["tech", "negocios", "investimentos", "politica", "esportes"];
+const CUR = { secoes: [], pedidos: [], limites: { min: 500, max: 60000, historico: 30 }, limPed: { texto: 500 } };
+const JSON_H = { "content-type": "application/json" };
+const hm = (iso) => new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+function diaHora(iso) {
+  const d = iso ? new Date(iso) : null;
+  if (!d || isNaN(d)) return "–";
+  const hoje = d.toDateString() === new Date().toDateString();
+  return (hoje ? "hoje" : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })) + " às " + hm(iso);
+}
+const quandoPedida = (iso) => (iso && new Date(iso).toDateString() === new Date().toDateString() ? "às " + hm(iso) : "em " + diaHora(iso));
+const msgEm = (id) => (t, tipo) => { const m = $(id); m.textContent = t; m.className = "msg " + (tipo || ""); };
+const avisoC = msgEm("msg-curadoria"), avisoI = msgEm("msg-instr"), avisoP = msgEm("msg-ped"), avisoCol = msgEm("msg-coleta");
+
+async function carregarCuradoria() {
+  try {
+    const [a, b] = await Promise.all([api("/api/admin/instrucoes"), api("/api/admin/pedidos")]);
+    CUR.secoes = a.secoes; CUR.limites = a.limites || CUR.limites; CUR.pedidos = b.pedidos; CUR.limPed = b.limites || CUR.limPed;
+    pintarCuradoria(); pintarPedidos();
+  } catch (e) {
+    $("curadoria").innerHTML = '<li class="vazio">' + esc(e.message) + "</li>";
+    $("pedidos").innerHTML = '<li class="vazio">' + esc(e.message) + "</li>";
+  }
+}
+function pintarCuradoria() {
+  $("curadoria").innerHTML = CUR.secoes.map((s) => {
+    const pend = CUR.pedidos.filter((p) => p.secao === s.secao && p.estado === "pendente");
+    const agora = pend.find((p) => p.agora), comuns = pend.filter((p) => !p.agora).length;
+    const rodada = s.ultimaRodada ? "última rodada " + diaHora(s.ultimaRodada) + (s.novosNaUltima != null ? " · " + fmt(s.novosNaUltima) + (s.novosNaUltima === 1 ? " novo" : " novos") : "") : "nenhuma rodada registrada";
+    const instr = s.vazia ? '<span class="chip alerta">sem instruções no Lookout</span>' : "instruções v" + s.versao + " · " + fmt(s.tamanho) + " caracteres";
+    const ped = comuns ? comuns + (comuns === 1 ? " pedido pendente" : " pedidos pendentes") : "nenhum pedido pendente";
+    return `<li data-secao="${s.secao}"><div class="quem"><strong>${esc(NOME_SECAO[s.secao] || s.secao)}</strong><small>${esc(rodada)}</small><small>${instr} · ${esc(ped)}</small>`
+      + (agora ? `<small class="pedida">rodada pedida ${esc(quandoPedida(agora.criado))}</small>` : "")
+      + `</div><div class="acoes"><button type="button" data-instr>Instruções</button><button type="button" class="pri" data-rodar ${agora ? "disabled" : ""}>${agora ? "Rodada pedida" : "Rodar agora"}</button></div></li>`;
+  }).join("");
+  $("curadoria").querySelectorAll("li[data-secao]").forEach((li) => {
+    const secao = li.dataset.secao, nome = NOME_SECAO[secao];
+    li.querySelector("[data-instr]").addEventListener("click", () => { ED.abriuAqui = true; location.hash = "#instrucoes/" + secao; });
+    const bt = li.querySelector("[data-rodar]");
+    bt.addEventListener("click", async () => {
+      bt.disabled = true;
+      try {
+        const r = await api("/api/admin/pedidos", { method: "POST", headers: JSON_H, body: JSON.stringify({ secao, agora: true }) });
+        if (r.existente) avisoC(`Já havia uma rodada pedida para ${nome} ${quandoPedida(r.pedido.criado)}.`);
+        else avisoC("Pedido gravado. O plantão confere de hora em hora, das 7h às 23h.", "ok");
+        await carregarCuradoria();
+      } catch (e) { avisoC(e.message, "err"); bt.disabled = false; }
+    });
+  });
+}
+
+/* Editor de instruções */
+const ED = { secao: null, versao: 0, original: "", abriuAqui: false, textos: new Map() };
+const normal = (t) => String(t).replace(/\r\n?/g, "\n");
+const sujo = () => !!ED.secao && normal($("instr-texto").value) !== ED.original;
+function contarInstr() {
+  const n = normal($("instr-texto").value).length, L = CUR.limites;
+  const fora = n < L.min || n > L.max, el = $("instr-conta");
+  el.textContent = fmt(n) + (n === 1 ? " caractere" : " caracteres") + (n < L.min ? " · o mínimo é " + fmt(L.min) : n > L.max ? " · o máximo é " + fmt(L.max) : "");
+  el.classList.toggle("fora", fora && n > 0);
+  $("instr-salvar").disabled = !sujo();
+  $("instr-desfazer").hidden = !sujo();
+}
+function pintarHist(h) {
+  const ul = $("instr-hist");
+  if (!h.length) { ul.innerHTML = `<li class="vazio">Nenhuma versão anterior ainda. A cada Salvar, a que sai fica guardada aqui (as ${CUR.limites.historico} últimas).</li>`; return; }
+  ul.innerHTML = h.map((v) => `<li data-v="${v.versao}"><div class="quem"><strong>Versão ${v.versao}</strong><small>${esc(diaHora(v.atualizado))}</small></div>`
+    + `<div class="acoes"><button type="button" data-ver aria-expanded="false">Ver</button><button type="button" data-restaurar>Restaurar</button></div>`
+    + `<textarea class="instr-ver" readonly hidden spellcheck="false" aria-label="Texto da versão ${v.versao}"></textarea></li>`).join("");
+  ul.querySelectorAll("li[data-v]").forEach((li) => {
+    const v = Number(li.dataset.v), ver = li.querySelector("[data-ver]"), area = li.querySelector(".instr-ver");
+    ver.addEventListener("click", async () => {
+      if (!area.hidden) { area.hidden = true; ver.textContent = "Ver"; ver.setAttribute("aria-expanded", "false"); return; }
+      try { area.value = await textoDaVersao(v); area.hidden = false; ver.textContent = "Esconder"; ver.setAttribute("aria-expanded", "true"); } catch (e) { avisoI(e.message, "err"); }
+    });
+    li.querySelector("[data-restaurar]").addEventListener("click", async () => {
+      try {
+        $("instr-texto").value = await textoDaVersao(v); contarInstr();
+        avisoI(`Texto da versão ${v} na área. Confira e clique em Salvar para gravar como versão ${ED.versao + 1}.`);
+        $("instr-texto").scrollIntoView({ block: "center" }); $("instr-texto").focus({ preventScroll: true });
+      } catch (e) { avisoI(e.message, "err"); }
+    });
+  });
+}
+async function textoDaVersao(v) {
+  const k = ED.secao + "/" + v;
+  if (!ED.textos.has(k)) ED.textos.set(k, (await api("/api/admin/instrucoes/" + k)).texto);
+  return ED.textos.get(k);
+}
+async function abrirInstrucoes(secao, rolar = true) {
+  const card = $("instr-card"), ta = $("instr-texto");
+  ED.secao = secao; ED.versao = 0; ED.original = "";
+  card.hidden = false; ta.value = ""; ta.disabled = true; avisoI("");
+  $("instr-titulo").textContent = "Instruções · " + NOME_SECAO[secao];
+  $("instr-estado").textContent = "Carregando…"; $("instr-hist").innerHTML = "";
+  if (rolar) card.scrollIntoView({ block: "start" });
+  try {
+    const r = await api("/api/admin/instrucoes/" + secao);
+    if (ED.secao !== secao) return;
+    ED.versao = r.doc ? r.doc.versao : 0; ED.original = r.doc ? normal(r.doc.texto) : "";
+    ta.value = ED.original;
+    ta.placeholder = `Cole aqui as instruções da curadoria de ${NOME_SECAO[secao]} (de ${fmt(CUR.limites.min)} a ${fmt(CUR.limites.max)} caracteres).`;
+    $("instr-estado").textContent = r.doc ? `Versão ${r.doc.versao}, salva ${diaHora(r.doc.atualizado)}. A tarefa lê este texto no começo de cada rodada.` : "Ainda não há instruções desta seção no Lookout. Enquanto isso, a tarefa segue o texto que está nela.";
+    pintarHist(r.historico || []);
+  } catch (e) { $("instr-estado").textContent = ""; avisoI(e.message, "err"); }
+  ta.disabled = false; contarInstr();
+}
+function fecharEditor() { ED.secao = null; ED.abriuAqui = false; $("instr-card").hidden = true; }
+function rotaHash() {
+  const m = /^#instrucoes\/([a-z]+)$/.exec(location.hash);
+  const alvo = m && SECOES_CUR.includes(m[1]) ? m[1] : null;
+  if (alvo === ED.secao) return;
+  if (sujo() && !confirm(`As instruções de ${NOME_SECAO[ED.secao]} têm mudança não salva. Sair sem salvar?`)) { history.pushState(null, "", "#instrucoes/" + ED.secao); return; }
+  if (alvo) abrirInstrucoes(alvo); else fecharEditor();
+}
+window.addEventListener("hashchange", rotaHash);
+window.addEventListener("beforeunload", (e) => { if (sujo()) { e.preventDefault(); e.returnValue = ""; } });
+$("instr-texto").addEventListener("input", contarInstr);
+$("instr-fechar").addEventListener("click", () => {
+  if (ED.abriuAqui) history.back();
+  else { location.hash = ""; }
+});
+$("instr-desfazer").addEventListener("click", () => { $("instr-texto").value = ED.original; avisoI(""); contarInstr(); });
+$("instr-salvar").addEventListener("click", async () => {
+  const bt = $("instr-salvar"), secao = ED.secao, texto = normal($("instr-texto").value);
+  bt.disabled = true;
+  try {
+    const r = await api("/api/admin/instrucoes/" + secao, { method: "PUT", headers: JSON_H, body: JSON.stringify({ texto, versao: ED.versao }) });
+    ED.versao = r.versao; ED.original = texto;
+    avisoI(`Salvo como versão ${r.versao}. A próxima rodada de ${NOME_SECAO[secao]} já lê o texto novo.`, "ok");
+    const d = await api("/api/admin/instrucoes/" + secao);
+    $("instr-estado").textContent = `Versão ${d.doc.versao}, salva ${diaHora(d.doc.atualizado)}. A tarefa lê este texto no começo de cada rodada.`;
+    pintarHist(d.historico || []);
+    carregarCuradoria();
+  } catch (e) {
+    avisoI(e.message, "err");
+    if (e.status === 409) {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = "Trazer a versão do banco"; b.style.marginLeft = "8px";
+      b.addEventListener("click", () => { if (!confirm("O texto da área vai ser trocado pelo que está salvo. O que você escreveu aqui se perde. Continuar?")) return; abrirInstrucoes(secao, false); });
+      $("msg-instr").append(b);
+    }
+  }
+  contarInstr();
+});
+
+/* Pedidos */
+const ROT_EST = { pendente: "Pendente", atendido: "Atendido", "sem-resultado": "Sem resultado", cancelado: "Cancelado" };
+$("ped-secao").innerHTML = SECOES_CUR.map((s) => `<option value="${s}">${esc(NOME_SECAO[s])}</option>`).join("");
+$("ped-texto").addEventListener("input", () => { $("ped-conta").textContent = $("ped-texto").value.length + " de " + CUR.limPed.texto; });
+function pintarPedidos() {
+  const ul = $("pedidos"), ps = CUR.pedidos;
+  if (!ps.length) { ul.innerHTML = '<li class="vazio">Nenhum pedido por enquanto. Dá para pedir um link para incluir, um assunto para a curadoria procurar ou uma fonte para olhar com mais atenção.</li>'; return; }
+  ul.innerHTML = ps.map((p) => {
+    const tit = p.texto ? `<span class="ped-texto">${esc(p.texto)}</span>` : '<span class="ped-texto mut">Rodada fora de hora, sem pedido</span>';
+    const marcas = (p.agora ? '<span class="chip leve">rodar agora</span>' : "") + (p.fixo ? '<span class="chip leve">toda rodada</span>' : "");
+    let est = `<span class="est est-${esc(p.estado)}">${ROT_EST[p.estado] || esc(p.estado)}</span>`;
+    if (p.atendidoEm) est += esc((p.fixo ? "última rodada " : "") + diaHora(p.atendidoEm));
+    if (p.itens != null) est += esc(" · " + fmt(p.itens) + (p.itens === 1 ? " item entrou" : " itens entraram"));
+    const acoes = (p.estado === "pendente" ? '<button type="button" data-acao="cancelar">Cancelar</button>' : '<button type="button" data-acao="reabrir">Reabrir</button>') + '<button type="button" class="perigo" data-excluir>Excluir</button>';
+    return `<li data-id="${esc(p.id)}"><div class="quem">${tit}<small>${esc(NOME_SECAO[p.secao] || p.secao)} · pedido ${esc(diaHora(p.criado))}${marcas}</small><small>${est}</small>`
+      + (p.resposta ? `<small class="resposta">${esc(p.resposta)}</small>` : "") + `</div><div class="acoes">${acoes}</div></li>`;
+  }).join("");
+  ul.querySelectorAll("li[data-id]").forEach((li) => {
+    const id = li.dataset.id, url = "/api/admin/pedidos/" + encodeURIComponent(id);
+    const a = li.querySelector("[data-acao]");
+    a.addEventListener("click", async () => {
+      try { await api(url, { method: "PUT", headers: JSON_H, body: JSON.stringify({ acao: a.dataset.acao }) }); avisoP(a.dataset.acao === "cancelar" ? "Pedido cancelado." : "Pedido reaberto. A próxima rodada da seção lê.", "ok"); await carregarCuradoria(); }
+      catch (e) { avisoP(e.message, "err"); }
+    });
+    const x = li.querySelector("[data-excluir]");
+    x.addEventListener("click", async () => {
+      if (x.dataset.conf !== "1") { x.dataset.conf = "1"; x.textContent = "Confirmar"; setTimeout(() => { x.dataset.conf = ""; x.textContent = "Excluir"; }, 4000); return; }
+      try { await api(url, { method: "DELETE" }); avisoP("Pedido excluído.", "ok"); await carregarCuradoria(); } catch (e) { avisoP(e.message, "err"); }
+    });
+  });
+}
+$("ped-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const texto = $("ped-texto").value.trim(), secao = $("ped-secao").value, fixo = $("ped-fixo").checked;
+  if (!texto) { avisoP("Escreva o que a curadoria deve procurar ou incluir.", "err"); $("ped-texto").focus(); return; }
+  try {
+    await api("/api/admin/pedidos", { method: "POST", headers: JSON_H, body: JSON.stringify({ secao, texto, fixo }) });
+    $("ped-texto").value = ""; $("ped-fixo").checked = false; $("ped-conta").textContent = "0 de " + CUR.limPed.texto;
+    avisoP(fixo ? `Pedido gravado. Vale para toda rodada de ${NOME_SECAO[secao]} até você cancelar.` : `Pedido gravado. A próxima rodada de ${NOME_SECAO[secao]} lê.`, "ok");
+    await carregarCuradoria();
+  } catch (err) { avisoP(err.message, "err"); }
+});
+
+/* Ler os feeds agora: o cron lê mais feeds por minuto até passar por todos; aqui só o pedido e o andamento */
+let timerColeta = null, coletaAtiva = false;
+function pintarColeta(a) {
+  const el = $("coleta-andamento"), bt = $("coleta-agora");
+  bt.disabled = !!a.ativa;
+  if (a.ativa) {
+    const pct = a.total ? Math.round((100 * a.lidos) / a.total) : 0;
+    el.innerHTML = `<strong>lendo: ${fmt(a.lidos)} de ${fmt(a.total)}</strong>${a.minutos ? " · falta cerca de " + a.minutos + " min" : ""}<div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax="${a.total}" aria-valuenow="${a.lidos}" aria-label="Feeds lidos"><i style="width:${Math.max(2, pct)}%"></i></div>`;
+  } else if (a.pedido && a.expirou) el.textContent = `A última leitura parou em ${fmt(a.lidos)} de ${fmt(a.total)} (${diaHora(a.fim)}). Dá para pedir de novo.`;
+  else if (a.pedido && a.fim) el.textContent = `Última leitura de todos os feeds: ${diaHora(a.fim)}, ${fmt(a.total)} feeds.`;
+  else el.textContent = `Lê ${a.porMinuto} feeds por minuto, sem esperar a vez de cada um, até passar por todos (hoje são ${fmt(a.totalHoje)}, uns ${a.minutosPrevistos} min). Subreddits seguem um por minuto.`;
+  if (coletaAtiva && !a.ativa) carregarFontes();
+  coletaAtiva = !!a.ativa;
+  clearTimeout(timerColeta);
+  if (a.ativa) timerColeta = setTimeout(carregarColeta, 15000);
+}
+async function carregarColeta() {
+  try { pintarColeta(await api("/api/admin/coleta-agora")); } catch (e) { $("coleta-andamento").textContent = e.message; }
+}
+$("coleta-agora").addEventListener("click", async () => {
+  const bt = $("coleta-agora"); bt.disabled = true;
+  try { const a = await api("/api/admin/coleta-agora", { method: "POST", headers: JSON_H, body: "{}" }); avisoCol("Pedido feito. O robô começa no próximo minuto.", "ok"); pintarColeta(a); }
+  catch (e) { avisoCol(e.message, e.status === 409 ? "" : "err"); if (e.dados && e.dados.total) pintarColeta(e.dados); else bt.disabled = false; }
+});
+carregarColeta();
+carregarCuradoria().then(() => rotaHash());
 
 carregarGrupos().then(() => carregar()).catch((err) => { $("lista").innerHTML = '<li class="vazio">' + esc(err.message) + "</li>"; });
 </script>

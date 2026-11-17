@@ -1,5 +1,6 @@
 import { emailDoAccess, accessConfigurado } from "./auth.js";
-import { coletar, limpar, garantirColunas, ehReddit, REDDIT, juntarFontes } from "./coleta.js";
+import { coletar, limpar, garantirColunas, ehReddit, REDDIT, juntarFontes, rotaColetaAgora } from "./coleta.js";
+import { rotaAdminCuradoria } from "./curadoria.js";
 import { FEEDS, SECOES_COM_FORUM } from "./feeds.js";
 import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
 import { cronEua } from "./eua.js";
@@ -664,6 +665,17 @@ async function atender(request, env, ctx) {
       const id = p.startsWith("/api/admin/landscape/") ? decodificar(p.slice(21)) : "";
       if (id === null) return json({ erro: "id" }, 400);
       return rotaAdminLandscape(request, env, quem, p === "/api/admin/landscape-categorias" ? "categorias" : "", id, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
+    }
+
+    // Curadoria (src/curadoria.js): instruções de cada seção, pedidos e "rodar agora"; e a leitura forçada dos feeds
+    // (src/coleta.js). Só o Admin; os outros recebem o mesmo 404 das rotas de Admin do Landscape, antes do 403 genérico.
+    if (p === "/api/admin/instrucoes" || p.startsWith("/api/admin/instrucoes/") || p === "/api/admin/pedidos" || p.startsWith("/api/admin/pedidos/") || p === "/api/admin/coleta-agora") {
+      if (!quem.admin) return json({ erro: "rota" }, 404);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      if (p === "/api/admin/coleta-agora") return rotaColetaAgora(request, env);
+      const caminho = decodificar(p.slice(11));
+      if (caminho === null) return json({ erro: "id" }, 400);
+      return rotaAdminCuradoria(request, env, quem, caminho);
     }
 
     if (p === "/admin" || p === "/admin.html" || p.startsWith("/api/admin/")) {

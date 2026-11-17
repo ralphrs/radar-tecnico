@@ -7,6 +7,7 @@ import { FEEDS } from "./feeds.js";
 import { histParaApagar } from "./papel.js";
 import { leiturasParaApagar } from "./leitura.js";
 import { limparLidas } from "./lidas.js";
+import { limparPedidos } from "./curadoria.js";
 
 const INTERVALO_MIN = 90;      // cada feed é lido no máximo a cada 90 minutos
 const FEEDS_POR_MINUTO = 6;    // o cron roda de minuto em minuto
@@ -172,11 +173,84 @@ export function filaReddit(feeds, estados, t = Date.now()) {
   }).filter((f) => f.devido).sort((a, b) => a.ultima - b.ultima);
 }
 
+// ---------- leitura forçada ("Ler os feeds agora", card Rendimento das fontes do Admin) ----------
+// O pedido não lê nada na hora: grava _sistema/coleta-forcada e, enquanto ele estiver ativo, o cron lê até 30 feeds
+// comuns por minuto em vez de 6, sem esperar o intervalo de 90 min nem o recuo por erro, até passar uma vez por todos
+// os feeds de src/feeds.js (os que não foram lidos desde o pedido). No máximo 5 leituras abertas ao mesmo tempo: com o
+// subreddit da vez, que segue um por minuto como sempre, dá 6, o limite de conexões simultâneas do Worker. Depois de
+// 35 s o minuto não começa feed novo (o resto fica para o minuto seguinte). Um pedido por vez; vence em 30 min.
+export const FORCADA = { POR_MINUTO: 30, SIMULTANEAS: 5, ORCAMENTO_MS: 35_000, VALIDADE_MIN: 30 };
+const normaisDe = () => FEEDS.filter((f) => (f[4] || "rss") !== "reddit");
+
+export async function lerForcada(env) {
+  const r = await env.DB.prepare("SELECT data FROM docs WHERE collection = '_sistema' AND id = 'coleta-forcada'").first();
+  try { return r ? JSON.parse(r.data) : null; } catch { return null; }
+}
+async function gravarForcada(env, s) {
+  await env.DB.prepare(
+    "INSERT INTO docs (collection, id, data) VALUES ('_sistema', 'coleta-forcada', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = strftime('%Y-%m-%dT%H:%M:%fZ','now')"
+  ).bind(JSON.stringify(s)).run();
+}
+export const forcadaAtiva = (s, t = Date.now()) => !!s && !s.fim && Date.parse(s.expira || "") > t;
+
+// Andamento para a tela: { ativa, pedido, total, lidos, faltam, fim, expirou, porMinuto, minutos } (minutos: o que falta, estimado)
+export function andamentoForcada(s, t = Date.now()) {
+  const porMinuto = FORCADA.POR_MINUTO;
+  if (!s) return { ativa: false, porMinuto, totalHoje: normaisDe().length, minutosPrevistos: Math.ceil(normaisDe().length / porMinuto) };
+  const ativa = forcadaAtiva(s, t);
+  const faltam = Math.max(0, Number(s.faltam ?? s.total) || 0);
+  const total = Number(s.total) || 0;
+  return { ativa, pedido: s.pedido, total, faltam, lidos: Math.max(0, total - faltam), fim: s.fim || (ativa ? null : s.expira), expirou: !!s.expirou || (!ativa && !s.fim),
+    ultima: s.ultima || null, porMinuto, minutos: ativa ? Math.ceil(faltam / porMinuto) : 0, totalHoje: normaisDe().length, minutosPrevistos: Math.ceil(normaisDe().length / porMinuto) };
+}
+
+export async function pedirColetaForcada(env, t = Date.now()) {
+  const atual = await lerForcada(env);
+  if (forcadaAtiva(atual, t)) return { ja: true, estado: atual };
+  const total = normaisDe().length;
+  const s = { pedido: new Date(t).toISOString(), total, faltam: total, fim: null, expira: new Date(t + FORCADA.VALIDADE_MIN * 60_000).toISOString(), ultima: null };
+  await gravarForcada(env, s);
+  return { ja: false, estado: s };
+}
+
+// /api/admin/coleta-agora: GET devolve o andamento, POST marca a leitura forçada (409 se já há uma em andamento)
+export async function rotaColetaAgora(request, env) {
+  const json = (d, status = 200) => new Response(JSON.stringify(d), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
+  if (request.method === "GET") return json(andamentoForcada(await lerForcada(env)));
+  if (request.method !== "POST") return json({ erro: "metodo" }, 405);
+  const r = await pedirColetaForcada(env);
+  if (r.ja) return json({ erro: "Já há uma leitura de todos os feeds em andamento.", ...andamentoForcada(r.estado) }, 409);
+  return json({ ok: true, ...andamentoForcada(r.estado) });
+}
+
+// Roda fn em cada item com no máximo n de uma vez, sem começar item novo depois do orçamento. Devolve quantos começaram.
+async function emPool(lista, n, orcamentoMs, fn) {
+  const t0 = Date.now();
+  let i = 0, comecados = 0;
+  const vez = async () => { while (i < lista.length && Date.now() - t0 < orcamentoMs) { const f = lista[i++]; comecados++; await fn(f); } };
+  await Promise.all(Array.from({ length: Math.min(n, lista.length) }, vez));
+  return comecados;
+}
+
 async function feedsDaVez(env) {
   const { results } = await env.DB.prepare("SELECT url, ultima_checagem, erros_seguidos, seguidos_403 FROM feeds_estado").all();
   const est = new Map(results.map((r) => [r.url, r]));
   const t = Date.now();
   const todos = FEEDS.map(([radar, fonte, pais, url, tipo]) => ({ radar, fonte, pais, url, tipo: tipo || "rss" }));
+  const reddit = filaReddit(todos.filter((f) => f.tipo === "reddit"), est, t);
+  // Leitura forçada: os feeds comuns que ainda não foram lidos desde o pedido, do que está há mais tempo sem leitura
+  const forcada = await lerForcada(env);
+  if (forcada && !forcada.fim) {
+    if (!forcadaAtiva(forcada, t)) {
+      await gravarForcada(env, { ...forcada, fim: new Date(t).toISOString(), expirou: true });
+    } else {
+      const pend = todos.filter((f) => f.tipo !== "reddit").map((f) => {
+        const e = est.get(f.url);
+        return { ...f, ultima: e && e.ultima_checagem ? Date.parse(e.ultima_checagem) : 0, lido: !!(e && e.ultima_checagem && e.ultima_checagem >= forcada.pedido) };
+      }).filter((f) => !f.lido).sort((a, b) => a.ultima - b.ultima);
+      return { normais: pend.slice(0, FORCADA.POR_MINUTO), reddit, forcada: { ...forcada, pendentes: pend.length } };
+    }
+  }
   const devidos = todos.filter((f) => f.tipo !== "reddit").map((f) => {
     const e = est.get(f.url);
     const ultima = e && e.ultima_checagem ? Date.parse(e.ultima_checagem) : 0;
@@ -184,7 +258,7 @@ async function feedsDaVez(env) {
     return { ...f, ultima, devido: t - ultima >= espera };
   }).filter((f) => f.devido);
   devidos.sort((a, b) => a.ultima - b.ultima);
-  return { normais: devidos.slice(0, FEEDS_POR_MINUTO), reddit: filaReddit(todos.filter((f) => f.tipo === "reddit"), est, t) };
+  return { normais: devidos.slice(0, FEEDS_POR_MINUTO), reddit, forcada: null };
 }
 
 // http: o status da resposta (0 sem resposta). 403 conta em seguidos_403; no Reddit, a terceira seguida vira "bloqueado".
@@ -306,9 +380,12 @@ export async function gravarForuns(env, f, posts) {
 // A sonda (src/sonda.js) só testa URL do Reddit quando a coleta não usou a vez dele.
 export async function coletar(env) {
   await garantirColunas(env);
-  const { normais, reddit } = await feedsDaVez(env);
+  const { normais, reddit, forcada } = await feedsDaVez(env);
   const falha = (f) => (e) => registrar(env, f, false, "falha: " + String(e && e.message || e).slice(0, 180), 0, 0).then(() => 0);
-  const normal = Promise.all(normais.map((f) => lerUm(env, f).catch(falha(f))));
+  // Leitura forçada: até 30 feeds, 5 abertos de cada vez; fora dela, os 6 da vez juntos, como sempre
+  const normal = forcada
+    ? emPool(normais, FORCADA.SIMULTANEAS, FORCADA.ORCAMENTO_MS, (f) => lerUm(env, f).catch(falha(f)))
+    : Promise.all(normais.map((f) => lerUm(env, f).catch(falha(f)))).then(() => normais.length);
   // Reddit em fila, um de cada vez: 429 encerra a vez do Reddit neste minuto
   let lidosReddit = 0;
   for (const f of reddit.slice(0, REDDIT.POR_MINUTO)) {
@@ -316,8 +393,15 @@ export async function coletar(env) {
     const status = await lerUm(env, f).catch(falha(f));
     if (status === 429) break;
   }
-  await normal;
-  return { feeds: normais.length, reddit: lidosReddit };
+  const lidos = await normal;
+  if (forcada) {
+    const faltam = Math.max(0, forcada.pendentes - lidos);
+    const { pendentes, ...s } = forcada;
+    const quando = iso(new Date());
+    await gravarForcada(env, { ...s, faltam, ultima: quando, fim: faltam ? null : quando });
+    return { feeds: lidos, reddit: lidosReddit, forcada: { faltam } };
+  }
+  return { feeds: lidos, reddit: lidosReddit };
 }
 
 // Card "Rendimento das fontes" do admin (/api/admin/fontes em src/index.js): results são as linhas de candidatos por feed.
@@ -434,6 +518,8 @@ export async function limpar(env) {
   } catch (e) { relatorio.leitura = "erro: " + String(e.message || e).slice(0, 100); }
   // Notícias lidas (src/lidas.js) com mais de 90 dias: por collection e lista de ids, no máximo 200 por rodada
   try { relatorio.lidas = (await limparLidas(env, t)).length; } catch (e) { relatorio.lidas = "erro: " + String(e.message || e).slice(0, 100); }
+  // Pedidos à curadoria (src/curadoria.js) fechados há mais de 30 dias: por collection e lista de ids, em lotes de 90
+  try { relatorio.pedidos = (await limparPedidos(env, t)).length; } catch (e) { relatorio.pedidos = "erro: " + String(e.message || e).slice(0, 100); }
   const r = await env.DB.prepare("DELETE FROM candidatos WHERE visto < ?").bind(new Date(t - 10 * DIA).toISOString()).run();
   relatorio.candidatos = r.meta?.changes ?? 0;
   await env.DB.prepare(

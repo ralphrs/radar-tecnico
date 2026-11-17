@@ -18,6 +18,7 @@ Como as notícias chegam ao Lookout, desde 31/10/2026.
 
 - A lista fica em `src/feeds.js`: `[radar, fonte, país, url]`. O país alimenta a bandeira ao lado da fonte.
 - Cada feed é lido no máximo a cada 90 minutos. Feed com erro espera mais (dobra a cada erro, até 16 vezes).
+- "Ler os feeds agora" (Admin, card Rendimento das fontes) passa por todos os feeds comuns uma vez, 30 por minuto e 5 abertos de cada vez, sem esperar a vez de cada um; os subreddits seguem um por minuto. Detalhes em docs/LOOKOUT.md, "Ler os feeds agora".
 - Para ver a saúde dos feeds:
 
 ```sql

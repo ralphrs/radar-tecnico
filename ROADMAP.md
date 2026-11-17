@@ -175,6 +175,13 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Investimentos: tudo sobre cripto. Nove subtemas no tema Cripto (ids fixos para a curadoria), seis subreddits de cripto em Nos fóruns (44 no total, volta de 44 min), bloco Cripto com oito moedas em reais e variação de 24 h numa chamada só ao CoinGecko, nos minutos 16 e 46, com a reserva de bitcoin e ether; letreiro continua só com os dois (docs/LOOKOUT.md, "Cripto em Investimentos") (17/11)
 - [ ] Cripto: sondar em produção os feeds de `CRIPTO_PARA_SONDAR` (`src/feeds.js`), que o ambiente de desenvolvimento não alcança, e passar para `FEEDS` os que responderem com itens recentes
 - [ ] Curadoria de Investimentos: gravar `subtema` nos itens de cripto com os ids de docs/LOOKOUT.md (ajuste no prompt da tarefa agendada, com o dono)
+- [x] Instruções da curadoria no Lookout: o texto de cada seção em `instrucoes/<secao>`, com versão, histórico das 30 últimas e editor no Admin (conflito de duas abas, 500 a 60.000 caracteres, Ver e Restaurar) (docs/LOOKOUT.md, "Curadoria: instruções, pedidos e plantão") (17/11)
+- [x] Pedidos à curadoria por seção em `pedidos-curadoria` ("procure sobre", "inclua este link", "vale em toda rodada"), com estado, resposta e itens que a tarefa grava pelo `json_patch` do contrato; limpeza dos fechados com mais de 30 dias (17/11)
+- [x] "Rodar agora" por seção: pedido `agora` que o plantão procura, um pendente por seção e 6 por dia (17/11)
+- [x] "Ler os feeds agora" no Rendimento das fontes: 30 feeds por minuto, 5 abertos de cada vez, até passar por todos (6 min com os 165 de hoje), Reddit seguindo um por minuto (17/11)
+- [ ] Tarefas agendadas com o texto curto que lê `instrucoes/<secao>` e os pedidos pendentes, e a tarefa de plantão de hora em hora (com o dono; o contrato está em docs/LOOKOUT.md)
+- [ ] Colar no Admin o texto atual de cada tarefa como versão 1 das instruções, antes de trocar o prompt delas
+- [ ] Conferir em produção a primeira leitura forçada: tempo real por minuto (log `coleta`) e se algum feed lento segura o minuto perto dos 35 s
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

@@ -35,7 +35,8 @@ Tabela `docs(collection, id, data)` para quase tudo:
 - `meta`: `status`, `status-negocios`, `status-investimentos`, `status-politica`, `status-esportes`, `status-sombra` (última rodada de cada curadoria), `mercado`, `b3`, `fii`, `fii-resumo`, `fii-cvm-ant`.
 - `hist`: ficha de cada papel aberto (`US:NVDA`, `BR:PETR4`, `BR:NVDC34`), veja "Ficha do papel".
 - `landscape` (uma tecnologia por doc), `meta/landscape-categorias` e `landscape/<email>` (notas do Admin): veja "Landscape".
-- `_sistema`: `landscape-estado`, `landscape-semente`, `sonda-landscape*`, `seed`, `limpeza`, `b3-erro`, `cvm-etapa`, `cvm-erro`, `sonda-feeds`, `papel-contagem`, `sonda-brapi-quote`.
+- Curadoria (só Admin, fora do espelho): `instrucoes`, `instrucoes-hist` e `pedidos-curadoria`, veja "Curadoria: instruções, pedidos e plantão".
+- `_sistema`: `coleta-forcada` (Ler os feeds agora), `landscape-estado`, `landscape-semente`, `sonda-landscape*`, `seed`, `limpeza`, `b3-erro`, `cvm-etapa`, `cvm-erro`, `sonda-feeds`, `papel-contagem`, `sonda-brapi-quote`.
 
 Outras tabelas: `candidatos`, `feeds_estado` (saúde de cada feed), `usuarios`, `grupos`, `usuario_grupo`. Esquema em `schema.sql`.
 
@@ -868,6 +869,91 @@ Toda tabela de dados da página usa o mesmo helper, `public/tabela.js` (script c
 - **Paginação:** 25 por página (25, 50 ou 100 no rodapé), "‹ 1 2 3 … ›" com elipse e "N–M de T". Trocar de página mantém ordenação e filtros; mudar filtro, ordenação ou busca volta para a página 1. No celular os botões têm 44 px. "Ver todos" e "Carregar mais" saíram.
 - **Estado salvo:** por tabela em `localStorage` (`radar-tabela-<id>`: ordenação, filtros, página, por página e `ocultas`, a lista de ids das colunas escondidas, que só vai para o estado quando não está vazia), que pinta primeiro, e em `/api/prefs/tabelas`, que manda: na primeira leitura da abertura, tabela que a pessoa ainda não mexeu troca para o estado da conta. `GET` devolve `{ tabelas }`; `PUT { tabelas: { <id>: estado | null } }` manda só as que mudaram (1,2 s depois da última mudança, e no `pagehide`) e o servidor junta com o salvo, cada uma com `em`, guardando as 40 mais recentes. Doc `prefs/<email>`, id `tabelas`, D1 e write-through no espelho. Conferência (`validarEstado`, a mesma na página e no Worker, regras em `src/prefs.js`): id `^[a-z0-9-]{1,80}$`, coluna `^[A-Za-z0-9_]{1,24}$`, até 5 critérios, até 20 filtros, até 12 valores de até 80 caracteres, "contém" até 60, datas AAAA-MM-DD, página 1 a 10000, por página 25, 50 ou 100, até 30 colunas ocultas (mesma regra de id de coluna). Ao carregar, oculta que não existe na tabela é ignorada, mas fica guardada: a página da lista só mostra as colunas que têm dado e o celular mostra menos colunas, e a escolha feita no desktop não se perde por isso. Com 40 tabelas e 30 ocultas de 24 caracteres cada, o PUT ainda cabe nos 40.000 caracteres que `src/index.js` aceita, então o limite não mudou.
 
+## Curadoria: instruções, pedidos e plantão
+
+Pedido de 17/11. Cada seção (`tech`, `negocios`, `investimentos`, `politica`, `esportes`) é escrita por uma tarefa agendada do Claude, três vezes ao dia, que grava direto no D1 pelo conector da Cloudflare. As instruções longas de cada tarefa passam a morar no Lookout, editáveis no Admin; a tarefa fica com um texto curto que manda ler as instruções no banco. O Admin também deixa pedidos para a curadoria e pode pedir uma rodada fora de hora, que uma tarefa de plantão atende. Código em `src/curadoria.js`; tela no `/admin` (cards Curadoria, Instruções e Pedidos à curadoria); testes em `test/instrucoes.test.mjs`.
+
+### Contrato com as tarefas (fixo)
+
+Nomes de collection, de campo e de estado não mudam. Tudo na tabela `docs(collection, id, data, coletado, atualizado)`.
+
+**Instruções.** `collection = 'instrucoes'`, `id` = a seção. `data`:
+
+```json
+{ "texto": "…", "versao": 3, "atualizado": "2026-11-17T13:00:00.000Z", "por": "admin" }
+```
+
+A tarefa lê com:
+
+```sql
+SELECT data FROM docs WHERE collection = 'instrucoes' AND id = ?
+```
+
+Só a rota do Admin grava aqui. Sem linha (seção ainda vazia), a tarefa segue o texto que já tem.
+
+**Histórico.** `collection = 'instrucoes-hist'`, `id` = `<secao>-<versao com 5 dígitos>` (`tech-00002`), `data` = o doc daquela versão, igual ao de cima. Cada gravação guarda a versão que sai; ficam as 30 últimas por seção, e o resto é apagado por collection e lista de ids.
+
+**Pedidos.** `collection = 'pedidos-curadoria'`, `id` = `p` + 16 hexadecimais aleatórios. `data`:
+
+```json
+{ "secao": "tech", "texto": "Incluir https://…", "agora": false, "fixo": false, "estado": "pendente",
+  "criado": "2026-11-17T10:00:00.000Z", "atendidoEm": null, "resposta": null, "itens": null }
+```
+
+- `texto`: até 500 caracteres; vazio só quando `agora` é `true` (rodar agora sem pedido).
+- `agora`: `true` = pedido de rodada fora de hora; é o que o plantão procura.
+- `fixo`: `true` = vale em toda rodada e nunca fecha sozinho. `agora` e `fixo` nunca vêm juntos.
+- `estado`: `pendente` | `atendido` | `sem-resultado` | `cancelado`.
+- `atendidoEm` (ISO), `resposta` (texto curto) e `itens` (número): gravados pela tarefa ao fechar.
+
+A tarefa lê os pendentes da seção com:
+
+```sql
+SELECT id, data FROM docs WHERE collection = 'pedidos-curadoria' AND json_extract(data, '$.secao') = ? AND json_extract(data, '$.estado') = 'pendente'
+```
+
+e fecha cada um com:
+
+```sql
+UPDATE docs SET data = json_patch(data, ?), atualizado = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE collection = 'pedidos-curadoria' AND id = ?
+```
+
+com o primeiro `?` sendo, por exemplo, `{"estado":"atendido","atendidoEm":"…","resposta":"Entrou o post do blog.","itens":1}` ou `{"estado":"sem-resultado","atendidoEm":"…","resposta":"Nenhuma fonte trouxe a final ainda.","itens":0}`. Pedido fixo: a tarefa não manda `estado`, só `atendidoEm`, `resposta` e `itens` da última rodada. Cuidado com o `json_patch`: um campo com `null` no patch é **apagado** do doc (RFC 7396); mande só o que tem valor.
+
+O plantão procura, em qualquer seção:
+
+```sql
+SELECT id, data FROM docs WHERE collection = 'pedidos-curadoria' AND json_extract(data, '$.agora') = 1 AND json_extract(data, '$.estado') = 'pendente'
+```
+
+roda a seção de cada pedido e fecha com o mesmo `UPDATE`. A tarefa de plantão (de hora em hora, das 7h às 23h) e os textos das tarefas agendadas ficam com o dono; o Lookout só entrega o banco, as rotas e a tela.
+
+**Fora do alcance de quem não é Admin.** `instrucoes`, `instrucoes-hist` e `pedidos-curadoria` não vão para o espelho (`COLECOES_ESPELHO`, `src/espelho.js`) nem estão nas collections que `/api/q` e `/api/doc` aceitam; as rotas do Admin leem direto do D1.
+
+**Limpeza.** No minuto 7 (`limpar`, `src/coleta.js`), pedidos fechados (atendido, sem-resultado, cancelado) com `atualizado` de mais de 30 dias saem, por collection e lista de ids, em lotes de 90. Pendentes, inclusive os fixos, ficam. O relatório da limpeza ganha `pedidos`.
+
+### Rotas (só Admin; os outros recebem o mesmo 404 das rotas de Admin do Landscape)
+
+- `GET /api/admin/instrucoes`: as cinco seções com `versao`, `atualizado`, `tamanho`, `vazia` e a última rodada (`ultimaRodada`, `novosNaUltima`, de `meta/status*`).
+- `GET /api/admin/instrucoes/<secao>`: `{ existe, doc, historico: [{ versao, atualizado }] }`, mais nova primeiro.
+- `GET /api/admin/instrucoes/<secao>/<versao>`: o texto daquela versão (`atual: true` quando é a de agora); 404 se já foi cortada.
+- `PUT /api/admin/instrucoes/<secao>` com `{ texto, versao }`: `versao` é a que a tela leu (0 quando não havia). Se o banco já está em outra, **409** (duas abas abertas); a gravação é condicional (`UPDATE … AND json_extract(data, '$.versao') = ?`), então duas abas ao mesmo tempo também caem no 409. Texto com menos de 500 ou mais de 60.000 caracteres: **400** com o motivo. CRLF vira LF antes de contar. Grava `versao + 1` e guarda a anterior no histórico.
+- `GET /api/admin/pedidos`: todos, mais novos primeiro, até 200.
+- `POST /api/admin/pedidos` com `{ secao, texto, agora, fixo }`. Rodar agora sem texto só com `agora: true`. Trava: no máximo um `agora` pendente por seção (o segundo recebe 200 com `existente: true` e o pedido que já existe) e no máximo 6 `agora` por seção por dia de São Paulo (o sétimo leva 429). Pedidos comuns pendentes: até 50 por seção.
+- `PUT /api/admin/pedidos/<id>` com `{ texto?, fixo?, acao? }`: editar texto e fixo; `acao: "cancelar"` (só pendente) ou `"reabrir"` (volta a pendente, sem a resposta antiga; um `agora` só reabre se a seção não tiver outro pendente).
+- `DELETE /api/admin/pedidos/<id>`.
+- `GET` e `POST /api/admin/coleta-agora`: veja "Ler os feeds agora".
+
+### Ler os feeds agora
+
+Botão no card Rendimento das fontes. O `POST` não lê nada na hora: grava `_sistema/coleta-forcada` (`{ pedido, total, faltam, fim, expira, ultima }`) e, enquanto ele estiver ativo, o cron lê **30 feeds comuns por minuto** em vez de 6, sem esperar o intervalo de 90 min nem o recuo por erro, começando pelos que estão há mais tempo sem leitura, até passar uma vez por todos os de `src/feeds.js` que não foram lidos desde o pedido. No máximo **5 leituras abertas ao mesmo tempo**; com o subreddit da vez, que continua **um por minuto** como sempre, são 6, o limite de conexões simultâneas do Worker. Depois de 35 s o minuto não começa feed novo (o resto fica para o seguinte). Com os 165 feeds comuns de hoje, são **6 minutos** (5 com 30 e o último com 15). Um pedido por vez (o segundo leva 409 com o andamento); se não terminar em 30 min, vence e fica marcado `expirou`. O `GET` devolve o andamento (`lidos`, `total`, `faltam`, `minutos`), que a tela mostra como "lendo: 48 de 165" e atualiza a cada 15 s. Cotações, esportes e Landscape já rodam de minuto em minuto ou perto disso e não têm botão.
+
+### Tela
+
+- **Curadoria:** uma linha por seção com a última rodada e quantos novos, a versão das instruções (ou "sem instruções no Lookout"), os pedidos pendentes, o botão Instruções e "Rodar agora". Ao apertar: "Pedido gravado. O plantão confere de hora em hora, das 7h às 23h." e a linha mostra "rodada pedida às HH:MM" (o botão vira "Rodada pedida" enquanto o pedido estiver pendente). Sem promessa de horário exato.
+- **Instruções** (`/admin#instrucoes/<secao>`, abre pela linha da seção; Voltar do navegador fecha): aviso fixo "As regras de segurança ficam na própria tarefa e não são editadas aqui: em qual seção ela grava e o que nunca toca.", área de texto grande em fonte monoespaçada, contagem de caracteres, Salvar desligado sem mudança, "Descartar mudanças", aviso de mudança não salva ao sair (Voltar, Fechar, outra seção ou fechar a aba), versões anteriores com Ver e Restaurar (Restaurar só traz o texto para a área; quem grava é o Salvar). No 409, o botão "Trazer a versão do banco".
+- **Pedidos à curadoria:** campo de texto (contagem até 500), seção, interruptor "Vale em toda rodada", Adicionar. Lista com estado, quando foi atendido, a resposta da curadoria e quantos itens entraram; Cancelar (pendente), Reabrir (fechado) e Excluir (com confirmação). Vazio: "Nenhum pedido por enquanto. Dá para pedir um link para incluir, um assunto para a curadoria procurar ou uma fonte para olhar com mais atenção."
+
 ## Menu da conta
 
 Avatar no cabeçalho (página e `/admin`): nome e e-mail, Minha carteira, Minha meta, Importar extratos e Minhas listas (com Investimentos), Meus esportes (com Esportes), Aparência, Notícias traduzidas (só na página; veja "Tradução"), Administração (só o Admin), **Trocar de conta** e Sair. "Trocar de conta" (ajuda: "Sai e abre o login para escolher outra conta do Google") vai para `/cdn-cgi/access/logout` e antes grava `radar-trocar=1` no `sessionStorage`. O Access não volta sozinho para o login depois do logout; ao abrir o site de novo ele pede o login e aí dá para escolher a outra conta. O `radar-trocar` fica só como marca, sem uso por enquanto.
@@ -880,7 +966,7 @@ A partir de 900 px, a coluna esquerda e a direita têm um botão no topo (chevro
 
 `/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/lidas` com `/api/lidas/<id>` (veja "Lidas"), `/api/listas` com `/api/listas/<id>`, `/recalcular`, `/ordem` e `/mover` (veja "Minhas listas"), `/api/prefs/painel`, `/api/prefs/tabelas` e `/api/prefs/layout` (veja "Tabelas" e "Colunas recolhíveis"), `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/prefs/esportes` (veja "Esportes"), `/api/prefs/traducao` (veja "Tradução"), `/api/landscape` com `/api/landscape/<id>` e `/notas` (veja "Landscape"), `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. `/api/me` traz também `foruns`, as seções liberadas que têm subreddit. A página só lê as collections de itens, destaques, `foruns-*` e `meta` (com `meta/esportes-*`), e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
 
-Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`) recarga manual da CVM (`POST /api/admin/cvm`) e o Landscape (`/api/admin/landscape`, `/api/admin/landscape/<id>`, `/api/admin/landscape-categorias`, que respondem 404 para quem não é Admin). Sem grupos criados, todo convidado vê tudo.
+Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`), curadoria (`/api/admin/instrucoes`, `/api/admin/pedidos`, `/api/admin/coleta-agora`, que respondem 404 para quem não é Admin; veja "Curadoria: instruções, pedidos e plantão"), recarga manual da CVM (`POST /api/admin/cvm`) e o Landscape (`/api/admin/landscape`, `/api/admin/landscape/<id>`, `/api/admin/landscape-categorias`, que respondem 404 para quem não é Admin). Sem grupos criados, todo convidado vê tudo.
 
 ## Segredos
 
@@ -892,6 +978,7 @@ Ficam no painel da Cloudflare (Workers & Pages → `lookout` → Variables and S
 - `UPDATE` e `DELETE` só com lista explícita de ids.
 - Coletores, curadoria, a tradução e a limpeza das notícias não tocam em `favs/`, `lidas/`, `listas/`, `prefs/`, `carteira/`, `leitura/` nem `landscape/<email>`. As listas automáticas são gravadas pela rota da carteira da própria pessoa, não por coletor. Ninguém abre `carteira/` fora da rota da própria pessoa. `hist` só é gravado pela rota `/api/papel` e pelo cron dele.
 - O prompt de cada tarefa só roda os comandos que ele mesmo lista.
+- `instrucoes` e `instrucoes-hist` só são gravadas pela rota do Admin. As tarefas só leem as instruções e, em `pedidos-curadoria`, só leem e fecham pelo `UPDATE … json_patch` do contrato (por id).
 
 ## Custos
 
