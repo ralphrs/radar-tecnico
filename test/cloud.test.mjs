@@ -677,3 +677,43 @@ test("dossiês: limpeza de 180 dias por lista de ids; linha nova no relatório d
   const linha = r.curadorias.find((l) => l.id === "dossies");
   assert.equal(linha.nome, "Dossiês de ArchLandscape"); assert.equal(linha.estado, "atrasada"); assert.equal(linha.pendentes, 1);
 });
+
+test("dossiês: o GET devolve a estrutura já saneada; doc antigo, só com Markdown, continua como antes", async () => {
+  const { IDS2, estrutura2, fontes2 } = await import("./fixtures-profunda.mjs");
+  const { env, dep } = await semeado();
+  const ids = IDS2;
+  const a = await corpoDe(rotaDossies(req("POST", { aba: "cloud", ids }), env, ADMIN, "", dep, { agora: AGORA }));
+  assert.equal(a.status, 201); assert.equal(a.j.dossie.estrutura, null, "pendente sem estrutura");
+  const id = a.j.dossie.id;
+  // a tarefa grava a estrutura (com lixo no meio) pelo UPDATE do contrato
+  const e = estrutura2();
+  e.grupos[0].linhas[0].celulas.push({ id: "gcp--cloud-storage", marca: "sim", texto: "intrusa" });
+  e.grupos[0].linhas[0].celulas[1].marca = "quase";
+  e.grupos[0].linhas[0].celulas[1].fontes = [4, 42];
+  e.resumo[0].texto += " Sai por US$ 5 o TB.";
+  const prontoEm = new Date(AGORA + HORA).toISOString();
+  env.DB.db.prepare(SQL_FECHAR).run(JSON.stringify({ estado: "pronto", prontoEm, markdown: "## Reserva\n\nTexto curto.", fontes: fontes2(), estrutura: e }), id);
+  const g = await corpoDe(rotaDossies(req("GET"), env, ADMIN, id, dep, { agora: AGORA + 2 * HORA }));
+  assert.equal(g.status, 200);
+  const s = g.j.dossie.estrutura;
+  assert.deepEqual(s, A.estruturaOk(e, ids, fontes2().length), "a mesma regra da página");
+  assert.deepEqual(s.grupos[0].linhas[0].celulas.map((c) => c.id), ids);
+  assert.equal(s.grupos[0].linhas[0].celulas[1].marca, "");
+  assert.deepEqual(s.grupos[0].linhas[0].celulas[1].fontes, [4]);
+  assert.equal(s.resumo.length, 3, "o ponto com preço saiu");
+  assert.match(g.j.dossie.markdown, /Reserva/);
+  // a aba Profunda do conjunto também vem saneada; a lista vem sem os dois
+  const c = await corpoDe(rotaDossies(req("GET", null, "https://x/api/admin/arch/dossies?aba=cloud&ids=" + ids.join(",")), env, ADMIN, "", dep, { agora: AGORA + 2 * HORA }));
+  assert.deepEqual(c.j.pronta.estrutura, s);
+  const l = await corpoDe(rotaDossies(req("GET"), env, ADMIN, "", dep, { agora: AGORA + 2 * HORA }));
+  assert.ok(l.j.dossies.every((x) => !("estrutura" in x) && !("markdown" in x)));
+  // estrutura que não dá para usar vira null e o Markdown segue como reserva
+  env.DB.db.prepare(SQL_FECHAR).run(JSON.stringify({ estrutura: { v: 1, itens: [{ id: "x--y", nome: "?" }] } }), id);
+  const r = await corpoDe(rotaDossies(req("GET"), env, ADMIN, id, dep, { agora: AGORA + 2 * HORA }));
+  assert.equal(r.j.dossie.estrutura, null); assert.match(r.j.dossie.markdown, /Reserva/);
+  // doc antigo (antes da estrutura): sem o campo, igual a antes
+  const antigo = "d00000000000000ff";
+  env.DB.db.prepare("INSERT INTO docs (collection, id, data) VALUES ('arch-dossies', ?, ?)").run(antigo, JSON.stringify({ aba: "cloud", ids: ["aws--amazon-ec2", "gcp--compute-engine"], estado: "pronto", criado: new Date(AGORA).toISOString(), prontoEm: new Date(AGORA).toISOString(), markdown: "## Análise\n\n| | A | B |\n|---|---|---|\n| x | 1 | 2 |", fontes: [] }));
+  const o = await corpoDe(rotaDossies(req("GET"), env, ADMIN, antigo, dep, { agora: AGORA + HORA }));
+  assert.equal(o.j.dossie.estrutura, null); assert.match(o.j.dossie.markdown, /\| x \| 1 \| 2 \|/); assert.equal(o.j.dossie.situacao, "pronta");
+});

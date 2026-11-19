@@ -622,6 +622,7 @@
 
   /* ---------- roteiro da comparação profunda ----------
      O texto que o site grava no pedido (campo `roteiro` do doc em arch-dossies) para a tarefa que escreve a análise.
+     Pede a saída no formato de `estrutura` (veja estruturaOk), com o Markdown curto como reserva.
      servs: [{ id, nome, provedor }] (Cloud) ou [{ id, nome, repo }] (Tools). Sem preço, sem valor em dinheiro. */
   function roteiroProfunda(servs, { aba = "cloud", provs = [], subNome = "", sub = "", contexto = "" } = {}) {
     const l = Array.isArray(servs) ? servs : [];
@@ -632,17 +633,30 @@
     const caps = chavesDe(sub).map((a) => a.r);
     const out = [
       `Comparação profunda de ${aba === "cloud" ? "serviços de nuvem" : "tecnologias"}${subNome ? " na subcategoria " + subNome : ""}, para um ADR.`, "",
-      "Opções:", ...nomes, "",
-      "Para cada opção, com base na documentação oficial e citando a fonte (URL e data em que foi lida):",
+      "Opções (use estes ids, nesta ordem, nas colunas):", ...nomes, "",
+      "Para cada opção, com base na documentação oficial e anotando cada fonte (URL e data em que foi lida) na lista `fontes` do doc:",
       "1. Capacidades: " + (caps.length ? caps.join("; ") : "as que pesam na decisão") + ". Quando a documentação dá número e unidade, traga o número.",
       "2. Limites e cotas que costumam pegar em produção, dizendo quais dá para aumentar por pedido.",
-      "3. Maturidade: desde quando existe, o que está em disponibilidade geral e o que ainda está em preview ou beta.",
+      "3. Maturidade: desde quando existe, o que está em disponibilidade geral, o que ainda está em preview ou beta e o ritmo das mudanças.",
       "4. Dependência do fornecedor: APIs e formatos abertos ou próprios, o que muda para sair e para onde dá para ir.",
       "5. Operação: o que fica com o time (atualização, backup, escala, observabilidade, incidentes) e o que o provedor assume.",
       "6. Encaixe por cenário: em que situação cada opção encaixa e em qual não encaixa, com o motivo.",
       "",
+      "Formato: grave o campo `estrutura` (JSON). A tela desenha a comparação lado a lado a partir dele, então parágrafo longo não serve: cada texto é uma frase curta.",
+      "- v: 1",
+      "- itens: [{ id, nome }], as opções acima na mesma ordem, com nome curto.",
+      "- resumo: de 3 a 6 pontos { texto (até 220 caracteres), fontes }.",
+      "- porItem: [{ id, fortes, fracos }], até 5 de cada, cada um { texto (até 140), fontes }.",
+      "- grupos: [{ titulo, linhas }], com os títulos " + TITULOS_GRUPOS.map((t) => "\"" + t + "\"").join(", ") + ".",
+      "  Cada linha: { rotulo (até 60), difere (true quando as opções não são iguais nesse ponto), nota (até 200, opcional), celulas }.",
+      "  Uma célula por opção: { id, marca, texto (até 160), fontes }. marca: \"sim\", \"nao\", \"parcial\", \"nc\" (não conferido) ou \"\" quando a linha não é de sim ou não.",
+      "- cenarios: [{ cenario (até 120), perde (até 200, opcional: o que se perde nesse cenário), celulas: [{ id, encaixe, porque (até 200), fontes }] }]. encaixe: \"forte\", \"medio\", \"fraco\" ou \"nc\".",
+      "- naoConferido: o que não deu para conferir, em frases de até 200.",
+      "- fontes, em todo lugar: números a partir de 1 que apontam para a lista `fontes` do doc ([{ titulo, url, em }]), na mesma ordem.",
+      "Grave a estrutura inteira de uma vez, com todos os campos. Grave também `markdown` com o mesmo conteúdo em texto curto: ele só aparece quando a estrutura não pode ser usada.",
+      "",
       "Não inclua preço, custo estimado nem qualquer valor em dinheiro. Não eleja vencedora: descreva os fatos e as consequências.",
-      "Escreva em português do Brasil, em Markdown, com uma tabela lado a lado das capacidades e uma seção por opção.",
+      "Escreva em português do Brasil.",
     ];
     const ctx = limpo(contexto, CONTEXTO_MAX);
     if (ctx) out.push("", "Contexto da decisão: " + ctx);
@@ -673,6 +687,150 @@
       .sort((a, b) => String(b.data.criado || "").localeCompare(String(a.data.criado || "")));
     for (const d of l) { const e = estadoDaAnalise(d.data, agora); if (!out[e]) out[e] = d; }
     return out;
+  }
+
+  /* ---------- estrutura da comparação profunda (pedido de 19/11, 20h13) ----------
+     A tarefa grava `estrutura` no doc; o site valida ao ler e nunca confia. estruturaOk devolve a estrutura saneada:
+     corta os tamanhos, descarta célula e item de id desconhecido, marca inválida vira "", número de fonte fora da lista
+     some, texto com preço sai, e limita a 12 grupos, 40 linhas por grupo e 12 cenários. null quando não dá para usar
+     (não é objeto, v diferente de 1, menos de dois itens conhecidos ou nada para mostrar). As células de cada linha
+     voltam na ordem de `itens`, uma por item; a que faltou vem vazia (a tela mostra "não conferido"). */
+  const TITULOS_GRUPOS = ["Capacidades", "Limites", "Opções de uso e operação", "Maturidade e ritmo", "Dependência do fornecedor"];
+  const MARCAS = ["sim", "nao", "parcial", "nc"];
+  const ENCAIXES = ["forte", "medio", "fraco", "nc"];
+  const ROT_MARCA = { sim: "Sim", nao: "Não", parcial: "Parcial", nc: "Não conferido" };
+  const ROT_ENCAIXE = { forte: "Forte", medio: "Médio", fraco: "Fraco", nc: "Não conferido" };
+  const E_LIM = { grupos: 12, linhas: 40, cenarios: 12, resumo: 6, pontos: 5, fontesPorTexto: 8, naoConferido: 20 };
+  const lista = (x, max = 200) => (Array.isArray(x) ? x.slice(0, max) : []);
+  const obj = (x) => !!x && typeof x === "object" && !Array.isArray(x);
+  function estruturaOk(e, ids, nFontes) {
+    if (!obj(e) || e.v !== 1) return null;
+    const pode = new Set(lista(ids, 20).map(String));
+    const n = Math.max(0, Math.min(500, Math.floor(Number(nFontes) || 0)));
+    const txt = (s, max) => { const t = typeof s === "string" || typeof s === "number" ? limpo(s, max) : ""; return t && !temPreco(t) ? t : ""; };
+    const fts = (l) => [...new Set(lista(l, 40).map(Number).filter((x) => Number.isInteger(x) && x >= 1 && x <= n))].slice(0, E_LIM.fontesPorTexto);
+    const itens = [], vistos = new Set();
+    for (const it of lista(e.itens, 20)) {
+      const id = obj(it) ? String(it.id == null ? "" : it.id) : "";
+      if (!pode.has(id) || vistos.has(id)) continue;
+      vistos.add(id); itens.push({ id, nome: txt(it.nome, 80) || id });
+    }
+    if (itens.length < 2) return null;
+    const ordem = itens.map((i) => i.id);
+    /* por id, só os conhecidos, o primeiro de cada; devolve na ordem dos itens */
+    const porId = (l, fn, vazio) => {
+      const m = new Map();
+      for (const c of lista(l, 40)) { if (!obj(c)) continue; const id = String(c.id == null ? "" : c.id); if (vistos.has(id) && !m.has(id)) m.set(id, fn(c, id)); }
+      return ordem.map((id) => m.get(id) || vazio(id));
+    };
+    const ponto = (p, max) => (typeof p === "string" ? { texto: txt(p, max), fontes: [] } : obj(p) ? { texto: txt(p.texto, max), fontes: fts(p.fontes) } : { texto: "", fontes: [] });
+    const pontos = (l, max, lim) => lista(l, 60).map((p) => ponto(p, max)).filter((p) => p.texto).slice(0, lim);
+    const resumo = pontos(e.resumo, 220, E_LIM.resumo);
+    const porItem = porId(e.porItem, (x, id) => ({ id, fortes: pontos(x.fortes, 140, E_LIM.pontos), fracos: pontos(x.fracos, 140, E_LIM.pontos) }), (id) => ({ id, fortes: [], fracos: [] }));
+    const grupos = lista(e.grupos, 60).filter(obj).map((g) => ({
+      titulo: txt(g.titulo, 60),
+      linhas: lista(g.linhas, 200).filter(obj).map((l) => {
+        const nota = txt(l.nota, 200);
+        return { rotulo: txt(l.rotulo, 60), difere: l.difere === true, ...(nota ? { nota } : {}),
+          celulas: porId(l.celulas, (c, id) => ({ id, marca: MARCAS.includes(c.marca) ? c.marca : "", texto: txt(c.texto, 160), fontes: fts(c.fontes) }), (id) => ({ id, marca: "", texto: "", fontes: [] })) };
+      }).filter((l) => l.rotulo).slice(0, E_LIM.linhas),
+    })).filter((g) => g.titulo && g.linhas.length).slice(0, E_LIM.grupos);
+    const cenarios = lista(e.cenarios, 60).filter(obj).map((c) => {
+      const perde = txt(c.perde, 200);
+      return { cenario: txt(c.cenario, 120), ...(perde ? { perde } : {}),
+        celulas: porId(c.celulas, (x, id) => ({ id, encaixe: ENCAIXES.includes(x.encaixe) ? x.encaixe : "", porque: txt(x.porque, 200), fontes: fts(x.fontes) }), (id) => ({ id, encaixe: "", porque: "", fontes: [] })) };
+    }).filter((c) => c.cenario).slice(0, E_LIM.cenarios);
+    const naoConferido = lista(e.naoConferido, 60).map((t) => txt(obj(t) ? t.texto : t, 200)).filter(Boolean).slice(0, E_LIM.naoConferido);
+    if (!resumo.length && !grupos.length && !cenarios.length && !porItem.some((p) => p.fortes.length || p.fracos.length)) return null;
+    return { v: 1, itens, resumo, porItem, grupos, cenarios, naoConferido };
+  }
+  /* Célula sem nada a dizer: marca "nc", ou sem marca e sem texto */
+  const celulaNc = (c) => !c || c.marca === "nc" || (!c.marca && !c.texto);
+  const linhaNc = (l) => !!l && (l.celulas || []).every(celulaNc);
+  /* "Só o que difere" começa ligado quando a matriz inteira tem mais de 12 linhas */
+  const soDifereInicial = (e) => !!e && (e.grupos || []).reduce((k, g) => k + g.linhas.length, 0) > 12;
+  /* As linhas que a tela mostra: sem as não conferidas (a não ser com mostrarNc) e, com soDifere, só as que diferem */
+  const linhasVisiveis = (linhas, { soDifere = false, mostrarNc = false } = {}) => (Array.isArray(linhas) ? linhas : []).filter((l) => (mostrarNc || !linhaNc(l)) && (!soDifere || l.difere));
+  /* Markdown da estrutura, para "Ver em texto" e "Copiar para ADR": resumo, fortes e fracos, uma tabela por grupo, a de
+     cenários, o não conferido e as fontes numeradas. Passa pela validação antes (texto com preço não entra). */
+  function markdownDaEstrutura(estrutura, fontes, titulo) {
+    const fl = Array.isArray(fontes) ? fontes : [];
+    const e = estruturaOk(estrutura, obj(estrutura) ? lista(estrutura.itens, 20).map((i) => (obj(i) ? i.id : "")) : [], fl.length);
+    if (!e) return "";
+    const refs = (l) => (l && l.length ? " " + l.map((k) => "[" + k + "]").join("") : "");
+    const nomes = e.itens.map((i) => i.nome);
+    const cab = (primeira) => ["|" + (primeira ? " " + celulaMd(primeira) + " " : " ") + "| " + nomes.map(celulaMd).join(" | ") + " |", "|---|" + nomes.map(() => "---").join("|") + "|"];
+    const out = ["## " + (limpo(titulo, 200) || "Comparação profunda"), "", "Opções: " + nomes.join(", ") + ".", ""];
+    if (e.resumo.length) out.push("### Resumo", "", ...e.resumo.map((p) => "- " + p.texto + refs(p.fontes)), "");
+    if (e.porItem.some((p) => p.fortes.length || p.fracos.length)) {
+      out.push("### Pontos fortes e fracos", "");
+      e.porItem.forEach((p, i) => {
+        out.push("#### " + nomes[i], "");
+        out.push(...(p.fortes.length ? p.fortes.map((f) => "- Forte: " + f.texto + refs(f.fontes)) : ["- Forte: nada listado"]));
+        out.push(...(p.fracos.length ? p.fracos.map((f) => "- Fraco: " + f.texto + refs(f.fontes)) : ["- Fraco: nada listado"]), "");
+      });
+    }
+    const cel = (c) => { const m = c.marca ? ROT_MARCA[c.marca] : ""; const t = [m, c.texto].filter(Boolean).join(": ") || "não conferido"; return celulaMd(t + refs(c.fontes)); };
+    for (const g of e.grupos) {
+      out.push("### " + g.titulo, "", ...cab(""));
+      for (const l of g.linhas) out.push("| " + celulaMd(l.rotulo + (l.difere ? " (difere)" : "")) + " | " + l.celulas.map(cel).join(" | ") + " |");
+      const notas = g.linhas.filter((l) => l.nota);
+      out.push("", ...notas.map((l) => "- " + l.rotulo + ": " + l.nota), ...(notas.length ? [""] : []));
+    }
+    if (e.cenarios.length) {
+      out.push("### Encaixe por cenário", "", ...cab("Cenário"));
+      for (const c of e.cenarios) out.push("| " + celulaMd(c.cenario) + " | " + c.celulas.map((x) => celulaMd([x.encaixe ? ROT_ENCAIXE[x.encaixe] : "", x.porque].filter(Boolean).join(": ") + refs(x.fontes) || "não conferido")).join(" | ") + " |");
+      const perdas = e.cenarios.filter((c) => c.perde);
+      out.push("", ...perdas.map((c) => "- " + c.cenario + ". O que se perde: " + c.perde), ...(perdas.length ? [""] : []));
+    }
+    if (e.naoConferido.length) out.push("### Não conferido", "", ...e.naoConferido.map((t) => "- " + t), "");
+    if (fl.length) {
+      out.push("### Fontes", "");
+      fl.forEach((f, i) => { const u = urlOk(f && f.url); out.push(`${i + 1}. ${celulaMd((f && f.titulo) || u || "fonte")}${u ? ": " + u : ""}${f && f.em && dataBR(f.em) ? " (lida em " + dataBR(f.em) + ")" : ""}`); });
+      out.push("");
+    }
+    out.push("Análise gerada por IA a partir das fontes listadas. Confira antes de decidir.");
+    return out.join("\n") + "\n";
+  }
+
+  /* ---------- quando a análise sai (pedido de 19/11, 20h13) ----------
+     A tarefa "Lookout: comparações profundas" roda todo dia das 7h às 23h, no minuto 37 (horário de São Paulo, sem
+     horário de verão). proximaRodada(agora) -> { em (ISO), hora ("HH:MM"), quando: "hoje" | "amanha" | "", texto }. */
+  const RODADA = { de: 7, ate: 23, minuto: 37 };
+  function partesSP(t) {
+    const d = new Date(t);
+    try {
+      const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour12: false, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).formatToParts(d).map((x) => [x.type, x.value]));
+      return { dia: p.year + "-" + p.month + "-" + p.day, h: Number(p.hour) % 24, m: Number(p.minute), s: Number(p.second), ms: d.getUTCMilliseconds() };
+    } catch (e) {
+      const x = new Date(d.getTime() - 3 * 3600_000);
+      return { dia: x.toISOString().slice(0, 10), h: x.getUTCHours(), m: x.getUTCMinutes(), s: x.getUTCSeconds(), ms: x.getUTCMilliseconds() };
+    }
+  }
+  const dois = (n) => String(n).padStart(2, "0");
+  /* "HH:MM" em São Paulo */
+  const horaSP = (iso) => { const t = typeof iso === "number" ? iso : Date.parse(iso || ""); if (!Number.isFinite(t)) return ""; const p = partesSP(t); return dois(p.h) + ":" + dois(p.m); };
+  function proximaRodada(agora = Date.now()) {
+    const p = partesSP(agora);
+    const desde = ((p.h * 60 + p.m) * 60 + p.s) * 1000 + p.ms;
+    let h, quando;
+    if (p.h < RODADA.de) { h = RODADA.de; quando = "hoje"; }
+    else if (p.m < RODADA.minuto && p.h <= RODADA.ate) { h = p.h; quando = ""; }
+    else if (p.h + 1 <= RODADA.ate) { h = p.h + 1; quando = ""; }
+    else { h = RODADA.de; quando = "amanha"; }
+    const alvo = (h * 60 + RODADA.minuto) * 60_000 + (quando === "amanha" ? DIA : 0);
+    const hora = dois(h) + ":" + dois(RODADA.minuto);
+    const texto = quando === "amanha" ? "amanhã às " + h + "h" + RODADA.minuto : quando === "hoje" ? "hoje às " + h + "h" + RODADA.minuto : "às " + hora;
+    return { em: new Date(agora - desde + alvo).toISOString(), hora, quando, texto };
+  }
+  /* "Pedido feito às 14:05." (ou "em 18/11 às 22:10" quando não foi hoje) e "A próxima rodada é às 14:37." */
+  function textoPendente(pedidoEm, agora = Date.now()) {
+    const t = Date.parse(pedidoEm || "");
+    const r = proximaRodada(agora);
+    const prox = "A próxima rodada é " + r.texto + ".";
+    if (!Number.isFinite(t)) return prox;
+    const p = partesSP(t), hoje = partesSP(agora).dia === p.dia;
+    return "Pedido feito " + (hoje ? "" : "em " + p.dia.slice(8, 10) + "/" + p.dia.slice(5, 7) + " ") + "às " + horaSP(t) + ". " + prox;
   }
 
   /* ---------- ícone (regra do dono: sempre tentar um ícone; sem nenhum, o logotipo do Lookout esmaecido) ----------
@@ -751,5 +909,7 @@
     semAcento, slug, urlOk, isoOk, temPreco, temPalavra, chavesDe, carac, textoCarac, validarCarac, validarAtributos, validarProvedores, validarCategorias,
     nomeSub, catDaSub, idServico, validarServico, provDe, filtrarCloud, agrupar, equivalentes, podeComparar, marcavel, conjunto,
     FILTROS_VAZIOS, lerFiltros, escreverFiltros, lerHash, escreverHash, linha, dataBR, ultimaVersao, ritmo, textoRitmo, montarComparacao, markdownAdr,
-    GENERICAS, nomeDistinto, termosProv, citaServico, termosBusca, anuncio, novidadesDoServico, expiraDe, estadoDaAnalise, analisesDoConjunto, urlIcone, dominioDe, rotaIcone, iconeDe };
+    GENERICAS, nomeDistinto, termosProv, citaServico, termosBusca, anuncio, novidadesDoServico, expiraDe, estadoDaAnalise, analisesDoConjunto, urlIcone, dominioDe, rotaIcone, iconeDe,
+    TITULOS_GRUPOS, MARCAS, ENCAIXES, ROT_MARCA, ROT_ENCAIXE, E_LIM, estruturaOk, celulaNc, linhaNc, soDifereInicial, linhasVisiveis, markdownDaEstrutura,
+    RODADA, horaSP, proximaRodada, textoPendente };
 })(typeof globalThis !== "undefined" ? globalThis : this);

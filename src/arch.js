@@ -6,7 +6,9 @@
 //     criado, pedidoEm (o último pedido), forcado (true quando o Admin pediu "Atualizar análise"), por (e-mail de quem
 //     pediu), roteiro (o texto que o site monta para a IA, Arch.roteiroProfunda: capacidades, limites, maturidade,
 //     dependência do fornecedor, operação e encaixe por cenário, sem preço; refeito a cada pedido), prontoEm, expiraEm (prontoEm + 30 dias; a tarefa grava, e o site calcula
-//     quando não vier), markdown (até 60.000), fontes: [{ titulo, url, em }], resposta (frase curta em caso de falha) }
+//     quando não vier), markdown (até 60.000; com `estrutura`, só a reserva), estrutura (a análise em colunas, veja
+//     Arch.estruturaOk em public/arch.js; a tarefa grava, o site valida ao ler), fontes: [{ titulo, url, em }] (os números
+//     de `estrutura` apontam para esta lista, a partir de 1), resposta (frase curta em caso de falha) }
 // A tarefa lê os pendentes com SQL_PENDENTES e fecha cada um com SQL_FECHAR (as duas rodam nos testes como estão).
 // Validade: pronta vale 30 dias (Arch.estadoDaAnalise). Dentro dela, pedir o mesmo conjunto (mesmos ids, qualquer
 // ordem) devolve a que existe, sem gastar a trava do dia; { forcar: true } pede de novo no mesmo doc. Vencida, a tela
@@ -35,9 +37,12 @@ export async function todos(env) {
   return (results || []).map((r) => ({ id: r.id, data: parse(r.data) })).filter((d) => d.data && A.ID_DOSSIE.test(d.id));
 }
 // O que a tela mostra de cada um: o estado de hoje (pronta, vencida...) e a validade calculada
+// Inteiro (o doc aberto): com o Markdown e a `estrutura` já saneada (Arch.estruturaOk; null quando não dá para usar).
+// A lista vai sem os dois.
 export const vista = (d, agora, inteiro = false) => {
-  const { markdown, ...resto } = d.data;
-  return { id: d.id, ...resto, ...(inteiro ? { markdown: typeof markdown === "string" ? markdown.slice(0, A.MARKDOWN_MAX) : "" } : {}), situacao: A.estadoDaAnalise(d.data, agora), expiraEm: A.expiraDe(d.data) };
+  const { markdown, estrutura, ...resto } = d.data;
+  const fontes = Array.isArray(resto.fontes) ? resto.fontes : [];
+  return { id: d.id, ...resto, ...(inteiro ? { markdown: typeof markdown === "string" ? markdown.slice(0, A.MARKDOWN_MAX) : "", estrutura: A.estruturaOk(estrutura, resto.ids, fontes.length) } : {}), situacao: A.estadoDaAnalise(d.data, agora), expiraEm: A.expiraDe(d.data) };
 };
 
 // POST /api/admin/arch/dossies { aba, ids, contexto }, GET (lista, sem o Markdown), GET <id>, DELETE <id>

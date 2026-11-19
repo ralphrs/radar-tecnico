@@ -10,6 +10,7 @@ var AC = {
   dados: null, erro: "", carregando: false, det: new Map(), detErro: new Map(), notas: new Map(), nov: new Map(),
   sel: [], aviso: "", rolagem: 0, mostrarNc: false, daGrade: false, filtros: null, cmp: new Map(), cmpErro: new Map(), novCmp: new Map(),
   prof: new Map(), profLista: null, profDoc: new Map(), rotTools: new Map(), copiado: "", aba: "rapida", folha: null, pedidos: new Set(),
+  pf: new Map(), vigia: null,
 };
 const ARCH = () => window.Arch;
 
@@ -578,9 +579,55 @@ function telaComparar(box, est) {
 /* Profunda: o dossiê (collection arch-dossies) com outro nome na tela. Um doc por conjunto de alternativas.
    Pronta vale 30 dias (Arch.estadoDaAnalise). Vencida: a página pede de novo sozinha ao abrir (o mesmo doc volta a
    pendente e a análise antiga continua na tela). Dentro da validade, "Atualizar análise" pede de novo (forcar), com
-   confirmação na própria página. */
+   confirmação na própria página. Com `estrutura` (pedido de 19/11, 20h13), a análise é desenhada em colunas
+   (analiseEstruturada); sem ela, o Markdown de antes. Pendente: a página relê o pedido a cada minuto (vigiarPendente). */
+const QUEM_ATENDE = "Quem atende é a tarefa “Lookout: comparações profundas”, todo dia das 7h às 23h, no minuto 37. A análise costuma ficar pronta de 5 a 15 minutos depois da rodada.";
+const avisoIaEl = () => el("p", { class: "ac-aviso-ia", role: "note", id: "ac-aviso-ia" }, "Análise gerada por IA a partir das fontes listadas. Confira antes de decidir.");
+const temAnalise = (d) => !!(d && (d.estrutura || (typeof d.markdown === "string" && d.markdown.trim())));
+/* Título do texto (Markdown e ADR): os nomes na ordem da estrutura, ou na do pedido */
+function tituloProfunda(d, nomeDe) {
+  const nomes = d.estrutura ? d.estrutura.itens.map((i) => i.nome) : (d.ids || []).map(nomeDe);
+  return "Comparação profunda: " + nomes.join(" × ");
+}
+function blocoPendente(d, extra) {
+  return el("section", { class: "ls-bloco", id: "ac-prof-pendente" }, el("h3", {}, "Comparação profunda", el("span", { class: "dd-badge b-review" }, "pendente")),
+    el("p", { class: "pf-quando", id: "ac-prof-quando" }, ARCH().textoPendente(d.pedidoEm || d.criado)),
+    el("p", {}, QUEM_ATENDE),
+    el("p", { class: "ls-pe", id: "ac-prof-releitura" }, "Esta página confere sozinha a cada minuto e mostra a análise assim que ela chegar."),
+    d.contexto ? el("p", { class: "ls-pe" }, "Contexto: " + d.contexto) : null,
+    ...(extra || []));
+}
+/* Releitura do pendente: a cada 60 s, só com a aba visível e só enquanto a tela é a mesma (chave). Ao voltar para a aba
+   depois de mais de um minuto, relê na hora. */
+function chaveTelaProfunda() {
+  const e = typeof archAtual === "function" ? archAtual() : null;
+  if (!e || !emLandscape()) return "";
+  if (e.tela === "comparar" && e.profunda) return "c:" + e.aba + ":" + ARCH().conjunto(e.ids || []);
+  if (e.tela === "profunda" && e.id) return "d:" + e.id;
+  return "";
+}
+function pararVigia() { if (AC.vigia) clearTimeout(AC.vigia.t); AC.vigia = null; }
+function vigiarPendente(chave, reler) {
+  if (AC.vigia && AC.vigia.chave === chave) { AC.vigia.reler = reler; return; }
+  pararVigia();
+  const v = { chave, reler, t: 0, ultima: Date.now() };
+  const rodar = async () => {
+    if (AC.vigia !== v) return;
+    if (chaveTelaProfunda() !== chave) { pararVigia(); return; }
+    if (document.visibilityState === "visible") { v.ultima = Date.now(); try { await v.reler(); } catch (e) {} }
+    if (AC.vigia === v) v.t = setTimeout(rodar, 60000);
+  };
+  v.rodar = rodar; AC.vigia = v;
+  v.t = setTimeout(rodar, 60000);
+}
+document.addEventListener("visibilitychange", () => {
+  const v = AC.vigia;
+  if (v && document.visibilityState === "visible" && Date.now() - v.ultima >= 60000) { clearTimeout(v.t); v.rodar(); }
+});
+/* Para de vigiar quando a tela deixa de ser a do pendente (a análise chegou ou o Admin saiu) */
+function vigiaSeguePendente(chave, pendente) { if (!pendente && AC.vigia && AC.vigia.chave === chave) pararVigia(); }
+
 function abaProfunda(box, aba, ids, sub, k) {
-  box.append(el("p", { class: "ac-aviso-ia", role: "note" }, "Análise gerada por IA a partir das fontes listadas. Confira antes de decidir."));
   const admin = aba === "cloud" ? AC.dados && AC.dados.admin : lsAdmin;
   if (!admin) { box.append(el("p", { class: "ls-aviso" }, "A comparação profunda é pedida e lida pelo Admin do Lookout.")); return; }
   const p = AC.prof.get(k);
@@ -590,13 +637,16 @@ function abaProfunda(box, aba, ids, sub, k) {
   const quando = (iso) => new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
   // vencida: pede de novo sozinha, uma vez (a rota devolve o pendente se já houver)
   if (p.vencida && !p.pendente && !p.pronta) umaVez("pv:" + k, () => pedir({}).catch((e) => { AC.prof.set(k, { ...p, erroRenovar: e.message }); reDesenhar(); }));
-  const conteudo = (d) => {
-    const c = el("div", { class: "ac-analise" }, mdSeguro(d.markdown || ""));
-    if (d.fontes && d.fontes.length) c.append(el("h4", {}, "Fontes"), el("ul", { class: "ac-lista" }, ...d.fontes.map((f) => el("li", {}, linkFora(f.url, f.titulo || f.url, "ac-link"), f.em ? " · " + dataBR(f.em) : ""))));
-    const [cp, cx] = botaoCopiar("Copiar Markdown", d.markdown || "", "ac-copiar-md-" + d.id);
-    c.append(el("div", { class: "ls-acoes" }, cp), cx);
-    return c;
-  };
+  const pend = p.pendente;
+  const chave = "c:" + k;
+  vigiaSeguePendente(chave, !!pend);
+  if (pend) vigiarPendente(chave, async () => {
+    const j = await apiLs("GET", "/api/admin/arch/dossies?aba=" + aba + "&ids=" + ids.map(encodeURIComponent).join(","));
+    if (!j.pendente) AC.profLista = null;
+    AC.prof.set(k, j); reDesenhar();
+  });
+  const cat = aba === "cloud" ? servs() : (lsLista || []);
+  const nomeDe = (id) => (cat.find((x) => x.id === id) || {}).nome || id;
   // botão "Atualizar análise": confirmação dentro da página; pendente, esmaecido com a hora do pedido
   const atualizar = (d, pendente) => {
     const linha = el("div", { class: "ls-acoes ac-atualizar", id: "ac-atualizar-linha" });
@@ -615,23 +665,26 @@ function abaProfunda(box, aba, ids, sub, k) {
     linha.append(b);
     return linha;
   };
-  const pend = p.pendente;
-  if (p.pronta || (pend && pend.markdown) || p.vencida) {
+  if (p.pronta || temAnalise(pend) || p.vencida) {
     const d = p.pronta || pend || p.vencida;
-    const sec = el("section", { class: "ls-bloco", id: p.pronta ? "ac-prof-pronta" : "ac-prof-pendente" }, el("h3", {}, "Comparação profunda", el("span", { class: "dd-badge " + (p.pronta ? "b-release" : "b-review") }, p.pronta ? "pronta" : "pendente")));
+    // o aviso de IA só aparece com uma análise na tela
+    box.append(avisoIaEl());
+    const sec = el("section", { class: "ls-bloco ac-prof", id: p.pronta ? "ac-prof-pronta" : "ac-prof-pendente" }, el("h3", {}, "Comparação profunda", el("span", { class: "dd-badge " + (p.pronta ? "b-release" : "b-review") }, p.pronta ? "pronta" : "pendente")));
     sec.append(atualizar(d, !!pend || !p.pronta));
     const venceu = pend && Date.parse(pend.expiraEm || "") <= Date.now();
     if (p.pronta) sec.append(el("p", { class: "ls-pe" }, "gerada em " + dataBR(d.prontoEm) + " · vale até " + dataBR(d.expiraEm)));
-    else if (venceu || p.vencida) sec.append(el("p", { class: "ls-aviso", id: "ac-prof-vencida" }, "Análise de " + dataBR(d.prontoEm) + ", vencida. Uma nova já foi pedida."));
-    else sec.append(el("p", { class: "ls-aviso" }, "Análise de " + dataBR(d.prontoEm) + ". Uma atualização foi pedida: o plantão confere de hora em hora, das 7h às 23h."));
+    else if (venceu || p.vencida) sec.append(el("p", { class: "ls-aviso", id: "ac-prof-vencida" }, "Análise de " + dataBR(d.prontoEm) + ", vencida. Uma nova já foi pedida." + (pend ? " " + ARCH().textoPendente(pend.pedidoEm || pend.criado) : "")));
+    else sec.append(el("p", { class: "ls-aviso", id: "ac-prof-atualizando" }, "Análise de " + dataBR(d.prontoEm) + ". Uma atualização foi pedida. " + ARCH().textoPendente(pend.pedidoEm || pend.criado)));
+    if (pend) sec.append(el("p", { class: "ls-pe" }, QUEM_ATENDE + " Esta página confere sozinha a cada minuto."));
     if (p.erroRenovar) sec.append(avisoEl("Não deu para pedir a análise nova: " + p.erroRenovar, true));
-    sec.append(conteudo(d));
+    sec.append(analiseEl(d, aba, tituloProfunda(d, nomeDe), "ac-copiar-md-" + d.id));
     box.append(sec);
     return;
   }
   if (pend) {
-    box.append(el("section", { class: "ls-bloco", id: "ac-prof-pendente" }, el("h3", {}, "Comparação profunda", el("span", { class: "dd-badge b-review" }, "pendente")),
-      el("p", {}, "Pedido gravado. O plantão confere de hora em hora, das 7h às 23h."), el("p", { class: "ls-pe" }, "pedido em " + quando(pend.pedidoEm || pend.criado) + (pend.contexto ? " · contexto: " + pend.contexto : ""))));
+    const rapida = el("a", { class: "dd-btn dd-btn--ghost", href: ARCH().escreverHash({ aba, tela: "comparar", ids, profunda: false }), id: "ac-prof-ver-rapida" }, "Ver a comparação rápida");
+    rapida.addEventListener("click", (e) => { e.preventDefault(); archEst = { ...archAtual(), profunda: false }; escreverHash(false); renderLandscape(); });
+    box.append(blocoPendente(pend, [el("div", { class: "ls-acoes" }, rapida)]));
     return;
   }
   // nunca pedida (ou falhou): o pedido
@@ -644,15 +697,197 @@ function abaProfunda(box, aba, ids, sub, k) {
   const b = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ac-gerar" }, "Gerar comparação profunda");
   b.addEventListener("click", async () => { b.disabled = true; msg.textContent = ""; try { await pedir({ contexto: ctx.value }); } catch (e) { msg.textContent = e.message; msg.classList.add("erro"); b.disabled = false; } });
   // o roteiro que vai no pedido (o mesmo que a rota grava): capacidades, limites, maturidade, dependência, operação e cenários, sem preço
-  const cat = aba === "cloud" ? servs() : (lsLista || []);
   const subNome = aba === "cloud" ? ARCH().nomeSub(catsCloud(), sub) : sub;
   const roteiro = () => ARCH().roteiroProfunda(ids.map((id) => cat.find((x) => x.id === id)).filter(Boolean), { aba, provs: provs(), sub, subNome, contexto: ctx.value });
   const pre = el("pre", { class: "ac-roteiro", id: "ac-roteiro" }, roteiro());
   ctx.addEventListener("input", () => { pre.textContent = roteiro(); });
   sec.append(el("label", { class: "rotulo", for: "ac-contexto" }, "Contexto da decisão (opcional)"), ctx, conta,
     el("details", { class: "ac-roteiro-caixa" }, el("summary", {}, "O que vai ser pedido à IA"), pre),
-    el("p", { class: "ls-aviso" }, "A análise fica pronta em algumas horas e vale 30 dias; depois disso, uma nova é pedida sozinha quando a comparação é aberta."), el("div", { class: "ls-acoes" }, b), msg);
+    el("p", { class: "ls-aviso" }, "A tarefa “Lookout: comparações profundas” atende os pedidos todo dia das 7h às 23h, no minuto 37, e a análise costuma ficar pronta de 5 a 15 minutos depois. Ela vale 30 dias; depois disso, uma nova é pedida sozinha quando a comparação é aberta."),
+    el("div", { class: "ls-acoes" }, b), msg);
   box.append(sec);
+}
+
+/* ---------- a análise na tela ---------- */
+/* Fontes do doc: só endereço https vira link; o resto fica como texto */
+function fontesLista(fontes) {
+  return el("ul", { class: "ac-lista" }, ...(fontes || []).map((f) => { const u = ARCH().urlOk(f && f.url); return el("li", {}, u ? linkFora(u, (f && f.titulo) || u, "ac-link") : String((f && (f.titulo || f.url)) || "fonte"), f && f.em ? " · " + dataBR(f.em) : ""); }));
+}
+/* Com estrutura, as colunas; sem ela (doc antigo), o Markdown como antes */
+function analiseEl(d, aba, titulo, idCopiar) {
+  if (d.estrutura) return analiseEstruturada(d, aba, titulo);
+  const c = el("div", { class: "ac-analise", id: "ac-analise-md" }, mdSeguro(d.markdown || ""));
+  if (d.fontes && d.fontes.length) c.append(el("h4", {}, "Fontes"), fontesLista(d.fontes));
+  const [cp, cx] = botaoCopiar("Copiar Markdown", d.markdown || "", idCopiar);
+  c.append(el("div", { class: "ls-acoes" }, cp), cx);
+  return c;
+}
+/* O estado de cada análise na tela: "Só o que difere" (ligado de saída com mais de 12 linhas), "Mostrar não conferidas"
+   e "Ver em texto" */
+function estadoPf(d) {
+  if (!AC.pf) AC.pf = new Map();
+  let s = AC.pf.get(d.id);
+  if (!s) { s = { soDifere: ARCH().soDifereInicial(d.estrutura), mostrarNc: false, texto: false }; AC.pf.set(d.id, s); }
+  return s;
+}
+/* Cabeçalho de cada coluna: ícone (do provedor em Cloud; da organização ou do site em Tools) e nome curto */
+function colunaItem(aba, item) {
+  const A = ARCH();
+  if (aba === "cloud") {
+    const s = servs().find((x) => x.id === item.id), p = s ? A.provDe(provs(), s.provedor) : null;
+    return { nome: A.nomeCurto(item.nome, p || (s && s.provedor) || ""), inteiro: item.nome + (p ? " (" + p.nome + ")" : ""), icone: () => iconeEl(A.iconeDe(s || {}, p), "p") };
+  }
+  const t = (lsLista || []).find((x) => x.id === item.id);
+  return { nome: item.nome, inteiro: item.nome, icone: () => marcaEl(t || {}, "p") };
+}
+/* Número de fonte: botão pequeno que leva à lista no fim. Entra no histórico (pushState no mesmo endereço, sem mexer no
+   hash do roteador): o Voltar do navegador traz de volta ao número clicado. */
+let pfRef = 0;
+function refsEl(nums, fontes) {
+  if (!nums || !nums.length) return null;
+  return el("span", { class: "pf-refs" }, ...nums.map((n) => {
+    const f = (fontes || [])[n - 1] || {};
+    const b = el("button", { type: "button", class: "pf-ref", id: "pf-r-" + ++pfRef, "aria-label": "Fonte " + n + (f.titulo ? ": " + f.titulo : ""), title: f.titulo || "Fonte " + n }, String(n));
+    b.addEventListener("click", () => irFonte(n, b));
+    return b;
+  }));
+}
+function irFonte(n, origem) {
+  const alvo = $("pf-f-" + n);
+  if (!alvo) return;
+  try { history.replaceState({ ...(history.state || {}), pfVolta: origem.id, pfY: window.scrollY }, ""); history.pushState({ pfFonte: n }, ""); } catch (e) {}
+  alvo.scrollIntoView({ block: "center" });
+  alvo.focus({ preventScroll: true });
+  alvo.classList.remove("pf-alvo"); void alvo.offsetWidth; alvo.classList.add("pf-alvo");
+}
+window.addEventListener("popstate", (e) => {
+  const s = e.state;
+  if (!s || s.pfY == null) return;
+  window.scrollTo({ top: s.pfY });
+  const b = s.pfVolta && $(s.pfVolta);
+  if (b) b.focus({ preventScroll: true });
+});
+/* O cabeçalho das colunas fica preso logo abaixo do que já é fixo no topo (cabeçalho e barra): --ac-topo */
+function medirTopoAc() {
+  let y = 0;
+  for (const n of [document.querySelector("body > header, header"), $("barra")]) {
+    if (!n || !n.offsetHeight) continue;
+    const cs = getComputedStyle(n);
+    if (cs.position === "sticky" || cs.position === "fixed") y = Math.max(y, (parseFloat(cs.top) || 0) + n.offsetHeight);
+  }
+  document.documentElement.style.setProperty("--ac-topo", y + "px");
+}
+let pfTopoQuadro = 0;
+const pfTopoDepois = () => { if (pfTopoQuadro || !document.querySelector(".pf")) return; pfTopoQuadro = requestAnimationFrame(() => { pfTopoQuadro = 0; medirTopoAc(); }); };
+window.addEventListener("resize", pfTopoDepois, { passive: true });
+window.addEventListener("scroll", pfTopoDepois, { passive: true });
+/* As tabelas que rolam de lado andam juntas, e o cabeçalho das colunas acompanha */
+function ligarRolagem(root) {
+  const rolas = [...root.querySelectorAll(".pf-rola")], cab = root.querySelector(".pf-cols");
+  const todos = cab ? [cab, ...rolas] : rolas;
+  for (const r of rolas) r.addEventListener("scroll", () => { const x = r.scrollLeft; for (const o of todos) if (o !== r && Math.abs(o.scrollLeft - x) > 0.5) o.scrollLeft = x; }, { passive: true });
+}
+const seloEl = (tipo, m) => { const A = ARCH(); const rot = tipo === "marca" ? A.ROT_MARCA[m] : A.ROT_ENCAIXE[m]; return rot ? el("span", { class: "pf-selo pf-" + (tipo === "marca" ? "m" : "e") + "-" + m }, rot) : null; };
+/* Uma matriz (grupo ou cenários): linhas com o rótulo preso à esquerda e uma célula por item. Papéis de tabela
+   explícitos (role), porque o desenho é em grade: no celular com 2 itens o rótulo sobe para cima do par. */
+function matrizEl({ titulo, canto, linhas, itens, rotulo, celula, nota, dif }) {
+  const tab = el("div", { class: "pf-tab", role: "table", "aria-label": titulo });
+  tab.append(el("div", { role: "rowgroup", class: "ls-sr" }, el("div", { role: "row" }, el("span", { role: "columnheader" }, canto), ...itens.map((it) => el("span", { role: "columnheader" }, it.inteiro)))));
+  const corpo = el("div", { role: "rowgroup" });
+  for (const l of linhas) {
+    const n = nota(l);
+    const tr = el("div", { class: "pf-tr" + (dif(l) ? " dif" : "") + (n ? " tem-nota" : ""), role: "row" }, el("div", { class: "pf-rot", role: "rowheader" }, ...rotulo(l)), ...l.celulas.map((c) => el("div", { class: "pf-cel", role: "cell" }, ...celula(c))));
+    corpo.append(tr);
+    if (n) corpo.append(el("div", { class: "pf-tr pf-tr-nota" + (dif(l) ? " dif" : ""), role: "row" }, el("div", { class: "pf-nota", role: "cell", "aria-colspan": String(itens.length + 1) }, n)));
+  }
+  tab.append(corpo);
+  return el("div", { class: "pf-rola", tabindex: "0", role: "region", "aria-label": titulo }, tab);
+}
+function analiseEstruturada(d, aba, titulo) {
+  const A = ARCH(), E = d.estrutura, fontes = d.fontes || [], st = estadoPf(d);
+  pfRef = 0;
+  const n = E.itens.length;
+  const itens = E.itens.map((it) => colunaItem(aba, it));
+  const root = el("div", { class: "pf " + (n === 2 ? "pf-n2" : "pf-nn"), style: "--pf-n:" + n, id: "pf", lang: "pt-BR", "data-itens": String(n) });
+  const md = () => A.markdownDaEstrutura(E, fontes, titulo);
+  // ações: ver em texto (o Markdown gerado da estrutura) e copiar para ADR (o mesmo texto)
+  const ver = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "pf-ver-texto", "aria-pressed": String(!!st.texto) }, st.texto ? "Ver lado a lado" : "Ver em texto");
+  ver.addEventListener("click", () => { st.texto = !st.texto; reDesenhar(); const x = $("pf-ver-texto"); if (x) x.focus({ preventScroll: true }); });
+  const [cp, cx] = botaoCopiar("Copiar para ADR", md, "pf-copiar-adr");
+  root.append(el("div", { class: "ls-acoes pf-acoes" }, ver, cp), cx);
+  if (st.texto) { root.append(el("div", { class: "ac-analise pf-texto", id: "pf-texto" }, mdSeguro(md()))); return root; }
+  // índice em chips: rola até o bloco
+  const partes = [];
+  if (E.resumo.length) partes.push(["pf-resumo", "Resumo"]);
+  if (E.porItem.some((p) => p.fortes.length || p.fracos.length)) partes.push(["pf-fortes", "Fortes e fracos"]);
+  E.grupos.forEach((g, i) => partes.push(["pf-g-" + i, g.titulo]));
+  if (E.cenarios.length) partes.push(["pf-cenarios", "Cenários"]);
+  if (E.naoConferido.length) partes.push(["pf-nc", "Não conferido"]);
+  if (fontes.length) partes.push(["pf-fontes", "Fontes"]);
+  root.append(el("nav", { class: "pf-indice", "aria-label": "Partes da análise" }, ...partes.map(([id, t]) => {
+    const b = el("button", { class: "chip", type: "button", "data-alvo": id }, t);
+    b.addEventListener("click", () => { const s = $(id); if (!s) return; s.scrollIntoView({ block: "start" }); const h = s.querySelector("h3"); if (h) h.focus({ preventScroll: true }); });
+    return b;
+  })));
+  // o cabeçalho das colunas, preso no topo (só visual: cada tabela tem o seu para leitor de tela)
+  root.append(el("div", { class: "pf-cols", "aria-hidden": "true" }, el("div", { class: "pf-cols-in" }, el("span", { class: "pf-cols-canto" }, n + " opções"),
+    ...itens.map((it) => el("span", { class: "pf-col", title: it.inteiro }, it.icone(), el("span", { class: "pf-col-nome" }, it.nome))))));
+  const bloco = (id, t, sub, ...kids) => el("section", { class: "pf-bloco", id, "aria-labelledby": id + "-h" }, el("h3", { id: id + "-h", tabindex: "-1" }, t, sub ? el("small", {}, sub) : null), ...kids);
+  // 1. resumo
+  if (E.resumo.length) root.append(bloco("pf-resumo", "Resumo", "", el("ul", { class: "pf-resumo" }, ...E.resumo.map((p) => el("li", {}, p.texto, refsEl(p.fontes, fontes))))));
+  // 2. pontos fortes e fracos, um cartão por item
+  if (E.porItem.some((p) => p.fortes.length || p.fracos.length)) {
+    const lista = (l, forte) => (l.length ? el("ul", { class: "pf-pontos " + (forte ? "pf-forte" : "pf-fraco") }, ...l.map((x) => el("li", {}, el("span", { class: "pf-simb", "aria-hidden": "true" }, forte ? "✓" : "✕"), el("span", {}, x.texto, refsEl(x.fontes, fontes)))))
+      : el("p", { class: "pf-nc" }, "nada listado"));
+    root.append(bloco("pf-fortes", "Pontos fortes e fracos", "", el("div", { class: "pf-cards" },
+      el("div", { class: "pf-cards-leg", "aria-hidden": "true" }, el("span", {}, el("b", { class: "pf-simb pf-sim" }, "✓"), " ponto forte"), el("span", {}, el("b", { class: "pf-simb pf-nao" }, "✕"), " ponto fraco")),
+      ...E.porItem.map((p, i) => el("article", { class: "pf-card", "aria-label": itens[i].inteiro },
+        el("h4", {}, itens[i].icone(), el("span", {}, itens[i].nome)),
+        el("p", { class: "pf-lt" }, "Pontos fortes"), lista(p.fortes, true),
+        el("p", { class: "pf-lt" }, "Pontos fracos"), lista(p.fracos, false))))));
+  }
+  // 3. matriz por grupo, com os filtros "Só o que difere" e "Mostrar não conferidas"
+  if (E.grupos.length) {
+    const todas = E.grupos.flatMap((g) => g.linhas);
+    const nNc = todas.filter(A.linhaNc).length, nDif = todas.filter((l) => l.difere).length;
+    const so = el("button", { class: "chip", type: "button", id: "pf-so-difere", "aria-pressed": String(!!st.soDifere) }, "Só o que difere", el("span", { class: "k" }, nDif + " de " + todas.length));
+    so.addEventListener("click", () => { st.soDifere = !st.soDifere; reDesenhar(); const x = $("pf-so-difere"); if (x) x.focus({ preventScroll: true }); });
+    const nc = el("button", { class: "chip", type: "button", id: "pf-mostrar-nc", "aria-pressed": String(!!st.mostrarNc) }, "Mostrar não conferidas", el("span", { class: "k" }, String(nNc)));
+    if (!nNc) { nc.disabled = true; nc.setAttribute("aria-disabled", "true"); }
+    nc.addEventListener("click", () => { st.mostrarNc = !st.mostrarNc; reDesenhar(); const x = $("pf-mostrar-nc"); if (x) x.focus({ preventScroll: true }); });
+    root.append(el("div", { class: "pf-filtros", role: "group", "aria-label": "Filtros da matriz" }, so, nc, el("span", { class: "pf-leg" }, el("span", { class: "pf-difere" }, "difere"), " marca a linha em que as opções não são iguais")));
+    E.grupos.forEach((g, i) => {
+      const vis = A.linhasVisiveis(g.linhas, st);
+      const dif = g.linhas.filter((l) => l.difere).length;
+      const sub = g.linhas.length + (g.linhas.length === 1 ? " linha" : " linhas") + " · " + dif + (dif === 1 ? " difere" : " diferem");
+      const corpo = vis.length ? matrizEl({ titulo: g.titulo, canto: "Ponto", linhas: vis, itens,
+        dif: (l) => l.difere, nota: (l) => l.nota || "",
+        rotulo: (l) => [el("span", { class: "pf-rot-t" }, l.rotulo), l.difere ? el("span", { class: "pf-difere" }, "difere") : null],
+        celula: (c) => (A.celulaNc(c) && !c.texto ? [seloEl("marca", "nc") || el("span", { class: "pf-selo pf-m-nc" }, "Não conferido")] : (c.texto ? [seloEl("marca", c.marca), el("span", { class: "pf-txt" }, c.texto, refsEl(c.fontes, fontes))] : [el("span", { class: "pf-sl" }, seloEl("marca", c.marca), refsEl(c.fontes, fontes))])) })
+        : el("p", { class: "pf-vazio" }, st.soDifere && g.linhas.some((l) => !l.difere) ? "Nenhuma linha difere neste grupo. Desligue “Só o que difere” para ver as " + g.linhas.length + "." : "Nada conferido neste grupo. Use “Mostrar não conferidas” para ver as linhas.");
+      root.append(bloco("pf-g-" + i, g.titulo, sub, corpo));
+    });
+  }
+  // 4. encaixe por cenário
+  if (E.cenarios.length) {
+    root.append(bloco("pf-cenarios", "Encaixe por cenário", E.cenarios.length + (E.cenarios.length === 1 ? " cenário" : " cenários"), matrizEl({ titulo: "Encaixe por cenário", canto: "Cenário", linhas: E.cenarios, itens,
+      dif: () => false, nota: (c) => (c.perde ? "O que se perde: " + c.perde : ""),
+      rotulo: (c) => [el("span", { class: "pf-rot-t" }, c.cenario)],
+      celula: (c) => (c.porque ? [seloEl("encaixe", c.encaixe), el("span", { class: "pf-txt" }, c.porque, refsEl(c.fontes, fontes))] : [el("span", { class: "pf-sl" }, seloEl("encaixe", c.encaixe || "nc"), refsEl(c.fontes, fontes))]) })));
+  }
+  // 5. não conferido
+  if (E.naoConferido.length) root.append(bloco("pf-nc", "Não conferido", "", el("ul", { class: "pf-resumo pf-lista-nc" }, ...E.naoConferido.map((t) => el("li", {}, t)))));
+  // 6. fontes numeradas (destino dos números)
+  if (fontes.length) {
+    root.append(bloco("pf-fontes", "Fontes", fontes.length + (fontes.length === 1 ? " fonte" : " fontes"), el("ol", { class: "pf-fontes" }, ...fontes.map((f, i) => {
+      const u = A.urlOk(f && f.url), dom = u ? A.dominioDe(u).replace(/^www\./, "") : "";
+      return el("li", { id: "pf-f-" + (i + 1), tabindex: "-1" }, u ? linkFora(u, (f && f.titulo) || u, "ac-link") : String((f && (f.titulo || f.url)) || "fonte"),
+        el("small", {}, [dom, f && f.em ? "lida em " + dataBR(f.em) : ""].filter(Boolean).join(" · ")));
+    }))));
+  }
+  ligarRolagem(root);
+  requestAnimationFrame(medirTopoAc);
+  return root;
 }
 
 /* ---------- lista "Comparações profundas" ---------- */
@@ -666,18 +901,26 @@ function telaProfundas(box, est) {
   const nome = (a, id) => { const l = a === "cloud" ? servs() : lsLista || []; const x = l.find((y) => y.id === id); return x ? x.nome : id; };
   if (est.tela === "profunda") {
     const d = AC.profDoc.get(est.id);
-    if (!d) { umaVez("pd:" + est.id, async () => { try { AC.profDoc.set(est.id, (await apiLs("GET", "/api/admin/arch/dossies/" + est.id)).dossie); } catch (e) { AC.profDoc.set(est.id, { erro: e.status === 404 ? "Essa comparação profunda não existe mais." : e.message }); } reDesenhar(); }); box.append(esqueleto(6)); return; }
+    const ler = async () => { try { AC.profDoc.set(est.id, (await apiLs("GET", "/api/admin/arch/dossies/" + est.id)).dossie); } catch (e) { if (!AC.profDoc.get(est.id)) AC.profDoc.set(est.id, { erro: e.status === 404 ? "Essa comparação profunda não existe mais." : e.message }); } reDesenhar(); };
+    if (!d) { umaVez("pd:" + est.id, ler); box.append(esqueleto(6)); return; }
     if (d.erro) { box.append(el("p", { class: "ls-vazio" }, d.erro)); return; }
     document.title = "Comparação profunda · ArchLandscape · Lookout";
-    box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, d.ids.map((id) => nome(d.aba, id)).join(" × ")), el("p", {}, (d.aba === "cloud" ? "Cloud" : "Tools") + " · " + estadoTexto(d)))));
-    box.append(el("p", { class: "ac-aviso-ia", role: "note" }, "Análise gerada por IA a partir das fontes listadas. Confira antes de decidir."));
-    if (d.situacao === "pendente") { box.append(el("p", {}, "Pedido gravado. O plantão confere de hora em hora, das 7h às 23h.")); return; }
-    if (d.situacao === "falhou") { box.append(avisoEl("Não deu certo" + (d.resposta ? ": " + d.resposta : "."), true)); return; }
-    box.append(el("p", { class: "ls-pe" }, "gerada em " + dataBR(d.prontoEm) + (d.situacao === "vencida" ? " · vencida em " : " · vale até ") + dataBR(d.expiraEm)), mdSeguro(d.markdown));
-    if (d.fontes && d.fontes.length) box.append(el("h4", {}, "Fontes"), el("ul", { class: "ac-lista" }, ...d.fontes.map((f) => el("li", {}, linkFora(f.url, f.titulo || f.url, "ac-link"), f.em ? " · " + dataBR(f.em) : ""))));
-    const [cp, cx] = botaoCopiar("Copiar Markdown", d.markdown || "", "ac-copiar-md");
-    const abrir = el("a", { class: "dd-btn dd-btn--ghost", href: ARCH().escreverHash({ aba: d.aba, tela: "comparar", ids: d.ids, profunda: false }) }, "Abrir a comparação");
-    box.append(el("div", { class: "ls-acoes" }, cp, abrir), cx);
+    const ordem = d.estrutura ? d.estrutura.itens.map((i) => i.id) : d.ids;
+    box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, ordem.map((id) => nome(d.aba, id)).join(" × ")), el("p", {}, (d.aba === "cloud" ? "Cloud" : "Tools") + " · " + estadoTexto(d)))));
+    const abrir = el("a", { class: "dd-btn dd-btn--ghost", href: ARCH().escreverHash({ aba: d.aba, tela: "comparar", ids: d.ids, profunda: false }), id: "ac-prof-abrir" }, "Abrir a comparação");
+    const titulo = tituloProfunda(d, (id) => nome(d.aba, id));
+    const chave = "d:" + d.id;
+    vigiaSeguePendente(chave, d.situacao === "pendente");
+    if (d.situacao === "pendente") {
+      vigiarPendente(chave, ler);
+      box.append(blocoPendente(d, [el("div", { class: "ls-acoes" }, abrir)]));
+      // a análise anterior, quando houver, fica embaixo (com o aviso de IA)
+      if (temAnalise(d)) box.append(avisoIaEl(), el("p", { class: "ls-pe" }, "Análise anterior, de " + dataBR(d.prontoEm) + ":"), analiseEl(d, d.aba, titulo, "ac-copiar-md"));
+      return;
+    }
+    if (d.situacao === "falhou") { box.append(avisoEl("Não deu certo" + (d.resposta ? ": " + d.resposta : "."), true), el("div", { class: "ls-acoes" }, abrir)); return; }
+    box.append(avisoIaEl(), el("p", { class: "ls-pe" }, "gerada em " + dataBR(d.prontoEm) + (d.situacao === "vencida" ? " · vencida em " : " · vale até ") + dataBR(d.expiraEm)),
+      analiseEl(d, d.aba, titulo, "ac-copiar-md"), el("div", { class: "ls-acoes" }, abrir));
     return;
   }
   document.title = "Comparações profundas · ArchLandscape · Lookout";
@@ -691,7 +934,7 @@ function telaProfundas(box, est) {
     return el("li", {}, a, el("div", { class: "n" }, el("span", { class: "dd-badge " + (d.situacao === "pronta" ? "b-release" : d.situacao === "vencida" ? "b-video" : "b-review") }, d.situacao), el("span", {}, d.aba === "cloud" ? "Cloud" : "Tools"), el("span", {}, "pedida em " + dataBR(d.criado)), d.prontoEm ? el("span", {}, "pronta em " + dataBR(d.prontoEm)) : null));
   })));
 }
-const estadoTexto = (d) => (d.situacao === "pronta" ? "pronta, vale até " + dataBR(d.expiraEm) : d.situacao === "vencida" ? "vencida em " + dataBR(d.expiraEm) : d.situacao === "pendente" ? "pendente desde " + dataBR(d.criado) : "não deu certo");
+const estadoTexto = (d) => (d.situacao === "pronta" ? "pronta, vale até " + dataBR(d.expiraEm) : d.situacao === "vencida" ? "vencida em " + dataBR(d.expiraEm) : d.situacao === "pendente" ? "pendente desde " + dataBR(d.pedidoEm || d.criado) : "não deu certo");
 
 /* ---------- Admin de Cloud (folha lateral, como a do Landscape) ---------- */
 function acoesAdminServico(s) {

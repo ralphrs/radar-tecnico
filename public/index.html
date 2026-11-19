@@ -2323,6 +2323,90 @@ html.tech-ls .barra-linha { display: none; }
 .ac-roteiro-caixa summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
 .ac-roteiro { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.5 var(--font-mono); margin: 8px 0 0; }
 .ac-prof-lista li { display: grid; gap: 2px; }
+/* Comparação profunda em colunas (19/11, 20h13): uma coluna por item, na mesma ordem em todos os blocos; o cabeçalho das
+   colunas preso abaixo do topo fixo (--ac-topo, medido em JS); selos sempre com texto. Com 2 itens no celular, o rótulo
+   sobe para cima do par; com 3 ou mais, cada tabela rola de lado dentro do bloco, com o rótulo preso. */
+.pf { --pf-rot: 200px; --pf-min: 168px; --pf-w: calc(var(--pf-rot) + var(--pf-n, 2) * var(--pf-min)); display: grid; gap: 12px; min-width: 0; margin-top: 10px; }
+.pf-acoes, .pf-indice, .pf-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.pf-indice .chip, .pf-filtros .chip { height: 32px; font-size: 12.5px; }
+.pf-filtros .chip .k { font: 500 11px/1 var(--font-mono); color: var(--muted-foreground); }
+.pf-filtros .chip[aria-pressed="true"] { border-color: var(--primary); color: var(--primary); background: color-mix(in srgb, var(--primary) 9%, var(--card)); font-weight: 600; }
+.pf-filtros .chip[disabled] { opacity: .5; cursor: not-allowed; }
+.pf-leg { font-size: 12.5px; color: var(--muted-foreground); }
+.pf-cols { position: sticky; top: var(--ac-topo, 0px); z-index: 3; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); box-shadow: var(--shadow-sm); }
+.pf-cols-in, .pf-tr { display: grid; grid-template-columns: var(--pf-rot) repeat(var(--pf-n, 2), minmax(var(--pf-min), 1fr)); min-width: var(--pf-w); }
+.pf-cols-in > * { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 7px 10px; font: 600 13px/1.25 var(--font-sans); }
+.pf-cols-canto { position: sticky; left: 0; z-index: 1; background: var(--card); color: var(--muted-foreground); font-weight: 500 !important; font-size: 12px !important; }
+.pf-col-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-bloco { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); scroll-margin-top: calc(var(--ac-topo, 0px) + 60px); }
+.pf-bloco > h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin: 0; padding: 12px 14px 8px; font: 600 15px/1.3 var(--font-sans); }
+.pf-bloco > h3 small { font: 400 12.5px/1.3 var(--font-sans); color: var(--muted-foreground); }
+.pf-bloco > h3:focus { outline: none; } .pf-bloco > h3:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.pf-resumo { margin: 0; padding: 0 14px 14px 32px; display: grid; gap: 6px; font-size: 14.5px; line-height: 1.45; }
+.pf-rola { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; border-top: 1px solid var(--border); }
+.pf-rola:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.pf-tab { min-width: 0; }
+.pf-tr { border-bottom: 1px solid var(--border); }
+.pf-tab [role="rowgroup"]:last-child > .pf-tr:last-child, .pf-tr.tem-nota { border-bottom: 0; }
+.pf-tr > * { min-width: 0; padding: 8px 10px; font-size: 13.5px; line-height: 1.4; overflow-wrap: anywhere; }
+.pf-tr > .pf-rot { overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
+.pf-rot { position: sticky; left: 0; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; background: var(--card); color: var(--muted-foreground); font-weight: 500; box-shadow: 1px 0 0 var(--border); }
+.pf-tr.dif { background: color-mix(in srgb, var(--primary) 6%, var(--card)); }
+.pf-tr.dif > .pf-rot { background: color-mix(in srgb, var(--primary) 6%, var(--card)); color: var(--foreground); box-shadow: inset 4px 0 0 var(--primary), 1px 0 0 var(--border); padding-left: 14px; }
+.pf-tr-nota > .pf-nota { grid-column: 1 / -1; padding-top: 0; font-size: 12.5px; color: var(--muted-foreground); position: sticky; left: 0; max-width: min(100%, 100vw - 32px); }
+.pf-tr-nota.dif > .pf-nota { padding-left: 14px; box-shadow: inset 4px 0 0 var(--primary); }
+.pf-difere { display: inline-flex; align-items: center; border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); border-radius: 999px; padding: 0 7px; font: 600 10.5px/16px var(--font-sans); color: var(--primary); background: var(--card); white-space: nowrap; }
+.pf-cel { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.pf-txt { display: block; }
+.pf-sl { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.pf-selo { display: inline-flex; align-items: center; border: 1px solid; border-radius: 999px; padding: 0 8px; font: 600 11.5px/18px var(--font-sans); white-space: nowrap; }
+.pf-m-sim, .pf-e-forte { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); background: color-mix(in srgb, var(--ok) 10%, var(--card)); }
+.pf-m-nao { color: var(--err); border-color: color-mix(in srgb, var(--err) 50%, transparent); background: color-mix(in srgb, var(--err) 9%, var(--card)); }
+.pf-m-parcial, .pf-e-fraco { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); background: color-mix(in srgb, var(--warn) 10%, var(--card)); }
+.pf-e-medio { color: var(--info); border-color: color-mix(in srgb, var(--info) 50%, transparent); background: color-mix(in srgb, var(--info) 10%, var(--card)); }
+.pf-m-nc, .pf-e-nc { color: var(--muted-foreground); border-style: dashed; border-color: var(--input); background: transparent; font-weight: 500; }
+.pf-nc, .pf-vazio { color: var(--muted-foreground); font-style: italic; font-size: 13px; }
+.pf-vazio { margin: 0; padding: 10px 14px 14px; border-top: 1px solid var(--border); }
+.pf-refs { display: inline-flex; flex-wrap: wrap; gap: 3px; margin-left: 4px; vertical-align: 1px; }
+.pf-ref { position: relative; box-sizing: border-box; min-width: 20px; height: 18px; padding: 0 4px; border: 1px solid var(--border); border-radius: 5px; background: var(--card); color: var(--primary); font: 600 10.5px/16px var(--font-mono); text-align: center; cursor: pointer; }
+.pf-ref::before { content: ""; position: absolute; inset: -7px -2px; }
+.pf-ref:hover { background: color-mix(in srgb, var(--primary) 10%, var(--card)); border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+.pf-ref:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.pf-cards { display: grid; grid-template-columns: var(--pf-rot) repeat(var(--pf-n, 2), minmax(0, 1fr)); padding: 0 0 12px; }
+.pf-cards-leg { display: flex; flex-direction: column; gap: 6px; padding: 4px 10px; font-size: 12.5px; color: var(--muted-foreground); }
+.pf-card { display: grid; align-content: start; gap: 6px; min-width: 0; margin: 0 5px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); }
+.pf-card h4 { display: flex; align-items: center; gap: 8px; margin: 0; font: 600 14px/1.25 var(--font-sans); min-width: 0; }
+.pf-lt { margin: 4px 0 0; font: 600 11.5px/1.2 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.pf-pontos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; line-height: 1.4; }
+.pf-pontos li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 6px; overflow-wrap: anywhere; }
+.pf-simb { font-weight: 700; }
+.pf-forte .pf-simb, .pf-sim { color: var(--ok); } .pf-fraco .pf-simb, .pf-nao { color: var(--err); }
+.pf-fontes { margin: 0; padding: 0 14px 14px 36px; display: grid; gap: 8px; font-size: 13.5px; overflow-wrap: anywhere; }
+.pf-fontes li { border-radius: 6px; scroll-margin-top: calc(var(--ac-topo, 0px) + 60px); }
+.pf-fontes li:focus { outline: 2px solid var(--ring); outline-offset: 2px; }
+.pf-fontes small { display: block; color: var(--muted-foreground); font-size: 12px; }
+.pf-alvo { animation: pf-pisca 1.8s ease-out; }
+@keyframes pf-pisca { from { background: color-mix(in srgb, var(--primary) 22%, transparent); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .pf-alvo { animation: none; background: color-mix(in srgb, var(--primary) 12%, transparent); } }
+.pf-texto { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); padding: 12px 14px; }
+.pf-quando { font-weight: 600; }
+@media (max-width: 639px) {
+  .pf { --pf-rot: 112px; --pf-min: 148px; }
+  .pf-nn .pf-tr > .pf-rot { font-size: 12.5px; padding-inline: 8px; }
+  .pf-nn .pf-tr.dif > .pf-rot { padding-left: 12px; }
+  .pf-cards { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 0 12px 12px; }
+  .pf-cards-leg { display: none; }
+  .pf-card { margin: 0; }
+  .pf-resumo { padding-left: 28px; padding-right: 12px; }
+  .pf-n2 .pf-cols-in, .pf-n2 .pf-tr { grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; }
+  .pf-n2 .pf-cols-canto { display: none; }
+  .pf-n2 .pf-rot { grid-column: 1 / -1; position: static; flex-direction: row; flex-wrap: wrap; align-items: center; padding-bottom: 0; background: transparent; box-shadow: none; }
+  .pf-n2 .pf-tr.dif > .pf-rot { background: transparent; box-shadow: none; }
+  .pf-n2 .pf-tr.dif, .pf-n2 .pf-tr-nota.dif > .pf-nota { box-shadow: inset 4px 0 0 var(--primary); }
+  .pf-n2 .pf-tr.dif > * { padding-left: 14px; }
+  .pf-n2 .pf-tr.dif > .pf-cel + .pf-cel { padding-left: 10px; }
+  .pf-n2 .pf-tr > .pf-cel + .pf-cel { border-left: 1px solid var(--border); }
+}
 .wdg-ac li { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 /* modelo (pedido de 19/11): etiqueta com texto e cor pelo tom (Landscape.MODELOS); pago fica cheio, para não depender só
    do matiz. No cartão a linha existe sempre (vazia em quem não tem), para a grade não ficar irregular. */

@@ -199,13 +199,16 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [ ] Cloud: conferência dos 180 serviços da semente (links oficiais, plano grátis e características) e "conferido" em cada um
 - [ ] Cloud: rodar a sonda dos feeds de novidades em produção (`POST /api/admin/cloud-sonda`) e acrescentar feeds das alternativas
 - [ ] Cloud: Hacker News por serviço
-- [ ] ArchLandscape: tarefa agendada que atende as comparações profundas (`arch-dossies`) e grava `expiraEm`
+- [ ] ArchLandscape: a tarefa "Lookout: comparações profundas" (todo dia das 7h às 23h, no minuto 37) gravar a `estrutura` no formato novo, inteira, além de `expiraEm` e do `markdown` curto de reserva (o roteiro de cada pedido já pede)
 - [x] Esportes: time do coração e times seguidos (`prefs/<email>` id `esportes-times`, `GET`/`PUT /api/esportes/times`), pergunta em cartão no topo com "Agora não" e "Não torço para nenhum time", bloco Meus times, chip Meus times no feed, ♥ e ★ nas tabelas, jogos e widgets, e a regra pura de notícia x time (docs/LOOKOUT.md, "Time do coração e times seguidos") (19/11)
 - [x] Esportes: só os campeonatos em andamento (`Esportes.emAndamento`: jogo de 10 dias atrás a 21 à frente, calendário da ESPN ou temporada em curso), os outros atrás de "Ver campeonatos encerrados ou que ainda não começaram (N)"; o mesmo critério em Meus esportes, Personalizar, widgets e Meus times (19/11)
 - [x] Esportes: faixa "Hoje e próximos 7 dias" em cada cartão com tabela, carrossel com o jogo do coração preso à esquerda, e agenda em rodízio no cron para ter a semana sem pedir mais nada (19/11)
 - [ ] Esportes: conferir pela sonda se `leagues[0].season` (startDate, endDate, type) e o calendário inteiro vêm em todas as ligas
 - [ ] Curadoria de Esportes: gravar `clube` em mais itens (hoje uns 60%) ajuda o chip Meus times e o bloco a acertar sem depender do texto
 - [x] Cloud: cartão compacto (ícone do provedor com dica, nome, subcategoria quando não agrupa por ela, Comparar sem texto) e contêineres de categoria encostados com altura própria, em Cloud e Tools (19/11)
+- [x] Comparação profunda lado a lado (19/11, 20h13): campo `estrutura` no doc de `arch-dossies`, validado ao ler (`Arch.estruturaOk`) e devolvido saneado pelo GET; tela em colunas com cabeçalho preso, resumo em pontos, cartões de fortes e fracos, uma matriz por grupo com selos, "difere", "Só o que difere" e "Mostrar não conferidas", encaixe por cenário, não conferido, fontes numeradas com ida e volta pelo histórico, índice em chips, "Ver em texto" e "Copiar para ADR" (`Arch.markdownDaEstrutura`); doc antigo segue com o Markdown; roteiro pede o formato novo (docs/LOOKOUT.md, "Comparação profunda")
+- [x] Tela de pendente da profunda: sem o plantão; "Pedido feito às HH:MM. A próxima rodada é às HH:37." (`Arch.proximaRodada`, fuso de São Paulo), a tarefa "Lookout: comparações profundas" e o prazo de 5 a 15 minutos, releitura a cada 60 s com a aba visível e troca para a análise quando fica pronta; aviso de IA só com análise na tela (19/11)
+- [ ] Profunda: conferir em produção a primeira análise com `estrutura` gravada pela tarefa (tamanhos, números das fontes, ordem dos itens) e, se vier com lixo, ajustar o roteiro
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
