@@ -180,7 +180,7 @@ test("Binance: completa as oito moedas em reais quando o CoinGecko recusa, numa 
   assert.deepEqual(lerBinance([{ symbol: "BTCBRL", lastPrice: "0" }, { symbol: "XYZBRL", lastPrice: "3" }, null].filter(Boolean)), []);
 });
 
-test("Finnhub: com o token, traz as oito moedas convertidas pelo dólar quando o CoinGecko recusa; o token não vaza no erro", async () => {
+test("Finnhub: com o token, vai na frente e traz as oito moedas convertidas pelo dólar; o token não vaza no erro", async () => {
   const FH = "finnhub.io";
   await comFetch({ [CG]: new Response("muitos pedidos", { status: 429 }), [FH]: { c: 100, dp: 2.5, t: 1763380000 } }, async (pedidos) => {
     const r = await cripto({ finnhubToken: "segredo-123", dolar: 5.5 });
@@ -188,8 +188,9 @@ test("Finnhub: com o token, traz as oito moedas convertidas pelo dólar quando o
     assert.ok(r.lista.every((i) => i.fonte === "Finnhub" && i.variacao === 2.5));
     assert.equal(r.lista.find((i) => i.id === "btc").valor, 550, "preço em dólar vezes o dólar do painel");
     assert.equal(r.lista.find((i) => i.id === "usdt").valor, 100, "tether já vem em reais (USDTBRL)");
-    assert.equal(pedidos.length, 9, "CoinGecko e um quote por moeda");
-    assert.ok(pedidos.slice(1).some((u) => /BINANCE%3ABTCUSDT/.test(u)) && pedidos.slice(1).some((u) => /BINANCE%3AUSDTBRL/.test(u)));
+    assert.equal(pedidos.length, 8, "um quote por moeda; o CoinGecko nem é chamado");
+    assert.equal(r.erro, "");
+    assert.ok(pedidos.some((u) => /BINANCE%3ABTCUSDT/.test(u)) && pedidos.some((u) => /BINANCE%3AUSDTBRL/.test(u)));
   });
   // sem dólar não converte: passa para as outras fontes e registra o motivo
   await comFetch({ [CG]: new Response("x", { status: 429 }), [AW]: AWESOME_CRIPTO }, async () => {

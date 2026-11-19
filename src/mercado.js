@@ -155,8 +155,8 @@ async function criptoFinnhub(token, dolar) {
   if (!lista.length) throw new Error((r.find((x) => x && x.falha) || { falha: "resposta sem preço" }).falha);
   return lista;
 }
-// Devolve { lista, erro }. Normal: um pedido só (CoinGecko). Se ele falhar ou vier incompleto, completam o que faltou,
-// nesta ordem: Finnhub (com token), Binance, Mercado Bitcoin e, só para bitcoin e ether, a AwesomeAPI. `erro` junta o motivo de cada fonte
+// Devolve { lista, erro }. Com FINNHUB_TOKEN, a Finnhub primeiro; sem ele, o CoinGecko (um pedido só). O que faltar é
+// completado, nesta ordem, por CoinGecko, Binance, Mercado Bitcoin e, só para bitcoin e ether, a AwesomeAPI. `erro` junta o motivo de cada fonte
 // que falhou (aparece em meta/mercado.erros.cripto). Lança quando nada veio, para o painel manter o último valor bom.
 export async function cripto({ finnhubToken = "", dolar = null } = {}) {
   let lista = [];
@@ -164,8 +164,10 @@ export async function cripto({ finnhubToken = "", dolar = null } = {}) {
   const tem = new Set();
   const completar = (reserva) => { for (const r of reserva) if (!tem.has(r.id)) { lista.push(r); tem.add(r.id); } };
   const tentar = async (nome, fn) => { try { const l = await fn(); if (!l.length) erros.push(nome + ": resposta sem moedas"); completar(l); } catch (e) { erros.push(nome + ": " + String(e.message || e).slice(0, 120)); } };
-  await tentar("CoinGecko", async () => lerCoingecko(await pegar(URL_COINGECKO)));
-  if (tem.size < CRIPTO.length && finnhubToken) await tentar("Finnhub", () => criptoFinnhub(finnhubToken, dolar));
+  // Com o token, a Finnhub vai na frente: é a que responde ao Worker. O CoinGecko, que recusa quase sempre, só entra
+  // se faltar moeda (assim a linha de cripto do relatório das rotinas não fica "com erro" à toa a cada meia hora).
+  if (finnhubToken) await tentar("Finnhub", () => criptoFinnhub(finnhubToken, dolar));
+  if (tem.size < CRIPTO.length) await tentar("CoinGecko", async () => lerCoingecko(await pegar(URL_COINGECKO)));
   if (tem.size < CRIPTO.length) await tentar("Binance", criptoBinance);
   if (tem.size < CRIPTO.length) await tentar("Mercado Bitcoin", criptoMercadoBitcoin);
   if (!tem.has("btc") || !tem.has("eth")) await tentar("AwesomeAPI", criptoAwesome);
