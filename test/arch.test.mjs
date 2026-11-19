@@ -43,3 +43,19 @@ test("hash de Cloud guarda os filtros (para o Voltar)", () => {
   assert.deepEqual(A.lerHash(h).filtros, f);
   assert.deepEqual(A.lerHash("#arch/cloud?p=AWS,../x&cat=<b>&por=zzz").filtros, A.FILTROS_VAZIOS(), "lixo vira filtro vazio");
 });
+
+test("nome curto do cartão de Cloud: sai o prefixo do provedor, fica o resto", () => {
+  assert.equal(A.nomeCurto("Amazon EC2", "aws"), "EC2");
+  assert.equal(A.nomeCurto("AWS Lambda", { id: "aws", nome: "Amazon Web Services" }), "Lambda");
+  assert.equal(A.nomeCurto("Azure Blob Storage", "azure"), "Blob Storage");
+  assert.equal(A.nomeCurto("Microsoft Entra ID", "azure"), "Entra ID");
+  assert.equal(A.nomeCurto("Google Kubernetes Engine", "gcp"), "Kubernetes Engine");
+  assert.equal(A.nomeCurto("Cloud Run", "gcp"), "Cloud Run");
+  assert.equal(A.nomeCurto("OCI Object Storage", "oci"), "Object Storage");
+  assert.equal(A.nomeCurto("Cloudflare Workers", "cloudflare"), "Workers");
+  assert.equal(A.nomeCurto("Fly.io Apps", "flyio"), "Apps");
+  assert.equal(A.nomeCurto("Linode Compute Instances", "akamai"), "Compute Instances");
+  assert.equal(A.nomeCurto("Railway", "railway"), "Railway");
+  assert.equal(A.nomeCurto("R2", "cloudflare"), "R2");
+  assert.equal(A.nomeCurto("Amazonas Algo", "aws"), "Amazonas Algo");
+});

@@ -695,7 +695,30 @@
     return out;
   }
 
-  raiz.Arch = { DIA, MAX_COMPARAR, CONTEXTO_MAX, VALIDADE_DIAS, MARKDOWN_MAX, ID_SERV, ID_PROV, ID_CAT, ID_DOSSIE, POR, ABAS, MOTIVOS, COMUNS, ATRIBUTOS, LINKS,
+  /* Nome curto do cartão de Cloud (pedido de 19/11, 16h49): o provedor já aparece no ícone, então o prefixo com o nome
+     dele sai do título ("Amazon EC2" vira "EC2", "Azure Blob Storage" vira "Blob Storage"). Só prefixo inteiro, seguido
+     de espaço, e só quando sobra nome de verdade; "Cloud Run" do Google fica como está. O nome completo segue no title,
+     no detalhe e na comparação. */
+  const PREFIXOS_PROV = {
+    aws: ["Amazon Web Services", "Amazon", "AWS"], gcp: ["Google Cloud", "Google"], azure: ["Microsoft Azure", "Microsoft", "Azure"],
+    oci: ["Oracle Cloud Infrastructure", "Oracle Cloud", "Oracle", "OCI"], cloudflare: ["Cloudflare"], hetzner: ["Hetzner"], digitalocean: ["DigitalOcean"],
+    vultr: ["Vultr"], akamai: ["Akamai", "Linode"], ovhcloud: ["OVHcloud", "OVH"], scaleway: ["Scaleway"], backblaze: ["Backblaze"], wasabi: ["Wasabi"],
+    flyio: ["Fly.io", "Fly"], railway: ["Railway"], render: ["Render"], supabase: ["Supabase"], neon: ["Neon"], upstash: ["Upstash"],
+  };
+  function nomeCurto(nome, prov) {
+    const n = String(nome || "").trim();
+    const p = prov && typeof prov === "object" ? prov : { id: prov };
+    const lista = (PREFIXOS_PROV[p.id] || []).concat(p.nome ? [p.nome] : []).sort((x, y) => y.length - x.length);
+    for (const pre of lista) {
+      if (n.length > pre.length + 1 && n.slice(0, pre.length).toLowerCase() === pre.toLowerCase() && n[pre.length] === " ") {
+        const resto = n.slice(pre.length + 1).trim();
+        if (resto.replace(/[^\p{L}\p{N}]/gu, "").length >= 2) return resto;
+      }
+    }
+    return n;
+  }
+
+  raiz.Arch = { DIA, nomeCurto, MAX_COMPARAR, CONTEXTO_MAX, VALIDADE_DIAS, MARKDOWN_MAX, ID_SERV, ID_PROV, ID_CAT, ID_DOSSIE, POR, ABAS, MOTIVOS, COMUNS, ATRIBUTOS, LINKS,
     COMUNS_CLOUD, CAPACIDADES, ehCloud, soConhecidas, conferidoDe, roteiroProfunda, GRANDES,
     semAcento, slug, urlOk, isoOk, temPreco, temPalavra, chavesDe, carac, textoCarac, validarCarac, validarAtributos, validarProvedores, validarCategorias,
     nomeSub, catDaSub, idServico, validarServico, provDe, filtrarCloud, agrupar, equivalentes, podeComparar, marcavel, conjunto,

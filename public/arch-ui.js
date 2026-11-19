@@ -233,9 +233,29 @@ function telaGradeCloud(box, est) {
     }
   }
   conteudo.append(el("div", { class: "ls-cats ac-cats" }, cats));
+  larguraDoCartao(conteudo);
+}
+/* O nome do serviço cabe sempre em uma linha (pedido de 19/11, 16h48): a largura mínima do cartão é a do maior nome do
+   catálogo inteiro, medida uma vez no navegador com o cartão de verdade, e vale para todos (variável --ac-w). */
+let acLargura = { chave: "", px: 0 };
+function larguraDoCartao(conteudo) {
+  const todos = servs();
+  const chave = todos.length + "|" + todos.reduce((k, s) => k + s.nome.length, 0);
+  if (acLargura.chave !== chave || !acLargura.px) {
+    const A = ARCH(), curto = (s) => A.nomeCurto(s.nome, A.provDe(provs(), s.provedor) || s.provedor).length;
+    const maiores = todos.slice().sort((x, y) => curto(y) - curto(x)).slice(0, 6);
+    const prova = el("div", { style: "position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;display:flex;flex-direction:column;align-items:flex-start", "aria-hidden": "true" },
+      ...maiores.map((s) => { const c = cartaoCloud(s, false); c.removeAttribute("id"); c.style.width = "max-content"; c.querySelectorAll("[id]").forEach((n) => n.removeAttribute("id")); return c; }));
+    conteudo.append(prova);
+    let px = 0;
+    for (const c of prova.children) px = Math.max(px, Math.ceil(c.getBoundingClientRect().width));
+    prova.remove();
+    if (px > 0) acLargura = { chave, px: px + 2 };
+  }
+  if (acLargura.px) conteudo.style.setProperty("--ac-w", acLargura.px + "px");
 }
 /* Cartão compacto (pedido de 19/11, 16h31): o ícone do provedor (o nome dele só na dica: title, aria-label e um balão
-   que abre no passar do mouse, no foco do teclado e no toque), o nome do serviço (até 2 linhas, inteiro no title), a
+   que abre no passar do mouse, no foco do teclado e no toque), o nome do serviço (sempre em uma linha, inteiro no title), a
    subcategoria numa linha pequena quando a grade não está agrupada por ela (por provedor ou com busca) e a caixa
    Comparar sem texto ao lado. O resumo fica no detalhe. */
 function cartaoCloud(s, comSub) {
@@ -251,7 +271,7 @@ function cartaoCloud(s, comSub) {
     else AC.sel = AC.sel.filter((x) => x !== s.id);
     const y = window.scrollY; renderLandscape(); window.scrollTo({ top: y }); const n = $("ac-x-" + s.id); if (n) n.focus();
   });
-  const a = el("a", { class: "ac-nome", href: "#arch/cloud/" + encodeURIComponent(s.id), title: s.nome }, s.nome);
+  const a = el("a", { class: "ac-nome", href: "#arch/cloud/" + encodeURIComponent(s.id), title: s.nome, "aria-label": s.nome }, A.nomeCurto(s.nome, p || s.provedor));
   a.addEventListener("click", (e) => abrirServico(s.id, e));
   const fora = AC.sel.length && !marcado && !m.ok;
   const sub = comSub ? nomeSubCloud(s) : "";
