@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { FEEDS, CRIPTO_PARA_SONDAR } from "../src/feeds.js";
 import { REDDIT } from "../src/coleta.js";
-import { CRIPTO, URL_COINGECKO, lerCoingecko, cripto, atualizarMercado, partesDoMinuto, MINUTO_CRIPTO } from "../src/mercado.js";
+import { CRIPTO, URL_COINGECKO, lerCoingecko, cripto, atualizarMercado, partesDoMinuto, MINUTO_CRIPTO, lerBinance } from "../src/mercado.js";
 import { d1Falso } from "./d1-falso.mjs";
 
 // ---------- página: temas de Investimentos, subDe e passaTema tirados do script de public/index.html ----------
@@ -151,8 +151,9 @@ test("resposta parcial: entra o que veio, na ordem, sem buraco; o Mercado Bitcoi
   await comFetch({ [CG]: parcial, [MBH]: [...MB, { pair: "XRP-BRL", last: "12.5", open: "12", date: 1763380000 }] }, async (pedidos) => {
     const r = await cripto();
     assert.deepEqual(r.lista.map((i) => [i.id, i.fonte]), [["btc", "CoinGecko"], ["eth", "CoinGecko"], ["sol", "CoinGecko"], ["xrp", "Mercado Bitcoin"], ["doge", "CoinGecko"]]);
-    assert.equal(pedidos.length, 2, "CoinGecko e uma chamada ao Mercado Bitcoin com a lista inteira");
-    assert.match(pedidos[1], /BTC-BRL,ETH-BRL,SOL-BRL,BNB-BRL,XRP-BRL,ADA-BRL,DOGE-BRL,USDT-BRL/);
+    assert.equal(pedidos.length, 4, "CoinGecko, Binance (duas tentativas, fora do ar) e uma chamada ao Mercado Bitcoin com a lista inteira");
+    assert.match(pedidos[3], /BTC-BRL,ETH-BRL,SOL-BRL,BNB-BRL,XRP-BRL,ADA-BRL,DOGE-BRL,USDT-BRL/);
+    assert.match(r.erro, /Binance: /, "o motivo de cada fonte que falhou fica registrado");
     assert.equal(r.lista.find((i) => i.id === "xrp").casas, 2);
   });
   // Mercado Bitcoin fora e sem bitcoin no CoinGecko: a AwesomeAPI traz o bitcoin
@@ -162,6 +163,21 @@ test("resposta parcial: entra o que veio, na ordem, sem buraco; o Mercado Bitcoi
     assert.deepEqual(r.lista.map((i) => [i.id, i.fonte]), [["btc", "AwesomeAPI"], ["eth", "CoinGecko"], ["sol", "CoinGecko"]]);
     assert.match(pedidos[pedidos.length - 1], /economia\.awesomeapi/);
   });
+});
+
+test("Binance: completa as oito moedas em reais quando o CoinGecko recusa, numa chamada", async () => {
+  const BN = "data-api.binance.vision";
+  const resp = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "USDT"].map((s, k) => ({ symbol: s + "BRL", lastPrice: String(100 + k), priceChangePercent: "-1.5", closeTime: 1763380000000 }));
+  await comFetch({ [CG]: new Response("muitos pedidos", { status: 429 }), [BN]: resp }, async (pedidos) => {
+    const r = await cripto();
+    assert.deepEqual(r.lista.map((i) => i.id), ["btc", "eth", "sol", "bnb", "xrp", "ada", "doge", "usdt"]);
+    assert.ok(r.lista.every((i) => i.fonte === "Binance" && i.variacao === -1.5 && i.unidade === "R$"));
+    assert.equal(pedidos.length, 2);
+    assert.equal(new URL(pedidos[1]).host, BN);
+    assert.deepEqual(JSON.parse(new URL(pedidos[1]).searchParams.get("symbols")), ["BTCBRL", "ETHBRL", "SOLBRL", "BNBBRL", "XRPBRL", "ADABRL", "DOGEBRL", "USDTBRL"]);
+    assert.match(r.erro, /^CoinGecko: HTTP 429/);
+  });
+  assert.deepEqual(lerBinance([{ symbol: "BTCBRL", lastPrice: "0" }, { symbol: "XYZBRL", lastPrice: "3" }, null].filter(Boolean)), []);
 });
 
 test("queda para a reserva: CoinGecko fora, o Mercado Bitcoin traz o que negocia; sem ele, BTC e ETH da AwesomeAPI", async () => {
@@ -175,7 +191,8 @@ test("queda para a reserva: CoinGecko fora, o Mercado Bitcoin traz o que negocia
   await comFetch({ [MBH]: MB }, async (pedidos) => {
     const r = await cripto();
     assert.deepEqual(r.lista.map((i) => [i.id, i.fonte]), [["btc", "Mercado Bitcoin"], ["eth", "Mercado Bitcoin"]]);
-    assert.equal(pedidos.length, 2, "CoinGecko e Mercado Bitcoin");
+    assert.equal(pedidos.length, 4, "CoinGecko, Binance (duas tentativas) e Mercado Bitcoin");
+    assert.match(r.erro, /CoinGecko: .* \| Binance: /);
     const btc = r.lista[0];
     assert.ok(Math.abs(btc.variacao - ((511000 - 515000) / 515000) * 100) < 1e-9);
   });

@@ -112,18 +112,41 @@ async function criptoMercadoBitcoin() {
   try { return lerMercadoBitcoin(await pegar(URL_MERCADO_BITCOIN)); }
   catch (e) { return lerMercadoBitcoin(await pegar("https://api.mercadobitcoin.net/api/v4/tickers?symbols=BTC-BRL,ETH-BRL")); } // se um par da lista derrubar o pedido
 }
-// Devolve { lista, erro }. Normal: um pedido só (CoinGecko). Se ele falhar ou vier incompleto, o Mercado Bitcoin
-// completa o que faltou (qualquer moeda da lista); se ainda faltar bitcoin ou ether, a AwesomeAPI. Lança quando nada
-// veio, para o painel manter o último valor bom.
+// Binance, pelo espelho público de dados de mercado (data-api.binance.vision, sem chave e sem bloqueio por país): os
+// pares em reais numa chamada, com a variação de 24 h.
+const simbolosBinance = (lista) => encodeURIComponent(JSON.stringify(lista.map((c) => c[3] + "BRL")));
+export const URL_BINANCE = "https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + simbolosBinance(CRIPTO);
+export function lerBinance(d) {
+  const por = Object.fromEntries((Array.isArray(d) ? d : []).map((x) => [x.symbol, x]));
+  const out = [];
+  for (const [, id, nome, sigla, casas] of CRIPTO) {
+    const x = por[sigla + "BRL"]; if (!x) continue;
+    const v = num(x.lastPrice);
+    if (v === null || v <= 0) continue;
+    const t = x.closeTime ? new Date(Number(x.closeTime)) : null;
+    out.push({ id, nome, sigla, valor: v, variacao: num(x.priceChangePercent), unidade: "R$", casas, fonte: "Binance", data: t && !isNaN(t) ? t.toISOString() : "" });
+  }
+  return out;
+}
+async function criptoBinance() {
+  try { return lerBinance(await pegar(URL_BINANCE)); }
+  catch (e) { return lerBinance(await pegar("https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + simbolosBinance(CRIPTO.slice(0, 2)))); } // um par fora da lista derruba o pedido inteiro
+}
+// Devolve { lista, erro }. Normal: um pedido só (CoinGecko). Se ele falhar ou vier incompleto, completam o que faltou,
+// nesta ordem: Binance, Mercado Bitcoin e, só para bitcoin e ether, a AwesomeAPI. `erro` junta o motivo de cada fonte
+// que falhou (aparece em meta/mercado.erros.cripto). Lança quando nada veio, para o painel manter o último valor bom.
 export async function cripto() {
-  let lista = [], erro = "";
-  try { lista = lerCoingecko(await pegar(URL_COINGECKO)); if (!lista.length) erro = "CoinGecko: resposta sem moedas"; }
-  catch (e) { erro = "CoinGecko: " + String(e.message || e).slice(0, 200); }
-  const tem = new Set(lista.map((i) => i.id));
+  let lista = [];
+  const erros = [];
+  const tem = new Set();
   const completar = (reserva) => { for (const r of reserva) if (!tem.has(r.id)) { lista.push(r); tem.add(r.id); } };
-  if (tem.size < CRIPTO.length) { try { completar(await criptoMercadoBitcoin()); } catch (e) {} }
-  if (!tem.has("btc") || !tem.has("eth")) { try { completar(await criptoAwesome()); } catch (e) {} }
+  const tentar = async (nome, fn) => { try { const l = await fn(); if (!l.length) erros.push(nome + ": resposta sem moedas"); completar(l); } catch (e) { erros.push(nome + ": " + String(e.message || e).slice(0, 120)); } };
+  await tentar("CoinGecko", async () => lerCoingecko(await pegar(URL_COINGECKO)));
+  if (tem.size < CRIPTO.length) await tentar("Binance", criptoBinance);
+  if (tem.size < CRIPTO.length) await tentar("Mercado Bitcoin", criptoMercadoBitcoin);
+  if (!tem.has("btc") || !tem.has("eth")) await tentar("AwesomeAPI", criptoAwesome);
   lista.sort((a, b) => posCripto(a.id) - posCripto(b.id));
+  const erro = erros.join(" | ");
   if (!lista.length) throw new Error(erro || "cripto: nenhuma fonte respondeu");
   return { lista, erro };
 }

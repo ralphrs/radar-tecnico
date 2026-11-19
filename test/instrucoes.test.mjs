@@ -386,6 +386,8 @@ test("limpeza: pedidos fechados há mais de 30 dias saem, só por lista de ids; 
   const deletes = env.DB.log.filter((s) => /^DELETE/i.test(s));
   assert.deepEqual(deletes, ["DELETE FROM docs WHERE collection = 'pedidos-curadoria' AND id IN (?1,?2,?3)"]);
   // e a limpeza do minuto 7 (src/coleta.js) chama esta, com a hora de agora, e conta no relatório
+  // (os pedidos de cima têm data fixa e envelhecem com o calendário: saem antes, para o teste não depender do dia em que roda)
+  env.DB.db.prepare("DELETE FROM docs WHERE collection = 'pedidos-curadoria' AND id IN ('p0000000000000004', 'p0000000000000007')").run();
   env.DB.db.prepare("INSERT INTO docs (collection, id, data, atualizado) VALUES ('pedidos-curadoria', 'p0000000000000008', ?, ?)")
     .run(JSON.stringify({ secao: "tech", estado: "cancelado" }), new Date(Date.now() - 31 * DIA).toISOString());
   const rel = await limpar(env);
