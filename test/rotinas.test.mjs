@@ -330,7 +330,8 @@ test("relatório: duas consultas ao D1 (nenhum SELECT composto com mais de 5 ter
   assert.equal(r.resumo.destaque.nunca, true);
   assert.equal(r.resumo.destaque.idadeMin, 20 * 24 * 60);
   for (const k of ["id", "nome", "estado", "ultimaOk", "ultimoErro", "msg", "esperado", "idadeMin"]) assert.ok(k in w.feeds && k in cur.plantao, k);
-  assert.equal(r.resumo.total, ROTINAS.length + 6);
+  assert.equal(r.resumo.total, ROTINAS.length + 7, "cinco curadorias, o plantão e os dossiês do ArchLandscape");
+  assert.equal(cur.dossies.estado, "em dia", "sem pedido pendente");
   assert.ok(sqlContagens(agora).sql.split("UNION ALL").length <= 5);
 });
 

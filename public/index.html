@@ -2106,6 +2106,8 @@ html.tech-ls .barra-linha { display: none; }
   html.tech-ls .barra-radares .radares button { flex: none; padding-inline: 16px; }
 }
 .ls { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.ls-f-mod { display: grid; gap: 10px; }
+@media (min-width: 560px) { .ls-f-mod { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); } }
 .ls-cab { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px var(--space-4); }
 .ls-cab h2 { font: 600 24px/1.15 var(--font-display); letter-spacing: -0.02em; margin: 0; }
 .ls-cab p { margin: 2px 0 0; color: var(--muted-foreground); font-size: 13.5px; }
@@ -2136,6 +2138,76 @@ html.tech-ls .barra-linha { display: none; }
 .ls-selos { position: absolute; top: 4px; left: 4px; right: 4px; display: flex; justify-content: space-between; gap: 4px; pointer-events: none; }
 .ls-selos .dd-badge { padding: 0 5px; font-size: 10px; line-height: 14px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
 .ls-selos .dd-badge:only-child { margin-left: auto; }
+/* ArchLandscape (19/11): abas Tools e Cloud, ícone com o logotipo esmaecido, grade de Cloud, comparar e Profunda */
+.arch-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.arch-titulo { margin: 0; font: 600 13px/1.2 var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; }
+.ic { position: relative; flex: none; display: inline-block; border-radius: 8px; overflow: hidden; background: var(--secondary); }
+.ic-g { border-radius: 12px; } .ic-p, .ic-m { border-radius: 5px; }
+.ic-vazio { position: absolute; inset: 0; display: grid; place-items: center; }
+.ic-vazio svg { width: 62%; height: 62%; filter: grayscale(1); opacity: .32; }
+.ic-vazio svg .lk-olho { fill: var(--muted-foreground); }
+.ic-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; opacity: 0; }
+.ic.ok .ic-img { opacity: 1; } .ic.ok .ic-vazio { visibility: hidden; }
+.ls-card .ls-nome { min-height: 30px; }
+.ac-tab th { hyphens: auto; -webkit-hyphens: auto; }
+.ls-card .ls-uso-lin { display: block; height: 13px; max-width: 100%; flex: none; font: 500 10px/13px var(--font-sans); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ls-f-uso { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 10px 10px; margin: 0; display: grid; gap: 6px; }
+.ls-f-cx { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; min-height: 32px; }
+.ls-f-cx input { width: 18px; height: 18px; }
+.ac-rot { font-size: 12px; color: var(--muted-foreground); }
+.ac-prov { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font: 600 12px/1.2 var(--font-sans); }
+.ac-prov-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-chip-prov { gap: 6px; }
+.ac-barra-cmp { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ac-comparar[disabled] { opacity: .45; cursor: not-allowed; pointer-events: none; box-shadow: none; }
+.ac-motivo { font-size: 13px; color: var(--muted-foreground); }
+.ac-recorte { font-weight: 600; }
+.ac-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 8px; min-width: 0; }
+.ac-sub { grid-template-columns: 112px minmax(0, 1fr); }
+@media (max-width: 559px) { .ac-sub, .ac-bloco-prov .ls-sub { grid-template-columns: minmax(0, 1fr); } }
+.ac-card { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px 10px 6px 12px; border: 1px solid var(--border); border-left: 4px solid var(--pc, var(--border)); border-radius: var(--radius-md); background: var(--card); transition: opacity .15s; }
+.ac-card:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); border-left-color: var(--pc, var(--border)); }
+.ac-card.marcado { outline: 2px solid var(--primary); outline-offset: -1px; }
+.ac-recortando .ac-card.fora { opacity: .42; }
+.ac-card .ac-nome { font: 600 14px/1.25 var(--font-sans); color: var(--foreground); text-decoration: none; overflow-wrap: anywhere; }
+.ac-card .ac-nome::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.ac-card .ac-nome:focus-visible { outline: none; } .ac-card:has(.ac-nome:focus-visible) { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ac-resumo { margin: 0; font-size: 12.5px; line-height: 1.35; color: var(--muted-foreground); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.ac-pe { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; min-height: 32px; }
+.ac-cx { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted-foreground); min-height: 32px; padding: 0 2px; cursor: pointer; }
+.ac-cx input { width: 18px; height: 18px; margin: 0; }
+.ac-cx:has(input:disabled) { cursor: not-allowed; opacity: .6; }
+.ac-bloco-prov > h3 { border-left: 4px solid var(--pc); }
+.ac-topo { border-top: 4px solid var(--pc, var(--border)); }
+.ac-de { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-bottom: 4px; }
+.ac-carac { display: grid; grid-template-columns: minmax(0, max-content) minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 13.5px; }
+.ac-carac dt { color: var(--muted-foreground); } .ac-carac dd { margin: 0; overflow-wrap: anywhere; }
+.ac-carac dd.nc, .ac-tab td.nc { color: var(--muted-foreground); font-style: italic; }
+.ac-carac small { color: var(--muted-foreground); }
+@media (max-width: 559px) { .ac-carac { grid-template-columns: minmax(0, 1fr); } .ac-carac dd { margin-bottom: 6px; } }
+.ac-lista { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.ac-link { color: var(--primary); }
+.ac-eq li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.ac-eq .ls-rel { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.ac-dois { display: contents; }
+.ac-rola { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.ac-rola-tab { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); }
+.ac-tab { border-collapse: separate; border-spacing: 0; min-width: 100%; font-size: 13.5px; }
+.ac-tab th, .ac-tab td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; min-width: 160px; max-width: 280px; overflow-wrap: anywhere; }
+.ac-tab thead th { background: var(--card); font-weight: 600; border-top: 3px solid var(--pc, transparent); }
+.ac-tab thead th a { display: block; margin-top: 4px; color: var(--foreground); }
+.ac-tab tbody th, .ac-tab thead th:first-child { position: sticky; left: 0; z-index: 1; background: var(--card); min-width: 120px; max-width: 150px; color: var(--muted-foreground); font-weight: 500; box-shadow: 1px 0 0 var(--border); }
+.ac-tab tr.dif td { background: color-mix(in srgb, var(--primary) 7%, var(--card)); }
+.ac-lk { display: inline-block; margin-right: 8px; }
+.ac-aviso-ia { margin: 0; padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border)); background: color-mix(in srgb, var(--warn) 9%, var(--card)); font-size: 13.5px; }
+.ac-md { font-size: 14.5px; line-height: 1.55; overflow-wrap: anywhere; } .ac-md h3, .ac-md h4, .ac-md h5 { margin: 14px 0 6px; } .ac-md p { margin: 0 0 8px; }
+.ac-md-tab { border-collapse: collapse; font-size: 13px; } .ac-md-tab th, .ac-md-tab td { border: 1px solid var(--border); padding: 4px 8px; text-align: left; vertical-align: top; }
+.ac-anterior { border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 8px 12px; } .ac-anterior summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+.ac-copiado textarea { width: 100%; font: 12px/1.4 var(--font-mono); }
+.ac-json { font: 12px/1.4 var(--font-mono); }
+.ac-f-at-l { display: grid; gap: 4px; }
+.ac-prof-lista li { display: grid; gap: 2px; }
+.wdg-ac li { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 /* modelo (pedido de 19/11): etiqueta com texto e cor pelo tom (Landscape.MODELOS); pago fica cheio, para não depender só
    do matiz. No cartão a linha existe sempre (vazia em quem não tem), para a grade não ficar irregular. */
 .dd-badge.ls-mod { --c: var(--mod-cinza); color: var(--c); border-color: color-mix(in srgb, var(--c) 42%, transparent); background: color-mix(in srgb, var(--c) 10%, var(--card)); font-weight: 600; }
@@ -2390,9 +2462,9 @@ html.tech-ls .barra-linha { display: none; }
   </div>
   <div class="seg visoes" id="visoes-tech" role="group" aria-label="Visão de Tech" hidden>
     <button type="button" id="visao-tech-noticias" aria-pressed="true">Notícias</button>
-    <button type="button" id="visao-tech-landscape" aria-pressed="false">Landscape</button>
+    <button type="button" id="visao-tech-landscape" aria-pressed="false">ArchLandscape</button>
   </div>
-  <section class="ls" id="landscape" aria-label="Landscape" hidden></section>
+  <section class="ls" id="landscape" aria-label="ArchLandscape" hidden></section>
   <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
   <div class="mercado-pe" id="mercado-pe" hidden></div>
   <section class="rankings" id="rankings" aria-label="Destaques do pregão" hidden></section>
@@ -2510,6 +2582,8 @@ html.tech-ls .barra-linha { display: none; }
 <script src="/tabela.js"></script>
 <script src="/esportes.js"></script>
 <script src="/landscape.js"></script>
+<script src="/arch.js"></script>
+<script src="/arch-ui.js"></script>
 <script src="/traducao.js"></script>
 <script src="/lidas.js"></script>
 <script>
@@ -2865,7 +2939,8 @@ try {
    Investimentos tem três visões: #investimentos (ou #investimentos/bolsa) abre a Bolsa; #investimentos/eua, o mercado americano;
    #investimentos/noticias, o feed. */
 const partesDoHash = () => (location.hash || "").replace(/^#/, "").split("/");
-const radarDoHash = () => { const h = partesDoHash()[0]; return RADARES[h] ? h : (h ? null : ""); };
+/* #arch/... (ArchLandscape, pedido de 19/11) mora dentro de Tech: mesma seção, mesma permissão */
+const radarDoHash = () => { const h = partesDoHash()[0]; if (h === "arch") return "tech"; return RADARES[h] ? h : (h ? null : ""); };
 const VISOES = ["bolsa", "eua", "radar", "noticias"];
 const visaoDoHash = () => { const v = partesDoHash()[1]; return VISOES.includes(v) ? v : "bolsa"; };
 let visao = "bolsa";
@@ -6050,7 +6125,8 @@ const CATALOGO_LOCAL = [
   ]),
   { id: "esportes-meu-time", titulo: "Meu time · próximo jogo", tamanho: 1, secao: "esportes" },
   { id: "esportes-vaivem", titulo: "Vai e vem", tamanho: 1, secao: "esportes" },
-  { id: "tech-landscape", titulo: "Landscape", tamanho: 1, secao: "tech" },
+  { id: "tech-landscape", titulo: "ArchLandscape", tamanho: 1, secao: "tech" },
+  { id: "arch-cloud", titulo: "ArchLandscape · Cloud", tamanho: 1, secao: "tech" },
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },
   { id: "carteira-patrimonio", titulo: "Patrimônio", tamanho: 1, secao: "investimentos", pessoal: true },
   { id: "carteira-proventos-mes", titulo: "Proventos do mês", tamanho: 1, secao: "investimentos", pessoal: true },
@@ -6110,7 +6186,8 @@ function guardarPainelLocal() { try { localStorage.setItem("radar-painel", JSON.
 /* Para onde leva o título (e o "Ver tudo") de cada widget */
 function destinoDe(id) {
   if (id.startsWith("esportes-")) return "#esportes";
-  if (id === "tech-landscape") return "#tech/landscape";
+  if (id === "tech-landscape") return "#arch/tools";
+  if (id === "arch-cloud") return "#arch/cloud";
   if (id === "destaques-investimentos" || id === "ultimas-investimentos") return "#investimentos/noticias";
   if (id.startsWith("destaques-")) return "#" + id.slice(10);
   if (id.startsWith("ultimas-")) return "#" + id.slice(8);
@@ -6162,6 +6239,13 @@ function leitor(id) {
   /* Landscape: a mesma lista leve da grade (/api/landscape); as novidades saem de Landscape.novidades */
   if (id === "tech-landscape") return async () => {
     const r = await fetch("/api/landscape", { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } });
+    if (!r.ok) return undefined;
+    const txt = await r.text();
+    return { d: JSON.parse(txt), marca: txt };
+  };
+  /* ArchLandscape · Cloud: a lista leve da aba (/api/cloud) */
+  if (id === "arch-cloud") return async () => {
+    const r = await fetch("/api/cloud", { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } });
     if (!r.ok) return undefined;
     const txt = await r.text();
     return { d: JSON.parse(txt), marca: txt };
@@ -6587,7 +6671,7 @@ function aplicarModo() {
   $("carteira").hidden = !inicio || !carteiraVista;
   if (inicio && carteiraVista) { document.title = (ehVistaLista(carteiraVista) ? "Minhas listas" : tituloCart(carteiraVista)) + " · Lookout"; h1.textContent = "Lookout"; }
   else if (inicio) { document.title = "Início · Lookout"; h1.textContent = "Lookout"; }
-  else { document.title = (emLandscape() ? "Landscape" : R().titulo) + " · Lookout"; h1.textContent = R().titulo; }
+  else { document.title = (emLandscape() ? "ArchLandscape" : R().titulo) + " · Lookout"; h1.textContent = R().titulo; }
 }
 $("marca").addEventListener("click", (e) => { if (inicio && !carteiraVista) { e.preventDefault(); window.scrollTo({ top: 0 }); } });
 
@@ -11576,26 +11660,59 @@ var LS = window.Landscape;
 var tvisao = "noticias", lsId = null, lsLista = null, lsCats = [], lsErro = "", lsCarregando = false, lsAdmin = false, lsEstadoAdmin = null;
 var lsDet = new Map(), lsDetErro = new Map(), lsRolagem = 0, lsDaGrade = false, lsAviso = "", lsConfirmaTirar = false, lsHnOrdem = "pontos";
 var lsLegenda = false;
-var lsF = { busca: "", ling: "", lic: "", modelos: [], ordem: "estrelas", modo: "grade" };
+var lsF = { busca: "", ling: "", lic: "", modelos: [], usos: [], ordem: "estrelas", modo: "grade" };
 try { const s = JSON.parse(localStorage.getItem("radar-landscape") || "null"); if (s) { if (["grade", "tabela"].includes(s.modo)) lsF.modo = s.modo; if (["estrelas", "crescimento", "atividade", "nome"].includes(s.ordem)) lsF.ordem = s.ordem; } } catch (e) {}
 const lsGuardar = () => { try { localStorage.setItem("radar-landscape", JSON.stringify({ modo: lsF.modo, ordem: lsF.ordem })); } catch (e) {} };
-/* lê #tech/landscape[/id] para as variáveis; devolve true se mudou algo */
+/* ArchLandscape (pedido de 19/11): a página do Landscape, com as abas Tools (o Landscape de antes) e Cloud.
+   Hashes em public/arch.js (Arch.lerHash / Arch.escreverHash): #arch/tools[/id], #arch/cloud[/...]. Os antigos
+   #tech/landscape[/id] abrem a aba Tools e o endereço é trocado (replaceState: o Voltar não ganha entrada nova).
+   archEst guarda a tela da aba aberta (grade, detalhe, comparar, profundas) e os filtros de Cloud. */
+var archAba = "tools", archEst = null, archChave = "", archAntigo = false;
+/* lê o hash para as variáveis; devolve true se mudou algo */
 function techDoHash() {
-  const p = partesDoHash();
-  const v = p[0] === "tech" && p[1] === "landscape" ? "landscape" : "noticias";
-  let id = v === "landscape" && p[2] ? decodeURIComponent(p[2]) : null;
-  if (id && !LS.ID_OK.test(id)) id = null;
-  const mudou = v !== tvisao || id !== lsId;
-  tvisao = v; lsId = id;
+  const a = window.Arch.lerHash(location.hash);
+  const v = a ? "landscape" : "noticias";
+  let id = null;
+  if (a && a.aba === "tools" && a.tela === "detalhe" && LS.ID_OK.test(a.id)) id = a.id;
+  const aba = a ? a.aba : archAba;
+  const chave = a ? window.Arch.escreverHash(a) : "";
+  const mudou = v !== tvisao || id !== lsId || aba !== archAba || chave !== archChave;
+  tvisao = v; lsId = id; archAba = aba; archEst = a; archChave = chave; archAntigo = !!(a && a.antigo);
   return mudou;
+}
+/* o estado da aba aberta, com o detalhe de Tools (lsId) por cima */
+function archAtual() {
+  const e = archEst && archEst.aba === archAba ? { ...archEst } : { aba: archAba, tela: "grade", id: null, ids: [], profunda: false, filtros: window.Arch.FILTROS_VAZIOS() };
+  if (archAba === "tools") { if (lsId) { e.tela = "detalhe"; e.id = lsId; } else if (e.tela === "detalhe") { e.tela = "grade"; e.id = null; } }
+  return e;
+}
+const hashArch = () => { const h = window.Arch.escreverHash(archAtual()); archChave = h; return h; };
+/* troca de aba ou de tela do ArchLandscape: entrada nova no histórico (o Voltar volta para onde estava) */
+function irArch(estado, push = true) {
+  if (radar !== "tech" || inicio) return;
+  archAba = estado.aba; archEst = { ids: [], profunda: false, filtros: window.Arch.FILTROS_VAZIOS(), id: null, ...estado };
+  lsId = estado.aba === "tools" && estado.tela === "detalhe" ? estado.id : null;
+  lsConfirmaTirar = false;
+  if (typeof fecharFolhaLs === "function") fecharFolhaLs();
+  escreverHash(push);
+  renderLandscape(); window.scrollTo({ top: 0 });
+}
+function archAbasEl() {
+  const seg = el("div", { class: "seg visoes arch-abas", role: "group", "aria-label": "Abas do ArchLandscape" });
+  [["tools", "Tools"], ["cloud", "Cloud"]].forEach(([a, t]) => {
+    const b = el("button", { type: "button", id: "arch-aba-" + a, "aria-pressed": String(archAba === a) }, t);
+    b.addEventListener("click", () => { if (archAba === a && archAtual().tela === "grade") return; irArch(a === "cloud" && typeof cloudEstadoGrade === "function" ? cloudEstadoGrade() : { aba: a, tela: "grade" }); });
+    seg.append(b);
+  });
+  return el("div", { class: "arch-topo" }, el("h2", { class: "arch-titulo" }, "ArchLandscape"), seg);
 }
 if (radarDoHash() === "tech") techDoHash();
 const emLandscape = () => !inicio && radar === "tech" && tvisao === "landscape";
-const hashTech = () => (tvisao === "landscape" ? "/landscape" + (lsId ? "/" + encodeURIComponent(lsId) : "") : "");
+
 function trocarVisaoTech(v) {
   if (radar !== "tech" || inicio) return;
   if (v === tvisao && !lsId) return;
-  tvisao = v; lsId = null; lsConfirmaTirar = false;
+  tvisao = v; lsId = null; lsConfirmaTirar = false; archEst = null;
   escreverHash();
   render(); window.scrollTo({ top: 0 });
 }
@@ -11648,15 +11765,10 @@ async function carregarDetalhe(id) {
   if (emLandscape() && lsId === id) renderLandscape();
 }
 /* ---- pedaços ---- */
-function marcaEl(t, tam) {
-  const l = t.leve || {}, url = (t.gh && t.gh.marca) || l.marca, tipo = (t.gh && t.gh.dono && t.gh.dono.tipo) || l.dono;
-  const mono = () => { const m = LS.monograma(t.nome || t.repo); return el("span", { class: "ls-mono" + (tam ? " " + tam : ""), style: "--h:" + m.matiz, "aria-hidden": "true" }, m.iniciais); };
-  if (!LS.marcaOk(url, tipo)) return mono();
-  const px = tam === "g" ? 56 : tam === "p" ? 24 : 36;
-  const img = el("img", { class: "ls-marca" + (tam ? " " + tam : ""), src: url, width: String(px), height: String(px), alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer" });
-  img.addEventListener("error", () => img.replaceWith(mono()), { once: true });
-  return img;
-}
+/* Ícone (regra do dono de 19/11): Arch.iconeDe dá as tentativas (ícone do Admin, avatar de organização, ícone do site
+   pela rota /icone/); a troca é pelo onerror, no mesmo lugar, e o logotipo do Lookout esmaecido fica por baixo enquanto
+   carrega e quando nada vem ("Sem ícone"). Pessoa nunca tem avatar. */
+function marcaEl(t, tam) { return iconeEl(window.Arch.iconeDe(t), tam); }
 const pontoEl = (iso) => { const a = LS.atividade(iso); return el("span", { class: "ls-ponto " + a, title: a === "verde" ? "Commit nos últimos 30 dias" : a === "ambar" ? "Último commit entre 30 e 180 dias" : "Sem commit há mais de 180 dias" }); };
 const nomeCat = (cid, sid) => { const c = lsCats.find((x) => x.id === cid); const s = c && c.subcategorias.find((x) => x.id === sid); return { c: c ? c.nome : "Sem categoria", s: s ? s.nome : "" }; };
 const estrelasTxt = (n) => (n == null ? "–" : "★ " + LS.formatoCurto(n));
@@ -11676,15 +11788,17 @@ function cartao(t) {
   const selos = [];
   if (LS.ehNova(t.adicionado)) selos.push(el("span", { class: "dd-badge b-novo" }, "novo"));
   if (l.release && LS.releaseRecente(l.release)) selos.push(el("span", { class: "dd-badge b-release", title: "Versão nova nesta semana" }, l.release.tag));
-  const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : ""), href: "#tech/landscape/" + encodeURIComponent(t.id), id: "ls-c-" + t.id, title: (trLigada && t.descricao_pt) || t.descricao || t.repo },
+  const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : ""), href: "#arch/tools/" + encodeURIComponent(t.id), id: "ls-c-" + t.id, title: (trLigada && t.descricao_pt) || t.descricao || t.repo },
     selos.length ? el("span", { class: "ls-selos" }, ...selos) : null, marcaEl(t), el("span", { class: "ls-nome" }, t.nome || t.repo),
     el("span", { class: "ls-mod-lin" }, modeloEl(t, true)),
+    /* opções de uso numa linha miúda que existe sempre (vazia em quem não tem), para os cartões terem a mesma altura */
+    el("span", { class: "ls-uso-lin", title: LS.resumoDeUso(t) ? "Opções de uso" : "" }, LS.resumoDeUso(t)),
     el("span", { class: "ls-dado" }, ...(l.coletando ? [t.erro ? "não achado" : "coletando…"] : [pontoEl(l.commit), estrelasTxt(l.estrelas)])));
   a.addEventListener("click", (e) => abrirTec(t.id, e));
   return a;
 }
 /* a regra do filtro é LS.filtrar (busca, linguagem, licença, categoria e modelos), testada em test/landscape.test.mjs */
-const lsFiltro = (semModelo) => ({ busca: lsF.busca, ling: lsF.ling, lic: lsF.lic, modelos: semModelo ? [] : lsF.modelos });
+const lsFiltro = (semModelo, semUso) => ({ busca: lsF.busca, ling: lsF.ling, lic: lsF.lic, modelos: semModelo ? [] : lsF.modelos, usos: semUso ? [] : lsF.usos });
 function lsFiltradas() {
   const l = LS.filtrar(lsLista || [], lsFiltro());
   const v = (t) => t.leve || {};
@@ -11704,7 +11818,7 @@ function selectLs(id, rotulo, opcoes, valor, aoMudar) {
 }
 /* ---- grade e tabela ---- */
 function desenharGrade(box) {
-  const cab = el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Landscape"), el("p", {}, "tecnologias que eu acompanho")));
+  const cab = el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Tools"), el("p", {}, "tecnologias que eu acompanho")));
   const modo = el("div", { class: "seg", role: "group", "aria-label": "Mostrar como" });
   [["grade", "Grade"], ["tabela", "Tabela"]].forEach(([m, t]) => { const b = el("button", { type: "button", id: "ls-modo-" + m, "aria-pressed": String(lsF.modo === m) }, t); b.addEventListener("click", () => { lsF.modo = m; lsGuardar(); renderLandscape(); }); modo.append(b); });
   const acoes = el("div", { class: "ls-acoes" }, modo);
@@ -11747,6 +11861,7 @@ function desenharGrade(box) {
   legenda.addEventListener("toggle", () => { lsLegenda = legenda.open; });
   function pintarMods() {
     mods.textContent = "";
+    pintarUsos();
     if (!existem.size) return;
     const n = new Map(LS.contarModelos(LS.filtrar(todos, lsFiltro(true))).map((m) => [m.id, m.n]));
     mods.append(el("span", { class: "rotulo", "aria-hidden": "true" }, "Modelo"));
@@ -11759,7 +11874,27 @@ function desenharGrade(box) {
       mods.append(b);
     }
   }
-  box.append(el("div", { class: "ls-ferr ls-ferr-mod" }, mods, legenda));
+  /* opções de uso (LS.USOS): chips com a contagem do que os outros filtros deixam, e o atalho para self-hosted */
+  const usos = el("div", { class: "chips ls-usos", role: "group", "aria-label": "Filtrar por opção de uso" });
+  const existemUsos = new Set(LS.contarUsos(todos).map((u) => u.id));
+  function pintarUsos() {
+    usos.textContent = "";
+    if (!existemUsos.size) return;
+    const n = new Map(LS.contarUsos(LS.filtrar(todos, lsFiltro(false, true))).map((u) => [u.id, u.n]));
+    usos.append(el("span", { class: "rotulo", "aria-hidden": "true" }, "Uso"));
+    const so = lsF.usos.length === 1 && lsF.usos[0] === "self-hosted";
+    const at = el("button", { class: "chip", type: "button", id: "ls-uso-atalho", "aria-pressed": String(so), title: LS.USOS[1].explicacao }, "Dá para hospedar por conta própria");
+    at.addEventListener("click", () => { lsF.usos = so ? [] : ["self-hosted"]; pintarConteudo(); const x = $("ls-uso-atalho"); if (x) x.focus(); });
+    usos.append(at);
+    for (const u of LS.USOS) {
+      if (!existemUsos.has(u.id)) continue;
+      const on = lsF.usos.includes(u.id);
+      const b = el("button", { class: "chip", type: "button", id: "ls-uso-" + u.id, "aria-pressed": String(on), title: u.explicacao }, el("span", { class: "lg" }, u.rotulo), el("span", { class: "k" }, String(n.get(u.id) || 0)));
+      b.addEventListener("click", () => { lsF.usos = on ? lsF.usos.filter((x) => x !== u.id) : lsF.usos.concat(u.id); pintarConteudo(); const x = $("ls-uso-" + u.id); if (x) x.focus(); });
+      usos.append(b);
+    }
+  }
+  box.append(el("div", { class: "ls-ferr ls-ferr-mod" }, mods, legenda), el("div", { class: "ls-ferr ls-ferr-uso" }, usos));
   const conteudo = el("div", { id: "ls-conteudo" });
   box.append(conteudo);
   function pintarConteudo() {
@@ -11797,9 +11932,10 @@ function tabelaLs(l) {
     { id: "linguagem", rotulo: "Linguagem", tipo: "texto", valor: (t) => v(t).linguagem || null },
     { id: "licenca", rotulo: "Licença", tipo: "texto", valor: (t) => v(t).licenca || null },
     { id: "modelo", rotulo: "Modelo", tipo: "texto", valor: (t) => (LS.modeloDe(t) ? LS.modeloDe(t).rotulo : null) },
+    { id: "uso", rotulo: "Uso", tipo: "texto", valor: (t) => LS.resumoDeUso(t) || null },
     { id: "issues", rotulo: "Issues abertas", tipo: "num", valor: (t) => v(t).issues },
   ];
-  const link = (t) => { const a = el("a", { href: "#tech/landscape/" + encodeURIComponent(t.id) }, marcaEl(t, "p"), t.nome); a.addEventListener("click", (e) => abrirTec(t.id, e)); return a; };
+  const link = (t) => { const a = el("a", { href: "#arch/tools/" + encodeURIComponent(t.id) }, marcaEl(t, "p"), t.nome); a.addEventListener("click", (e) => abrirTec(t.id, e)); return a; };
   const tab = Tabela.criar({
     id: "landscape", colunas: cols, linhas: l, rotuloConta: "tecnologias", classeTabela: "cot-tab ls-tab", padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 50 },
     semOrdem: "Sem critério, vale a ordem escolhida em cima.",
@@ -11929,12 +12065,15 @@ function blocoDizendo(d) {
 }
 function blocoParecidas(d) {
   const ps = d.parecidas || [];
-  const corpo = ps.length ? el("ul", { class: "ls-lista" }, ...ps.map((p) => { const a = el("a", { href: "#tech/landscape/" + encodeURIComponent(p.id) }, p.nome); a.addEventListener("click", (e) => abrirTec(p.id, e));
+  const corpo = ps.length ? el("ul", { class: "ls-lista" }, ...ps.map((p) => { const a = el("a", { href: "#arch/tools/" + encodeURIComponent(p.id) }, p.nome); a.addEventListener("click", (e) => abrirTec(p.id, e));
     const l = p.leve || {}; return el("li", {}, el("div", { class: "ls-rel" }, marcaEl(p, "p"), a), el("div", { class: "n" }, el("span", {}, estrelasTxt(l.estrelas)), el("span", {}, pontoEl(l.commit), " " + (l.commit ? "commit " + fmtRel(l.commit) : "sem dado")), el("span", {}, l.licenca || "licença ?"))); }))
     : el("p", { class: "ls-aviso" }, "Nenhuma outra tecnologia nesta subcategoria ainda.");
   const t = d.tec, l = t.leve || {};
+  /* comparar só com concorrentes (a mesma subcategoria): um botão por parecida e o geral, esmaecido sem nenhuma */
+  if (ps.length) [...corpo.children].forEach((li, k) => li.append(botaoCompararCom("tools", d.id || t.id, ps[k].id, ps[k].nome)));
   return el("section", { class: "ls-bloco", "aria-labelledby": "ls-h-par" }, el("h3", { id: "ls-h-par" }, "Parecidas", el("small", {}, nomeCat(t.categoria, t.subcategoria).s)),
-    ps.length ? el("p", { class: "ls-aviso" }, `Esta: ${estrelasTxt(l.estrelas)} · ${l.licenca || "licença ?"}`) : null, corpo);
+    ps.length ? el("p", { class: "ls-aviso" }, `Esta: ${estrelasTxt(l.estrelas)} · ${l.licenca || "licença ?"}`) : null, corpo,
+    barraComparar("tools", [d.id || t.id, ...ps.slice(0, 3).map((x) => x.id)], [{ id: d.id || t.id, subcategoria: t.subcategoria }, ...ps]));
 }
 var lsNotas = new Map();
 function blocoNotas(t) {
@@ -11963,7 +12102,7 @@ function blocoNotas(t) {
   return sec;
 }
 function desenharDetalhe(box, id) {
-  const volta = el("a", { class: "dd-btn dd-btn--link ls-volta", href: "#tech/landscape", id: "ls-voltar" }, "← Landscape");
+  const volta = el("a", { class: "dd-btn dd-btn--link ls-volta", href: "#arch/tools", id: "ls-voltar" }, "← Tools");
   volta.addEventListener("click", voltarGrade);
   box.append(volta);
   const d = lsDet.get(id);
@@ -11978,13 +12117,13 @@ function desenharDetalhe(box, id) {
   const g = t.gh || {};
   const n = nomeCat(t.categoria, t.subcategoria);
   const site = t.site || g.site || "";
-  document.title = (t.nome || t.repo) + " · Landscape · Lookout";
+  document.title = (t.nome || t.repo) + " · ArchLandscape · Lookout";
   const mod = LS.modeloDe(t);
   const chips = [el("span", { class: "dd-badge b-clube" }, n.c + (n.s ? " › " + n.s : "")), modeloEl(t)];
   if (g.linguagem) chips.push(el("span", { class: "dd-badge b-noticia" }, g.linguagem));
   /* modelo explicado em texto e a licença que o GitHub informa (gh.licenca), quando existem */
   const info = [];
-  if (mod) info.push(el("dt", {}, "Modelo"), el("dd", { id: "ls-mod-exp" }, mod.rotulo + ". " + mod.explicacao));
+  if (mod) info.push(el("dt", {}, "Modelo"), el("dd", { id: "ls-mod-exp" }, mod.rotulo + ". " + LS.porQueModelo(t)));
   if (g.licenca) info.push(el("dt", {}, "Licença"), el("dd", { id: "ls-licenca" }, el("code", {}, g.licenca), " (informada pelo GitHub)"));
   if (g.arquivado) chips.push(el("span", { class: "dd-badge b-review" }, "arquivado"));
   if (t.erro) chips.push(el("span", { class: "dd-badge b-video" }, t.erro));
@@ -12018,7 +12157,7 @@ function desenharDetalhe(box, id) {
     }
   }
   box.append(topo);
-  const blocos = el("div", { class: "ls-blocos" }, blocoNumeros(t), blocoVersoes(t), blocoSobre(t), blocoParecidas(d), blocoNoticias(d), blocoDizendo(d));
+  const blocos = el("div", { class: "ls-blocos" }, blocoNumeros(t), blocoUso(t), blocoVersoes(t), blocoRoteiroTools(t), blocoSobre(t), blocoParecidas({ ...d, id }), blocoNoticias(d), blocoDizendo(d));
   if (lsAdmin) blocos.append(blocoNotas(t));
   box.append(blocos);
 }
@@ -12030,7 +12169,15 @@ function renderLandscape() {
   /* monta fora da página e troca de uma vez: limpar antes encolheria a página e perderia a rolagem */
   const real = box;
   box = document.createElement("div");
-  document.title = "Landscape · Lookout";
+  document.title = "ArchLandscape · Lookout";
+  box.append(archAbasEl());
+  /* aba Cloud e as telas de comparar e de comparações profundas: public/arch-ui.js */
+  const est = archAtual();
+  if (archAba === "cloud" || est.tela === "comparar" || est.tela === "profundas" || est.tela === "profunda") {
+    renderArchUi(box, est);
+    real.replaceChildren(...box.childNodes);
+    return;
+  }
   if (!lsLista && !lsErro) carregarLandscape();
   if (lsId) {
     desenharDetalhe(box, lsId);
@@ -12039,7 +12186,7 @@ function renderLandscape() {
     return;
   }
   if (lsErro && !lsLista) { const b = el("button", { class: "dd-btn dd-btn--link", type: "button" }, "Tentar de novo"); b.addEventListener("click", () => { lsErro = ""; carregarLandscape(true); renderLandscape(); }); box.append(el("p", { class: "ls-vazio" }, "Não deu para carregar o landscape agora. ", b)); real.replaceChildren(...box.childNodes); return; }
-  if (!lsLista) { box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Landscape"), el("p", {}, "tecnologias que eu acompanho"))), esqueleto(6)); real.replaceChildren(...box.childNodes); return; }
+  if (!lsLista) { box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Tools"), el("p", {}, "tecnologias que eu acompanho"))), esqueleto(6)); real.replaceChildren(...box.childNodes); return; }
   desenharGrade(box);
   real.replaceChildren(...box.childNodes);
   /* recém-adicionada aparece como "coletando…": relê a lista a cada minuto enquanto houver alguma assim */
@@ -12126,27 +12273,41 @@ function desenharFolhaLs() {
     site = el("input", { class: "dd-input", id: "ls-f-site", type: "url", placeholder: "https://", value: ed ? t.site || "" : "" });
     feed = el("input", { class: "dd-input", id: "ls-f-feed", type: "url", placeholder: "https:// do RSS ou Atom do blog", value: ed ? t.feed || "" : "" });
     const modelo = el("select", { class: "dd-input", id: "ls-f-modelo" }, el("option", { value: "" }, "Sem etiqueta"), ...LS.MODELOS.map((m) => el("option", { value: m.id }, m.rotulo)));
-    modelo.value = ed && LS.modeloDe(t) ? t.modelo : "";
+    modelo.value = ed && LS.modeloDe(t) ? LS.modeloDe(t).id : "";
+    /* o porquê do modelo (modelo_nota): vem do detalhe; a lista leve não leva */
+    const notaAtual = ed ? ((lsDet.get(t.id) && lsDet.get(t.id).tec.modelo_nota) || t.modelo_nota || "") : "";
+    const modNota = el("input", { class: "dd-input", id: "ls-f-modelo-nota", maxlength: String(LS.NOTA_MODELO_MAX), placeholder: "o que é grátis e o que é pago, por exemplo", value: notaAtual });
     const modDica = el("p", { class: "dica", id: "ls-f-modelo-dica" });
     const dizModelo = () => { const m = LS.MODELOS.find((x) => x.id === modelo.value); modDica.textContent = m ? m.explicacao : "A tecnologia fica sem etiqueta de modelo."; };
     modelo.addEventListener("change", dizModelo); dizModelo();
+    /* opções de uso (LS.USOS), a nota e o ícone: só o Admin grava; o cron nunca mexe */
+    const det0 = ed && lsDet.get(t.id) ? lsDet.get(t.id).tec : null;
+    const usoAtual = new Set(LS.usoDe(det0 || t || {}));
+    const usoCx = LS.USOS.map((u) => { const c = el("input", { type: "checkbox", id: "ls-f-uso-" + u.id, value: u.id }); c.checked = usoAtual.has(u.id); return { u, c }; });
+    const usoNota = el("input", { class: "dd-input", id: "ls-f-uso-nota", maxlength: String(LS.USO_NOTA_MAX), placeholder: "por exemplo: a versão self-hosted não tem o painel de equipes", value: (det0 && det0.uso_nota) || "" });
+    const icone = el("input", { class: "dd-input", id: "ls-f-icone", type: "url", placeholder: "https:// (opcional; vazio tenta o avatar e o ícone do site)", value: (det0 && det0.icone) || (ed && t.icone) || "" });
+    lsP.uso = () => ({ uso: usoCx.filter((x) => x.c.checked).map((x) => x.u.id), uso_nota: usoNota.value.trim(), icone: icone.value.trim() });
     f.append(cat.el, el("div", {}, el("label", { class: "rotulo", for: "ls-f-nome" }, "Nome de exibição"), nome),
       el("div", {}, el("label", { class: "rotulo", for: "ls-f-site" }, "Site oficial (opcional)"), site, el("p", { class: "dica" }, "Vazio usa o site que o GitHub informa.")),
-      el("div", {}, el("label", { class: "rotulo", for: "ls-f-modelo" }, "Modelo"), modelo, modDica),
+      el("div", { class: "ls-f-mod" }, el("div", {}, el("label", { class: "rotulo", for: "ls-f-modelo" }, "Modelo"), modelo, modDica),
+        el("div", {}, el("label", { class: "rotulo", for: "ls-f-modelo-nota" }, "Por que (opcional)"), modNota, el("p", { class: "dica" }, "Aparece no detalhe, logo depois da etiqueta. Sem modelo, a nota sai junto."))),
+      el("fieldset", { class: "ls-f-uso" }, el("legend", { class: "rotulo" }, "Opções de uso"), ...usoCx.map(({ u, c }) => el("label", { class: "ls-f-cx", title: u.explicacao }, c, " " + u.rotulo)),
+        el("label", { class: "rotulo", for: "ls-f-uso-nota" }, "Nota sobre o uso (opcional)"), usoNota),
+      el("div", {}, el("label", { class: "rotulo", for: "ls-f-icone" }, "Ícone (opcional)"), icone),
       el("div", {}, el("label", { class: "rotulo", for: "ls-f-feed" }, "Feed do blog ou changelog (opcional)"), feed), erroEl);
     corpo.append(f);
     const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-f-salvar" }, ed ? "Salvar" : "Adicionar");
     ok.disabled = lsP.salvando;
     ok.addEventListener("click", async () => {
-      const b = { ...cat.valor(), nome: nome.value.trim(), site: site.value.trim(), feed: feed.value.trim(), modelo: modelo.value };
+      const b = { ...cat.valor(), nome: nome.value.trim(), site: site.value.trim(), feed: feed.value.trim(), modelo: modelo.value, modelo_nota: modelo.value ? modNota.value.trim() : "", ...lsP.uso() };
       if (!ed) b.urls = urls.value;
       lsP.salvando = true; ok.disabled = true; erroEl.textContent = "";
       try {
         if (ed) {
           const j = await apiLs("PUT", "/api/admin/landscape/" + encodeURIComponent(t.id), b);
           if (j.categorias) lsCats = j.categorias;
-          const x = (lsLista || []).find((y) => y.id === t.id); if (x) Object.assign(x, { nome: j.nome || x.nome, categoria: j.categoria || x.categoria, subcategoria: j.subcategoria || x.subcategoria, site: j.site ?? x.site, modelo: j.modelo ?? x.modelo });
-          const dd = lsDet.get(t.id); if (dd) Object.assign(dd.tec, { nome: j.nome || dd.tec.nome, categoria: j.categoria || dd.tec.categoria, subcategoria: j.subcategoria || dd.tec.subcategoria, site: j.site ?? dd.tec.site, feed: j.feed ?? dd.tec.feed, modelo: j.modelo ?? dd.tec.modelo });
+          const x = (lsLista || []).find((y) => y.id === t.id); if (x) Object.assign(x, { nome: j.nome || x.nome, categoria: j.categoria || x.categoria, subcategoria: j.subcategoria || x.subcategoria, site: j.site ?? x.site, modelo: j.modelo ?? x.modelo, uso: j.uso ?? x.uso, icone: j.icone ?? x.icone });
+          const dd = lsDet.get(t.id); if (dd) Object.assign(dd.tec, { nome: j.nome || dd.tec.nome, categoria: j.categoria || dd.tec.categoria, subcategoria: j.subcategoria || dd.tec.subcategoria, site: j.site ?? dd.tec.site, feed: j.feed ?? dd.tec.feed, modelo: j.modelo ?? dd.tec.modelo, modelo_nota: j.modelo_nota ?? dd.tec.modelo_nota, uso: j.uso ?? dd.tec.uso, uso_nota: j.uso_nota ?? dd.tec.uso_nota, icone: j.icone ?? dd.tec.icone });
           wDados.delete("tech-landscape");
           fecharFolhaLs(); renderLandscape(); carregarDetalhe(t.id);
         } else {
@@ -12229,10 +12390,11 @@ function desenharFolhaLs() {
   pe.append(cancelar, ok);
 }
 /* ---- widget do Início: o que mudou nas tecnologias acompanhadas ---- */
+corpos["arch-cloud"] = (d, fm = { c: 1, r: 1 }) => corpoArchCloud(d, fm);
 corpos["tech-landscape"] = (d, fm = { c: 1, r: 1 }) => {
   const n = LS.novidades((d && d.tecnologias) || [], Date.now(), fm.c > 1 ? 5 : 3);
   if (!n.length) return [vazioW(d && d.tecnologias && d.tecnologias.length ? "Nada novo nas tecnologias acompanhadas nesta semana." : "Nenhuma tecnologia no landscape ainda.")];
-  return [el("ul", { class: "wdg-lista wdg-ls" }, ...n.map((x) => el("li", {}, el("a", { href: "#tech/landscape/" + encodeURIComponent(x.id) }, el("b", {}, x.nome), " " + x.texto),
+  return [el("ul", { class: "wdg-lista wdg-ls" }, ...n.map((x) => el("li", {}, el("a", { href: "#arch/tools/" + encodeURIComponent(x.id) }, el("b", {}, x.nome), " " + x.texto),
     el("div", { class: "n" }, el("span", {}, x.tipo === "release" ? "release" : x.tipo === "hn" ? "Hacker News" : "estrelas"), el("span", {}, x.tipo === "estrelas" ? "nesta semana" : fmtRel(x.data)), modeloEl(x, true)))))];
 };
 
@@ -12240,7 +12402,7 @@ corpos["tech-landscape"] = (d, fm = { c: 1, r: 1 }) => {
    do navegador trazer o Início de volta. Entre seções e visões o endereço é só trocado, como antes. */
 function escreverHash(push) {
   const config = !inicio && radar === "esportes" && (espPAberto || partesDoHash()[1] === "config");
-  const alvo = inicio && carteiraVista ? hashCarteira() : inicio ? "#inicio" : config ? "#esportes/config" : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "") + (radar === "tech" ? hashTech() : "");
+  const alvo = inicio && carteiraVista ? hashCarteira() : inicio ? "#inicio" : config ? "#esportes/config" : radar === "tech" && tvisao === "landscape" ? hashArch() : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
   if ((location.hash || "") === alvo) return;
   try { history[push ? "pushState" : "replaceState"](null, "", location.pathname + location.search + alvo); }
   catch (e) { try { location.hash = alvo; } catch (e2) {} }
@@ -12281,8 +12443,14 @@ window.addEventListener("hashchange", () => {
   const querConfig = h === "esportes" && partesDoHash()[1] === "config";
   if (!inicio && h === radar && h === "tech") {
     const ia = lsId, y = window.scrollY;
+    const ca = archChave;
     if (techDoHash()) {
-      if (!ia && lsId) { lsRolagem = y; lsDaGrade = true; } lsConfirmaTirar = false; fecharFolhaLs(); render(); if (ia && !lsId) voltarRolagem(); else window.scrollTo({ top: 0 }); }
+      if (!ia && lsId) { lsRolagem = y; lsDaGrade = true; } lsConfirmaTirar = false; fecharFolhaLs(); render();
+      /* só os filtros de Cloud mudaram: a rolagem fica */
+      const soFiltro = archAba === "cloud" && archEst && archEst.tela === "grade" && ca.split("?")[0] === archChave.split("?")[0];
+      if (ia && !lsId) voltarRolagem(); else if (archAba === "cloud" && archEst && archEst.tela === "grade" && typeof cloudVoltarRolagem === "function" && !soFiltro) cloudVoltarRolagem(); else if (!soFiltro) window.scrollTo({ top: 0 }); }
+    /* endereço antigo do Landscape: troca pelo novo sem criar entrada no histórico */
+    if (archAntigo) escreverHash();
     return;
   }
   if (!inicio && h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); else if (querConfig) abrirMeusEsportes(); else fecharMeusEsportes(); return; }

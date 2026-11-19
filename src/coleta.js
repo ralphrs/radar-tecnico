@@ -3,6 +3,7 @@
 // Post de subreddit não vira candidato: vai só para foruns-<radar> (bloco "Nos fóruns" da página), sem curadoria.
 // A tarefa de curadoria (Claude) só lê os candidatos novos, escolhe, resume e grava os itens.
 // Aqui também fica a limpeza por idade, que antes era feita pelas tarefas.
+import { limparDossies } from "./arch.js";
 import { FEEDS } from "./feeds.js";
 import { histParaApagar } from "./papel.js";
 import { leiturasParaApagar } from "./leitura.js";
@@ -525,6 +526,8 @@ export async function limpar(env) {
   try { relatorio.lidas = (await limparLidas(env, t)).length; } catch (e) { relatorio.lidas = "erro: " + String(e.message || e).slice(0, 100); }
   // Pedidos à curadoria (src/curadoria.js) fechados há mais de 30 dias: por collection e lista de ids, em lotes de 90
   try { relatorio.pedidos = (await limparPedidos(env, t)).length; } catch (e) { relatorio.pedidos = "erro: " + String(e.message || e).slice(0, 100); }
+  // Comparações profundas do ArchLandscape (src/arch.js) com mais de 180 dias: por lista de ids, em lotes de 90
+  try { relatorio.dossies = (await limparDossies(env, t)).length; } catch (e) { relatorio.dossies = "erro: " + String(e.message || e).slice(0, 100); }
   const r = await env.DB.prepare("DELETE FROM candidatos WHERE visto < ?").bind(new Date(t - 10 * DIA).toISOString()).run();
   relatorio.candidatos = r.meta?.changes ?? 0;
   await env.DB.prepare(

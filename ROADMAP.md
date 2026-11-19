@@ -188,6 +188,16 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [ ] Rotinas: conferir em produção os primeiros dias do batimento (se alguma etapa aparece atrasada sem estar, sobretudo EUA no horário de verão de Nova York e a leitura do dia com o cofre)
 - [x] Landscape: etiqueta do modelo de cada tecnologia (Open source, Open source + nuvem paga, Código disponível, Freemium, Pago) no cartão, no widget, na tabela e no detalhe (com a explicação e a licença do GitHub), chips para filtrar por modelo, legenda "O que são as etiquetas?" e o campo Modelo no Adicionar e no Editar do Admin (docs/LOOKOUT.md, "Modelo") (19/11)
 - [ ] Landscape: tecnologia sem repositório no GitHub (produto fechado) ainda não entra no Landscape
+- [x] ArchLandscape: a página do Landscape com as abas Tools (o Landscape de antes) e Cloud, hashes `#arch/...` com os antigos `#tech/landscape` redirecionando (docs/LOOKOUT.md, "ArchLandscape") (19/11)
+- [x] Cloud: 180 serviços de 19 provedores na semente, grade por categoria ou provedor, filtros no hash, detalhe com equivalentes, novidades na hora, notícias e notas por pessoa, Admin e widget `arch-cloud` (19/11)
+- [x] Comparar só concorrentes da mesma subcategoria (`Arch.podeComparar`), botão esmaecido com o motivo, comparação Rápida com "Copiar para ADR" e Profunda (`arch-dossies`, validade de 30 dias, um doc por conjunto, renovação automática da vencida e "Atualizar análise") nas duas abas (19/11)
+- [x] Modelo: "Open source + nuvem paga" virou Freemium, com o porquê (`modelo_nota`) no detalhe (19/11)
+- [x] Opções de uso (`uso`, `uso_nota`) em Tools e Cloud, e ícone com o logotipo do Lookout esmaecido quando não há (rota `/icone/<dominio>`) (19/11)
+- [ ] Cloud: curadoria de preços de referência (`preco_ref`) com fonte e data
+- [ ] Cloud: conferência dos 180 serviços da semente (links oficiais, plano grátis e características) e "conferido" em cada um
+- [ ] Cloud: rodar a sonda dos feeds de novidades em produção (`POST /api/admin/cloud-sonda`) e acrescentar feeds das alternativas
+- [ ] Cloud: Hacker News por serviço
+- [ ] ArchLandscape: tarefa agendada que atende as comparações profundas (`arch-dossies`) e grava `expiraEm`
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

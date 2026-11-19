@@ -16,6 +16,7 @@
 // - _sistema/sonda-landscape e sonda-landscape-aNN: a sonda das URLs novas (formato real em produção).
 // Regras do banco: nunca DROP; UPDATE e DELETE só com a chave explícita; o cron não toca em landscape/<email>.
 import { lerFeed } from "./coleta.js";
+import { semearCloud } from "./cloud.js";
 import "../public/landscape.js";
 import "../public/traducao.js";
 const L = globalThis.Landscape;
@@ -535,6 +536,8 @@ export async function cronLandscape(env, quando = Date.now()) {
   const agora = new Date(quando).getTime();
   const out = { semente: 0, sonda: 0 };
   try { out.semente = await semearLandscape(env, agora); } catch (e) { console.error("landscape-semente", String((e && e.message) || e).slice(0, 120)); }
+  // a semente da aba Cloud do ArchLandscape (src/cloud.js) entra junto, uma vez, sem pedido externo
+  try { out.cloud = await semearCloud(env, agora); } catch (e) { console.error("cloud-semente", String((e && e.message) || e).slice(0, 120)); }
   try { out.sonda = await cronSondaLandscape(env, { agora }); } catch (e) { console.error("sonda-landscape", String((e && e.message) || e).slice(0, 120)); }
   try { Object.assign(out, await rodadaLandscape(env, { agora, orcamento: Math.max(0, ORCAMENTO - out.sonda) })); } catch (e) { out.erro = String((e && e.message) || e).slice(0, 160); }
   return out;
@@ -546,7 +549,7 @@ const json = (dados, status = 200) => new Response(JSON.stringify(dados), { stat
 // o resto vem do UNION ALL, com json_object só dos campos da grade (o doc inteiro tem README, série e comentários).
 export const SQL_LEVE = "SELECT id, data FROM docs WHERE 0 UNION ALL SELECT id, json_object('repo', json_extract(data, '$.repo'), 'nome', json_extract(data, '$.nome'), "
   + "'categoria', json_extract(data, '$.categoria'), 'subcategoria', json_extract(data, '$.subcategoria'), 'site', json_extract(data, '$.site'), "
-  + "'adicionado', json_extract(data, '$.adicionado'), 'modelo', json_extract(data, '$.modelo'), 'descricao', json_extract(data, '$.gh.descricao'), 'descricao_pt', json_extract(data, '$.gh.descricao_pt'), 'erro', json_extract(data, '$.erro'), "
+  + "'adicionado', json_extract(data, '$.adicionado'), 'modelo', json_extract(data, '$.modelo'), 'uso', json(json_extract(data, '$.uso')), 'icone', json_extract(data, '$.icone'), 'descricao', json_extract(data, '$.gh.descricao'), 'descricao_pt', json_extract(data, '$.gh.descricao_pt'), 'erro', json_extract(data, '$.erro'), "
   + "'leve', json(json_extract(data, '$.leve'))) AS data FROM docs WHERE collection = 'landscape'";
 export async function listaLeve(env, deps) {
   const linhas = await deps.lerLinhas(env, SQL_LEVE, [], "landscape");
@@ -557,7 +560,7 @@ export async function listaLeve(env, deps) {
     if (!d || !L.ID_OK.test(r.id)) continue;
     const leve = d.leve && typeof d.leve === "object" ? { ...d.leve } : { coletando: true };
     if (leve.marca && !L.marcaOk(leve.marca, leve.dono)) leve.marca = "";
-    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", modelo: L.modeloDe(d) ? d.modelo : "", adicionado: d.adicionado || null, descricao: d.descricao || "", ...(d.descricao_pt ? { descricao_pt: d.descricao_pt } : {}), erro: d.erro || "", leve });
+    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", modelo: L.modeloDe(d) ? L.modeloDe(d).id : "", uso: L.usoDe(d), ...(typeof d.icone === "string" && L.urlOk(d.icone) ? { icone: d.icone } : {}), adicionado: d.adicionado || null, descricao: d.descricao || "", ...(d.descricao_pt ? { descricao_pt: d.descricao_pt } : {}), erro: d.erro || "", leve });
   }
   out.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
   return out;
@@ -573,8 +576,8 @@ export async function lerCategorias(env, deps) {
 // Notícias que o Lookout já publicou citando a tecnologia: uma consulta por collection de itens liberada, pela faixa
 // (collection, coletado) do índice e com limite; o texto do doc é filtrado por instr() e confirmado aqui (palavra
 // inteira no título ou resumo, ou o repositório no link). Mesmo esquema para os posts dos fóruns (Reddit).
-const COLECOES_ITENS = [["items", "tech"], ["items-negocios", "negocios"], ["items-investimentos", "investimentos"], ["items-politica", "politica"], ["items-esportes", "esportes"]];
-const COLECOES_FORUM = [["foruns-tech", "tech"], ["foruns-negocios", "negocios"], ["foruns-investimentos", "investimentos"], ["foruns-politica", "politica"], ["foruns-esportes", "esportes"]];
+export const COLECOES_ITENS = [["items", "tech"], ["items-negocios", "negocios"], ["items-investimentos", "investimentos"], ["items-politica", "politica"], ["items-esportes", "esportes"]];
+export const COLECOES_FORUM = [["foruns-tech", "tech"], ["foruns-negocios", "negocios"], ["foruns-investimentos", "investimentos"], ["foruns-politica", "politica"], ["foruns-esportes", "esportes"]];
 export function termosDe(tec) {
   const repo = String(tec.repo || "").toLowerCase(), nomeRepo = repo.split("/")[1] || "";
   const t = new Set([repo]);
@@ -635,6 +638,7 @@ export async function rotaLandscape(request, env, quem, resto, deps) {
     if (!quem.admin) return json({ erro: "rota" }, 404);
     return rotaNotas(request, env, quem, id, deps);
   }
+  if (sub === "roteiro") return rotaRoteiro(request, env, id, deps);
   if (sub) return json({ erro: "rota" }, 404);
   if (request.method !== "GET") return json({ erro: "metodo" }, 405);
   const r = await deps.lerLinha(env, "landscape", id);
@@ -642,7 +646,11 @@ export async function rotaLandscape(request, env, quem, resto, deps) {
   let doc;
   try { doc = JSON.parse(r.data); } catch { return json({ erro: "doc" }, 500); }
   const { por, ...tec } = doc;
-  tec.modelo = L.modeloDe(tec) ? tec.modelo : "";
+  tec.modelo = L.modeloDe(tec) ? L.modeloDe(tec).id : "";
+  if (!tec.modelo || typeof tec.modelo_nota !== "string") delete tec.modelo_nota;
+  tec.uso = L.usoDe(tec);
+  if (typeof tec.uso_nota !== "string") delete tec.uso_nota;
+  if (tec.icone && !L.urlOk(tec.icone)) delete tec.icone;
   if (tec.gh && !L.marcaOk(tec.gh.marca, tec.gh.dono && tec.gh.dono.tipo)) tec.gh = { ...tec.gh, marca: "" };
   if (tec.gh && tec.gh.dono) tec.gh = { ...tec.gh, dono: { login: tec.gh.dono.login, tipo: tec.gh.dono.tipo } };
   const ref = { repo: tec.repo || L.repoDoId(id), nome: tec.nome, site: tec.site || (tec.gh && tec.gh.site) || "" };
@@ -653,6 +661,41 @@ export async function rotaLandscape(request, env, quem, resto, deps) {
   ]);
   const parecidas = lista.filter((x) => x.id !== id && x.categoria === tec.categoria && x.subcategoria === tec.subcategoria);
   return json({ id, tec, noticias, reddit, parecidas, categorias, admin: !!quem.admin });
+}
+
+// ---------- o que vem por aí (ArchLandscape, 19/11) ----------
+// Milestones abertos do repositório, lidos quando o detalhe abre, com cache de 24 h em _sistema/landscape-roteiro-<id>:
+// no máximo um pedido ao GitHub por tecnologia por dia, e só com GITHUB_TOKEN (sem ele, só o link para os milestones).
+// Mais o `roteiro` que o Admin ou um dossiê escreveram no doc. Nada disso entra no cron.
+export const CACHE_ROTEIRO_MS = 24 * HORA;
+export function lerMilestones(j, agora = Date.now()) {
+  if (!Array.isArray(j)) return [];
+  return j.filter((m) => m && m.title && m.state !== "closed").slice(0, 10).map((m) => ({ titulo: txt(m.title, 160), estado: "aberto", quando: m.due_on ? String(m.due_on).slice(0, 10) : "",
+    fonte: urlGithub(m.html_url), em: agoraIso(agora), abertas: num(m.open_issues), fechadas: num(m.closed_issues) }));
+}
+export async function rotaRoteiro(request, env, id, deps, { agora = Date.now() } = {}) {
+  if (request.method !== "GET") return json({ erro: "metodo" }, 405);
+  const r = await deps.lerLinha(env, "landscape", id);
+  let doc = null;
+  try { doc = r ? JSON.parse(r.data) : null; } catch { doc = null; }
+  if (!doc) return json({ erro: "nao-encontrada" }, 404);
+  const repo = doc.repo || L.repoDoId(id);
+  const link = "https://github.com/" + repo + "/milestones";
+  const manual = (Array.isArray(doc.roteiro) ? doc.roteiro : []).slice(0, 10).map((x) => ({ ...x, manual: true }));
+  if (!env.GITHUB_TOKEN) return json({ itens: manual, semToken: true, link, lido: null });
+  const idCache = "landscape-roteiro-" + id;
+  const cache = await lerDoc(env, "_sistema", idCache);
+  if (cache && Date.parse(cache.tentado || "") > agora - CACHE_ROTEIRO_MS) return json({ itens: [...manual, ...(cache.itens || [])], link, lido: cache.lido || null, de: "cache" });
+  try {
+    const resp = await pedir(`${GH}/repos/${caminho(repo)}/milestones?state=open&sort=due_on&direction=asc&per_page=10`, { env, agora, host: "github" });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const itens = lerMilestones(resp.json, agora);
+    await gravarSistema(env, idCache, { lido: agoraIso(agora), tentado: agoraIso(agora), itens });
+    return json({ itens: [...manual, ...itens], link, lido: agoraIso(agora), de: "rede" });
+  } catch (e) {
+    await gravarSistema(env, idCache, { lido: cache ? cache.lido || null : null, tentado: agoraIso(agora), itens: cache ? cache.itens || [] : [], erro: String((e && e.message) || e).slice(0, 120) });
+    return json({ itens: [...manual, ...((cache && cache.itens) || [])], link, lido: cache ? cache.lido || null : null, de: "falhou" });
+  }
 }
 
 async function rotaNotas(request, env, quem, id, deps) {
@@ -766,6 +809,12 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
     // o modelo vale para todas as do lote (nome, site e feed só quando é uma)
     const mod = L.validarModelo(b.modelo);
     if (mod.erro) return json({ erro: mod.erro }, 400);
+    const notaMod = L.validarNotaModelo(b.modelo_nota);
+    if (notaMod.erro) return json({ erro: notaMod.erro }, 400);
+    const uso = L.validarUso(b.uso), usoNota = L.validarUsoNota(b.uso_nota);
+    if (uso.erro || usoNota.erro) return json({ erro: uso.erro || usoNota.erro }, 400);
+    const icone = L.urlOk(b.icone);
+    if (icone === null) return json({ erro: "O ícone precisa ser um endereço http(s)." }, 400);
     const { results } = await env.DB.prepare("SELECT id FROM docs WHERE collection = 'landscape'").all();
     const ja = new Set((results || []).map((r) => r.id));
     const novas = lidas.validas.filter((x) => !ja.has(x.id));
@@ -773,13 +822,13 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
     if (ja.size + novas.length > L.MAX_TECNOLOGIAS) return json({ erro: `O landscape guarda até ${L.MAX_TECNOLOGIAS} tecnologias.` }, 400);
     const umaSo = lidas.validas.length === 1;
     const nome = L.nomeLimpo(b.nome);
-    const docs = novas.map((x) => ({ id: x.id, doc: { repo: x.repo, nome: (umaSo && nome) || x.repo.split("/")[1], categoria: cat.cid, subcategoria: cat.sid, site: umaSo ? site : "", feed: umaSo ? feed : "", ...(mod.modelo ? { modelo: mod.modelo } : {}), adicionado: quando, por: "admin", atualizado: quando } }));
+    const docs = novas.map((x) => ({ id: x.id, doc: { repo: x.repo, nome: (umaSo && nome) || x.repo.split("/")[1], categoria: cat.cid, subcategoria: cat.sid, site: umaSo ? site : "", feed: umaSo ? feed : "", ...(mod.modelo ? { modelo: mod.modelo } : {}), ...(mod.modelo && notaMod.nota ? { modelo_nota: notaMod.nota } : {}), ...(uso.uso ? { uso: uso.uso } : {}), ...(usoNota.nota ? { uso_nota: usoNota.nota } : {}), ...(umaSo && icone ? { icone } : {}), adicionado: quando, por: "admin", atualizado: quando } }));
     if (cat.mudou) await gravarCategorias(env, deps, cat.categorias, quando);
     if (docs.length) {
       await env.DB.batch(docs.map((d) => env.DB.prepare("INSERT OR IGNORE INTO docs (collection, id, data, coletado, atualizado) VALUES ('landscape', ?, ?, '', ?)").bind(d.id, JSON.stringify(d.doc), quando)));
       deps.gravarNoEspelho(env, docs.map((d) => ({ collection: "landscape", id: d.id, data: JSON.stringify(d.doc), coletado: "", atualizado: quando })));
     }
-    return json({ ok: true, adicionadas: docs.map((d) => ({ id: d.id, repo: d.doc.repo, nome: d.doc.nome, categoria: d.doc.categoria, subcategoria: d.doc.subcategoria, site: d.doc.site, modelo: d.doc.modelo || "", adicionado: quando, leve: { coletando: true } })),
+    return json({ ok: true, adicionadas: docs.map((d) => ({ id: d.id, repo: d.doc.repo, nome: d.doc.nome, categoria: d.doc.categoria, subcategoria: d.doc.subcategoria, site: d.doc.site, modelo: d.doc.modelo || "", uso: d.doc.uso || [], ...(d.doc.icone ? { icone: d.doc.icone } : {}), adicionado: quando, leve: { coletando: true } })),
       repetidas, recusadas: lidas.recusadas, categorias: cat.categorias });
   }
   if (!L.ID_OK.test(id) || id.length > 160) return json({ erro: "id" }, 400);
@@ -801,6 +850,17 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
   const mod = L.validarModelo(b.modelo);
   if (mod.erro) return json({ erro: mod.erro }, 400);
   if (mod.mexe) patch.modelo = mod.modelo;
+  // o porquê do modelo (modelo_nota): só o Admin grava; tirar o modelo apaga a nota junto
+  const notaMod = L.validarNotaModelo(b.modelo_nota);
+  if (notaMod.erro) return json({ erro: notaMod.erro }, 400);
+  if (notaMod.mexe) patch.modelo_nota = notaMod.nota;
+  if (mod.mexe && !mod.modelo) patch.modelo_nota = null;
+  // opções de uso (uso, uso_nota) e ícone: só o Admin grava, pelo mesmo json_patch; o cron nunca tem essas chaves
+  const uso = L.validarUso(b.uso), usoNota = L.validarUsoNota(b.uso_nota);
+  if (uso.erro || usoNota.erro) return json({ erro: uso.erro || usoNota.erro }, 400);
+  if (uso.mexe) patch.uso = uso.uso;
+  if (usoNota.mexe) patch.uso_nota = usoNota.nota;
+  if (b.icone !== undefined) { const ic = L.urlOk(b.icone); if (ic === null) return json({ erro: "O ícone precisa ser um endereço http(s)." }, 400); patch.icone = ic || null; }
   let cats = null;
   if (b.categoria !== undefined || b.subcategoria !== undefined || b.novaCategoria || b.novaSubcategoria) {
     const cat = escolherCategoria(await lerCategoriasD1(env), { categoria: b.categoria ?? atual.categoria, subcategoria: b.subcategoria, novaCategoria: b.novaCategoria, novaSubcategoria: b.novaSubcategoria });
@@ -812,5 +872,5 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
   await patchDoc(env, id, patch, quando);
   const r = await env.DB.prepare("SELECT data, coletado, atualizado FROM docs WHERE collection = 'landscape' AND id = ?").bind(id).first();
   if (r) deps.gravarNoEspelho(env, [{ collection: "landscape", id, data: r.data, coletado: r.coletado || "", atualizado: r.atualizado }]);
-  return json({ ok: true, ...patch, ...("modelo" in patch ? { modelo: patch.modelo || "" } : {}), ...(cats ? { categorias: cats } : {}) });
+  return json({ ok: true, ...patch, ...("modelo" in patch ? { modelo: patch.modelo || "" } : {}), ...("modelo_nota" in patch ? { modelo_nota: patch.modelo_nota || "" } : {}), ...("uso" in patch ? { uso: patch.uso || [] } : {}), ...("uso_nota" in patch ? { uso_nota: patch.uso_nota || "" } : {}), ...("icone" in patch ? { icone: patch.icone || "" } : {}), ...(cats ? { categorias: cats } : {}) });
 }

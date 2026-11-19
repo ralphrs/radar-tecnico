@@ -141,8 +141,14 @@ export function estadoPlantao({ pendentes = 0, maisAntigo = null, ultimoAtendido
   return { ...base, estado: h > PLANTAO.PARADO_H ? "parada" : h > PLANTAO.ATRASADO_H ? "atrasada" : "em dia" };
 }
 
+// Comparações profundas do ArchLandscape: a mesma regra do plantão (pendente há mais de 2 h, atrasado; 6 h, parado),
+// com a última pronta como "última vez que funcionou".
+export function estadoDossies(d, agora) {
+  return { ...estadoPlantao(d, agora), id: "dossies", nome: "Dossiês de ArchLandscape", detalhe: "comparações profundas pedidas", esperado: "atende em até 2 h" };
+}
+
 const peso = (e) => ESTADOS.indexOf(e);
-const idadeOrdem = (l) => (l.id === "plantao" ? l.esperaMin : l.idadeMin ?? l.desdeMin) ?? Infinity;
+const idadeOrdem = (l) => (l.id === "plantao" || l.id === "dossies" ? l.esperaMin : l.idadeMin ?? l.desdeMin) ?? Infinity;
 export const ordenar = (linhas) => linhas.slice().sort((a, b) => peso(a.estado) - peso(b.estado) || (idadeOrdem(b) - idadeOrdem(a)) || 0);
 
 export function resumoDe(linhas) {
@@ -151,12 +157,12 @@ export function resumoDe(linhas) {
     if (l.estado === "em dia") r.emDia++; else if (l.estado === "com erro") r.comErro++; else if (l.estado === "atrasada") r.atrasadas++; else r.paradas++;
   }
   // a parada há mais tempo: pela idade desde a última vez que funcionou; a que nunca rodou, desde que o registro existe
-  const idade = (l) => (l.id === "plantao" ? l.esperaMin : l.idadeMin ?? l.desdeMin) ?? Infinity;
+  const idade = (l) => (l.id === "plantao" || l.id === "dossies" ? l.esperaMin : l.idadeMin ?? l.desdeMin) ?? Infinity;
   const paradas = linhas.filter((l) => l.estado === "parada").sort((a, b) => (idade(b) - idade(a)) || 0);
   // plantão: a idade é a espera do pedido mais antigo
   if (paradas.length) {
     const p = paradas[0];
-    r.destaque = p.id === "plantao" ? { id: p.id, nome: p.nome, esperaMin: p.esperaMin, pendentes: p.pendentes, idadeMin: p.esperaMin, ultimaVez: null, nunca: false }
+    r.destaque = p.id === "plantao" || p.id === "dossies" ? { id: p.id, nome: p.nome, esperaMin: p.esperaMin, pendentes: p.pendentes, idadeMin: p.esperaMin, ultimaVez: null, nunca: false }
       : { id: p.id, nome: p.nome, idadeMin: p.idadeMin ?? p.desdeMin ?? null, ultimaVez: p.ultimaVez || null, nunca: !!p.nunca };
   }
   return r;
@@ -257,7 +263,7 @@ export const LER = {
   landscape: (r) => {
     if (!r) return { tipo: "fora" };
     if (r.erro) return { tipo: "erro", msg: r.erro };
-    const fez = (r.pedidos || 0) + (r.semente || 0) + (r.sonda || 0);
+    const fez = (r.pedidos || 0) + (r.semente || 0) + (r.sonda || 0) + (r.cloud || 0);
     if (r.erros) return { tipo: "ok", msg: r.msg || plural(r.erros, "parte com erro", "partes com erro"), feitos: plural(r.pedidos || 0, "pedido", "pedidos") };
     if (!fez) return { tipo: "vazio", nota: r.parou ? "em pausa: " + r.parou : "" };
     return { tipo: "ok", feitos: plural(r.pedidos || 0, "pedido", "pedidos"), msg: r.parou ? "parou: " + r.parou : "" };
@@ -307,14 +313,16 @@ export function sqlDocs() {
   const ids = SECOES_CUR.map(([s]) => STATUS_DA_SECAO(s));
   return { sql: `SELECT collection, id, data FROM docs WHERE (collection = 'meta' AND id IN (${ids.map((_, k) => "?" + (k + 1)).join(",")})) OR (collection = '_sistema' AND id = ?${ids.length + 1})`, args: [...ids, DOC_ID] };
 }
-// Consulta 2: itens por seção (24 h e 7 dias, pela coluna coletado), o plantão e os feeds com falha. Três termos no
-// UNION ALL (o D1 aceita até cinco), as mesmas quatro colunas em todos.
+// Consulta 2: itens por seção (24 h e 7 dias, pela coluna coletado), o plantão, os feeds com falha e as comparações
+// profundas do ArchLandscape. Quatro termos no UNION ALL (o D1 aceita até cinco), as mesmas quatro colunas em todos.
 export function sqlContagens(agora) {
   const cols = SECOES_CUR.map(([s]) => ITENS_DA_SECAO(s));
   const n = cols.length;
   const sql = `SELECT collection AS k, sum(coletado >= ?1) AS a, count(*) AS b, '' AS c FROM docs WHERE collection IN (${cols.map((_, k) => "?" + (k + 3)).join(",")}) AND coletado >= ?2 GROUP BY collection`
     + ` UNION ALL SELECT 'plantao' AS k, sum(json_extract(data, '$.estado') = 'pendente') AS a, min(CASE WHEN json_extract(data, '$.estado') = 'pendente' THEN json_extract(data, '$.criado') END) AS b, max(json_extract(data, '$.atendidoEm')) AS c FROM docs WHERE collection = 'pedidos-curadoria' AND json_extract(data, '$.agora') = 1`
-    + ` UNION ALL SELECT 'feed' AS k, url AS a, erros_seguidos AS b, '' AS c FROM feeds_estado WHERE erros_seguidos > ?${n + 3}`;
+    + ` UNION ALL SELECT 'feed' AS k, url AS a, erros_seguidos AS b, '' AS c FROM feeds_estado WHERE erros_seguidos > ?${n + 3}`
+    // comparações profundas do ArchLandscape (src/arch.js): pendentes, o pedido mais antigo e a última pronta
+    + ` UNION ALL SELECT 'dossies' AS k, sum(json_extract(data, '$.estado') = 'pendente') AS a, min(CASE WHEN json_extract(data, '$.estado') = 'pendente' THEN coalesce(json_extract(data, '$.pedidoEm'), json_extract(data, '$.criado')) END) AS b, max(json_extract(data, '$.prontoEm')) AS c FROM docs WHERE collection = 'arch-dossies'`;
   return { sql, args: [iso(agora - 24 * HORA), iso(agora - 7 * 24 * HORA), ...cols, 0] };
 }
 
@@ -339,14 +347,16 @@ export async function relatorio(env, { agora = Date.now(), estadoEspelho = null 
   const meta = new Map(), por = new Map();
   let bat = null;
   for (const r of docs || []) { if (r.collection === "_sistema") bat = json(r.data); else meta.set(r.id, json(r.data) || {}); }
-  let plantao = { pendentes: 0 }, feedsFalha = 0;
+  let plantao = { pendentes: 0 }, feedsFalha = 0, dossies = { pendentes: 0 };
   for (const r of conta || []) {
-    if (r.k === "plantao") plantao = { pendentes: Number(r.a) || 0, maisAntigo: r.b || null, ultimoAtendido: r.c || null };
+    if (r.k === "dossies") dossies = { pendentes: Number(r.a) || 0, maisAntigo: r.b || null, ultimoAtendido: r.c || null };
+    else if (r.k === "plantao") plantao = { pendentes: Number(r.a) || 0, maisAntigo: r.b || null, ultimoAtendido: r.c || null };
     else if (r.k === "feed") { if (feedConta(String(r.a))) feedsFalha++; }
     else por.set(r.k, { d1: Number(r.a) || 0, d7: Number(r.b) || 0 });
   }
   const curadorias = SECOES_CUR.map(([s, nome]) => estadoCuradoria({ secao: s, nome: "Curadoria " + nome, status: meta.get(STATUS_DA_SECAO(s)), itens24h: por.get(ITENS_DA_SECAO(s))?.d1, itens7d: por.get(ITENS_DA_SECAO(s))?.d7 }, agora));
   curadorias.push(estadoPlantao(plantao, agora));
+  curadorias.push(estadoDossies(dossies, agora));
 
   const criado = bat && bat.criado ? bat.criado : null;
   const porId = (bat && bat.porId) || {};

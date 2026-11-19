@@ -1,0 +1,583 @@
+/* ArchLandscape (pedido de 19/11): regras puras das duas abas, Tools (o Landscape de antes) e Cloud (serviços de nuvem
+ * por categoria e provedor), as mesmas na página, no Worker e nos testes.
+ *
+ * Script clássico (<script src="/arch.js">), como o landscape.js: a página usa window.Arch, e o Worker (src/cloud.js,
+ * src/arch.js) e os testes em Node importam pelo efeito e leem globalThis.Arch. Sem import nem export.
+ *
+ * Hashes: #arch/tools, #arch/tools/<id>, #arch/tools/comparar/<id>,<id>[/profunda], #arch/cloud[?filtros],
+ *   #arch/cloud/<id>, #arch/cloud/comparar/<id>,<id>[/profunda], #arch/<aba>/profundas[/<id>].
+ *   Os antigos #tech/landscape[/<id>] abrem a aba Tools (lerHash marca antigo: true e a página troca o endereço).
+ *
+ * Serviço de nuvem (collection `cloud`, id `<provedor>--<slug>`): veja validarServico.
+ * Característica guardada: { valor, fonte (URL), em (ISO), por: "semente" | "admin" | "curadoria" | "dossie" }.
+ * Sem valor, a tela mostra "não conferido", nunca "não tem".
+ */
+(function (raiz) {
+  "use strict";
+
+  const DIA = 86_400_000;
+  const MAX_COMPARAR = 4;
+  const CONTEXTO_MAX = 600;
+  const VALIDADE_DIAS = 30;
+  const MARKDOWN_MAX = 60_000;
+  const ID_SERV = /^[a-z0-9-]{1,30}--[a-z0-9.-]{1,80}$/;
+  const ID_PROV = /^[a-z0-9-]{1,30}$/;
+  const ID_CAT = /^[a-z0-9-]{1,40}$/;
+  const ID_DOSSIE = /^d[0-9a-f]{16}$/;
+  const POR = ["semente", "admin", "curadoria", "dossie"];
+  const ABAS = ["tools", "cloud"];
+
+  /* ---------- texto ---------- */
+  const semAcento = (s) => String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const escRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const limpo = (s, max) => String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, max);
+  const slug = (t) => semAcento(t).replace(/[^a-z0-9.]+/g, "-").replace(/^[-.]+|[-.]+$/g, "").slice(0, 80);
+  const temPalavra = (texto, termo) => !!termo && new RegExp("(^|[^\\p{L}\\p{N}])" + escRe(semAcento(termo)) + "($|[^\\p{L}\\p{N}])", "u").test(semAcento(texto));
+  function urlOk(txt) {
+    const s = String(txt == null ? "" : txt).trim();
+    if (!s) return "";
+    if (s.length > 400) return null;
+    let u;
+    try { u = new URL(s); } catch (e) { return null; }
+    if (u.protocol !== "https:" || u.username || u.password) return null;
+    return u.toString();
+  }
+  const isoOk = (v) => { const t = Date.parse(v || ""); return typeof v === "string" && Number.isFinite(t) ? new Date(t).toISOString() : null; };
+  /* Preço em número não entra (pedido de 19/11): R$, US$, $ seguido de dígito, € e £ com dígito */
+  const PRECO_RE = /R\$|US\$|\$\s?\d|€\s?\d|£\s?\d|\d\s?(€|£)/;
+  const temPreco = (s) => PRECO_RE.test(String(s == null ? "" : s));
+
+  /* ---------- características ---------- */
+  /* Comuns a toda subcategoria (Tools e Cloud) */
+  const COMUNS = [
+    { k: "maturidade", r: "Maturidade" }, { k: "implantacao", r: "Implantação" }, { k: "lock_in", r: "Dependência do fornecedor" },
+    { k: "limites", r: "Limites" }, { k: "conformidade", r: "Conformidade" }, { k: "on_premises", r: "Roda fora da nuvem do provedor" },
+  ];
+  /* Chaves de comparação por subcategoria, numa tabela só. tipo: "sn" (sim/não), "snp" (sim/não/parcial) ou "texto". */
+  const sn = (k, r) => ({ k, r, tipo: "sn" }), snp = (k, r) => ({ k, r, tipo: "snp" }), tx = (k, r) => ({ k, r, tipo: "texto" });
+  const ATRIBUTOS = {
+    /* Cloud */
+    vms: [tx("cobranca_min", "Menor fração cobrada"), sn("arm", "Máquinas ARM"), sn("regioes_br", "Região no Brasil"), sn("gpu", "Opção com GPU")],
+    conteineres: [tx("cobranca_min", "Menor fração cobrada"), sn("escala_zero", "Escala até zero"), sn("regioes_br", "Região no Brasil")],
+    kubernetes: [snp("plano_controle_gratis", "Plano de controle sem cobrança"), sn("autopilot", "Modo sem gerenciar nós"), sn("regioes_br", "Região no Brasil")],
+    funcoes: [tx("linguagens", "Linguagens"), tx("tempo_max", "Tempo máximo"), tx("cold_start", "Partida a frio"), sn("borda", "Roda na borda")],
+    paas: [tx("linguagens", "Linguagens"), sn("escala_zero", "Escala até zero"), sn("git_deploy", "Deploy pelo Git")],
+    objetos: [sn("api_s3", "API compatível com S3"), snp("saida_gratis", "Saída de dados sem cobrança"), tx("classes", "Classes de armazenamento"), sn("regioes_br", "Região no Brasil")],
+    blocos: [tx("tipos", "Tipos de disco"), sn("snapshots", "Snapshots")],
+    arquivos: [tx("protocolos", "Protocolos"), sn("regioes_br", "Região no Brasil")],
+    relacional: [tx("motores", "Motores"), sn("serverless", "Opção serverless"), tx("ha", "Alta disponibilidade"), sn("regioes_br", "Região no Brasil")],
+    "postgres-serverless": [sn("escala_zero", "Escala até zero"), sn("branching", "Branches de banco"), tx("compativel", "Compatibilidade")],
+    nosql: [tx("modelo_dados", "Modelo de dados"), sn("serverless", "Opção serverless"), sn("multi_regiao", "Multirregião")],
+    cache: [tx("motores", "Motores"), sn("serverless", "Opção serverless"), sn("api_http", "API por HTTP")],
+    analitico: [tx("cobranca_modelo", "Como cobra a consulta"), sn("serverless", "Serverless"), tx("formatos", "Formatos abertos")],
+    cdn: [sn("waf_incluso", "WAF no mesmo produto"), sn("pops_br", "Pontos de presença no Brasil"), sn("computacao_borda", "Código na borda")],
+    dns: [sn("anycast", "Anycast"), sn("dnssec", "DNSSEC")],
+    balanceador: [tx("camadas", "Camadas"), sn("global", "Global")],
+    vpn: [tx("tipo", "Tipo"), sn("site_a_site", "Site a site")],
+    filas: [sn("fifo", "Ordem garantida (FIFO)"), sn("dlq", "Fila de mensagens mortas"), tx("protocolo", "Protocolo")],
+    eventos: [sn("kafka", "API compatível com Kafka"), tx("retencao", "Retenção")],
+    workflows: [tx("definicao", "Como se define o fluxo"), sn("duravel", "Execução durável")],
+    "gateway-api": [tx("protocolos", "Protocolos"), sn("limite_taxa", "Limite de taxa")],
+    iam: [sn("sso", "SSO"), sn("oidc", "OIDC")],
+    segredos: [sn("hsm", "HSM"), sn("rotacao", "Rotação automática")],
+    waf: [sn("ddos_incluso", "DDoS incluso"), sn("bots", "Gestão de bots")],
+    "logs-metricas": [sn("opentelemetry", "OpenTelemetry"), tx("retencao", "Retenção padrão")],
+    rastreamento: [sn("opentelemetry", "OpenTelemetry")],
+    "modelos-api": [tx("modelos", "Famílias de modelos"), sn("regioes_br", "Região no Brasil")],
+    gpu: [tx("gpus", "GPUs"), tx("cobranca_min", "Menor fração cobrada")],
+    vetorial: [sn("serverless", "Serverless"), tx("indices", "Índices")],
+    "ci-cd": [tx("runners", "Onde roda"), sn("yaml", "Definição em YAML")],
+    registro: [sn("oci", "Formato OCI"), sn("varredura", "Varredura de vulnerabilidades")],
+    iac: [tx("linguagem", "Linguagem"), sn("estado_gerenciado", "Estado gerenciado")],
+    /* Tools (Landscape) */
+    "execucao-duravel": [tx("linguagens", "Linguagens"), tx("armazenamento", "Onde guarda o estado"), tx("implantacao", "Implantação"), sn("versionamento", "Versionamento de fluxos"), sn("compensacao", "Compensação (sagas)")],
+    "web-scraping": [tx("linguagens", "Linguagens"), sn("renderiza_js", "Renderiza JavaScript"), tx("saida", "Formatos de saída"), tx("implantacao", "Implantação")],
+  };
+  /* As chaves de uma subcategoria: as dela e, depois, as comuns (sem repetir) */
+  function chavesDe(sub) {
+    const proprias = ATRIBUTOS[sub] || [];
+    const vistas = new Set(proprias.map((a) => a.k));
+    return proprias.concat(COMUNS.filter((c) => !vistas.has(c.k)).map((c) => ({ ...c, tipo: "texto" })));
+  }
+  /* Registro de característica: aceita o registro inteiro ou só o valor; valor vazio é null */
+  function carac(x) {
+    if (x == null) return null;
+    if (typeof x === "object" && !Array.isArray(x)) {
+      const v = x.valor;
+      if (v == null || (typeof v === "string" && !v.trim())) return null;
+      return { valor: typeof v === "string" ? v.trim() : v, fonte: typeof x.fonte === "string" ? x.fonte : "", em: x.em || null, por: POR.includes(x.por) ? x.por : "semente" };
+    }
+    if (typeof x === "string" && !x.trim()) return null;
+    return { valor: typeof x === "string" ? x.trim() : x, fonte: "", em: null, por: "semente" };
+  }
+  /* Texto para a tela: sim, não, parcial ou o texto; sem valor, "não conferido" (nunca "não tem") */
+  function textoCarac(x) {
+    const c = carac(x);
+    if (!c) return "não conferido";
+    const v = c.valor;
+    if (v === true || v === "sim") return "sim";
+    if (v === false || v === "nao" || v === "não") return "não";
+    if (v === "parcial") return "parcial";
+    return String(v);
+  }
+  /* Um registro vindo do Admin, da curadoria ou do dossiê: { carac } ou { erro } */
+  function validarCarac(x, { por = "admin", agora = Date.now(), tipo = "texto" } = {}) {
+    const bruto = x && typeof x === "object" && !Array.isArray(x) ? x : { valor: x };
+    let v = bruto.valor;
+    if (v == null || v === "") return { carac: null };
+    if (typeof v === "boolean") v = v ? "sim" : "nao";
+    if (typeof v !== "string" && typeof v !== "number") return { erro: "Valor de característica inválido." };
+    v = limpo(v, 200);
+    if (!v) return { carac: null };
+    if (tipo === "sn" && !["sim", "nao"].includes(v)) return { erro: "Use sim ou não." };
+    if (tipo === "snp" && !["sim", "nao", "parcial"].includes(v)) return { erro: "Use sim, não ou parcial." };
+    if (temPreco(v)) return { erro: "Preço em número não entra nas características." };
+    const fonte = urlOk(bruto.fonte);
+    if (fonte === null) return { erro: "A fonte precisa ser um endereço https." };
+    const em = bruto.em ? isoOk(bruto.em) : new Date(agora).toISOString();
+    if (!em) return { erro: "Data da característica inválida." };
+    const p = bruto.por && POR.includes(bruto.por) ? bruto.por : por;
+    return { carac: { valor: v, fonte, em, por: p } };
+  }
+  /* Objeto de atributos de uma subcategoria: só as chaves da tabela; vazio sai */
+  function validarAtributos(obj, sub, opcoes = {}) {
+    if (obj == null) return { atributos: {} };
+    if (typeof obj !== "object" || Array.isArray(obj)) return { erro: "Atributos precisam ser um objeto." };
+    const chaves = new Map(chavesDe(sub).map((a) => [a.k, a]));
+    const out = {};
+    for (const [k, x] of Object.entries(obj)) {
+      const a = chaves.get(k);
+      if (!a) return { erro: `Característica desconhecida para essa subcategoria: ${String(k).slice(0, 40)}` };
+      const r = validarCarac(x, { ...opcoes, tipo: a.tipo });
+      if (r.erro) return { erro: a.r + ": " + r.erro };
+      if (r.carac) out[k] = r.carac;
+    }
+    return { atributos: out };
+  }
+
+  /* ---------- provedores e categorias ---------- */
+  function validarProvedores(b) {
+    if (!b || typeof b !== "object" || !Array.isArray(b.provedores)) return { erro: "Mande { provedores: [...] }." };
+    if (b.provedores.length > 60) return { erro: "Até 60 provedores." };
+    const ids = new Set(), out = [];
+    for (const p of b.provedores) {
+      if (!p || typeof p !== "object") return { erro: "Provedor inválido." };
+      const id = String(p.id || "");
+      if (!ID_PROV.test(id)) return { erro: `Id de provedor inválido: ${id.slice(0, 30)}` };
+      if (ids.has(id)) return { erro: `Provedor repetido: ${id}` };
+      ids.add(id);
+      const nome = limpo(p.nome, 60);
+      if (!nome) return { erro: `Provedor sem nome: ${id}` };
+      const sigla = String(p.sigla || "").trim();
+      if (!/^[A-Za-z0-9]{1,4}$/.test(sigla)) return { erro: `Sigla de ${nome}: até 4 letras ou números.` };
+      const cor = String(p.cor || "").trim();
+      if (!/^#[0-9a-fA-F]{6}$/.test(cor)) return { erro: `Cor de ${nome}: use #rrggbb.` };
+      if (p.tipo !== "grande" && p.tipo !== "alternativa") return { erro: `Tipo de ${nome}: grande ou alternativa.` };
+      const site = urlOk(p.site), status = urlOk(p.status), novidades = urlOk(p.novidades);
+      if (site === null || status === null || novidades === null) return { erro: `Endereços de ${nome} precisam ser https.` };
+      const pais = String(p.pais || "").toUpperCase();
+      if (pais && !/^[A-Z]{2}$/.test(pais)) return { erro: `País de ${nome}: código ISO de duas letras.` };
+      const icone = p.icone ? urlIcone(p.icone) : "";
+      if (p.icone && !icone) return { erro: `Ícone de ${nome} precisa ser um endereço http(s).` };
+      out.push({ id, nome, sigla, cor: cor.toLowerCase(), tipo: p.tipo, site, status, pais, ...(novidades ? { novidades } : {}), ...(icone ? { icone } : {}) });
+    }
+    return { provedores: out };
+  }
+  function validarCategorias(b) {
+    if (!b || typeof b !== "object" || !Array.isArray(b.categorias)) return { erro: "Mande { categorias: [...] }." };
+    if (b.categorias.length > 30) return { erro: "Até 30 categorias." };
+    const ids = new Set(), subsTodas = new Set(), out = [];
+    for (const c of b.categorias) {
+      if (!c || typeof c !== "object") return { erro: "Categoria inválida." };
+      const nome = limpo(c.nome, 60);
+      if (!nome) return { erro: "Toda categoria precisa de nome." };
+      const id = c.id ? String(c.id) : slug(nome).replace(/\./g, "-");
+      if (!ID_CAT.test(id)) return { erro: `Id de categoria inválido: ${id.slice(0, 40)}` };
+      if (ids.has(id)) return { erro: `Categoria repetida: ${nome}` };
+      ids.add(id);
+      const subs = Array.isArray(c.subcategorias) ? c.subcategorias : [];
+      if (subs.length > 30) return { erro: `Até 30 subcategorias em ${nome}.` };
+      const so = [];
+      for (const s of subs) {
+        const sn0 = limpo(s && s.nome, 60);
+        if (!sn0) return { erro: `Subcategoria sem nome em ${nome}.` };
+        const sid = s.id ? String(s.id) : slug(sn0).replace(/\./g, "-");
+        if (!ID_CAT.test(sid)) return { erro: `Id de subcategoria inválido: ${sid.slice(0, 40)}` };
+        /* a subcategoria é a chave da comparação: o mesmo id não pode aparecer em duas categorias */
+        if (subsTodas.has(sid)) return { erro: `Subcategoria repetida: ${sn0}` };
+        subsTodas.add(sid);
+        so.push({ id: sid, nome: sn0 });
+      }
+      out.push({ id, nome, subcategorias: so });
+    }
+    return { categorias: out };
+  }
+  const nomeSub = (cats, sid) => { for (const c of cats || []) for (const s of c.subcategorias || []) if (s.id === sid) return s.nome; return ""; };
+  const catDaSub = (cats, sid) => (cats || []).find((c) => (c.subcategorias || []).some((s) => s.id === sid)) || null;
+
+  /* ---------- serviço ---------- */
+  const idServico = (provedor, nome) => provedor + "--" + slug(nome);
+  const LINKS = ["produto", "docs", "precos", "status"];
+  /* Corpo do Admin (ou da semente) -> { servico } ou { erro }. ctx: { provedores, categorias, agora, por } */
+  function validarServico(b, ctx = {}) {
+    if (!b || typeof b !== "object" || Array.isArray(b)) return { erro: "corpo" };
+    const provs = ctx.provedores || [], cats = ctx.categorias || [];
+    const prov = provs.find((p) => p.id === b.provedor);
+    if (!prov) return { erro: "Escolha um provedor que existe." };
+    const nome = limpo(b.nome, 80);
+    if (!nome) return { erro: "O serviço precisa de nome." };
+    const cat = (cats || []).find((c) => c.id === b.categoria);
+    if (!cat || !(cat.subcategorias || []).some((s) => s.id === b.subcategoria)) return { erro: "Escolha categoria e subcategoria que existem." };
+    const apelidos = (Array.isArray(b.apelidos) ? b.apelidos : String(b.apelidos || "").split(",")).map((a) => limpo(a, 60)).filter(Boolean);
+    if (apelidos.length > 8) return { erro: "Até 8 apelidos." };
+    const resumo = limpo(b.resumo, 320), cobranca = limpo(b.cobranca, 320), gratis = limpo(b.gratis, 200);
+    const destaques = (Array.isArray(b.destaques) ? b.destaques : []).map((d) => limpo(d, 140)).filter(Boolean);
+    if (destaques.length > 4) return { erro: "Até 4 destaques." };
+    for (const t of [nome, resumo, cobranca, gratis, ...destaques, ...apelidos]) if (temPreco(t)) return { erro: "Preço em número não entra: use o link de preços oficiais." };
+    const links = {};
+    for (const k of LINKS) { const u = urlOk(b.links && b.links[k]); if (u === null) return { erro: `O link de ${k} precisa ser https.` }; links[k] = u; }
+    const fontes = (Array.isArray(b.fontes) ? b.fontes : []).map((u) => urlOk(u));
+    if (fontes.some((u) => u === null)) return { erro: "As fontes precisam ser endereços https." };
+    if (fontes.length > 12) return { erro: "Até 12 fontes." };
+    const at = validarAtributos(b.atributos, b.subcategoria, { por: ctx.por || "admin", agora: ctx.agora });
+    if (at.erro) return { erro: at.erro };
+    let preco_ref = { texto: "", fonte: "", em: null };
+    if (b.preco_ref && (b.preco_ref.texto || b.preco_ref.fonte)) {
+      const texto = limpo(b.preco_ref.texto, 160), fonte = urlOk(b.preco_ref.fonte), em = isoOk(b.preco_ref.em);
+      if (!texto || !fonte || !em) return { erro: "Preço de referência precisa de texto, fonte https e data." };
+      preco_ref = { texto, fonte, em };
+    }
+    const roteiro = [];
+    for (const r of Array.isArray(b.roteiro) ? b.roteiro.slice(0, 10) : []) {
+      const titulo = limpo(r && r.titulo, 160), fonte = urlOk(r && r.fonte);
+      if (!titulo || !fonte) return { erro: "Cada item de O que vem por aí precisa de título e fonte https." };
+      roteiro.push({ titulo, estado: limpo(r.estado, 30), quando: limpo(r.quando, 40), fonte, em: isoOk(r.em) || new Date(ctx.agora || Date.now()).toISOString() });
+    }
+    const conferido = b.conferido ? isoOk(b.conferido) : null;
+    /* opções de uso (a mesma tabela de Tools, Landscape.USOS): serviço de nuvem é "nuvem" por definição */
+    const USO_IDS = ["nuvem", "self-hosted", "local", "biblioteca"];
+    const usoIn = Array.isArray(b.uso) ? b.uso : ["nuvem"];
+    if (usoIn.some((u) => !USO_IDS.includes(u))) return { erro: "Opção de uso desconhecida." };
+    const uso = USO_IDS.filter((u) => usoIn.includes(u));
+    const uso_nota = limpo(b.uso_nota, 240);
+    const icone = b.icone ? urlIcone(b.icone) : "";
+    if (b.icone && !icone) return { erro: "O ícone precisa ser um endereço http(s)." };
+    return { servico: { provedor: prov.id, nome, apelidos: [...new Set(apelidos)], categoria: cat.id, subcategoria: b.subcategoria, resumo, cobranca, gratis, destaques,
+      atributos: at.atributos, links, fontes: [...new Set(fontes.filter(Boolean))], preco_ref, roteiro, conferido, uso: uso.length ? uso : ["nuvem"], ...(uso_nota ? { uso_nota } : {}), ...(icone ? { icone } : {}) } };
+  }
+
+  /* ---------- grade: filtros e agrupamento ---------- */
+  const provDe = (provs, id) => (provs || []).find((p) => p.id === id) || null;
+  const ordemProv = (provs) => new Map((provs || []).map((p, i) => [p.id, i]));
+  /* f: { provs: [ids], alt: bool, gratis: bool, cat: id, q: texto }. Tudo junto (E); vários provedores valem juntos (OU). */
+  function filtrarCloud(lista, f = {}, provs = []) {
+    const q = semAcento(f.q || "").trim();
+    const ps = new Set(Array.isArray(f.provs) ? f.provs : []);
+    return (Array.isArray(lista) ? lista : []).filter((s) => {
+      if (!s) return false;
+      const p = provDe(provs, s.provedor);
+      if (ps.size && !ps.has(s.provedor)) return false;
+      if (f.alt && (!p || p.tipo !== "alternativa")) return false;
+      if (f.gratis && !String(s.gratis || "").trim()) return false;
+      if (f.cat && s.categoria !== f.cat) return false;
+      if (q) {
+        const alvo = semAcento([s.nome, ...(s.apelidos || []), p ? p.nome : "", p ? p.sigla : "", s.provedor].join(" "));
+        if (!alvo.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+  const porProvENome = (provs) => { const o = ordemProv(provs); return (a, b) => (o.get(a.provedor) ?? 999) - (o.get(b.provedor) ?? 999) || String(a.nome).localeCompare(String(b.nome), "pt-BR", { sensitivity: "base" }); };
+  /* Categoria: [{ id, nome, subs: [{ id, nome, itens }] }] na ordem da meta, só o que tem item.
+     Provedor: [{ prov, cats: [{ id, nome, itens }] }] na ordem dos provedores, só quem tem item. */
+  function agrupar(lista, por, cats = [], provs = []) {
+    const l = (Array.isArray(lista) ? lista : []).slice().sort(porProvENome(provs));
+    if (por === "provedor") {
+      return (provs || []).map((p) => ({ prov: p, cats: (cats || []).map((c) => ({ id: c.id, nome: c.nome, itens: l.filter((s) => s.provedor === p.id && s.categoria === c.id) })).filter((c) => c.itens.length) }))
+        .filter((g) => g.cats.length);
+    }
+    return (cats || []).map((c) => ({ id: c.id, nome: c.nome, subs: (c.subcategorias || []).map((s) => ({ id: s.id, nome: s.nome, itens: l.filter((x) => x.categoria === c.id && x.subcategoria === s.id) })).filter((s) => s.itens.length) }))
+      .filter((c) => c.subs.length);
+  }
+  /* Os concorrentes na mesma subcategoria: outros provedores primeiro, depois alternativas do mesmo provedor */
+  function equivalentes(s, todos, provs = []) {
+    if (!s) return [];
+    const o = ordemProv(provs);
+    return (Array.isArray(todos) ? todos : []).filter((x) => x && x.id !== s.id && x.subcategoria === s.subcategoria)
+      .sort((a, b) => (a.provedor === s.provedor) - (b.provedor === s.provedor) || (o.get(a.provedor) ?? 999) - (o.get(b.provedor) ?? 999) || String(a.nome).localeCompare(String(b.nome), "pt-BR"));
+  }
+
+  /* ---------- comparar ----------
+     Regra do dono: só concorrentes ou alternativas (mesma subcategoria, provedor diferente ou não), de 2 a 4.
+     Devolve { pode, motivo, candidatos, subcategoria }. candidatos: ids que ainda dá para marcar. */
+  const MOTIVOS = { nada: "Marque dois serviços da mesma categoria", um: "Marque mais um para comparar", sem: "Nenhum concorrente cadastrado para comparar",
+    misturado: "Só dá para comparar serviços da mesma subcategoria", muitos: "Até 4 serviços por comparação", falta: "Serviço não encontrado" };
+  function podeComparar(selecionados, todos) {
+    const lista = Array.isArray(todos) ? todos : [];
+    const por = new Map(lista.map((s) => [s.id, s]));
+    const ids = [...new Set((Array.isArray(selecionados) ? selecionados : []).map(String))];
+    if (!ids.length) return { pode: false, motivo: MOTIVOS.nada, candidatos: lista.map((s) => s.id), subcategoria: "" };
+    const falta = ids.find((id) => !por.has(id));
+    if (falta) return { pode: false, motivo: MOTIVOS.falta + ": " + falta.slice(0, 80), candidatos: [], subcategoria: "" };
+    const subs = new Set(ids.map((id) => por.get(id).subcategoria));
+    if (subs.size > 1) return { pode: false, motivo: MOTIVOS.misturado, candidatos: [], subcategoria: "" };
+    const sub = [...subs][0];
+    const mesma = lista.filter((s) => s.subcategoria === sub);
+    const candidatos = ids.length >= MAX_COMPARAR ? [] : mesma.filter((s) => !ids.includes(s.id)).map((s) => s.id);
+    if (ids.length > MAX_COMPARAR) return { pode: false, motivo: MOTIVOS.muitos, candidatos: [], subcategoria: sub };
+    if (ids.length === 1) return { pode: false, motivo: mesma.length < 2 ? MOTIVOS.sem : MOTIVOS.um, candidatos, subcategoria: sub };
+    return { pode: true, motivo: "", candidatos, subcategoria: sub };
+  }
+  /* Dá para marcar este? { ok, motivo } (motivo com o nome da subcategoria, para o title e o leitor de tela) */
+  function marcavel(id, selecionados, todos, cats = []) {
+    const sel = Array.isArray(selecionados) ? selecionados : [];
+    if (sel.includes(id)) return { ok: true, motivo: "" };
+    if (!sel.length) return { ok: true, motivo: "" };
+    const r = podeComparar(sel, todos);
+    if (r.candidatos.includes(id)) return { ok: true, motivo: "" };
+    if (sel.length >= MAX_COMPARAR) return { ok: false, motivo: MOTIVOS.muitos };
+    return { ok: false, motivo: "Só dá para comparar com serviços de " + (nomeSub(cats, r.subcategoria) || r.subcategoria) };
+  }
+  /* Conjunto de alternativas: os mesmos ids em qualquer ordem são o mesmo conjunto */
+  const conjunto = (ids) => [...new Set((Array.isArray(ids) ? ids : String(ids || "").split(",")).map((x) => String(x).trim()).filter(Boolean))].sort().join(",");
+
+  /* ---------- hash ---------- */
+  const FILTROS_VAZIOS = () => ({ provs: [], alt: false, gratis: false, cat: "", q: "", por: "categoria" });
+  function lerFiltros(q) {
+    const f = FILTROS_VAZIOS();
+    let ps;
+    try { ps = new URLSearchParams(q || ""); } catch (e) { return f; }
+    f.provs = (ps.get("p") || "").split(",").filter((x) => ID_PROV.test(x)).slice(0, 30);
+    f.alt = ps.get("alt") === "1"; f.gratis = ps.get("gratis") === "1";
+    const c = ps.get("cat") || ""; f.cat = ID_CAT.test(c) ? c : "";
+    f.q = limpo(ps.get("q") || "", 60);
+    f.por = ps.get("por") === "provedor" ? "provedor" : "categoria";
+    return f;
+  }
+  function escreverFiltros(f) {
+    if (!f) return "";
+    const ps = [];
+    if (f.provs && f.provs.length) ps.push("p=" + f.provs.join(","));
+    if (f.alt) ps.push("alt=1");
+    if (f.gratis) ps.push("gratis=1");
+    if (f.cat) ps.push("cat=" + encodeURIComponent(f.cat));
+    if (f.q) ps.push("q=" + encodeURIComponent(f.q));
+    if (f.por === "provedor") ps.push("por=provedor");
+    return ps.length ? "?" + ps.join("&") : "";
+  }
+  /* "#arch/cloud/comparar/a,b" -> { aba, tela, id, ids, profunda, filtros, antigo }. null quando não é do ArchLandscape. */
+  function lerHash(hash) {
+    let h = String(hash || "").replace(/^#/, "");
+    const iq = h.indexOf("?");
+    const q = iq >= 0 ? h.slice(iq + 1) : "";
+    if (iq >= 0) h = h.slice(0, iq);
+    const p = h.split("/").map((x) => { try { return decodeURIComponent(x); } catch (e) { return ""; } });
+    let antigo = false, aba, resto;
+    if (p[0] === "tech" && p[1] === "landscape") { antigo = true; aba = "tools"; resto = p.slice(2); }
+    else if (p[0] === "arch") { aba = p[1] === "cloud" ? "cloud" : "tools"; resto = p.slice(2); antigo = !ABAS.includes(p[1]) && p[1] !== undefined && p[1] !== ""; }
+    else return null;
+    const out = { aba, tela: "grade", id: null, ids: [], profunda: false, filtros: aba === "cloud" ? lerFiltros(q) : FILTROS_VAZIOS(), antigo };
+    const idOk = (x) => ID_SERV.test(x) && x.length <= 160;
+    if (resto[0] === "comparar") {
+      out.tela = "comparar";
+      out.ids = String(resto[1] || "").split(",").filter(Boolean).slice(0, 8);
+      out.profunda = resto[2] === "profunda";
+    } else if (resto[0] === "profundas") {
+      out.tela = "profundas";
+      if (resto[1] && ID_DOSSIE.test(resto[1])) { out.tela = "profunda"; out.id = resto[1]; }
+    } else if (resto[0] && idOk(resto[0])) { out.tela = "detalhe"; out.id = resto[0]; }
+    return out;
+  }
+  function escreverHash(e) {
+    const aba = e && e.aba === "cloud" ? "cloud" : "tools";
+    let h = "#arch/" + aba;
+    if (e.tela === "detalhe" && e.id) h += "/" + encodeURIComponent(e.id);
+    else if (e.tela === "comparar") h += "/comparar/" + (e.ids || []).map(encodeURIComponent).join(",") + (e.profunda ? "/profunda" : "");
+    else if (e.tela === "profundas") h += "/profundas";
+    else if (e.tela === "profunda" && e.id) h += "/profundas/" + e.id;
+    else if (aba === "cloud") h += escreverFiltros(e.filtros);
+    return h;
+  }
+
+  /* ---------- comparação ---------- */
+  const normal = (t) => semAcento(String(t == null ? "" : t)).replace(/\s+/g, " ").trim();
+  /* Linha: diferente quando há valor e os textos não são todos iguais (célula vazia conta como diferente) */
+  function linha(k, rotulo, celulas, extra = {}) {
+    const vals = celulas.map((c) => (c == null ? "" : String(c)));
+    const cheias = vals.filter((v) => v && v !== "–" && v !== "não conferido");
+    if (!cheias.length) return null;
+    const diferente = new Set(vals.map(normal)).size > 1;
+    return { k, rotulo, celulas: vals, diferente, ...extra };
+  }
+  const dataBR = (iso) => { const t = Date.parse(iso || ""); if (!Number.isFinite(t)) return ""; const d = new Date(t); return String(d.getUTCDate()).padStart(2, "0") + "/" + String(d.getUTCMonth() + 1).padStart(2, "0") + "/" + d.getUTCFullYear(); };
+  /* Última versão e ritmo (Tools): releases que o Landscape guarda (até 10, mais recente primeiro) */
+  function ultimaVersao(releases) {
+    const l = (Array.isArray(releases) ? releases : []).filter((r) => r && (r.tag || r.nome));
+    const r = l.find((x) => !x.pre) || l[0];
+    return r ? { tag: r.tag || r.nome, data: r.data || null } : null;
+  }
+  function ritmo(releases, agora = Date.now()) {
+    const l = (Array.isArray(releases) ? releases : []).filter((r) => r && Number.isFinite(Date.parse(r.data || "")));
+    const n = l.filter((r) => agora - Date.parse(r.data) <= 365 * DIA).length;
+    return { n, mais: n >= 10 && l.length >= 10 };
+  }
+  const textoRitmo = (r) => (!r ? "" : r.mais ? "10 ou mais nos últimos 12 meses" : r.n === 1 ? "1 nos últimos 12 meses" : r.n + " nos últimos 12 meses");
+  /* servs: docs completos (com id). ctx: { aba, provs, cats, novidades: { id: [itens] }, roteiro: { id: [itens] }, agora }.
+     Só fatos: nada de prós e contras, nota ou vencedor. */
+  function montarComparacao(servs, ctx = {}) {
+    const aba = ctx.aba === "tools" ? "tools" : "cloud";
+    const l = Array.isArray(servs) ? servs : [];
+    const provs = ctx.provs || [];
+    const colunas = l.map((s) => {
+      const p = aba === "cloud" ? provDe(provs, s.provedor) : null;
+      return { id: s.id, nome: s.nome || s.repo || s.id, provedor: p ? { id: p.id, nome: p.nome, sigla: p.sigla, cor: p.cor } : null, repo: s.repo || "" };
+    });
+    const linhas = [];
+    const add = (x) => { if (x) linhas.push(x); };
+    const sub = l[0] ? l[0].subcategoria : "";
+    if (aba === "cloud") {
+      add(linha("provedor", "Provedor", l.map((s) => { const p = provDe(provs, s.provedor); return p ? p.nome : s.provedor; })));
+      add(linha("resumo", "O que é", l.map((s) => s.resumo || "")));
+      add(linha("cobranca", "Como cobra", l.map((s) => s.cobranca || "")));
+      add(linha("gratis", "Plano grátis", l.map((s) => s.gratis || "")));
+      add(linha("preco_ref", "Preço de referência", l.map((s) => (s.preco_ref && s.preco_ref.texto ? s.preco_ref.texto + " (" + dataBR(s.preco_ref.em) + ")" : ""))));
+    } else {
+      add(linha("descricao", "O que é", l.map((s) => (s.gh && s.gh.descricao) || s.descricao || "")));
+      add(linha("modelo", "Modelo", l.map((s) => (raiz.Landscape && raiz.Landscape.modeloDe(s) ? raiz.Landscape.modeloDe(s).rotulo : ""))));
+      add(linha("licenca", "Licença", l.map((s) => (s.gh && s.gh.licenca) || (s.leve && s.leve.licenca) || "")));
+      add(linha("linguagem", "Linguagem", l.map((s) => (s.gh && s.gh.linguagem) || (s.leve && s.leve.linguagem) || "")));
+      add(linha("estrelas", "Estrelas no GitHub", l.map((s) => { const n = (s.gh && s.gh.estrelas) ?? (s.leve && s.leve.estrelas); return n == null ? "" : String(n); })));
+      add(linha("versao", "Última versão", l.map((s) => { const v = ultimaVersao(s.releases); return v ? v.tag + (v.data ? " (" + dataBR(v.data) + ")" : "") : ""; })));
+      add(linha("ritmo", "Ritmo", l.map((s) => (Array.isArray(s.releases) && s.releases.length ? textoRitmo(ritmo(s.releases, ctx.agora)) : ""))));
+    }
+    /* opções de uso (Landscape.resumoDeUso: "Só na nuvem", "Nuvem ou self-hosted"...) */
+    add(linha("uso", "Opções de uso", l.map((s) => (raiz.Landscape ? raiz.Landscape.resumoDeUso(s) : ""))));
+    for (const a of chavesDe(sub)) add(linha("at:" + a.k, a.r, l.map((s) => { const c = carac(s.atributos && s.atributos[a.k]); return c ? textoCarac(c) : ""; }), { carac: true }));
+    if (aba === "cloud") add(linha("destaques", "Destaques", l.map((s) => (s.destaques || []).join("; "))));
+    if (ctx.novidades) add(linha("novidade", "Última novidade", l.map((s) => { const n = (ctx.novidades[s.id] || [])[0]; return n ? n.titulo + (n.publicado ? " (" + dataBR(n.publicado) + ")" : "") : ""; })));
+    if (ctx.roteiro) add(linha("roteiro", "O que vem por aí", l.map((s) => (ctx.roteiro[s.id] || []).slice(0, 3).map((r) => r.titulo + (r.quando ? " (" + r.quando + ")" : "")).join("; "))));
+    if (aba === "cloud") add(linha("conferido", "Conferido", l.map((s) => (s.conferido ? "em " + dataBR(s.conferido) : "ainda não conferido"))));
+    /* links ficam à parte (a tela mostra como botões; o Markdown, como lista de fontes) */
+    const links = l.map((s) => (aba === "cloud" ? { produto: (s.links || {}).produto || "", docs: (s.links || {}).docs || "", precos: (s.links || {}).precos || "", status: (s.links || {}).status || "" } : { repositorio: s.repo ? "https://github.com/" + s.repo : "", site: s.site || (s.gh && s.gh.site) || "" }));
+    return { aba, subcategoria: sub, colunas, linhas, links };
+  }
+  /* Markdown para um ADR: seção "Opções consideradas" (tabela) e as fontes com data. Só fatos e fontes. */
+  const celulaMd = (t) => String(t == null ? "" : t).replace(/\|/g, "\\|").replace(/\s+/g, " ").trim() || "–";
+  function markdownAdr(comp, { agora = Date.now(), titulo = "", fontes = [] } = {}) {
+    if (!comp || !comp.colunas || !comp.colunas.length) return "";
+    const nomes = comp.colunas.map((c) => c.nome + (c.provedor ? " (" + c.provedor.nome + ")" : ""));
+    const out = ["## Opções consideradas", ""];
+    if (titulo) out.push(titulo, "");
+    out.push("| | " + nomes.map(celulaMd).join(" | ") + " |", "|---|" + nomes.map(() => "---").join("|") + "|");
+    for (const l of comp.linhas) out.push("| " + celulaMd(l.rotulo) + " | " + l.celulas.map(celulaMd).join(" | ") + " |");
+    out.push("", "Montado pelo Lookout (ArchLandscape) em " + dataBR(new Date(agora).toISOString()) + ", com o que estava guardado e o que as fontes oficiais publicavam. Sem avaliação: só fatos e fontes.", "", "### Fontes", "");
+    const vistas = new Set();
+    const rot = { produto: "página do produto", docs: "documentação", precos: "preços oficiais", status: "status", repositorio: "repositório", site: "site" };
+    comp.links.forEach((lk, i) => { for (const [k, u] of Object.entries(lk || {})) if (u && !vistas.has(u)) { vistas.add(u); out.push(`- ${comp.colunas[i].nome}, ${rot[k] || k}: ${u} (consultado em ${dataBR(new Date(agora).toISOString())})`); } });
+    for (const f of fontes || []) if (f && f.url && !vistas.has(f.url)) { vistas.add(f.url); out.push(`- ${celulaMd(f.titulo || f.url)}: ${f.url}${f.em ? " (" + dataBR(f.em) + ")" : ""}`); }
+    return out.join("\n") + "\n";
+  }
+
+  /* ---------- citação e novidades ---------- */
+  /* Palavras que sozinhas não dizem de quem é o serviço */
+  const GENERICAS = new Set(("cloud functions function storage compute engine database databases db cache queue queues dns cdn load balancer balancing balanceador " +
+    "monitor monitoring logging logs metrics trace tracing registry container containers kubernetes service services app apps platform workers pages " +
+    "run build deploy key vault secrets secret manager identity access firewall waf shield gateway api apis files file blob object objects block disk disks " +
+    "sql postgres postgresql mysql redis memorystore streams stream events event bus workflows workflow tasks scheduler ai ml vector search " +
+    "kv d1 r2 queues images stream email cron jobs virtual machines machine vm vms instances network networking private link spaces volumes " +
+    "data analytics warehouse lake insights studio hub center console cli sdk iam sso connect").split(/\s+/));
+  /* Nome distinto: tem alguma palavra fora da lista e pelo menos 5 letras no total (S3, R2, D1 e "Cloud Run" não são) */
+  function nomeDistinto(nome) {
+    const s = semAcento(nome).replace(/[^a-z0-9 ]+/g, " ").trim();
+    if (s.replace(/\s/g, "").length < 5) return false;
+    return s.split(/\s+/).some((w) => !GENERICAS.has(w) && w.length >= 3);
+  }
+  /* Termos do provedor que contam como "junto do nome": nome, sigla e id (aws, gcp, oci) */
+  const termosProv = (p) => (p ? [p.nome, p.sigla, p.id, ...(p.id === "gcp" ? ["Google Cloud", "Google"] : p.id === "azure" ? ["Microsoft"] : p.id === "oci" ? ["Oracle"] : p.id === "aws" ? ["Amazon"] : [])] : []).filter((t) => t && String(t).length >= 2);
+  /* O texto cita o serviço? Nome ou apelido distinto sozinho; genérico só com o provedor junto. noFeed: o texto já é do
+     feed do próprio provedor, então o provedor está implícito (o nome genérico continua precisando ser palavra inteira). */
+  function citaServico(serv, prov, texto, { noFeed = false } = {}) {
+    const t = String(texto || "");
+    const nomes = [serv.nome, ...(serv.apelidos || [])].filter(Boolean);
+    const comProv = noFeed || termosProv(prov).some((x) => temPalavra(t, x));
+    for (const n of nomes) {
+      if (!temPalavra(t, n)) continue;
+      if (nomeDistinto(n) || comProv) return true;
+    }
+    return false;
+  }
+  /* Termos para o instr() do SELECT que procura citações (o filtro final é citaServico) */
+  const termosBusca = (serv) => [...new Set([serv.nome, ...(serv.apelidos || [])].filter(Boolean).map((n) => semAcento(n)).filter((n) => n.length >= 2))].slice(0, 6);
+  /* O que vem por aí: título ou tipo do item com preview, beta, coming soon, announcing ou em breve */
+  function anuncio(item) {
+    const t = semAcento(((item && item.titulo) || "") + " " + ((item && item.tipo) || ""));
+    if (/\b(preview|beta)\b/.test(t)) return "preview";
+    if (/\b(coming soon|announcing|em breve)\b/.test(t)) return "anunciado";
+    return "";
+  }
+  /* Itens do feed do provedor que falam do serviço, mais recentes primeiro, até `max` */
+  function novidadesDoServico(itens, serv, prov, max = 15) {
+    return (Array.isArray(itens) ? itens : []).filter((i) => i && i.titulo && citaServico(serv, prov, i.titulo + " " + (i.tipo || ""), { noFeed: true }))
+      .sort((a, b) => String(b.publicado || "").localeCompare(String(a.publicado || ""))).slice(0, max)
+      .map((i) => { const a = anuncio(i); return { titulo: i.titulo, url: i.url, publicado: i.publicado || null, ...(i.tipo ? { tipo: i.tipo } : {}), ...(a ? { anuncio: a } : {}) }; });
+  }
+
+  /* ---------- comparação profunda (collection arch-dossies) ----------
+     Uma análise pronta vale 30 dias a partir de prontoEm (ou até expiraEm, quando a tarefa gravou). */
+  function expiraDe(doc) {
+    if (!doc) return null;
+    const e = isoOk(doc.expiraEm);
+    if (e) return e;
+    const p = Date.parse(doc.prontoEm || "");
+    return Number.isFinite(p) ? new Date(p + VALIDADE_DIAS * DIA).toISOString() : null;
+  }
+  /* pendente, pronta, vencida ou falhou (relógio injetado) */
+  function estadoDaAnalise(doc, agora = Date.now()) {
+    if (!doc || typeof doc !== "object") return "falhou";
+    if (doc.estado === "pendente") return "pendente";
+    if (doc.estado === "pronto") { const e = expiraDe(doc); return e && agora < Date.parse(e) ? "pronta" : "vencida"; }
+    return "falhou";
+  }
+  /* Para a aba Profunda de um conjunto: { pronta, pendente, vencida, falhou } (o mais recente de cada; docs: [{ id, data }]) */
+  function analisesDoConjunto(docs, aba, ids, agora = Date.now()) {
+    const k = conjunto(ids);
+    const out = { pronta: null, pendente: null, vencida: null, falhou: null };
+    const l = (Array.isArray(docs) ? docs : []).filter((d) => d && d.data && d.data.aba === aba && conjunto(d.data.ids) === k)
+      .sort((a, b) => String(b.data.criado || "").localeCompare(String(a.data.criado || "")));
+    for (const d of l) { const e = estadoDaAnalise(d.data, agora); if (!out[e]) out[e] = d; }
+    return out;
+  }
+
+  /* ---------- ícone (regra do dono: sempre tentar um ícone; sem nenhum, o logotipo do Lookout esmaecido) ----------
+     Devolve as URLs a tentar, na ordem: (a) `icone` que o Admin informou; (b) Tools: avatar da organização no GitHub
+     (Landscape.marcaOk; pessoa nunca); (c) o ícone do site oficial pela rota /icone/<dominio> do próprio Worker.
+     Lista vazia: a tela mostra o logotipo esmaecido ("Sem ícone"). Cloud usa o provedor do serviço. */
+  const urlIcone = (u) => { const s = String(u == null ? "" : u).trim(); if (!s || s.length > 400) return ""; try { const x = new URL(s); return (x.protocol === "https:" || x.protocol === "http:") && !x.username && !x.password ? x.toString() : ""; } catch (e) { return ""; } };
+  function dominioDe(u) {
+    try { const x = new URL(String(u || "")); if (x.protocol !== "https:" && x.protocol !== "http:") return ""; const h = x.hostname.toLowerCase(); return /^[a-z0-9.-]{1,200}$/.test(h) && h.includes(".") && !/^\d+(\.\d+){3}$/.test(h) ? h : ""; } catch (e) { return ""; }
+  }
+  const rotaIcone = (site) => { const d = dominioDe(site); return d ? "/icone/" + d : ""; };
+  function iconeDe(doc, provedor) {
+    const out = [];
+    const por = (u) => { if (u && !out.includes(u)) out.push(u); };
+    const d = doc && typeof doc === "object" ? doc : {};
+    por(urlIcone(d.icone));
+    if (d.repo || d.gh || d.leve) {
+      const L = raiz.Landscape, l = d.leve || {};
+      const url = (d.gh && d.gh.marca) || l.marca, tipo = (d.gh && d.gh.dono && d.gh.dono.tipo) || l.dono;
+      if (L && L.marcaOk(url, tipo)) por(url);
+      por(rotaIcone(d.site || (d.gh && d.gh.site) || ""));
+    } else {
+      const p = provedor || null;
+      if (p) { por(urlIcone(p.icone)); por(rotaIcone(p.site)); }
+      else por(rotaIcone(d.links && d.links.produto));
+    }
+    return out;
+  }
+
+  raiz.Arch = { DIA, MAX_COMPARAR, CONTEXTO_MAX, VALIDADE_DIAS, MARKDOWN_MAX, ID_SERV, ID_PROV, ID_CAT, ID_DOSSIE, POR, ABAS, MOTIVOS, COMUNS, ATRIBUTOS, LINKS,
+    semAcento, slug, urlOk, isoOk, temPreco, temPalavra, chavesDe, carac, textoCarac, validarCarac, validarAtributos, validarProvedores, validarCategorias,
+    nomeSub, catDaSub, idServico, validarServico, provDe, filtrarCloud, agrupar, equivalentes, podeComparar, marcavel, conjunto,
+    FILTROS_VAZIOS, lerFiltros, escreverFiltros, lerHash, escreverHash, linha, dataBR, ultimaVersao, ritmo, textoRitmo, montarComparacao, markdownAdr,
+    GENERICAS, nomeDistinto, termosProv, citaServico, termosBusca, anuncio, novidadesDoServico, expiraDe, estadoDaAnalise, analisesDoConjunto, urlIcone, dominioDe, rotaIcone, iconeDe };
+})(typeof globalThis !== "undefined" ? globalThis : this);

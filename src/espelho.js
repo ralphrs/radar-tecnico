@@ -32,6 +32,8 @@ export const COLECOES_ESPELHO = [
   "foruns-tech", "foruns-negocios", "foruns-investimentos", "foruns-politica", "foruns-esportes",
   // Landscape (src/landscape.js): um doc por tecnologia, gravado pelo cron e pelo Admin
   "landscape",
+  // ArchLandscape, aba Cloud (src/cloud.js): um doc por serviço, gravado pela semente e pelo Admin
+  "cloud",
 ];
 
 const LOTE = 90;              // ids por consulta ao D1, como na limpeza (coleta.js)
@@ -47,7 +49,8 @@ const AMOSTRA_LOG = 20;       // leitura que deu certo no espelho: loga 1 em cad
 // um LIKE 'favs/%' varreria a tabela inteira a cada minuto.
 // landscape/<email>: as notas do Admin no Landscape (Tech), doc "notas"; lidas/<email>: as notícias marcadas como lidas (src/lidas.js).
 // A mesma lista diz o que sai junto quando o admin apaga um convidado (adminUsuarios, src/index.js).
-export const PREFIXOS_PESSOAIS = ["favs/", "listas/", "prefs/", "carteira/", "leitura/", "landscape/", "lidas/"]; // carteira/ e leitura/: cifradas como estão no D1
+// cloud-notas/<email>: as notas de cada pessoa nos serviços da aba Cloud do ArchLandscape (src/cloud.js).
+export const PREFIXOS_PESSOAIS = ["favs/", "listas/", "prefs/", "carteira/", "leitura/", "landscape/", "lidas/", "cloud-notas/"]; // carteira/ e leitura/: cifradas como estão no D1
 const faixa = (p) => [p, p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1)];
 
 // Marca de versão de cada linha, calculada igual dos dois lados. Só o `atualizado` não basta: quem grava

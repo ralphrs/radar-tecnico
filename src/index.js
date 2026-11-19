@@ -22,6 +22,9 @@ import { validarTabelas, mesclarTabelas, respostaTabelas, validarLayout, respost
 import { cronEsportes, validarPrefsEsportes, respostaPrefsEsportes } from "./esportes.js";
 import { comSeguranca } from "./seguranca.js";
 import { cronLandscape, rotaLandscape, rotaAdminLandscape } from "./landscape.js";
+import { rotaCloud, rotaAdminCloud } from "./cloud.js";
+import { rotaDossies } from "./arch.js";
+import { rotaIcone } from "./icone.js";
 import { cronTraducao, estadoAdmin as estadoTraducao, envContado, contarFetch, contagens } from "./traducao.js";
 import { novoBatimento, etapa, gravarBatimento, LER, CONSULTAS_BATIMENTO, rotaRotinas } from "./rotinas.js";
 // Tradução das notícias: a preferência "Mostrar notícias traduzidas" (validação e padrão) mora em public/traducao.js
@@ -667,6 +670,33 @@ async function atender(request, env, ctx) {
       if (id === null) return json({ erro: "id" }, 400);
       return rotaAdminLandscape(request, env, quem, p === "/api/admin/landscape-categorias" ? "categorias" : "", id, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
     }
+
+    // ArchLandscape, aba Cloud (src/cloud.js): mesma seção e mesmas regras do Landscape. As notas são de cada pessoa.
+    if (p === "/api/cloud" || p.startsWith("/api/cloud/")) {
+      if (!libera(quem.secoes, "tech")) return json({ erro: "secao" }, 403);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      const resto = p.length > 11 ? decodificar(p.slice(11)) : "";
+      if (resto === null) return json({ erro: "id" }, 400);
+      return rotaCloud(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
+    }
+    if (p === "/api/admin/cloud" || p.startsWith("/api/admin/cloud/") || p === "/api/admin/cloud-provedores" || p === "/api/admin/cloud-categorias" || p === "/api/admin/cloud-sonda") {
+      if (!quem.admin) return json({ erro: "rota" }, 404);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      const id = p.startsWith("/api/admin/cloud/") ? decodificar(p.slice(17)) : "";
+      if (id === null) return json({ erro: "id" }, 400);
+      const alvo = p === "/api/admin/cloud-provedores" ? "provedores" : p === "/api/admin/cloud-categorias" ? "categorias" : p === "/api/admin/cloud-sonda" ? "sonda" : "";
+      return rotaAdminCloud(request, env, quem, alvo, id, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
+    }
+    // Comparações profundas do ArchLandscape (src/arch.js, collection arch-dossies): só o Admin; os outros, 404
+    if (p === "/api/admin/arch/dossies" || p.startsWith("/api/admin/arch/dossies/")) {
+      if (!quem.admin) return json({ erro: "rota" }, 404);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      const id = p.startsWith("/api/admin/arch/dossies/") ? decodificar(p.slice(24)) : "";
+      if (id === null) return json({ erro: "id" }, 400);
+      return rotaDossies(request, env, quem, id, { lerLinhas, lerLinha });
+    }
+    // Ícone do site oficial (src/icone.js): só para domínio que já está no banco; mesma origem, então a CSP não muda
+    if (p.startsWith("/icone/")) return rotaIcone(request, env, decodificar(p.slice(7)), { lerLinhas, ctx });
 
     // Rotinas (src/rotinas.js): o que rodou, o que não rodou ou está parado, e há quanto tempo. Só o Admin; os outros
     // recebem o mesmo 404 das rotas de Admin do Landscape. Duas consultas ao D1 e o estado do espelho (Durable Object).

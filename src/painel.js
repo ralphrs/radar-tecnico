@@ -50,7 +50,9 @@ export const WIDGETS = [
   // Vai e vem (11/11): as negociações mais avançadas dos times da pessoa, com o escudo do destino e a etapa
   { id: "esportes-vaivem", titulo: "Vai e vem", tamanho: 1, secao: "esportes" },
   // Landscape (Tech, 12/11): o que mudou nas tecnologias acompanhadas (release, salto de estrelas, HN). Fora do padrão.
-  { id: "tech-landscape", titulo: "Landscape", tamanho: 1, secao: "tech" },
+  { id: "tech-landscape", titulo: "ArchLandscape", tamanho: 1, secao: "tech" },
+  // ArchLandscape, aba Cloud (19/11): quantos serviços cada provedor tem no catálogo, com atalho. Fora do padrão.
+  { id: "arch-cloud", titulo: "ArchLandscape · Cloud", tamanho: 1, secao: "tech" },
   // Minha carteira (src/carteira.js): pessoais, leem /api/carteira uma vez só para todos; aparecem para quem importou
   // os extratos (a página esconde enquanto a carteira estiver vazia). Fora do padrão: a pessoa fixa pelo alfinete.
   { id: "carteira-meta", titulo: "Minha meta", tamanho: 2, secao: "investimentos", pessoal: true },

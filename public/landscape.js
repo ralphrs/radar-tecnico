@@ -46,26 +46,105 @@
      aqui: sem etiqueta. */
   const MODELOS = [
     { id: "aberto", rotulo: "Open source", curto: "Open source", explicacao: "Código aberto, sem oferta paga de quem mantém o projeto.", tom: "verde" },
-    { id: "aberto-pago", rotulo: "Open source + nuvem paga", curto: "Open + nuvem", explicacao: "Código aberto; a empresa por trás vende a versão hospedada ou recursos extras.", tom: "teal" },
+    { id: "freemium", rotulo: "Freemium", curto: "Freemium", explicacao: "Dá para usar de graça até certo ponto: por conta própria, quando o código é aberto, ou num plano grátis limitado. A versão hospedada ou os recursos a mais são pagos.", tom: "azul" },
     { id: "fonte-disponivel", rotulo: "Código disponível", curto: "Cód. disponível", explicacao: "O código é público, mas a licença restringe o uso (BSL, SSPL, Elastic e parecidas).", tom: "ambar" },
-    { id: "freemium", rotulo: "Freemium", curto: "Freemium", explicacao: "Produto fechado com plano grátis.", tom: "azul" },
     { id: "pago", rotulo: "Pago", curto: "Pago", explicacao: "Produto fechado, sem plano grátis que sirva para uso de verdade.", tom: "cinza" },
   ];
-  const modeloPorId = (v) => (typeof v === "string" && v ? MODELOS.find((m) => m.id === v) || null : null);
+  /* Valores antigos que ainda podem estar no banco: "aberto-pago" (Open source + nuvem paga, até 19/11) virou Freemium */
+  const MODELO_ANTIGO = { "aberto-pago": "freemium" };
+  const NOTA_MODELO_MAX = 240;
+  const modeloPorId = (v) => (typeof v === "string" && v ? MODELOS.find((m) => m.id === (MODELO_ANTIGO[v] || v)) || null : null);
   /* A entrada da tabela para o doc (ou item da lista leve), ou null */
   const modeloDe = (doc) => modeloPorId(doc && typeof doc === "object" ? doc.modelo : null);
+  /* O texto que explica o modelo no detalhe: a nota da tecnologia ("Por que é freemium: ...") ou, sem nota, a explicação geral */
+  function porQueModelo(doc) {
+    const m = modeloDe(doc);
+    if (!m) return "";
+    const nota = doc && typeof doc.modelo_nota === "string" ? doc.modelo_nota.replace(/\s+/g, " ").trim() : "";
+    return nota ? "Por que é " + m.rotulo.toLowerCase() + ": " + nota : m.explicacao;
+  }
+  /* Nota do Admin: undefined não mexe; "" ou null apaga; texto até 240 caracteres */
+  function validarNotaModelo(v) {
+    if (v === undefined) return { mexe: false };
+    if (v === null || v === "") return { mexe: true, nota: null };
+    if (typeof v !== "string") return { erro: "O porquê do modelo precisa ser texto." };
+    const t = v.replace(/\s+/g, " ").trim();
+    if (t.length > NOTA_MODELO_MAX) return { erro: `O porquê do modelo guarda até ${NOTA_MODELO_MAX} caracteres.` };
+    return { mexe: true, nota: t || null };
+  }
   /* Corpo do Admin: undefined não mexe; "" ou null tira a etiqueta (null no json_patch apaga a chave); id da tabela grava. */
   function validarModelo(v) {
     if (v === undefined) return { mexe: false };
     if (v === null || v === "") return { mexe: true, modelo: null };
-    if (!modeloPorId(v)) return { erro: "Modelo desconhecido." };
+    if (typeof v !== "string" || !MODELOS.some((m) => m.id === v)) return { erro: "Modelo desconhecido." };
     return { mexe: true, modelo: v };
   }
+  /* ---------- opções de uso (pedido de 19/11) ----------
+     Como dá para usar a tecnologia ou o serviço: campo `uso` (lista de ids desta tabela) e `uso_nota` (até 240), só do
+     Admin. Valor fora da tabela é ignorado; lista vazia ou ausente é "sem informação" (a tela diz "não conferido"). */
+  const USOS = [
+    { id: "nuvem", rotulo: "Nuvem do fornecedor", explicacao: "Serviço hospedado e operado por quem faz." },
+    { id: "self-hosted", rotulo: "Self-hosted", explicacao: "Você instala e opera no seu servidor ou data center (on-premises incluído)." },
+    { id: "local", rotulo: "Roda local", explicacao: "Dá para instalar na própria máquina, para desenvolver ou testar." },
+    { id: "biblioteca", rotulo: "Biblioteca", explicacao: "Entra dentro do seu aplicativo, sem serviço à parte." },
+  ];
+  const USO_NOTA_MAX = 240;
+  /* Os ids válidos do doc, na ordem da tabela, sem repetir */
+  const usoDe = (doc) => { const v = doc && typeof doc === "object" && Array.isArray(doc.uso) ? doc.uso : []; return USOS.filter((u) => v.includes(u.id)).map((u) => u.id); };
+  /* Frase curta para o cartão e a comparação; "" quando não há informação */
+  function resumoDeUso(doc) {
+    const u = new Set(usoDe(doc));
+    if (!u.size) return "";
+    const n = u.has("nuvem"), sh = u.has("self-hosted"), lo = u.has("local"), bi = u.has("biblioteca");
+    if (bi && n) return "Biblioteca ou nuvem";
+    if (bi && !sh) return "Biblioteca";
+    if (n && sh) return "Nuvem ou self-hosted";
+    if (n && !lo) return "Só na nuvem";
+    if (sh) return "Só self-hosted";
+    if (n && lo) return "Nuvem ou local";
+    if (lo) return "Roda local";
+    return "";
+  }
+  /* As três perguntas do detalhe: "sim", "não" ou "não conferido" (sem informação nenhuma não dá para dizer "não") */
+  function perguntasDeUso(doc) {
+    const u = new Set(usoDe(doc));
+    const r = (sim) => (!u.size ? "não conferido" : sim ? "sim" : "não");
+    return [
+      { id: "nuvem", pergunta: "Tem nuvem do fornecedor?", resposta: r(u.has("nuvem")) },
+      { id: "self-hosted", pergunta: "Dá para hospedar por conta própria (on-premises)?", resposta: r(u.has("self-hosted")) },
+      { id: "local", pergunta: "Dá para instalar na própria máquina?", resposta: r(u.has("local") || u.has("biblioteca") || u.has("self-hosted")) },
+    ];
+  }
+  /* Corpo do Admin: undefined não mexe; lista (só ids da tabela) grava, vazia apaga; nota até 240 */
+  function validarUso(v) {
+    if (v === undefined) return { mexe: false };
+    if (v === null || v === "") return { mexe: true, uso: null };
+    if (!Array.isArray(v) || v.some((x) => typeof x !== "string")) return { erro: "Uso precisa ser uma lista." };
+    if (v.some((x) => !USOS.some((u) => u.id === x))) return { erro: "Opção de uso desconhecida." };
+    const l = usoDe({ uso: v });
+    return { mexe: true, uso: l.length ? l : null };
+  }
+  function validarUsoNota(v) {
+    if (v === undefined) return { mexe: false };
+    if (v === null || v === "") return { mexe: true, nota: null };
+    if (typeof v !== "string") return { erro: "A nota de uso precisa ser texto." };
+    const t = v.replace(/\s+/g, " ").trim();
+    if (t.length > USO_NOTA_MAX) return { erro: `A nota de uso guarda até ${USO_NOTA_MAX} caracteres.` };
+    return { mexe: true, nota: t || null };
+  }
+  /* Chips do filtro: os usos que aparecem na lista, na ordem da tabela, com a contagem */
+  function contarUsos(lista) {
+    const n = new Map();
+    for (const t of Array.isArray(lista) ? lista : []) for (const u of usoDe(t)) n.set(u, (n.get(u) || 0) + 1);
+    return USOS.filter((u) => n.has(u.id)).map((u) => ({ ...u, n: n.get(u.id) }));
+  }
+
   /* Filtro da grade e da tabela: busca pelo nome ou repositório, linguagem, licença, categoria e modelos (vários valem
      juntos, qualquer um deles; lista vazia é todos). Não ordena. */
   function filtrar(lista, f = {}) {
     const q = semAcento(f.busca || "").trim();
     const mods = new Set(Array.isArray(f.modelos) ? f.modelos : []);
+    const usos = new Set(Array.isArray(f.usos) ? f.usos : []);
     return (Array.isArray(lista) ? lista : []).filter((t) => {
       if (!t) return false;
       const l = t.leve || {};
@@ -74,6 +153,7 @@
       if (f.lic && l.licenca !== f.lic) return false;
       if (f.categoria && t.categoria !== f.categoria) return false;
       if (mods.size) { const m = modeloDe(t); if (!m || !mods.has(m.id)) return false; }
+      if (usos.size) { const u = usoDe(t); if (!u.some((x) => usos.has(x))) return false; }
       return true;
     });
   }
@@ -406,7 +486,7 @@
     for (const t of Array.isArray(lista) ? lista : []) {
       const l = t && t.leve;
       if (!l || l.coletando) continue;
-      const modelo = modeloDe(t) ? t.modelo : "";
+      const modelo = modeloDe(t) ? modeloDe(t).id : "";
       if (l.release && idadeDias(l.release.data, agora) <= 7) out.push({ id: t.id, nome: t.nome, modelo, tipo: "release", data: l.release.data, texto: "lançou " + l.release.tag });
       const base = l.estrelas != null && l.ganho7 != null ? l.estrelas - l.ganho7 : null;
       if (base && base > 0 && l.ganho7 / base > 0.05) out.push({ id: t.id, nome: t.nome, modelo, tipo: "estrelas", data: new Date(agora).toISOString(), texto: `+${formatoCurto(l.ganho7)} estrelas em 7 dias (+${fmt1((l.ganho7 / base) * 100)}%)` });
@@ -420,5 +500,6 @@
     idDe, repoDoId, lerUrlRepo, lerUrls, urlOk, marcaDe, marcaOk, monograma, formatoCurto, diaSP, idadeDias, atividade, ehNova, releaseRecente,
     somarPonto, ganho, entidades, textoPuro, trecho, textoDoReadme, cita, temPalavra, nomeDistinto, escolherComentarios,
     slug, nomeLimpo, validarCategorias, acharCategoria, validarNotas, leveDe, novidades, semAcento,
-    MODELOS, modeloDe, validarModelo, filtrar, contarModelos };
+    MODELOS, MODELO_ANTIGO, NOTA_MODELO_MAX, modeloDe, porQueModelo, validarModelo, validarNotaModelo, filtrar, contarModelos,
+    USOS, USO_NOTA_MAX, usoDe, resumoDeUso, perguntasDeUso, validarUso, validarUsoNota, contarUsos };
 })(typeof globalThis !== "undefined" ? globalThis : this);

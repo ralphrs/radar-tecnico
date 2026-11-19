@@ -20,6 +20,8 @@
     "esportes-rodada": ["1x1", "2x1"], "esportes-tabela": ["1x1", "1x2"], "esportes-meu-time": ["1x1"], "esportes-vaivem": ["1x1", "2x1"],
     /* Landscape (Tech, 12/11): 3 novidades em 1x1, 5 em 2x1 */
     "tech-landscape": ["1x1", "2x1"],
+    /* ArchLandscape, aba Cloud (19/11): contagem por provedor */
+    "arch-cloud": ["1x1", "2x1"],
   };
   const tipoEsportes = (id) => { const m = /^esportes-(rodada|tabela)-/.exec(String(id)); return m ? "esportes-" + m[1] : null; };
   const formatosDe = (id) => FORMATOS_DE[id] || FORMATOS_DE[tipoEsportes(id)] || FORMATOS_DE[String(id).replace(/-.*$/, "")] || ["1x1"];

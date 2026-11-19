@@ -549,26 +549,39 @@ test("widget tech-landscape: catálogo de Tech, formatos 1x1 e 2x1, e as novidad
 });
 
 // ---------- modelo (pedido de 19/11) ----------
-test("modelo: a tabela tem os cinco, modeloDe devolve a entrada; vazio e valor desconhecido ficam sem etiqueta", () => {
-  assert.deepEqual(L.MODELOS.map((m) => m.id), ["aberto", "aberto-pago", "fonte-disponivel", "freemium", "pago"]);
+test("modelo: a tabela tem os quatro (aberto-pago antigo vira Freemium), modeloDe devolve a entrada; vazio e valor desconhecido ficam sem etiqueta", () => {
+  assert.deepEqual(L.MODELOS.map((m) => m.id), ["aberto", "freemium", "fonte-disponivel", "pago"]);
   for (const m of L.MODELOS) {
     assert.ok(m.rotulo && m.curto && m.explicacao && m.tom, m.id + " completo");
     assert.equal(L.modeloDe({ modelo: m.id }), m);
   }
   assert.equal(L.modeloDe({ modelo: "aberto" }).rotulo, "Open source");
-  assert.equal(L.modeloDe({ modelo: "aberto-pago" }).rotulo, "Open source + nuvem paga");
+  assert.equal(L.modeloDe({ modelo: "aberto-pago" }).id, "freemium", "valor antigo do banco lido como Freemium");
+  assert.ok(!L.MODELOS.some((m) => m.curto === "Open + nuvem"), "o rótulo curto antigo sumiu");
+  assert.equal(L.modeloDe({ modelo: "freemium" }).curto, "Freemium", "cabe inteiro");
   assert.equal(L.modeloDe({ modelo: "fonte-disponivel" }).rotulo, "Código disponível");
   assert.equal(L.modeloDe({ modelo: "freemium" }).rotulo, "Freemium");
   assert.equal(L.modeloDe({ modelo: "pago" }).rotulo, "Pago");
   for (const d of [{}, { modelo: "" }, { modelo: null }, { modelo: "Aberto" }, { modelo: "proprietario" }, { modelo: " pago" }, { modelo: 3 }, { modelo: ["pago"] }, null, undefined, "pago"])
     assert.equal(L.modeloDe(d), null, JSON.stringify(d));
-  assert.equal(new Set(L.MODELOS.map((m) => m.tom)).size, 5, "um tom para cada");
+  assert.equal(new Set(L.MODELOS.map((m) => m.tom)).size, 4, "um tom para cada");
   assert.ok(L.MODELOS.every((m) => !/desconhecido|melhor|recomendad/i.test(m.rotulo + m.explicacao)));
   assert.deepEqual(L.validarModelo(undefined), { mexe: false });
   assert.deepEqual(L.validarModelo(""), { mexe: true, modelo: null });
   assert.deepEqual(L.validarModelo(null), { mexe: true, modelo: null });
   assert.deepEqual(L.validarModelo("freemium"), { mexe: true, modelo: "freemium" });
   assert.ok(L.validarModelo("gratis").erro); assert.ok(L.validarModelo(1).erro);
+  assert.ok(L.validarModelo("aberto-pago").erro, "o Admin não grava mais o valor antigo");
+  // o porquê do modelo: nota da tecnologia, ou a explicação geral sem nota; nada sem modelo
+  assert.equal(L.porQueModelo({ modelo: "freemium", modelo_nota: "  Hospedado é pago. " }), "Por que é freemium: Hospedado é pago.");
+  assert.equal(L.porQueModelo({ modelo: "aberto-pago", modelo_nota: "x" }), "Por que é freemium: x");
+  assert.equal(L.porQueModelo({ modelo: "pago" }), L.modeloDe({ modelo: "pago" }).explicacao);
+  assert.equal(L.porQueModelo({ modelo_nota: "sem modelo" }), "");
+  assert.deepEqual(L.validarNotaModelo(undefined), { mexe: false });
+  assert.deepEqual(L.validarNotaModelo(""), { mexe: true, nota: null });
+  assert.deepEqual(L.validarNotaModelo(" a  b "), { mexe: true, nota: "a b" });
+  assert.ok(L.validarNotaModelo("x".repeat(241)).erro); assert.ok(L.validarNotaModelo(5).erro);
+  assert.ok(!L.validarNotaModelo("x".repeat(240)).erro);
 });
 
 test("filtro da grade: modelo combinado com categoria, busca, linguagem e licença; chips só com os modelos que existem", () => {
@@ -581,16 +594,16 @@ test("filtro da grade: modelo combinado com categoria, busca, linguagem e licen�
   assert.equal(ids({}), "a,b,c,d,e,f");
   assert.equal(ids({ modelos: ["aberto"] }), "a,c");
   assert.equal(ids({ modelos: ["aberto"], categoria: "obs" }), "a", "modelo e categoria juntos");
-  assert.equal(ids({ modelos: ["aberto", "aberto-pago"], categoria: "obs" }), "a,b", "vários modelos: qualquer um deles");
+  assert.equal(ids({ modelos: ["aberto", "freemium"], categoria: "obs" }), "a,b", "vários modelos: qualquer um deles (aberto-pago antigo conta como freemium)");
   assert.equal(ids({ modelos: ["pago"], categoria: "obs" }), "");
   assert.equal(ids({ categoria: "dados" }), "c,d");
   assert.equal(ids({ modelos: ["aberto"], busca: "gam" }), "c", "e a busca");
   assert.equal(ids({ busca: "epsilon" }), "e", "busca sem acento");
   assert.equal(ids({ busca: "o/b" }), "b", "busca pelo repositório");
-  assert.equal(ids({ modelos: ["aberto", "aberto-pago"], ling: "Rust" }), "b");
+  assert.equal(ids({ modelos: ["aberto", "freemium"], ling: "Rust" }), "b");
   assert.equal(ids({ lic: "Proprietária", modelos: ["pago"] }), "d");
   assert.equal(ids({ modelos: ["inventado"] }), "", "valor fora da tabela não vira filtro");
-  assert.deepEqual(L.contarModelos(lista).map((m) => m.id + ":" + m.n), ["aberto:2", "aberto-pago:1", "pago:1"], "na ordem da tabela, sem vazio nem desconhecido");
+  assert.deepEqual(L.contarModelos(lista).map((m) => m.id + ":" + m.n), ["aberto:2", "freemium:1", "pago:1"], "na ordem da tabela, sem vazio nem desconhecido");
   assert.deepEqual(L.contarModelos([]), []);
   // widget: a novidade leva o modelo da tecnologia (vazio quando não tem ou não é da tabela)
   const d = (n) => new Date(AGORA - n * DIA).toISOString();
@@ -653,12 +666,98 @@ test("modelo nas rotas: o Admin grava e recusa; a lista leve e o detalhe devolve
   // lista leve e detalhe devolvem o campo (desconhecido vira "")
   const g = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "", dep));
   const por = Object.fromEntries(g.j.tecnologias.map((x) => [x.id, x.modelo]));
-  assert.equal(por["openobserve--openobserve"], "aberto"); assert.equal(por["signoz--signoz"], "aberto-pago");
+  assert.equal(por["openobserve--openobserve"], "aberto"); assert.equal(por["signoz--signoz"], "freemium", "valor antigo sai como freemium");
   assert.equal(por["grafana--loki"], "fonte-disponivel"); assert.equal(por["louislam--uptime-kuma"], ""); assert.equal(por["stablyai--orca"], "", "fora da tabela: sem etiqueta");
   assert.ok(g.j.tecnologias.every((x) => typeof x.modelo === "string"));
   const d = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "signoz--signoz", dep));
-  assert.equal(d.j.tec.modelo, "aberto-pago");
+  assert.equal(d.j.tec.modelo, "freemium");
   assert.equal(d.j.parecidas.find((x) => x.id === "openobserve--openobserve").modelo, "aberto", "as parecidas vêm da lista leve");
   assert.equal((await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "stablyai--orca", dep))).j.tec.modelo, "");
   assert.equal((await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "louislam--uptime-kuma", dep))).j.tec.modelo, "");
+});
+
+test("modelo_nota: o Admin grava e recusa pelo tamanho; tirar o modelo apaga a nota; o detalhe leva, a lista leve não; o cron não mexe", async () => {
+  const env = { DB: d1Falso(), GITHUB_TOKEN: "t" };
+  const dep = espelhoFalso();
+  await semearLandscape(env, AGORA);
+  const put = async (b, id = "signoz--signoz") => corpoDe(await rotaAdminLandscape(req("PUT", b), env, ADMIN, "", id, dep));
+  const r = await put({ modelo: "freemium", modelo_nota: "Dá para hospedar por conta; a nuvem deles é paga." });
+  assert.equal(r.status, 200, JSON.stringify(r.j)); assert.equal(r.j.modelo_nota, "Dá para hospedar por conta; a nuvem deles é paga.");
+  assert.equal(docDe(env, "signoz--signoz").modelo_nota, "Dá para hospedar por conta; a nuvem deles é paga.");
+  assert.equal((await put({ modelo_nota: "x".repeat(241) })).status, 400);
+  assert.equal((await put({ modelo_nota: 3 })).status, 400);
+  await put({ nome: "SigNoz" });
+  assert.ok(docDe(env, "signoz--signoz").modelo_nota, "editar outro campo não mexe na nota");
+  const d = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "signoz--signoz", dep));
+  assert.equal(d.j.tec.modelo_nota, "Dá para hospedar por conta; a nuvem deles é paga.", "o detalhe leva");
+  const g = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "", dep));
+  assert.ok(g.j.tecnologias.every((x) => !("modelo_nota" in x)), "a lista leve não leva");
+  await comFetch(fetchFalso(), async () => { for (let i = 0; i < 12; i++) await cronLandscape(env, AGORA + i * 60_000); });
+  assert.equal(docDe(env, "signoz--signoz").modelo_nota, "Dá para hospedar por conta; a nuvem deles é paga.", "o cron não mexe");
+  const sem = await put({ modelo: "" });
+  assert.equal(sem.status, 200);
+  assert.ok(!("modelo" in docDe(env, "signoz--signoz")) && !("modelo_nota" in docDe(env, "signoz--signoz")), "sem modelo, a nota sai junto");
+  const add = await corpoDe(await rotaAdminLandscape(req("POST", { urls: "https://github.com/grafana/loki", categoria: "observabilidade", subcategoria: "plataformas", modelo: "fonte-disponivel", modelo_nota: "AGPL com partes sob licença própria." }), env, ADMIN, "", "", dep));
+  assert.equal(add.status, 200); assert.equal(docDe(env, "grafana--loki").modelo_nota, "AGPL com partes sob licença própria.");
+  assert.equal((await rotaAdminLandscape(req("POST", { urls: "https://github.com/grafana/tempo", categoria: "observabilidade", subcategoria: "plataformas", modelo: "pago", modelo_nota: "y".repeat(300) }), env, ADMIN, "", "", dep)).status, 400);
+});
+
+// ---------- opções de uso (pedido de 19/11) ----------
+test("uso: a tabela, resumoDeUso em todas as combinações, as três perguntas e valor desconhecido", () => {
+  assert.deepEqual(L.USOS.map((u) => u.id), ["nuvem", "self-hosted", "local", "biblioteca"]);
+  const r = (uso) => L.resumoDeUso({ uso });
+  assert.equal(r(["nuvem"]), "Só na nuvem");
+  assert.equal(r(["nuvem", "self-hosted"]), "Nuvem ou self-hosted");
+  assert.equal(r(["self-hosted", "nuvem", "local"]), "Nuvem ou self-hosted", "ordem não importa");
+  assert.equal(r(["self-hosted"]), "Só self-hosted");
+  assert.equal(r(["self-hosted", "local"]), "Só self-hosted");
+  assert.equal(r(["biblioteca"]), "Biblioteca");
+  assert.equal(r(["biblioteca", "local"]), "Biblioteca");
+  assert.equal(r(["biblioteca", "nuvem"]), "Biblioteca ou nuvem");
+  assert.equal(r(["local"]), "Roda local");
+  assert.equal(r(["on-prem"]), "", "valor fora da tabela é ignorado");
+  assert.equal(r([]), ""); assert.equal(L.resumoDeUso({}), ""); assert.equal(L.resumoDeUso(null), "");
+  assert.deepEqual(L.usoDe({ uso: ["local", "x", "nuvem", "nuvem"] }), ["nuvem", "local"]);
+  const q = (uso) => L.perguntasDeUso({ uso }).map((x) => x.resposta);
+  assert.deepEqual(q([]), ["não conferido", "não conferido", "não conferido"], "sem informação nunca vira não");
+  assert.deepEqual(q(["nuvem"]), ["sim", "não", "não"]);
+  assert.deepEqual(q(["nuvem", "self-hosted"]), ["sim", "sim", "sim"]);
+  assert.deepEqual(q(["biblioteca"]), ["não", "não", "sim"]);
+  assert.deepEqual(L.validarUso(undefined), { mexe: false });
+  assert.deepEqual(L.validarUso([]), { mexe: true, uso: null });
+  assert.deepEqual(L.validarUso(["local", "nuvem"]), { mexe: true, uso: ["nuvem", "local"] });
+  assert.ok(L.validarUso(["on-prem"]).erro); assert.ok(L.validarUso("nuvem").erro);
+  assert.ok(L.validarUsoNota("x".repeat(241)).erro); assert.deepEqual(L.validarUsoNota(" a "), { mexe: true, nota: "a" });
+});
+
+test("uso nas rotas e no filtro: o Admin grava e recusa, o cron mantém, lista leve e detalhe devolvem; filtro combinado", async () => {
+  const env = { DB: d1Falso(), GITHUB_TOKEN: "t" };
+  const dep = espelhoFalso();
+  await semearLandscape(env, AGORA);
+  const put = async (b, id) => corpoDe(await rotaAdminLandscape(req("PUT", b), env, ADMIN, "", id, dep));
+  assert.equal((await put({ uso: ["nuvem", "self-hosted"], uso_nota: "Edição comunitária para hospedar.", modelo: "freemium" }, "signoz--signoz")).status, 200);
+  assert.equal((await put({ uso: ["self-hosted", "local"], modelo: "aberto" }, "louislam--uptime-kuma")).status, 200);
+  assert.equal((await put({ uso: ["biblioteca"] }, "d4vinci--scrapling")).status, 200);
+  assert.equal((await put({ uso: ["on-prem"] }, "signoz--signoz")).status, 400);
+  assert.equal((await put({ uso_nota: "x".repeat(300) }, "signoz--signoz")).status, 400);
+  assert.equal((await put({ icone: "javascript:1" }, "signoz--signoz")).status, 400);
+  assert.equal((await put({ icone: "https://signoz.io/logo.svg" }, "signoz--signoz")).status, 200);
+  await comFetch(fetchFalso(), async () => { for (let i = 0; i < 12; i++) await cronLandscape(env, AGORA + i * 60_000); });
+  assert.deepEqual(docDe(env, "signoz--signoz").uso, ["nuvem", "self-hosted"], "o cron mantém");
+  assert.equal(docDe(env, "signoz--signoz").uso_nota, "Edição comunitária para hospedar.");
+  const g = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "", dep));
+  const por = Object.fromEntries(g.j.tecnologias.map((x) => [x.id, x]));
+  assert.deepEqual(por["signoz--signoz"].uso, ["nuvem", "self-hosted"]); assert.deepEqual(por["openobserve--openobserve"].uso, []);
+  assert.equal(por["signoz--signoz"].icone, "https://signoz.io/logo.svg");
+  const d = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "signoz--signoz", dep));
+  assert.deepEqual(d.j.tec.uso, ["nuvem", "self-hosted"]); assert.equal(d.j.tec.uso_nota, "Edição comunitária para hospedar.");
+  const ids = (f) => L.filtrar(g.j.tecnologias, f).map((x) => x.id).sort().join(",");
+  assert.equal(ids({ usos: ["self-hosted"] }), "louislam--uptime-kuma,signoz--signoz");
+  assert.equal(ids({ usos: ["self-hosted"], modelos: ["freemium"] }), "signoz--signoz", "uso e modelo juntos");
+  assert.equal(ids({ usos: ["self-hosted"], busca: "kuma" }), "louislam--uptime-kuma", "e a busca");
+  assert.equal(ids({ usos: ["biblioteca", "nuvem"] }), "d4vinci--scrapling,signoz--signoz", "vários usos: qualquer um");
+  assert.deepEqual(L.contarUsos(g.j.tecnologias).map((u) => u.id + ":" + u.n), ["nuvem:1", "self-hosted:2", "local:1", "biblioteca:1"]);
+  // apagar o uso: lista vazia tira a chave
+  await put({ uso: [], uso_nota: "" }, "signoz--signoz");
+  assert.ok(!("uso" in docDe(env, "signoz--signoz")) && !("uso_nota" in docDe(env, "signoz--signoz")));
 });
