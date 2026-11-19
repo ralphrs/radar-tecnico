@@ -193,7 +193,9 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Comparar só concorrentes da mesma subcategoria (`Arch.podeComparar`), botão esmaecido com o motivo, comparação Rápida com "Copiar para ADR" e Profunda (`arch-dossies`, validade de 30 dias, um doc por conjunto, renovação automática da vencida e "Atualizar análise") nas duas abas (19/11)
 - [x] Modelo: "Open source + nuvem paga" virou Freemium, com o porquê (`modelo_nota`) no detalhe (19/11)
 - [x] Opções de uso (`uso`, `uso_nota`) em Tools e Cloud, e ícone com o logotipo do Lookout esmaecido quando não há (rota `/icone/<dominio>`) (19/11)
-- [ ] Cloud: curadoria de preços de referência (`preco_ref`) com fonte e data
+- [x] Decisão (19/11, 15h17): Cloud não guarda preço. Saíram da tela, do Admin, do ADR e da Profunda o preço de referência e o link de preços; fica só o modelo de cobrança em palavras
+- [x] Cloud: matriz de capacidades por subcategoria (`Arch.CAPACIDADES`, 32 subcategorias), conferida na documentação oficial com fonte e data (`src/cloud-capacidades.js`), na comparação Rápida, no detalhe, no Admin e no roteiro da Profunda; semente nova por `json_patch` sem passar por cima do Admin (19/11)
+- [ ] Cloud: completar as capacidades que ficaram "não conferido" (relatório de 19/11 lista a cobertura por subcategoria)
 - [ ] Cloud: conferência dos 180 serviços da semente (links oficiais, plano grátis e características) e "conferido" em cada um
 - [ ] Cloud: rodar a sonda dos feeds de novidades em produção (`POST /api/admin/cloud-sonda`) e acrescentar feeds das alternativas
 - [ ] Cloud: Hacker News por serviço

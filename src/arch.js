@@ -4,7 +4,8 @@
 // Contrato (fixo), collection `arch-dossies`, id "d" + 16 hexadecimais:
 //   { aba: "tools" | "cloud", ids: [...], subcategoria, contexto (até 600), estado: "pendente" | "pronto" | "falhou",
 //     criado, pedidoEm (o último pedido), forcado (true quando o Admin pediu "Atualizar análise"), por (e-mail de quem
-//     pediu), prontoEm, expiraEm (prontoEm + 30 dias; a tarefa grava, e o site calcula
+//     pediu), roteiro (o texto que o site monta para a IA, Arch.roteiroProfunda: capacidades, limites, maturidade,
+//     dependência do fornecedor, operação e encaixe por cenário, sem preço; refeito a cada pedido), prontoEm, expiraEm (prontoEm + 30 dias; a tarefa grava, e o site calcula
 //     quando não vier), markdown (até 60.000), fontes: [{ titulo, url, em }], resposta (frase curta em caso de falha) }
 // A tarefa lê os pendentes com SQL_PENDENTES e fecha cada um com SQL_FECHAR (as duas rodam nos testes como estão).
 // Validade: pronta vale 30 dias (Arch.estadoDaAnalise). Dentro dela, pedir o mesmo conjunto (mesmos ids, qualquer
@@ -12,7 +13,7 @@
 // pede sozinha ao abrir, também no mesmo doc. Pendente não expira. A limpeza apaga as de mais de 180 dias (pelo último pedido).
 import "../public/landscape.js";
 import "../public/arch.js";
-import { listaLeve as listaCloud } from "./cloud.js";
+import { listaLeve as listaCloud, lerProvedores, lerCategorias } from "./cloud.js";
 import { listaLeve as listaTools } from "./landscape.js";
 
 const A = globalThis.Arch;
@@ -81,6 +82,7 @@ export async function rotaDossies(request, env, quem, id, deps, { agora = Date.n
   // - pronta dentro da validade: volta como está, a não ser com { forcar: true } ("Atualizar análise");
   // - vencida ou falhou: o mesmo doc volta a pendente (a tela pede sozinha ao abrir), com o markdown antigo guardado.
   const ja = A.analisesDoConjunto(lista, b.aba, ids, agora);
+  const roteiro = await montarRoteiro(env, deps, b.aba, ids, catalogo, pode.subcategoria, contexto || (ja.pronta || ja.vencida || ja.falhou || {}).data?.contexto || "");
   if (ja.pendente) return json({ ok: true, existente: true, dossie: vista(ja.pendente, agora, true) }, 200);
   if (ja.pronta && !b.forcar) return json({ ok: true, existente: true, dossie: vista(ja.pronta, agora, true) }, 200);
   const pendentes = lista.filter((d) => d.data.estado === "pendente").length;
@@ -89,15 +91,26 @@ export async function rotaDossies(request, env, quem, id, deps, { agora = Date.n
   if (lista.filter((d) => L.diaSP(Date.parse(d.data.pedidoEm || d.data.criado || "")) === hoje).length >= MAX_POR_DIA) return json({ erro: `Até ${MAX_POR_DIA} pedidos por dia. Amanhã dá para pedir de novo.` }, 429);
   const reusar = ja.pronta || ja.vencida || ja.falhou;
   if (reusar) {
-    const patch = { estado: "pendente", pedidoEm: agoraIso(agora), forcado: !!(ja.pronta && b.forcar), por: quem.email, resposta: "", ...(contexto ? { contexto } : {}) };
+    const patch = { estado: "pendente", pedidoEm: agoraIso(agora), forcado: !!(ja.pronta && b.forcar), por: quem.email, resposta: "", roteiro, ...(contexto ? { contexto } : {}) };
     await env.DB.prepare(SQL_FECHAR).bind(JSON.stringify(patch), reusar.id).run();
     const data = { ...reusar.data, ...patch };
     return json({ ok: true, existente: false, renovado: true, dossie: vista({ id: reusar.id, data }, agora, true) }, 200);
   }
-  const data = { aba: b.aba, ids: ids.slice().sort(), subcategoria: pode.subcategoria, contexto, estado: "pendente", criado: agoraIso(agora), pedidoEm: agoraIso(agora), por: quem.email, prontoEm: null, expiraEm: null, markdown: "", fontes: [], resposta: "", forcado: false };
+  const data = { aba: b.aba, ids: ids.slice().sort(), subcategoria: pode.subcategoria, contexto, estado: "pendente", criado: agoraIso(agora), pedidoEm: agoraIso(agora), por: quem.email, roteiro, prontoEm: null, expiraEm: null, markdown: "", fontes: [], resposta: "", forcado: false };
   const nid = novoId();
   await env.DB.prepare("INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES ('arch-dossies', ?, ?, '', ?)").bind(nid, JSON.stringify(data), data.criado).run();
   return json({ ok: true, existente: false, dossie: vista({ id: nid, data }, agora, true) }, 201);
+}
+
+// O roteiro do pedido: as opções na ordem pedida, o nome da subcategoria e as capacidades da matriz dela
+async function montarRoteiro(env, deps, aba, ids, catalogo, sub, contexto) {
+  const servs = ids.map((id) => catalogo.find((s) => s.id === id)).filter(Boolean);
+  let provs = [], subNome = sub;
+  if (aba === "cloud") {
+    const [p, c] = await Promise.all([lerProvedores(env, deps).catch(() => []), lerCategorias(env, deps).catch(() => [])]);
+    provs = p; subNome = A.nomeSub(c, sub) || sub;
+  }
+  return A.roteiroProfunda(servs, { aba, provs, sub, subNome, contexto });
 }
 
 // Limpeza (src/coleta.js, limpar): as de mais de 180 dias saem, por lista de ids, em lotes de 90

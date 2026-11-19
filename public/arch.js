@@ -47,96 +47,161 @@
   const PRECO_RE = /R\$|US\$|\$\s?\d|€\s?\d|£\s?\d|\d\s?(€|£)/;
   const temPreco = (s) => PRECO_RE.test(String(s == null ? "" : s));
 
-  /* ---------- características ---------- */
-  /* Comuns a toda subcategoria (Tools e Cloud) */
+  /* ---------- características (Tools) e capacidades (Cloud) ---------- */
+  /* Tipos: "sn" (sim/não), "snp" (sim/não/parcial), "texto" (curto), "lista" (itens) e "num" (número, com a unidade `u`). */
+  const sn = (k, r) => ({ k, r, tipo: "sn" }), snp = (k, r) => ({ k, r, tipo: "snp" }), tx = (k, r) => ({ k, r, tipo: "texto" });
+  const ls = (k, r) => ({ k, r, tipo: "lista" }), nu = (k, r, u) => ({ k, r, tipo: "num", u });
+  /* Tools: comuns a toda subcategoria e as chaves de cada uma */
   const COMUNS = [
     { k: "maturidade", r: "Maturidade" }, { k: "implantacao", r: "Implantação" }, { k: "lock_in", r: "Dependência do fornecedor" },
     { k: "limites", r: "Limites" }, { k: "conformidade", r: "Conformidade" }, { k: "on_premises", r: "Roda fora da nuvem do provedor" },
   ];
-  /* Chaves de comparação por subcategoria, numa tabela só. tipo: "sn" (sim/não), "snp" (sim/não/parcial) ou "texto". */
-  const sn = (k, r) => ({ k, r, tipo: "sn" }), snp = (k, r) => ({ k, r, tipo: "snp" }), tx = (k, r) => ({ k, r, tipo: "texto" });
   const ATRIBUTOS = {
-    /* Cloud */
-    vms: [tx("cobranca_min", "Menor fração cobrada"), sn("arm", "Máquinas ARM"), sn("regioes_br", "Região no Brasil"), sn("gpu", "Opção com GPU")],
-    conteineres: [tx("cobranca_min", "Menor fração cobrada"), sn("escala_zero", "Escala até zero"), sn("regioes_br", "Região no Brasil")],
-    kubernetes: [snp("plano_controle_gratis", "Plano de controle sem cobrança"), sn("autopilot", "Modo sem gerenciar nós"), sn("regioes_br", "Região no Brasil")],
-    funcoes: [tx("linguagens", "Linguagens"), tx("tempo_max", "Tempo máximo"), tx("cold_start", "Partida a frio"), sn("borda", "Roda na borda")],
-    paas: [tx("linguagens", "Linguagens"), sn("escala_zero", "Escala até zero"), sn("git_deploy", "Deploy pelo Git")],
-    objetos: [sn("api_s3", "API compatível com S3"), snp("saida_gratis", "Saída de dados sem cobrança"), tx("classes", "Classes de armazenamento"), sn("regioes_br", "Região no Brasil")],
-    blocos: [tx("tipos", "Tipos de disco"), sn("snapshots", "Snapshots")],
-    arquivos: [tx("protocolos", "Protocolos"), sn("regioes_br", "Região no Brasil")],
-    relacional: [tx("motores", "Motores"), sn("serverless", "Opção serverless"), tx("ha", "Alta disponibilidade"), sn("regioes_br", "Região no Brasil")],
-    "postgres-serverless": [sn("escala_zero", "Escala até zero"), sn("branching", "Branches de banco"), tx("compativel", "Compatibilidade")],
-    nosql: [tx("modelo_dados", "Modelo de dados"), sn("serverless", "Opção serverless"), sn("multi_regiao", "Multirregião")],
-    cache: [tx("motores", "Motores"), sn("serverless", "Opção serverless"), sn("api_http", "API por HTTP")],
-    analitico: [tx("cobranca_modelo", "Como cobra a consulta"), sn("serverless", "Serverless"), tx("formatos", "Formatos abertos")],
-    cdn: [sn("waf_incluso", "WAF no mesmo produto"), sn("pops_br", "Pontos de presença no Brasil"), sn("computacao_borda", "Código na borda")],
-    dns: [sn("anycast", "Anycast"), sn("dnssec", "DNSSEC")],
-    balanceador: [tx("camadas", "Camadas"), sn("global", "Global")],
-    vpn: [tx("tipo", "Tipo"), sn("site_a_site", "Site a site")],
-    filas: [sn("fifo", "Ordem garantida (FIFO)"), sn("dlq", "Fila de mensagens mortas"), tx("protocolo", "Protocolo")],
-    eventos: [sn("kafka", "API compatível com Kafka"), tx("retencao", "Retenção")],
-    workflows: [tx("definicao", "Como se define o fluxo"), sn("duravel", "Execução durável")],
-    "gateway-api": [tx("protocolos", "Protocolos"), sn("limite_taxa", "Limite de taxa")],
-    iam: [sn("sso", "SSO"), sn("oidc", "OIDC")],
-    segredos: [sn("hsm", "HSM"), sn("rotacao", "Rotação automática")],
-    waf: [sn("ddos_incluso", "DDoS incluso"), sn("bots", "Gestão de bots")],
-    "logs-metricas": [sn("opentelemetry", "OpenTelemetry"), tx("retencao", "Retenção padrão")],
-    rastreamento: [sn("opentelemetry", "OpenTelemetry")],
-    "modelos-api": [tx("modelos", "Famílias de modelos"), sn("regioes_br", "Região no Brasil")],
-    gpu: [tx("gpus", "GPUs"), tx("cobranca_min", "Menor fração cobrada")],
-    vetorial: [sn("serverless", "Serverless"), tx("indices", "Índices")],
-    "ci-cd": [tx("runners", "Onde roda"), sn("yaml", "Definição em YAML")],
-    registro: [sn("oci", "Formato OCI"), sn("varredura", "Varredura de vulnerabilidades")],
-    iac: [tx("linguagem", "Linguagem"), sn("estado_gerenciado", "Estado gerenciado")],
-    /* Tools (Landscape) */
     "execucao-duravel": [tx("linguagens", "Linguagens"), tx("armazenamento", "Onde guarda o estado"), tx("implantacao", "Implantação"), sn("versionamento", "Versionamento de fluxos"), sn("compensacao", "Compensação (sagas)")],
     "web-scraping": [tx("linguagens", "Linguagens"), sn("renderiza_js", "Renderiza JavaScript"), tx("saida", "Formatos de saída"), tx("implantacao", "Implantação")],
   };
-  /* As chaves de uma subcategoria: as dela e, depois, as comuns (sem repetir) */
+  /* Cloud (pedido de 19/11, 15h17): a matriz de capacidades de cada subcategoria, numa tabela só e nesta ordem (é a
+     ordem das linhas da comparação). Só capacidade e característica: nada de preço. Depois das próprias, as comuns. */
+  const COMUNS_CLOUD = [
+    sn("regioes_br", "Região no Brasil (São Paulo)"), tx("sla", "SLA publicado"), ls("certificacoes", "Certificações citadas"),
+    sn("terraform", "Terraform (provider oficial)"), tx("limites", "Limites que costumam pegar"), tx("on_premises", "Roda fora da nuvem do provedor"),
+  ];
+  const CAPACIDADES = {
+    vms: [sn("arm", "Máquinas ARM"), sn("gpu", "Opção com GPU"), nu("vcpu_max", "vCPUs por máquina (máximo)", "vCPU"), tx("memoria_max", "Memória por máquina (máximo)"),
+      sn("bare_metal", "Bare metal"), sn("spot", "Máquinas interruptíveis (spot)"), sn("autoescala", "Grupo com escala automática"), tx("cobranca_min", "Menor fração cobrada")],
+    conteineres: [sn("escala_zero", "Escala até zero"), tx("tempo_max", "Tempo máximo por requisição"), nu("vcpu_max", "vCPUs por instância (máximo)", "vCPU"), tx("memoria_max", "Memória por instância (máximo)"),
+      sn("gpu", "GPU"), sn("jobs", "Jobs que rodam até terminar"), tx("concorrencia", "Requisições simultâneas por instância"), tx("cobranca_min", "Menor fração cobrada")],
+    kubernetes: [sn("autopilot", "Modo sem gerenciar nós"), nu("nos_max", "Nós por cluster (máximo)", "nós"), sn("multi_zona", "Plano de controle em várias zonas"), sn("windows", "Nós Windows"),
+      sn("arm", "Nós ARM"), sn("gpu", "Nós com GPU"), sn("atualizacao_auto", "Atualização automática"), tx("suporte_versao", "Suporte de cada versão")],
+    funcoes: [tx("tempo_max", "Tempo máximo de execução"), nu("memoria_max", "Memória máxima", "MB"), ls("linguagens", "Linguagens"), tx("cold_start", "Partida a frio"),
+      tx("concorrencia", "Concorrência"), ls("gatilhos", "Gatilhos"), sn("conteiner", "Imagem de contêiner própria"), sn("gpu", "GPU"), sn("borda", "Roda na borda")],
+    paas: [ls("linguagens", "Linguagens"), sn("conteiner", "Publica imagem de contêiner"), sn("git_deploy", "Deploy pelo Git"), sn("escala_zero", "Escala até zero"),
+      sn("autoescala", "Escala automática"), sn("dominio_proprio", "Domínio próprio com TLS"), sn("workers", "Processos em segundo plano"), sn("cron", "Tarefas agendadas")],
+    objetos: [sn("api_s3", "API compatível com S3"), ls("classes", "Classes de armazenamento"), sn("versionamento", "Versionamento"), sn("replicacao", "Replicação entre regiões"),
+      sn("worm", "Bloqueio de objeto (WORM)"), tx("consistencia", "Consistência"), tx("tamanho_max", "Tamanho máximo de objeto"), sn("eventos", "Eventos e notificações"), sn("cmk", "Criptografia com chave do cliente")],
+    blocos: [ls("tipos", "Tipos de disco"), tx("tamanho_max", "Tamanho máximo do volume"), tx("iops_max", "IOPS por volume (máximo)"), sn("snapshots", "Snapshots"),
+      sn("multi_attach", "Anexar em várias máquinas"), sn("redimensionar", "Aumentar sem desligar"), sn("criptografia", "Criptografia em repouso"), sn("replicacao", "Cópia para outra região")],
+    arquivos: [ls("protocolos", "Protocolos"), tx("tamanho_max", "Tamanho máximo"), sn("escala_auto", "Cresce sozinho"), ls("desempenho", "Níveis de desempenho"),
+      sn("snapshots", "Snapshots ou backup"), sn("multi_zona", "Redundância entre zonas"), sn("replicacao", "Replicação entre regiões"), sn("criptografia", "Criptografia em repouso")],
+    relacional: [ls("motores", "Motores"), sn("replica_leitura", "Réplica de leitura"), sn("multi_regiao", "Multirregião"), sn("serverless", "Serverless ou escala a zero"),
+      sn("pitr", "Restauração para um ponto no tempo"), tx("tamanho_max", "Tamanho máximo"), sn("pooler", "Pool de conexões gerenciado"), tx("extensoes", "Extensões")],
+    "postgres-serverless": [sn("escala_zero", "Escala até zero"), sn("branching", "Branches de banco"), tx("compativel", "Compatibilidade"), sn("pitr", "Restauração para um ponto no tempo"),
+      sn("pooler", "Pool de conexões gerenciado"), sn("replica_leitura", "Réplica de leitura"), tx("tamanho_max", "Tamanho máximo"), tx("extensoes", "Extensões")],
+    nosql: [ls("modelo_dados", "Modelo de dados"), sn("serverless", "Opção serverless"), sn("multi_regiao", "Multirregião"), tx("consistencia", "Consistência"),
+      tx("item_max", "Tamanho máximo de item"), sn("transacoes", "Transações"), sn("ttl", "Expiração automática (TTL)"), sn("streams", "Fluxo de mudanças")],
+    cache: [ls("motores", "Motores"), sn("serverless", "Opção serverless"), sn("api_http", "API por HTTP"), sn("cluster", "Modo cluster"),
+      sn("replicacao", "Réplicas com failover"), sn("persistencia", "Persistência em disco"), sn("multi_regiao", "Replicação entre regiões"), tx("memoria_max", "Tamanho máximo")],
+    analitico: [sn("serverless", "Serverless"), ls("formatos", "Formatos abertos"), sn("separacao", "Computação separada do armazenamento"), sn("streaming", "Ingestão em fluxo"),
+      sn("federado", "Consulta dados externos"), sn("ml", "ML dentro do banco"), sn("compartilhamento", "Compartilhamento de dados"), tx("sql", "SQL")],
+    cdn: [sn("pops_br", "Pontos de presença no Brasil"), sn("computacao_borda", "Código na borda"), sn("waf_incluso", "WAF no mesmo produto"), sn("http3", "HTTP/3"),
+      sn("shield", "Camada de proteção da origem"), sn("tls_gerenciado", "Certificado TLS gerenciado"), sn("websockets", "WebSockets"), sn("purga_tag", "Purga por etiqueta")],
+    dns: [sn("anycast", "Anycast"), sn("dnssec", "DNSSEC"), ls("roteamento", "Roteamento"), sn("saude", "Checagem de saúde"),
+      sn("privado", "Zonas privadas"), sn("alias", "Registro no topo da zona apontando para nome"), ls("registros", "Tipos de registro"), sn("importar", "Importa arquivo de zona")],
+    balanceador: [ls("camadas", "Camadas"), sn("global", "Global"), sn("tls", "Termina TLS"), sn("http3", "HTTP/3"),
+      sn("websockets", "WebSockets"), sn("saude", "Checagem de saúde"), sn("sessao", "Sessão fixa"), sn("waf_integrado", "WAF integrado")],
+    vpn: [tx("tipo", "Tipo"), sn("site_a_site", "Site a site"), sn("ponto_a_site", "Ponto a site"), sn("bgp", "Rotas por BGP"),
+      sn("ha", "Túneis redundantes"), tx("banda", "Banda por túnel"), sn("dedicada", "Conexão dedicada"), sn("sem_porta", "Sem porta de entrada aberta")],
+    filas: [sn("fifo", "Ordem garantida (FIFO)"), sn("exatamente_uma", "Exatamente uma vez"), tx("retencao", "Retenção máxima"), tx("msg_max", "Tamanho máximo de mensagem"),
+      sn("dlq", "Fila de mensagens mortas"), sn("atraso", "Entrega com atraso"), ls("protocolo", "Protocolo"), tx("visibilidade", "Tempo de visibilidade máximo")],
+    eventos: [sn("kafka", "API compatível com Kafka"), tx("retencao", "Retenção máxima"), tx("msg_max", "Tamanho máximo de evento"), sn("ordem", "Ordem por chave ou partição"),
+      sn("replay", "Reler eventos"), sn("filtro", "Filtro por conteúdo"), sn("esquema", "Registro de esquemas"), sn("exatamente_uma", "Exatamente uma vez")],
+    workflows: [tx("definicao", "Como se define o fluxo"), sn("duravel", "Execução durável"), tx("duracao_max", "Duração máxima de uma execução"), sn("espera", "Espera por evento ou callback"),
+      sn("paralelo", "Ramos em paralelo"), sn("retentativa", "Nova tentativa por passo"), sn("visual", "Editor visual"), tx("limite_historico", "Limite de passos ou histórico")],
+    "gateway-api": [ls("protocolos", "Protocolos"), sn("limite_taxa", "Limite de taxa"), ls("auth", "Autenticação"), sn("cache", "Cache de respostas"),
+      sn("transformacao", "Transformação de requisição"), sn("portal", "Portal do desenvolvedor"), sn("openapi", "Importa OpenAPI"), tx("timeout", "Tempo máximo de integração")],
+    iam: [sn("sso", "SSO"), sn("oidc", "OIDC"), sn("saml", "SAML"), sn("mfa", "MFA"),
+      sn("scim", "Provisionamento SCIM"), tx("politicas", "Modelo de política"), sn("carga", "Identidade para cargas de trabalho"), sn("usuarios_finais", "Login de usuários finais")],
+    segredos: [sn("hsm", "HSM"), sn("rotacao", "Rotação automática"), sn("versoes", "Versões"), tx("segredo_max", "Tamanho máximo do segredo"),
+      sn("replicacao", "Réplica entre regiões"), tx("fips", "Validação FIPS 140"), sn("chaves", "Chaves de criptografia"), sn("certificados", "Certificados")],
+    waf: [sn("ddos_incluso", "DDoS incluso"), sn("bots", "Gestão de bots"), sn("regras_gerenciadas", "Regras gerenciadas"), sn("owasp", "Regras para o OWASP Top 10"),
+      sn("limite_taxa", "Limite de taxa"), sn("regras_proprias", "Regras próprias"), sn("geo", "Bloqueio por país"), sn("api", "Proteção de API")],
+    "logs-metricas": [sn("opentelemetry", "OpenTelemetry"), tx("retencao", "Retenção padrão"), tx("consulta", "Linguagem de consulta"), sn("alertas", "Alertas"),
+      sn("paineis", "Painéis"), sn("prometheus", "Métricas Prometheus"), sn("exportar", "Exporta para armazenamento"), sn("metricas_proprias", "Métricas próprias")],
+    rastreamento: [sn("opentelemetry", "OpenTelemetry"), sn("amostragem", "Amostragem configurável"), tx("retencao", "Retenção"), sn("mapa", "Mapa de serviços"),
+      ls("linguagens", "SDKs"), sn("ligacao_logs", "Ligação com logs"), sn("alertas", "Alertas"), sn("w3c", "W3C Trace Context")],
+    "modelos-api": [ls("modelos", "Famílias de modelos"), sn("terceiros", "Modelos de terceiros"), sn("proprios", "Modelos do próprio provedor"), sn("ajuste_fino", "Ajuste fino"),
+      sn("embeddings", "Embeddings"), sn("guardrails", "Guardrails"), sn("agentes", "Agentes"), sn("rag", "Base de conhecimento (RAG)")],
+    gpu: [ls("gpus", "Aceleradores"), sn("acelerador_proprio", "Acelerador próprio do provedor"), sn("treino_distribuido", "Treino distribuído"), sn("notebooks", "Notebooks gerenciados"),
+      sn("inferencia", "Publicação para inferência"), sn("spot", "Capacidade interruptível"), sn("pipelines", "Pipelines de ML"), tx("cobranca_min", "Menor fração cobrada")],
+    vetorial: [sn("serverless", "Serverless"), ls("indices", "Índices"), tx("dimensoes_max", "Dimensões (máximo)"), ls("metricas", "Métricas de distância"),
+      sn("filtro", "Filtro por metadados"), sn("hibrida", "Busca híbrida"), tx("vetores_max", "Vetores por índice (máximo)"), sn("embeddings", "Gera embeddings sozinho")],
+    "ci-cd": [tx("runners", "Onde roda"), sn("yaml", "Definição em YAML"), sn("conteiner", "Build em contêiner"), sn("cache", "Cache entre builds"),
+      sn("segredos", "Segredos"), sn("paralelo", "Builds em paralelo"), tx("tempo_max", "Duração máxima de build"), ls("gatilhos", "Gatilhos")],
+    registro: [sn("oci", "Formato OCI"), sn("varredura", "Varredura de vulnerabilidades"), sn("replicacao", "Replicação entre regiões"), sn("imutavel", "Tags imutáveis"),
+      sn("ciclo", "Regras de ciclo de vida"), ls("formatos", "Outros formatos"), sn("assinatura", "Assinatura de imagens"), sn("privado", "Acesso por rede privada")],
+    iac: [ls("linguagem", "Linguagem"), sn("estado_gerenciado", "Estado gerenciado"), sn("previa", "Prévia das mudanças"), sn("deriva", "Detecção de desvio"),
+      sn("modulos", "Módulos reutilizáveis"), sn("rollback", "Reverte em falha"), sn("multi_conta", "Várias contas ou projetos"), sn("importar", "Importa recursos existentes")],
+  };
+  const ehCloud = (sub) => Object.prototype.hasOwnProperty.call(CAPACIDADES, sub);
+  /* As chaves de uma subcategoria: as dela e, depois, as comuns (sem repetir). Cloud usa a matriz; Tools, a tabela de antes. */
   function chavesDe(sub) {
+    if (ehCloud(sub)) {
+      const vistas = new Set(CAPACIDADES[sub].map((a) => a.k));
+      return CAPACIDADES[sub].concat(COMUNS_CLOUD.filter((c) => !vistas.has(c.k)));
+    }
     const proprias = ATRIBUTOS[sub] || [];
     const vistas = new Set(proprias.map((a) => a.k));
     return proprias.concat(COMUNS.filter((c) => !vistas.has(c.k)).map((c) => ({ ...c, tipo: "texto" })));
   }
   /* Registro de característica: aceita o registro inteiro ou só o valor; valor vazio é null */
+  const vazio = (v) => v == null || (typeof v === "string" && !v.trim()) || (Array.isArray(v) && !v.length);
   function carac(x) {
     if (x == null) return null;
     if (typeof x === "object" && !Array.isArray(x)) {
       const v = x.valor;
-      if (v == null || (typeof v === "string" && !v.trim())) return null;
+      if (vazio(v)) return null;
       return { valor: typeof v === "string" ? v.trim() : v, fonte: typeof x.fonte === "string" ? x.fonte : "", em: x.em || null, por: POR.includes(x.por) ? x.por : "semente" };
     }
-    if (typeof x === "string" && !x.trim()) return null;
+    if (vazio(x)) return null;
     return { valor: typeof x === "string" ? x.trim() : x, fonte: "", em: null, por: "semente" };
   }
-  /* Texto para a tela: sim, não, parcial ou o texto; sem valor, "não conferido" (nunca "não tem") */
-  function textoCarac(x) {
+  const numBR = (n) => { const s = String(n).split("."); return s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (s[1] ? "," + s[1] : ""); };
+  /* Texto para a tela: sim, não, parcial, a lista separada por vírgula, o número com a unidade ou o texto; sem valor,
+     "não conferido" (nunca "não tem"). `def` é a linha da tabela (para a unidade). */
+  function textoCarac(x, def) {
     const c = carac(x);
     if (!c) return "não conferido";
     const v = c.valor;
     if (v === true || v === "sim") return "sim";
     if (v === false || v === "nao" || v === "não") return "não";
     if (v === "parcial") return "parcial";
+    if (Array.isArray(v)) return v.join(", ");
+    if (typeof v === "number") return numBR(v) + (def && def.u ? " " + def.u : "");
     return String(v);
   }
-  /* Um registro vindo do Admin, da curadoria ou do dossiê: { carac } ou { erro } */
-  function validarCarac(x, { por = "admin", agora = Date.now(), tipo = "texto" } = {}) {
+  /* Um registro vindo do Admin, da semente, da curadoria ou do dossiê: { carac } ou { erro }.
+     exigeFonte: o valor gravado pelo Admin precisa de fonte https (Cloud). */
+  function validarCarac(x, { por = "admin", agora = Date.now(), tipo = "texto", exigeFonte = false } = {}) {
     const bruto = x && typeof x === "object" && !Array.isArray(x) ? x : { valor: x };
     let v = bruto.valor;
-    if (v == null || v === "") return { carac: null };
+    if (vazio(v)) return { carac: null };
     if (typeof v === "boolean") v = v ? "sim" : "nao";
-    if (typeof v !== "string" && typeof v !== "number") return { erro: "Valor de característica inválido." };
-    v = limpo(v, 200);
-    if (!v) return { carac: null };
-    if (tipo === "sn" && !["sim", "nao"].includes(v)) return { erro: "Use sim ou não." };
-    if (tipo === "snp" && !["sim", "nao", "parcial"].includes(v)) return { erro: "Use sim, não ou parcial." };
-    if (temPreco(v)) return { erro: "Preço em número não entra nas características." };
+    if (tipo === "lista") {
+      const itens = (Array.isArray(v) ? v : String(v).split(/[,;\n]/)).map((i) => limpo(i, 80)).filter(Boolean);
+      if (itens.some((i) => typeof i !== "string")) return { erro: "Valor de característica inválido." };
+      if (itens.length > 24) return { erro: "Até 24 itens." };
+      if (!itens.length) return { carac: null };
+      v = [...new Set(itens)];
+      if (v.some(temPreco)) return { erro: "Preço em número não entra nas características." };
+    } else if (tipo === "num") {
+      const n = typeof v === "number" ? v : Number(String(v).trim().replace(/\.(?=\d{3}\b)/g, "").replace(",", "."));
+      if (!Number.isFinite(n) || n < 0) return { erro: "Use um número." };
+      v = n;
+    } else {
+      if (typeof v !== "string" && typeof v !== "number") return { erro: "Valor de característica inválido." };
+      v = limpo(v, 200);
+      if (!v) return { carac: null };
+      if (tipo === "sn" && v === "não") v = "nao";
+      if (tipo === "sn" && !["sim", "nao"].includes(v)) return { erro: "Use sim ou não." };
+      if (tipo === "snp" && !["sim", "nao", "parcial"].includes(v)) return { erro: "Use sim, não ou parcial." };
+      if (temPreco(v)) return { erro: "Preço em número não entra nas características." };
+    }
     const fonte = urlOk(bruto.fonte);
     if (fonte === null) return { erro: "A fonte precisa ser um endereço https." };
     const em = bruto.em ? isoOk(bruto.em) : new Date(agora).toISOString();
     if (!em) return { erro: "Data da característica inválida." };
     const p = bruto.por && POR.includes(bruto.por) ? bruto.por : por;
+    if (exigeFonte && p === "admin" && !fonte) return { erro: "Informe a fonte (https) de onde veio o valor." };
     return { carac: { valor: v, fonte, em, por: p } };
   }
   /* Objeto de atributos de uma subcategoria: só as chaves da tabela; vazio sai */
@@ -153,6 +218,17 @@
       if (r.carac) out[k] = r.carac;
     }
     return { atributos: out };
+  }
+  /* Só as chaves que a tabela de hoje conhece (doc antigo pode ter chave que saiu, como saida_gratis) */
+  const soConhecidas = (obj, sub) => { const ks = new Set(chavesDe(sub).map((a) => a.k)); return Object.fromEntries(Object.entries(obj && typeof obj === "object" ? obj : {}).filter(([k]) => ks.has(k))); };
+  /* Quantas capacidades têm fonte e a data mais recente entre elas ("Conferido em") */
+  function conferidoDe(s) {
+    let n = 0, em = "";
+    for (const a of chavesDe(s && s.subcategoria)) {
+      const c = carac(s && s.atributos && s.atributos[a.k]);
+      if (c && c.fonte) { n++; if (c.em && String(c.em) > em) em = String(c.em); }
+    }
+    return { n, total: chavesDe(s && s.subcategoria).length, em: em || null };
   }
 
   /* ---------- provedores e categorias ---------- */
@@ -217,7 +293,8 @@
 
   /* ---------- serviço ---------- */
   const idServico = (provedor, nome) => provedor + "--" + slug(nome);
-  const LINKS = ["produto", "docs", "precos", "status"];
+  /* Sem link de preços (pedido de 19/11, 15h17): `links.precos` de doc antigo é aceito na leitura e não volta a ser gravado */
+  const LINKS = ["produto", "docs", "status"];
   /* Corpo do Admin (ou da semente) -> { servico } ou { erro }. ctx: { provedores, categorias, agora, por } */
   function validarServico(b, ctx = {}) {
     if (!b || typeof b !== "object" || Array.isArray(b)) return { erro: "corpo" };
@@ -233,20 +310,15 @@
     const resumo = limpo(b.resumo, 320), cobranca = limpo(b.cobranca, 320), gratis = limpo(b.gratis, 200);
     const destaques = (Array.isArray(b.destaques) ? b.destaques : []).map((d) => limpo(d, 140)).filter(Boolean);
     if (destaques.length > 4) return { erro: "Até 4 destaques." };
-    for (const t of [nome, resumo, cobranca, gratis, ...destaques, ...apelidos]) if (temPreco(t)) return { erro: "Preço em número não entra: use o link de preços oficiais." };
+    for (const t of [nome, resumo, cobranca, gratis, ...destaques, ...apelidos]) if (temPreco(t)) return { erro: "Valor em dinheiro não entra no catálogo." };
     const links = {};
     for (const k of LINKS) { const u = urlOk(b.links && b.links[k]); if (u === null) return { erro: `O link de ${k} precisa ser https.` }; links[k] = u; }
     const fontes = (Array.isArray(b.fontes) ? b.fontes : []).map((u) => urlOk(u));
     if (fontes.some((u) => u === null)) return { erro: "As fontes precisam ser endereços https." };
     if (fontes.length > 12) return { erro: "Até 12 fontes." };
-    const at = validarAtributos(b.atributos, b.subcategoria, { por: ctx.por || "admin", agora: ctx.agora });
+    const at = validarAtributos(b.atributos, b.subcategoria, { por: ctx.por || "admin", agora: ctx.agora, exigeFonte: true });
     if (at.erro) return { erro: at.erro };
-    let preco_ref = { texto: "", fonte: "", em: null };
-    if (b.preco_ref && (b.preco_ref.texto || b.preco_ref.fonte)) {
-      const texto = limpo(b.preco_ref.texto, 160), fonte = urlOk(b.preco_ref.fonte), em = isoOk(b.preco_ref.em);
-      if (!texto || !fonte || !em) return { erro: "Preço de referência precisa de texto, fonte https e data." };
-      preco_ref = { texto, fonte, em };
-    }
+    /* preco_ref (de docs antigos): aceito na leitura, não pedido e não gravado */
     const roteiro = [];
     for (const r of Array.isArray(b.roteiro) ? b.roteiro.slice(0, 10) : []) {
       const titulo = limpo(r && r.titulo, 160), fonte = urlOk(r && r.fonte);
@@ -263,7 +335,7 @@
     const icone = b.icone ? urlIcone(b.icone) : "";
     if (b.icone && !icone) return { erro: "O ícone precisa ser um endereço http(s)." };
     return { servico: { provedor: prov.id, nome, apelidos: [...new Set(apelidos)], categoria: cat.id, subcategoria: b.subcategoria, resumo, cobranca, gratis, destaques,
-      atributos: at.atributos, links, fontes: [...new Set(fontes.filter(Boolean))], preco_ref, roteiro, conferido, uso: uso.length ? uso : ["nuvem"], ...(uso_nota ? { uso_nota } : {}), ...(icone ? { icone } : {}) } };
+      atributos: at.atributos, links, fontes: [...new Set(fontes.filter(Boolean))], roteiro, conferido, uso: uso.length ? uso : ["nuvem"], ...(uso_nota ? { uso_nota } : {}), ...(icone ? { icone } : {}) } };
   }
 
   /* ---------- grade: filtros e agrupamento ---------- */
@@ -440,7 +512,6 @@
       add(linha("resumo", "O que é", l.map((s) => s.resumo || "")));
       add(linha("cobranca", "Como cobra", l.map((s) => s.cobranca || "")));
       add(linha("gratis", "Plano grátis", l.map((s) => s.gratis || "")));
-      add(linha("preco_ref", "Preço de referência", l.map((s) => (s.preco_ref && s.preco_ref.texto ? s.preco_ref.texto + " (" + dataBR(s.preco_ref.em) + ")" : ""))));
     } else {
       add(linha("descricao", "O que é", l.map((s) => (s.gh && s.gh.descricao) || s.descricao || "")));
       add(linha("modelo", "Modelo", l.map((s) => (raiz.Landscape && raiz.Landscape.modeloDe(s) ? raiz.Landscape.modeloDe(s).rotulo : ""))));
@@ -452,14 +523,28 @@
     }
     /* opções de uso (Landscape.resumoDeUso: "Só na nuvem", "Nuvem ou self-hosted"...) */
     add(linha("uso", "Opções de uso", l.map((s) => (raiz.Landscape ? raiz.Landscape.resumoDeUso(s) : ""))));
-    for (const a of chavesDe(sub)) add(linha("at:" + a.k, a.r, l.map((s) => { const c = carac(s.atributos && s.atributos[a.k]); return c ? textoCarac(c) : ""; }), { carac: true }));
+    /* Cloud: a matriz da subcategoria, na ordem da tabela. Linha em que ninguém tem valor vem com vazia: true (a tela
+       esconde atrás de "Mostrar não conferidas"); cada célula leva a fonte e a data, quando tem. */
+    let resumoCaps = null;
+    if (aba === "cloud") {
+      let n = 0, total = 0;
+      for (const a of chavesDe(sub)) {
+        const cs = l.map((s) => carac(s.atributos && s.atributos[a.k]));
+        total += cs.length; n += cs.filter((c) => c && c.fonte).length;
+        const cel = cs.map((c) => (c ? textoCarac(c, a) : ""));
+        const cheias = cel.filter(Boolean).length;
+        linhas.push({ k: "at:" + a.k, rotulo: a.r, celulas: cel, diferente: cheias > 0 && new Set(cel.map(normal)).size > 1, carac: true, vazia: !cheias,
+          fontes: cs.map((c) => (c && c.fonte ? { fonte: c.fonte, em: c.em || null } : null)) });
+      }
+      resumoCaps = { conferidas: n, total };
+    } else for (const a of chavesDe(sub)) add(linha("at:" + a.k, a.r, l.map((s) => { const c = carac(s.atributos && s.atributos[a.k]); return c ? textoCarac(c, a) : ""; }), { carac: true }));
     if (aba === "cloud") add(linha("destaques", "Destaques", l.map((s) => (s.destaques || []).join("; "))));
     if (ctx.novidades) add(linha("novidade", "Última novidade", l.map((s) => { const n = (ctx.novidades[s.id] || [])[0]; return n ? n.titulo + (n.publicado ? " (" + dataBR(n.publicado) + ")" : "") : ""; })));
     if (ctx.roteiro) add(linha("roteiro", "O que vem por aí", l.map((s) => (ctx.roteiro[s.id] || []).slice(0, 3).map((r) => r.titulo + (r.quando ? " (" + r.quando + ")" : "")).join("; "))));
-    if (aba === "cloud") add(linha("conferido", "Conferido", l.map((s) => (s.conferido ? "em " + dataBR(s.conferido) : "ainda não conferido"))));
+    if (aba === "cloud") add(linha("conferido", "Conferido", l.map((s) => { const c = conferidoDe(s); return c.em ? "em " + dataBR(c.em) : "ainda não conferido"; })));
     /* links ficam à parte (a tela mostra como botões; o Markdown, como lista de fontes) */
-    const links = l.map((s) => (aba === "cloud" ? { produto: (s.links || {}).produto || "", docs: (s.links || {}).docs || "", precos: (s.links || {}).precos || "", status: (s.links || {}).status || "" } : { repositorio: s.repo ? "https://github.com/" + s.repo : "", site: s.site || (s.gh && s.gh.site) || "" }));
-    return { aba, subcategoria: sub, colunas, linhas, links };
+    const links = l.map((s) => (aba === "cloud" ? { produto: (s.links || {}).produto || "", docs: (s.links || {}).docs || "", status: (s.links || {}).status || "" } : { repositorio: s.repo ? "https://github.com/" + s.repo : "", site: s.site || (s.gh && s.gh.site) || "" }));
+    return { aba, subcategoria: sub, colunas, linhas, links, ...(resumoCaps ? { resumoCaps } : {}) };
   }
   /* Markdown para um ADR: seção "Opções consideradas" (tabela) e as fontes com data. Só fatos e fontes. */
   const celulaMd = (t) => String(t == null ? "" : t).replace(/\|/g, "\\|").replace(/\s+/g, " ").trim() || "–";
@@ -469,11 +554,14 @@
     const out = ["## Opções consideradas", ""];
     if (titulo) out.push(titulo, "");
     out.push("| | " + nomes.map(celulaMd).join(" | ") + " |", "|---|" + nomes.map(() => "---").join("|") + "|");
-    for (const l of comp.linhas) out.push("| " + celulaMd(l.rotulo) + " | " + l.celulas.map(celulaMd).join(" | ") + " |");
-    out.push("", "Montado pelo Lookout (ArchLandscape) em " + dataBR(new Date(agora).toISOString()) + ", com o que estava guardado e o que as fontes oficiais publicavam. Sem avaliação: só fatos e fontes.", "", "### Fontes", "");
+    for (const l of comp.linhas) if (!l.vazia) out.push("| " + celulaMd(l.rotulo) + " | " + l.celulas.map((c) => celulaMd(c || (l.carac ? "não conferido" : ""))).join(" | ") + " |");
+    const rc = comp.resumoCaps;
+    out.push("", "Montado pelo Lookout (ArchLandscape) em " + dataBR(new Date(agora).toISOString()) + ", com o que estava guardado e o que as fontes oficiais publicavam" + (rc ? " (" + rc.conferidas + " de " + rc.total + " capacidades conferidas)" : "") + ". Sem avaliação: só fatos e fontes.", "", "### Fontes", "");
     const vistas = new Set();
-    const rot = { produto: "página do produto", docs: "documentação", precos: "preços oficiais", status: "status", repositorio: "repositório", site: "site" };
-    comp.links.forEach((lk, i) => { for (const [k, u] of Object.entries(lk || {})) if (u && !vistas.has(u)) { vistas.add(u); out.push(`- ${comp.colunas[i].nome}, ${rot[k] || k}: ${u} (consultado em ${dataBR(new Date(agora).toISOString())})`); } });
+    const rot = { produto: "página do produto", docs: "documentação", status: "status", repositorio: "repositório", site: "site" };
+    comp.links.forEach((lk, i) => { for (const [k, u] of Object.entries(lk || {})) if (u && rot[k] && !vistas.has(u)) { vistas.add(u); out.push(`- ${comp.colunas[i].nome}, ${rot[k]}: ${u} (consultado em ${dataBR(new Date(agora).toISOString())})`); } });
+    /* as fontes de cada capacidade, uma vez por endereço, com a data em que foi conferida */
+    for (const l of comp.linhas) (l.fontes || []).forEach((f, i) => { if (f && f.fonte && !vistas.has(f.fonte)) { vistas.add(f.fonte); out.push(`- ${comp.colunas[i].nome}, ${l.rotulo.toLowerCase()}: ${f.fonte}${f.em ? " (conferido em " + dataBR(f.em) + ")" : ""}`); } });
     for (const f of fontes || []) if (f && f.url && !vistas.has(f.url)) { vistas.add(f.url); out.push(`- ${celulaMd(f.titulo || f.url)}: ${f.url}${f.em ? " (" + dataBR(f.em) + ")" : ""}`); }
     return out.join("\n") + "\n";
   }
@@ -520,6 +608,38 @@
     return (Array.isArray(itens) ? itens : []).filter((i) => i && i.titulo && citaServico(serv, prov, i.titulo + " " + (i.tipo || ""), { noFeed: true }))
       .sort((a, b) => String(b.publicado || "").localeCompare(String(a.publicado || ""))).slice(0, max)
       .map((i) => { const a = anuncio(i); return { titulo: i.titulo, url: i.url, publicado: i.publicado || null, ...(i.tipo ? { tipo: i.tipo } : {}), ...(a ? { anuncio: a } : {}) }; });
+  }
+
+  /* Os cinco grandes do filtro "Só alternativas aos cinco grandes" (a regra continua sendo o tipo do provedor) */
+  const GRANDES = ["aws", "gcp", "azure", "oci", "cloudflare"];
+
+  /* ---------- roteiro da comparação profunda ----------
+     O texto que o site grava no pedido (campo `roteiro` do doc em arch-dossies) para a tarefa que escreve a análise.
+     servs: [{ id, nome, provedor }] (Cloud) ou [{ id, nome, repo }] (Tools). Sem preço, sem valor em dinheiro. */
+  function roteiroProfunda(servs, { aba = "cloud", provs = [], subNome = "", sub = "", contexto = "" } = {}) {
+    const l = Array.isArray(servs) ? servs : [];
+    const nomes = l.map((s) => {
+      if (aba === "cloud") { const p = provDe(provs, s.provedor); return `- ${s.nome} (${p ? p.nome : s.provedor}), id ${s.id}`; }
+      return `- ${s.nome || s.repo || s.id}${s.repo ? " (github.com/" + s.repo + ")" : ""}, id ${s.id}`;
+    });
+    const caps = chavesDe(sub).map((a) => a.r);
+    const out = [
+      `Comparação profunda de ${aba === "cloud" ? "serviços de nuvem" : "tecnologias"}${subNome ? " na subcategoria " + subNome : ""}, para um ADR.`, "",
+      "Opções:", ...nomes, "",
+      "Para cada opção, com base na documentação oficial e citando a fonte (URL e data em que foi lida):",
+      "1. Capacidades: " + (caps.length ? caps.join("; ") : "as que pesam na decisão") + ". Quando a documentação dá número e unidade, traga o número.",
+      "2. Limites e cotas que costumam pegar em produção, dizendo quais dá para aumentar por pedido.",
+      "3. Maturidade: desde quando existe, o que está em disponibilidade geral e o que ainda está em preview ou beta.",
+      "4. Dependência do fornecedor: APIs e formatos abertos ou próprios, o que muda para sair e para onde dá para ir.",
+      "5. Operação: o que fica com o time (atualização, backup, escala, observabilidade, incidentes) e o que o provedor assume.",
+      "6. Encaixe por cenário: em que situação cada opção encaixa e em qual não encaixa, com o motivo.",
+      "",
+      "Não inclua preço, custo estimado nem qualquer valor em dinheiro. Não eleja vencedora: descreva os fatos e as consequências.",
+      "Escreva em português do Brasil, em Markdown, com uma tabela lado a lado das capacidades e uma seção por opção.",
+    ];
+    const ctx = limpo(contexto, CONTEXTO_MAX);
+    if (ctx) out.push("", "Contexto da decisão: " + ctx);
+    return out.join("\n");
   }
 
   /* ---------- comparação profunda (collection arch-dossies) ----------
@@ -576,6 +696,7 @@
   }
 
   raiz.Arch = { DIA, MAX_COMPARAR, CONTEXTO_MAX, VALIDADE_DIAS, MARKDOWN_MAX, ID_SERV, ID_PROV, ID_CAT, ID_DOSSIE, POR, ABAS, MOTIVOS, COMUNS, ATRIBUTOS, LINKS,
+    COMUNS_CLOUD, CAPACIDADES, ehCloud, soConhecidas, conferidoDe, roteiroProfunda, GRANDES,
     semAcento, slug, urlOk, isoOk, temPreco, temPalavra, chavesDe, carac, textoCarac, validarCarac, validarAtributos, validarProvedores, validarCategorias,
     nomeSub, catDaSub, idServico, validarServico, provDe, filtrarCloud, agrupar, equivalentes, podeComparar, marcavel, conjunto,
     FILTROS_VAZIOS, lerFiltros, escreverFiltros, lerHash, escreverHash, linha, dataBR, ultimaVersao, ritmo, textoRitmo, montarComparacao, markdownAdr,

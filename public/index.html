@@ -2206,6 +2206,19 @@ html.tech-ls .barra-linha { display: none; }
 .ac-copiado textarea { width: 100%; font: 12px/1.4 var(--font-mono); }
 .ac-json { font: 12px/1.4 var(--font-mono); }
 .ac-f-at-l { display: grid; gap: 4px; }
+/* capacidades (pedido de 19/11, 15h17): a fonte de cada célula, discreta, embaixo do valor */
+.ac-fonte { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted-foreground); }
+.ac-fonte .ac-link { color: var(--muted-foreground); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--muted-foreground) 45%, transparent); text-underline-offset: 2px; }
+.ac-fonte .ac-link:hover, .ac-fonte .ac-link:focus-visible { color: var(--primary); }
+.ac-caps dd { display: grid; gap: 0; }
+.ac-resumo-caps { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 4px 0 10px; }
+.ac-resumo-caps p { margin: 0; }
+.ac-resumo-caps .chip { min-height: 36px; }
+.ac-tab tr.vazia th, .ac-tab tr.vazia td { opacity: .75; }
+.ac-f-num { display: flex; align-items: center; gap: 8px; } .ac-f-num .dd-input { flex: 1; min-width: 0; } .ac-f-un { color: var(--muted-foreground); font-size: 13px; }
+.ac-roteiro-caixa { border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 8px 12px; margin: 8px 0; }
+.ac-roteiro-caixa summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+.ac-roteiro { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.5 var(--font-mono); margin: 8px 0 0; }
 .ac-prof-lista li { display: grid; gap: 2px; }
 .wdg-ac li { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 /* modelo (pedido de 19/11): etiqueta com texto e cor pelo tom (Landscape.MODELOS); pago fica cheio, para não depender só

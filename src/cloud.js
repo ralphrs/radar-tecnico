@@ -15,7 +15,7 @@ import "../public/landscape.js";
 import "../public/arch.js";
 import { lerFeed } from "./coleta.js";
 import { sqlCitacoes, COLECOES_ITENS, COLECOES_FORUM, UA } from "./landscape.js";
-import { PROVEDORES, CATEGORIAS, SERVICOS } from "./cloud-semente.js";
+import { PROVEDORES, CATEGORIAS, SERVICOS, SEMENTE_EM } from "./cloud-semente.js";
 
 const A = globalThis.Arch;
 const L = globalThis.Landscape;
@@ -46,16 +46,42 @@ const gravarSistema = (env, id, data) => env.DB.prepare(
 ).bind(id, JSON.stringify(data)).run();
 
 // ---------- semente ----------
-// Uma vez, no primeiro cron depois do deploy. INSERT OR IGNORE: não passa por cima do que o Admin mudou; tirado não volta.
+// Primeira vez (sem a marca): INSERT OR IGNORE de tudo, no primeiro cron depois do deploy.
+// Semente nova (SEMENTE_EM diferente da marca): só as capacidades chegam aos docs que já existem, campo a campo, por
+// json_patch (patchSemente). Valor gravado pelo Admin (ou pela curadoria ou por um dossiê) fica; valor antigo da semente
+// que a nova não traz sai. Serviço que o Admin tirou não volta, e nenhum outro campo do doc muda.
+export function patchSemente(atual, novos) {
+  const at = atual && typeof atual === "object" && !Array.isArray(atual) ? atual : {};
+  const dela = (v) => !v || typeof v !== "object" || !v.por || v.por === "semente";
+  const p = {};
+  for (const [k, v] of Object.entries(novos || {})) if (dela(at[k])) p[k] = v;
+  for (const [k, v] of Object.entries(at)) if (!(k in (novos || {})) && dela(v)) p[k] = null;
+  return Object.keys(p).length ? { atributos: p } : null;
+}
 export async function semearCloud(env, agora = Date.now()) {
-  if (await lerDocD1(env, "_sistema", "cloud-semente")) return 0;
+  const marca = await lerDocD1(env, "_sistema", "cloud-semente");
+  if (marca && marca.versao === SEMENTE_EM) return 0;
   const quando = agoraIso(agora);
-  const ins = (c, id, data) => env.DB.prepare("INSERT OR IGNORE INTO docs (collection, id, data, coletado, atualizado) VALUES (?, ?, ?, '', ?)").bind(c, id, JSON.stringify(data), quando);
-  const ops = [ins("meta", "cloud-provedores", { provedores: PROVEDORES, atualizado: quando }), ins("meta", "cloud-categorias", { categorias: CATEGORIAS, atualizado: quando })];
-  for (const s of SERVICOS) ops.push(ins("cloud", s.id, s.doc));
+  if (!marca) {
+    const ins = (c, id, data) => env.DB.prepare("INSERT OR IGNORE INTO docs (collection, id, data, coletado, atualizado) VALUES (?, ?, ?, '', ?)").bind(c, id, JSON.stringify(data), quando);
+    const ops = [ins("meta", "cloud-provedores", { provedores: PROVEDORES, atualizado: quando }), ins("meta", "cloud-categorias", { categorias: CATEGORIAS, atualizado: quando })];
+    for (const s of SERVICOS) ops.push(ins("cloud", s.id, s.doc));
+    for (let i = 0; i < ops.length; i += 50) await env.DB.batch(ops.slice(i, i + 50));
+    await gravarSistema(env, "cloud-semente", { quando, versao: SEMENTE_EM, servicos: SERVICOS.length });
+    return SERVICOS.length;
+  }
+  const { results } = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = 'cloud'").all();
+  const atuais = new Map((results || []).map((r) => [r.id, parse(r.data)]));
+  const ops = [];
+  for (const s of SERVICOS) {
+    const d = atuais.get(s.id);
+    if (!d) continue; // tirado pelo Admin: não volta
+    const patch = patchSemente(d.atributos, s.doc.atributos);
+    if (patch) ops.push(env.DB.prepare("UPDATE docs SET data = json_patch(data, ?), atualizado = ? WHERE collection = 'cloud' AND id = ?").bind(JSON.stringify(patch), quando, s.id));
+  }
   for (let i = 0; i < ops.length; i += 50) await env.DB.batch(ops.slice(i, i + 50));
-  await gravarSistema(env, "cloud-semente", { quando, servicos: SERVICOS.length });
-  return SERVICOS.length;
+  await gravarSistema(env, "cloud-semente", { ...marca, quando, versao: SEMENTE_EM, anterior: marca.versao || marca.quando || null, atualizados: ops.length });
+  return ops.length;
 }
 
 // ---------- leitura ----------
@@ -309,6 +335,8 @@ export async function rotaAdminCloud(request, env, quem, alvo, id, deps, { agora
   // edição: o doc como está, com os campos que vieram por cima, validado inteiro; provedor e nome não mudam (são o id)
   const junto = { ...atual, ...b, provedor: atual.provedor, nome: b.nome !== undefined ? b.nome : atual.nome };
   if (b.atributos && typeof b.atributos === "object" && !Array.isArray(b.atributos)) junto.atributos = { ...(atual.atributos || {}), ...b.atributos };
+  // chave que saiu da tabela (doc antigo) não trava a edição
+  junto.atributos = A.soConhecidas(junto.atributos, junto.subcategoria);
   if (junto.atributos) for (const [k, x] of Object.entries(junto.atributos)) if (x == null || x === "" || (x && typeof x === "object" && (x.valor == null || x.valor === ""))) delete junto.atributos[k];
   const v = A.validarServico(junto, ctx);
   if (v.erro) return json({ erro: v.erro }, 400);

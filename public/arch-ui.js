@@ -8,7 +8,7 @@
  */
 var AC = {
   dados: null, erro: "", carregando: false, det: new Map(), detErro: new Map(), notas: new Map(), nov: new Map(),
-  sel: [], aviso: "", rolagem: 0, daGrade: false, filtros: null, cmp: new Map(), cmpErro: new Map(), novCmp: new Map(),
+  sel: [], aviso: "", rolagem: 0, mostrarNc: false, daGrade: false, filtros: null, cmp: new Map(), cmpErro: new Map(), novCmp: new Map(),
   prof: new Map(), profLista: null, profDoc: new Map(), rotTools: new Map(), copiado: "", aba: "rapida", folha: null, pedidos: new Set(),
 };
 const ARCH = () => window.Arch;
@@ -192,9 +192,9 @@ function telaGradeCloud(box, est) {
   const cat = selectLs("ac-cat", "Categoria", [["", "Todas as categorias"], ...catsCloud().map((c) => [c.id, c.nome])], f.cat, (v) => mudar({ cat: v }));
   const chipLiga = (id, on, txt, titulo, fn) => { const b = el("button", { class: "chip", type: "button", id, "aria-pressed": String(on), title: titulo || "" }, txt); b.addEventListener("click", () => fn(!on)); return b; };
   box.append(el("div", { class: "ls-ferr" }, busca, cat,
-    chipLiga("ac-alt", f.alt, "Só alternativas mais baratas", "Provedores do tipo alternativa: é o posicionamento usual deles, não uma comparação de preço feita aqui.", (v) => mudar({ alt: v }, "ac-alt")),
+    chipLiga("ac-alt", f.alt, "Só alternativas aos cinco grandes", "Provedores fora de AWS, Google Cloud, Azure, Oracle e Cloudflare", (v) => mudar({ alt: v }, "ac-alt")),
     chipLiga("ac-gratis", f.gratis, "Tem plano grátis", "", (v) => mudar({ gratis: v }, "ac-gratis"))));
-  if (f.alt) box.append(el("p", { class: "ls-aviso", id: "ac-alt-nota" }, "Alternativas mais baratas: é como esses provedores costumam se posicionar. O Lookout não compara preço aqui; confira sempre a página oficial."));
+  if (f.alt) box.append(el("p", { class: "ls-aviso", id: "ac-alt-nota" }, "Só provedores fora de AWS, Google Cloud, Azure, Oracle e Cloudflare."));
   const chips = el("div", { class: "chips ac-provs", role: "group", "aria-label": "Filtrar por provedor" });
   const baseSemProv = A.filtrarCloud(servs(), { ...f, provs: [] }, provs());
   for (const p of provs()) {
@@ -297,35 +297,44 @@ function telaDetalheCloud(box, id) {
   const sub = A.nomeSub(catsCloud(), s.subcategoria);
   const lk = s.links || {};
   const botoes = el("div", { class: "ls-botoes" }, lk.produto ? linkFora(lk.produto, "Produto") : null, lk.docs ? linkFora(lk.docs, "Documentação") : null,
-    lk.precos ? linkFora(lk.precos, "Ver preços oficiais") : p && p.site ? linkFora(lk.produto || p.site, "Ver preços oficiais") : null, (lk.status || (p && p.status)) ? linkFora(lk.status || p.status, "Status") : null);
+    (lk.status || (p && p.status)) ? linkFora(lk.status || p.status, "Status") : null);
+  const conf = A.conferidoDe(s);
   const topo = el("div", { class: "ls-topo ac-topo", style: "--pc:" + (p ? p.cor : "#888") }, iconeEl(A.iconeDe(s, p), "g"),
     el("div", {}, el("div", { class: "ac-de" }, provEl(p, "p"), p && p.tipo === "alternativa" ? el("span", { class: "dd-badge b-noticia" }, "alternativa") : null), el("h2", {}, s.nome),
       s.apelidos && s.apelidos.length ? el("span", { class: "ls-repo" }, "também chamado de " + s.apelidos.join(", ")) : null),
     el("div", { class: "ls-chips" }, el("span", { class: "dd-badge b-clube" }, cat + (sub ? " › " + sub : "")), s.gratis ? el("span", { class: "dd-badge b-novo" }, "plano grátis") : null,
-      el("span", { class: "dd-badge " + (s.conferido ? "b-release" : "b-review"), id: "ac-conferido" }, s.conferido ? "conferido em " + dataBR(s.conferido) : "ainda não conferido")),
+      el("span", { class: "dd-badge " + (conf.em ? "b-release" : "b-review"), id: "ac-conferido" }, conf.em ? "conferido em " + dataBR(conf.em) : "ainda não conferido")),
     s.resumo ? el("p", { class: "ls-desc" }, s.resumo) : null, botoes);
   box.append(topo);
   if (d.admin) box.append(acoesAdminServico(s));
   const blocos = el("div", { class: "ls-blocos" });
-  // como cobra, plano grátis, preço de referência
-  const cobra = el("section", { class: "ls-bloco" }, el("h3", {}, "Como cobra"), el("p", {}, s.cobranca || "não conferido"),
-    el("h4", {}, "Plano grátis"), el("p", {}, s.gratis || "não conferido"),
-    el("h4", {}, "Preço de referência"), s.preco_ref && s.preco_ref.texto ? el("p", {}, s.preco_ref.texto, el("br"), el("small", {}, "fonte: ", linkFora(s.preco_ref.fonte, A.dominioDe(s.preco_ref.fonte) || "fonte", "ac-link"), " · em " + dataBR(s.preco_ref.em)))
-      : el("p", { class: "ls-aviso" }, "Sem preço guardado aqui: preço muda toda hora. ", lk.precos || lk.produto ? linkFora(lk.precos || lk.produto, "Ver preços oficiais", "ac-link") : null));
-  blocos.append(cobra);
+  // como cobra (modelo de cobrança, sem valor) e plano grátis
+  blocos.append(blocoCapacidades(s));
+  blocos.append(el("section", { class: "ls-bloco" }, el("h3", {}, "Como cobra"), el("p", {}, s.cobranca || "não conferido"),
+    el("h4", {}, "Plano grátis"), el("p", {}, s.gratis || "não conferido")));
   if (s.destaques && s.destaques.length) blocos.append(el("section", { class: "ls-bloco" }, el("h3", {}, "Destaques"), el("ul", { class: "ac-lista" }, ...s.destaques.map((x) => el("li", {}, x)))));
-  blocos.append(blocoCaracteristicas(s), blocoUso(s), blocoEquivalentes(d), blocoNovidadesCloud(s), blocoNoticiasCloud(d.noticias, false), blocoNoticiasCloud(d.foruns, true), blocoNotasCloud(s));
+  blocos.append(blocoUso(s), blocoEquivalentes(d), blocoNovidadesCloud(s), blocoNoticiasCloud(d.noticias, false), blocoNoticiasCloud(d.foruns, true), blocoNotasCloud(s));
   box.append(blocos);
 }
-function blocoCaracteristicas(s) {
+/* Capacidades: a matriz da subcategoria (Arch.chavesDe), na ordem da tabela, com a fonte e a data de cada valor */
+function fonteCapEl(c) {
+  if (!c || !c.fonte) return null;
+  const d = ARCH().dominioDe(c.fonte);
+  return el("small", { class: "ac-fonte" }, linkFora(c.fonte, d ? "fonte: " + d.replace(/^www\./, "") : "fonte", "ac-link"), c.em ? " · " + dataBR(c.em) : "");
+}
+function blocoCapacidades(s) {
   const A = ARCH();
   const chaves = A.chavesDe(s.subcategoria);
-  const dl = el("dl", { class: "ac-carac" });
+  const conf = A.conferidoDe(s);
+  const dl = el("dl", { class: "ac-carac ac-caps" });
   for (const k of chaves) {
     const c = A.carac(s.atributos && s.atributos[k.k]);
-    dl.append(el("dt", {}, k.r), el("dd", { class: c ? "" : "nc" }, A.textoCarac(c), c && (c.fonte || c.em) ? el("small", {}, ...(c.fonte ? [" · ", linkFora(c.fonte, "fonte", "ac-link")] : []), c.em ? " · " + dataBR(c.em) : "") : null));
+    dl.append(el("dt", {}, k.r), el("dd", { class: c ? "" : "nc" }, el("span", {}, A.textoCarac(c, k)), fonteCapEl(c)));
   }
-  return el("section", { class: "ls-bloco", "aria-labelledby": "ac-h-car" }, el("h3", { id: "ac-h-car" }, "Características", el("small", {}, "sem valor: não conferido")), dl);
+  return el("section", { class: "ls-bloco ac-bloco-caps", "aria-labelledby": "ac-h-car", id: "ac-capacidades" },
+    el("h3", { id: "ac-h-car" }, "Capacidades", el("small", {}, conf.n + " de " + conf.total + " conferidas")),
+    conf.em ? el("p", { class: "ls-pe", id: "ac-caps-conferido" }, "Conferido em " + dataBR(conf.em) + ", na documentação oficial de cada linha.") : el("p", { class: "ls-aviso" }, "Nenhuma capacidade conferida ainda."),
+    dl);
 }
 /* Como dá para usar (Tools e Cloud): as etiquetas, as três respostas e a nota */
 function blocoUso(t) {
@@ -486,12 +495,29 @@ function telaComparar(box, est) {
   });
   tab.append(el("thead", {}, cab));
   const corpo = el("tbody");
-  for (const l of comp.linhas) corpo.append(el("tr", { class: l.diferente ? "dif" : "" }, el("th", { scope: "row" }, l.rotulo, l.diferente ? el("span", { class: "ls-sr" }, " (valores diferentes)") : null), ...l.celulas.map((c) => el("td", { class: c ? "" : "nc" }, c || "–"))));
-  const rot = { produto: "Produto", docs: "Docs", precos: "Preços", status: "Status", repositorio: "Repositório", site: "Site" };
-  corpo.append(el("tr", {}, el("th", { scope: "row" }, "Links"), ...comp.links.map((lk) => el("td", {}, ...Object.entries(lk).filter(([, u]) => u).map(([kk, u]) => el("span", { class: "ac-lk" }, linkFora(u, rot[kk] || kk, "ac-link")))))));
+  // Cloud: a matriz da subcategoria; linha em que ninguém tem valor fica atrás de "Mostrar não conferidas"
+  const vazias = comp.linhas.filter((l) => l.vazia).length;
+  const celula = (c, i, l) => {
+    const f = l.fontes && l.fontes[i];
+    if (!c) return el("td", { class: "nc" }, l.carac ? "não conferido" : "–");
+    return el("td", {}, el("span", {}, c), f ? fonteCapEl(f) : null);
+  };
+  for (const l of comp.linhas) {
+    if (l.vazia && !AC.mostrarNc) continue;
+    corpo.append(el("tr", { class: (l.diferente ? "dif" : "") + (l.vazia ? " vazia" : "") }, el("th", { scope: "row" }, l.rotulo, l.diferente ? el("span", { class: "ls-sr" }, " (valores diferentes)") : null), ...l.celulas.map((c, i) => celula(c, i, l))));
+  }
+  const rot = { produto: "Produto", docs: "Docs", status: "Status", repositorio: "Repositório", site: "Site" };
+  corpo.append(el("tr", {}, el("th", { scope: "row" }, "Links"), ...comp.links.map((lk) => el("td", {}, ...Object.entries(lk).filter(([kk, u]) => u && rot[kk]).map(([kk, u]) => el("span", { class: "ac-lk" }, linkFora(u, rot[kk], "ac-link")))))));
   tab.append(corpo);
+  if (comp.resumoCaps) {
+    const rc = comp.resumoCaps;
+    const tg = el("button", { class: "chip", type: "button", id: "ac-mostrar-nc", "aria-pressed": String(!!AC.mostrarNc) }, AC.mostrarNc ? "Esconder não conferidas" : "Mostrar não conferidas" + (vazias ? " (" + vazias + ")" : ""));
+    if (!vazias) { tg.disabled = true; tg.setAttribute("aria-disabled", "true"); }
+    tg.addEventListener("click", () => { AC.mostrarNc = !AC.mostrarNc; reDesenhar(); const n = $("ac-mostrar-nc"); if (n) n.focus(); });
+    box.append(el("div", { class: "ac-resumo-caps", id: "ac-resumo-caps" }, el("p", {}, el("strong", {}, rc.conferidas + " de " + rc.total), " capacidades conferidas"), tg));
+  }
   box.append(el("div", { class: "ac-rola ac-rola-tab", tabindex: "0", role: "region", "aria-label": "Tabela de comparação" }, tab));
-  box.append(el("p", { class: "ls-pe" }, "Só fatos guardados e fontes oficiais: sem nota, sem vencedor. Células com fundo diferente têm valores diferentes. ", extra ? "" : "Novidades ainda carregando."));
+  box.append(el("p", { class: "ls-pe" }, "Só fatos guardados e fontes oficiais: sem nota, sem vencedor e sem preço. Células com fundo diferente têm valores diferentes. ", extra ? "" : "Novidades ainda carregando."));
   const [copiar, caixa] = botaoCopiar("Copiar para ADR", () => A.markdownAdr(comp, {}), "ac-copiar-adr");
   box.append(el("div", { class: "ls-acoes" }, copiar), caixa);
 }
@@ -563,7 +589,14 @@ function abaProfunda(box, aba, ids, sub, k) {
   const msg = el("p", { class: "ls-aviso", role: "status" });
   const b = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ac-gerar" }, "Gerar comparação profunda");
   b.addEventListener("click", async () => { b.disabled = true; msg.textContent = ""; try { await pedir({ contexto: ctx.value }); } catch (e) { msg.textContent = e.message; msg.classList.add("erro"); b.disabled = false; } });
+  // o roteiro que vai no pedido (o mesmo que a rota grava): capacidades, limites, maturidade, dependência, operação e cenários, sem preço
+  const cat = aba === "cloud" ? servs() : (lsLista || []);
+  const subNome = aba === "cloud" ? ARCH().nomeSub(catsCloud(), sub) : sub;
+  const roteiro = () => ARCH().roteiroProfunda(ids.map((id) => cat.find((x) => x.id === id)).filter(Boolean), { aba, provs: provs(), sub, subNome, contexto: ctx.value });
+  const pre = el("pre", { class: "ac-roteiro", id: "ac-roteiro" }, roteiro());
+  ctx.addEventListener("input", () => { pre.textContent = roteiro(); });
   sec.append(el("label", { class: "rotulo", for: "ac-contexto" }, "Contexto da decisão (opcional)"), ctx, conta,
+    el("details", { class: "ac-roteiro-caixa" }, el("summary", {}, "O que vai ser pedido à IA"), pre),
     el("p", { class: "ls-aviso" }, "A análise fica pronta em algumas horas e vale 30 dias; depois disso, uma nova é pedida sozinha quando a comparação é aberta."), el("div", { class: "ls-acoes" }, b), msg);
   box.append(sec);
 }
@@ -684,43 +717,59 @@ function desenharFolhaCloud() {
   const [lGr, gr] = campo("ac-f-gratis", "Plano grátis (vazio se não for fato estável)", ed ? s.gratis : "", { maxlength: "200" });
   const [lDes, des] = campo("ac-f-destaques", "Destaques (um por linha, até 4)", ed ? (s.destaques || []).join("\n") : "", { area: true, rows: "3" });
   const lk = (ed && s.links) || {};
-  const links = A.LINKS.map((k) => campo("ac-f-l-" + k, { produto: "Página do produto", docs: "Documentação", precos: "Preços oficiais", status: "Status" }[k], lk[k], { type: "url", placeholder: "https://" }));
+  const links = A.LINKS.map((k) => campo("ac-f-l-" + k, { produto: "Página do produto", docs: "Documentação", status: "Status" }[k], lk[k], { type: "url", placeholder: "https://" }));
   const [lIc, ic] = campo("ac-f-icone", "Ícone (opcional; vazio usa o do provedor)", ed ? s.icone : "", { type: "url", placeholder: "https://" });
   const usoAtual = new Set(ed ? LS.usoDe(s) : ["nuvem"]);
   const usoCx = LS.USOS.map((u) => { const c = el("input", { type: "checkbox", id: "ac-f-uso-" + u.id, value: u.id }); c.checked = usoAtual.has(u.id); return el("label", { class: "ls-f-cx", title: u.explicacao }, c, " " + u.rotulo); });
   const [lUn, un] = campo("ac-f-uso-nota", "Nota sobre o uso", ed ? s.uso_nota : "", { maxlength: "240" });
-  const pr = (ed && s.preco_ref) || {};
-  const [lPt, pt] = campo("ac-f-preco", "Preço de referência (texto, com fonte e data)", pr.texto, { maxlength: "160" });
-  const [lPf, pf] = campo("ac-f-preco-fonte", "Fonte do preço", pr.fonte, { type: "url", placeholder: "https://" });
-  const [lPe, pdt] = campo("ac-f-preco-em", "Data do preço", pr.em ? String(pr.em).slice(0, 10) : "", { type: "date" });
   const conf = el("input", { type: "checkbox", id: "ac-f-conferir" });
   const atBox = el("div", { class: "ac-f-at" });
+  // Capacidades: uma linha por rótulo da matriz, com o campo do tipo (sim/não, número com a unidade, lista ou texto) e a fonte
+  const origDe = (sid, k) => A.carac(ed && s.subcategoria === sid && s.atributos ? s.atributos[k] : null);
   const pintarAt = () => {
     atBox.textContent = "";
     const [, sid] = String(sub.value || "|").split("|");
     for (const k of A.chavesDe(sid)) {
-      const c = A.carac(ed && s.subcategoria === sid && s.atributos ? s.atributos[k.k] : null);
-      const v = el("input", { class: "dd-input", id: "ac-f-at-" + k.k, value: c ? String(c.valor) : "", placeholder: k.tipo === "sn" ? "sim ou nao" : k.tipo === "snp" ? "sim, nao ou parcial" : "" });
-      const fo = el("input", { class: "dd-input", id: "ac-f-atf-" + k.k, type: "url", value: c ? c.fonte || "" : "", placeholder: "fonte https://" });
-      atBox.append(el("div", { class: "ac-f-at-l" }, el("label", { class: "rotulo", for: "ac-f-at-" + k.k }, k.r), v, fo));
+      const c = origDe(sid, k.k);
+      const id = "ac-f-at-" + k.k;
+      let v;
+      if (k.tipo === "sn" || k.tipo === "snp") {
+        v = el("select", { class: "dd-input", id }, el("option", { value: "" }, "não conferido"), el("option", { value: "sim" }, "sim"), el("option", { value: "nao" }, "não"), k.tipo === "snp" ? el("option", { value: "parcial" }, "parcial") : null);
+        v.value = c ? (c.valor === "não" ? "nao" : String(c.valor)) : "";
+      } else if (k.tipo === "num") {
+        v = el("input", { class: "dd-input", id, type: "number", min: "0", step: "any", inputmode: "decimal", value: c ? String(c.valor) : "" });
+      } else {
+        v = el("input", { class: "dd-input", id, value: c ? (Array.isArray(c.valor) ? c.valor.join(", ") : String(c.valor)) : "", placeholder: k.tipo === "lista" ? "itens separados por vírgula" : "" });
+      }
+      const fo = el("input", { class: "dd-input", id: "ac-f-atf-" + k.k, type: "url", value: c ? c.fonte || "" : "", placeholder: "fonte https:// (obrigatória)", "aria-label": "Fonte de " + k.r });
+      const campoV = k.tipo === "num" && k.u ? el("span", { class: "ac-f-num" }, v, el("span", { class: "ac-f-un" }, k.u)) : v;
+      atBox.append(el("div", { class: "ac-f-at-l" }, el("label", { class: "rotulo", for: id }, k.r), campoV, fo, c && c.em ? el("small", { class: "ls-pe" }, (c.por === "admin" ? "gravado pelo Admin" : "conferido") + " em " + dataBR(c.em)) : null));
     }
   };
   sub.addEventListener("change", pintarAt); pintarAt();
   corpo.append(el("div", { class: "ls-form" }, el("label", { class: "rotulo", for: "ac-f-prov" }, "Provedor"), prov, el("label", { class: "rotulo", for: "ac-f-sub" }, "Categoria e subcategoria"), sub,
     lNome, nome, lAp, ap, lRes, res, lCob, cob, lGr, gr, lDes, des, ...links.flat(), lIc, ic,
     el("fieldset", { class: "ls-f-uso" }, el("legend", { class: "rotulo" }, "Opções de uso"), ...usoCx, lUn, un),
-    el("fieldset", { class: "ls-f-uso" }, el("legend", { class: "rotulo" }, "Características (vazio fica \"não conferido\")"), atBox),
-    lPt, pt, lPf, pf, lPe, pdt, el("label", { class: "ls-f-cx" }, conf, " Marcar conferido hoje"), erro));
+    el("fieldset", { class: "ls-f-uso" }, el("legend", { class: "rotulo" }, "Capacidades (vazio fica \"não conferido\"; valor novo pede a fonte)"), atBox),
+    el("label", { class: "ls-f-cx" }, conf, " Marcar conferido hoje"), erro));
   const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ac-f-salvar" }, ed ? "Salvar" : "Adicionar");
   ok.addEventListener("click", async () => {
     erro.textContent = "";
     const [cid, sid] = String(sub.value || "|").split("|");
-    const atributos = {};
-    for (const k of A.chavesDe(sid)) { const v = $("ac-f-at-" + k.k).value.trim(); atributos[k.k] = v ? { valor: v, fonte: $("ac-f-atf-" + k.k).value.trim(), por: "admin" } : null; }
+    const atributos = {}, semFonte = [];
+    for (const k of A.chavesDe(sid)) {
+      const v = String($("ac-f-at-" + k.k).value || "").trim(), fo = $("ac-f-atf-" + k.k).value.trim();
+      if (!v) { atributos[k.k] = null; continue; }
+      const valor = k.tipo === "lista" ? v.split(",").map((x) => x.trim()).filter(Boolean) : k.tipo === "num" ? Number(v.replace(",", ".")) : v;
+      const orig = origDe(sid, k.k);
+      // o que não mudou volta como estava (mesma data e mesma origem); o que mudou é do Admin, com a fonte
+      if (orig && A.textoCarac(orig, k) === A.textoCarac({ valor }, k) && (orig.fonte || "") === fo) atributos[k.k] = { valor: orig.valor, fonte: orig.fonte, em: orig.em, por: orig.por };
+      else { if (!fo) semFonte.push(k.r); atributos[k.k] = { valor, fonte: fo, por: "admin" }; }
+    }
+    if (semFonte.length) { erro.textContent = "Falta a fonte (https) de: " + semFonte.join(", ") + "."; return; }
     const b = { provedor: prov.value, nome: nome.value.trim(), apelidos: ap.value.split(",").map((x) => x.trim()).filter(Boolean), categoria: cid, subcategoria: sid, resumo: res.value, cobranca: cob.value, gratis: gr.value,
       destaques: des.value.split("\n").map((x) => x.trim()).filter(Boolean), links: Object.fromEntries(A.LINKS.map((k) => [k, $("ac-f-l-" + k).value.trim()])), icone: ic.value.trim(),
-      uso: LS.USOS.filter((u) => $("ac-f-uso-" + u.id).checked).map((u) => u.id), uso_nota: un.value, atributos,
-      preco_ref: pt.value.trim() ? { texto: pt.value.trim(), fonte: pf.value.trim(), em: pdt.value ? pdt.value + "T12:00:00.000Z" : "" } : { texto: "", fonte: "", em: null }, conferirHoje: conf.checked };
+      uso: LS.USOS.filter((u) => $("ac-f-uso-" + u.id).checked).map((u) => u.id), uso_nota: un.value, atributos, conferirHoje: conf.checked };
     if (!ed) for (const k of Object.keys(atributos)) if (!atributos[k]) delete atributos[k];
     ok.disabled = true;
     try {

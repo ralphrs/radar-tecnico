@@ -4,11 +4,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { register } from "node:module";
+import { readFileSync } from "node:fs";
 import { d1Falso, espelhoFalso } from "./d1-falso.mjs";
 import "../public/landscape.js";
 import "../public/arch.js";
 import { PROVEDORES, CATEGORIAS, SERVICOS, SEMENTE_EM } from "../src/cloud-semente.js";
-import { semearCloud, rotaCloud, rotaAdminCloud, listaLeve, lerFeedProvedor, citacoesServico, CACHE_FEED_MS, FEEDS_CLOUD, CLOUD_PARA_SONDAR, SQL_LEVE } from "../src/cloud.js";
+import { CAPS, CONFERIDO_EM } from "../src/cloud-capacidades.js";
+import { semearCloud, patchSemente, rotaCloud, rotaAdminCloud, listaLeve, lerFeedProvedor, citacoesServico, CACHE_FEED_MS, FEEDS_CLOUD, CLOUD_PARA_SONDAR, SQL_LEVE } from "../src/cloud.js";
 import { rotaDossies, limparDossies, SQL_PENDENTES, SQL_FECHAR, MAX_PENDENTES, MAX_POR_DIA } from "../src/arch.js";
 import { rotaRoteiro, lerMilestones, semearLandscape } from "../src/landscape.js";
 import { rotaIcone, iconeDaPagina, dominiosPermitidos, MAX_ICONE } from "../src/icone.js";
@@ -47,13 +49,15 @@ test("semente: de 120 a 180 serviços, ids únicos, provedor e subcategoria que 
     assert.equal(subs.get(doc.subcategoria), doc.categoria, id + " subcategoria da categoria");
     assert.ok(A.ID_SERV.test(id) && id.startsWith(doc.provedor + "--"), id);
     assert.equal(doc.conferido, null, id + " ainda não conferido");
-    assert.deepEqual(doc.preco_ref, { texto: "", fonte: "", em: null });
+    assert.ok(!("preco_ref" in doc) && !("precos" in doc.links), id + ": sem preço nem link de preços");
     assert.ok(doc.uso.includes("nuvem"), id + " é nuvem por definição");
     for (const t of [doc.nome, doc.resumo, doc.cobranca, doc.gratis, ...doc.destaques, ...doc.apelidos, ...Object.values(doc.atributos).map((a) => a.valor)])
       assert.ok(!/R\$|US\$|\$\s?\d/.test(String(t)), id + ": preço em número em " + t);
     for (const t of [doc.resumo, doc.cobranca]) assert.ok(!/\b(melhor|recomendad|barat)/i.test(t) && !/ — /.test(t), id + ": " + t);
     for (const u of Object.values(doc.links).filter(Boolean)) urls.push(u);
-    for (const a of Object.values(doc.atributos)) { assert.equal(a.por, "semente"); assert.equal(a.fonte, doc.links.produto); assert.equal(a.em, SEMENTE_EM); }
+    // capacidade só com fonte oficial conferida nesta semente (nada de memória): fonte https, data e origem
+    for (const a of Object.values(doc.atributos)) { assert.equal(a.por, "semente"); assert.match(a.fonte, /^https:\/\//); assert.equal(a.em, CONFERIDO_EM); }
+    assert.ok(!doc.cobranca || !/\d/.test(doc.cobranca), id + ": como cobra sem número");
     const v = A.validarServico(doc, ctxSemente);
     assert.ok(v.servico, id + ": " + v.erro);
   }
@@ -91,17 +95,29 @@ test("validação de serviço, provedor e categoria (característica com e sem f
   assert.ok(A.validarServico(base, ctxSemente).servico);
   assert.equal(A.idServico("aws", "Amazon S3 Express"), "aws--amazon-s3-express");
   for (const [b, msg] of [[{ ...base, provedor: "ibm" }, /provedor/], [{ ...base, subcategoria: "vms" }, /categoria/], [{ ...base, nome: "" }, /nome/],
-    [{ ...base, resumo: "a partir de US$ 5" }, /Preço/], [{ ...base, cobranca: "$0,02 por GB" }, /Preço/], [{ ...base, links: { produto: "http://x.com" } }, /https/],
-    [{ ...base, destaques: ["a", "b", "c", "d", "e"] }, /4/], [{ ...base, atributos: { motores: "x" } }, /desconhecida/], [{ ...base, atributos: { api_s3: "talvez" } }, /sim ou não/],
-    [{ ...base, preco_ref: { texto: "tabela", fonte: "", em: "" } }, /referência/], [{ ...base, uso: ["on-prem"] }, /uso/]])
+    [{ ...base, resumo: "a partir de US$ 5" }, /dinheiro/], [{ ...base, cobranca: "$0,02 por GB" }, /dinheiro/], [{ ...base, links: { produto: "http://x.com" } }, /https/],
+    [{ ...base, destaques: ["a", "b", "c", "d", "e"] }, /4/], [{ ...base, atributos: { motores: "x" } }, /desconhecida/], [{ ...base, atributos: { api_s3: { valor: "talvez", fonte: "https://a.b/" } } }, /sim ou não/],
+    [{ ...base, atributos: { vcpu_max: 2 } }, /desconhecida/], [{ ...base, uso: ["on-prem"] }, /uso/]])
     assert.match(A.validarServico(b, ctxSemente).erro || "", msg, JSON.stringify(b).slice(0, 80));
-  const c = A.validarServico({ ...base, atributos: { api_s3: { valor: "sim", fonte: "https://docs.aws.amazon.com/s3" }, classes: "Standard", on_premises: "" } }, { ...ctxSemente, por: "admin" }).servico.atributos;
+  // preço de referência e link de preços de doc antigo: aceitos na leitura, não gravados
+  const velho = A.validarServico({ ...base, preco_ref: { texto: "tabela", fonte: "", em: "" }, links: { produto: base.links.produto, precos: "https://aws.amazon.com/s3/pricing/" } }, ctxSemente).servico;
+  assert.ok(velho && !("preco_ref" in velho) && !("precos" in velho.links));
+  // Admin: capacidade sem fonte não entra; com fonte, entra com a data e a origem
+  assert.match(A.validarServico({ ...base, atributos: { classes: "Standard" } }, { ...ctxSemente, por: "admin" }).erro, /fonte/);
+  const c = A.validarServico({ ...base, atributos: { api_s3: { valor: "sim", fonte: "https://docs.aws.amazon.com/s3" }, classes: { valor: "Standard, Glacier", fonte: "https://aws.amazon.com/s3/faqs/" }, on_premises: "" } }, { ...ctxSemente, por: "admin" }).servico.atributos;
   assert.equal(c.api_s3.fonte, "https://docs.aws.amazon.com/s3"); assert.equal(c.api_s3.por, "admin"); assert.equal(c.api_s3.em, new Date(AGORA).toISOString());
-  assert.equal(c.classes.fonte, "", "sem fonte vale, com a data"); assert.ok(!("on_premises" in c), "vazio sai");
+  assert.deepEqual(c.classes.valor, ["Standard", "Glacier"], "lista vira itens"); assert.ok(!("on_premises" in c), "vazio sai");
+  // tipos: número com unidade e lista
+  const fn = A.chavesDe("funcoes").find((x) => x.k === "memoria_max");
+  assert.equal(fn.tipo, "num"); assert.equal(A.textoCarac({ valor: 10240 }, fn), "10.240 MB");
+  assert.deepEqual(A.validarCarac({ valor: "10.240", fonte: "https://a.b/" }, { tipo: "num" }).carac.valor, 10240);
+  assert.match(A.validarCarac({ valor: "muito", fonte: "https://a.b/" }, { tipo: "num" }).erro, /número/);
+  assert.equal(A.textoCarac({ valor: ["Python", "Go"] }), "Python, Go");
   assert.equal(A.textoCarac(c.api_s3), "sim"); assert.equal(A.textoCarac(null), "não conferido"); assert.equal(A.textoCarac({ valor: "" }), "não conferido");
   assert.equal(A.textoCarac({ valor: "nao" }), "não"); assert.equal(A.textoCarac("parcial"), "parcial");
   assert.ok(A.validarCarac({ valor: "x", fonte: "ftp://a" }).erro);
   assert.ok(A.chavesDe("objetos").some((k) => k.k === "on_premises") && A.chavesDe("web-scraping").some((k) => k.k === "renderiza_js"), "comuns e Tools");
+  assert.ok(A.chavesDe("web-scraping").some((k) => k.k === "maturidade") && !A.chavesDe("objetos").some((k) => k.k === "maturidade"), "Tools e Cloud com comuns próprias");
   // provedores e categorias
   assert.match(A.validarProvedores({ provedores: [{ ...PROVEDORES[0], sigla: "AMAZON" }] }).erro, /Sigla/);
   assert.match(A.validarProvedores({ provedores: [{ ...PROVEDORES[0], cor: "laranja" }] }).erro, /Cor/);
@@ -109,6 +125,93 @@ test("validação de serviço, provedor e categoria (característica com e sem f
   assert.match(A.validarProvedores({ provedores: [{ ...PROVEDORES[0], tipo: "barata" }] }).erro, /Tipo/);
   assert.match(A.validarProvedores({ provedores: [{ ...PROVEDORES[0], icone: "javascript:1" }] }).erro, /Ícone/);
   assert.match(A.validarCategorias({ categorias: [{ nome: "A", subcategorias: [{ id: "x", nome: "X" }] }, { nome: "B", subcategorias: [{ id: "x", nome: "Y" }] }] }).erro, /repetida/, "subcategoria é a chave do comparar");
+});
+
+// ---------- capacidades (pedido de 19/11, 15h17) ----------
+test("tabela de capacidades: toda subcategoria de Cloud tem a matriz (8 a 14 próprias), ids únicos, tipos válidos e nada de preço", () => {
+  const subs = CATEGORIAS.flatMap((c) => c.subcategorias.map((x) => x.id));
+  assert.equal(subs.length, 32);
+  assert.deepEqual(Object.keys(A.CAPACIDADES).sort(), subs.slice().sort(), "uma matriz por subcategoria, nenhuma sobrando");
+  const tipos = new Set(["sn", "snp", "texto", "lista", "num"]);
+  for (const sub of subs) {
+    const proprias = A.CAPACIDADES[sub];
+    assert.ok(proprias.length >= 8 && proprias.length <= 14, sub + ": " + proprias.length);
+    const todas = A.chavesDe(sub);
+    assert.equal(new Set(todas.map((x) => x.k)).size, todas.length, sub + ": ids únicos");
+    for (const a of A.COMUNS_CLOUD) assert.ok(todas.some((x) => x.k === a.k), sub + ": comum " + a.k);
+    for (const a of todas) {
+      assert.ok(/^[a-z][a-z0-9_]*$/.test(a.k), a.k); assert.ok(tipos.has(a.tipo), sub + "." + a.k + " tipo");
+      assert.ok(a.r && a.r.length <= 60 && !/preç|custo|barat|grát|melhor|recomend/i.test(a.r), sub + "." + a.k + ": " + a.r);
+      if (a.tipo === "num") assert.ok(a.u, sub + "." + a.k + " sem unidade");
+    }
+  }
+  // as comuns pedidas: região no Brasil, SLA, certificações, Terraform e limites
+  assert.deepEqual(A.COMUNS_CLOUD.map((x) => x.k).slice(0, 5), ["regioes_br", "sla", "certificacoes", "terraform", "limites"]);
+  // os dados conferidos: só serviço que existe, só chave da tabela, valor do tipo certo e fonte https
+  const porId = new Map(SERVICOS.map((x) => [x.id, x]));
+  for (const [id, caps] of Object.entries(CAPS)) {
+    const sv = porId.get(id);
+    assert.ok(sv, "serviço que existe: " + id);
+    const chaves = new Map(A.chavesDe(sv.doc.subcategoria).map((x) => [x.k, x]));
+    for (const [k, [v, f]] of Object.entries(caps)) {
+      assert.ok(chaves.has(k), id + ": " + k);
+      const r = A.validarCarac({ valor: v, fonte: f, por: "semente" }, { tipo: chaves.get(k).tipo });
+      assert.ok(r.carac && !r.erro && r.carac.fonte, id + "." + k + ": " + r.erro);
+      assert.ok(!A.temPreco(Array.isArray(v) ? v.join(" ") : String(v)), id + "." + k + ": preço");
+    }
+  }
+  assert.equal(CONFERIDO_EM.slice(0, 10), "2026-11-19");
+  assert.ok(Object.keys(CAPS).length >= 60, "boa parte dos serviços com capacidade conferida");
+});
+
+test("semente nova: as capacidades chegam aos docs que já existem por json_patch, e o valor gravado pelo Admin vence", async () => {
+  const env = { DB: d1Falso() };
+  await semearCloud(env, AGORA);
+  // simula a semente de antes (produção): marca sem versão, capacidades de memória, uma chave que saiu da tabela
+  env.DB.db.prepare("UPDATE docs SET data = ? WHERE collection = '_sistema' AND id = 'cloud-semente'").run(JSON.stringify({ quando: "2026-11-19T12:00:00.000Z", servicos: SERVICOS.length }));
+  const antigo = (id, atributos, extra = {}) => { const d = docDe(env, "cloud", id); env.DB.db.prepare("UPDATE docs SET data = ? WHERE collection = 'cloud' AND id = ?").run(JSON.stringify({ ...d, ...extra, atributos }), id); };
+  const velho = (v) => ({ valor: v, fonte: "https://aws.amazon.com/s3/", em: "2026-11-19T12:00:00.000Z", por: "semente" });
+  const doAdmin = { valor: "não", fonte: "https://exemplo.dev/minha-fonte", em: "2026-11-19T14:00:00.000Z", por: "admin" };
+  antigo("aws--amazon-s3", { api_s3: velho("sim"), saida_gratis: velho("nao"), versionamento: doAdmin, regioes_br: velho("sim") }, { resumo: "editado pelo Admin" });
+  antigo("cloudflare--r2", { api_s3: velho("sim") });
+  env.DB.db.prepare("DELETE FROM docs WHERE collection = 'cloud' AND id = 'wasabi--wasabi-hot-cloud-storage'").run();
+  env.DB.log.length = 0;
+  const n = await semearCloud(env, AGORA + HORA);
+  assert.ok(n > 0, "atualizou");
+  const s3 = docDe(env, "cloud", "aws--amazon-s3");
+  assert.deepEqual(s3.atributos.versionamento, doAdmin, "o Admin vence");
+  assert.equal(s3.atributos.api_s3.fonte, CAPS["aws--amazon-s3"].api_s3[1], "valor da semente trocado pelo conferido");
+  assert.equal(s3.atributos.api_s3.em, CONFERIDO_EM);
+  assert.ok(!("saida_gratis" in s3.atributos), "chave que saiu da tabela, vinda da semente, sai");
+  assert.ok(!("regioes_br" in s3.atributos), "valor antigo da semente sem conferência sai (nada de memória)");
+  assert.deepEqual(s3.atributos.classes.valor, CAPS["aws--amazon-s3"].classes[0], "capacidade nova entra");
+  assert.equal(s3.resumo, "editado pelo Admin", "o resto do doc não muda");
+  assert.equal(docDe(env, "cloud", "wasabi--wasabi-hot-cloud-storage"), null, "tirado pelo Admin não volta");
+  assert.equal(docDe(env, "_sistema", "cloud-semente").versao, SEMENTE_EM);
+  const ups = env.DB.log.filter((x) => /^\s*UPDATE/i.test(x));
+  assert.ok(ups.length && ups.every((x) => /json_patch\(data, \?\)/.test(x) && /WHERE collection = 'cloud' AND id = \?/.test(x) || /'_sistema'/.test(x)), "campo a campo, com a chave");
+  assert.ok(env.DB.log.every((x) => !/\bDROP\b/i.test(x)));
+  assert.equal(await semearCloud(env, AGORA + 2 * HORA), 0, "mesma versão: nada");
+  // o merge puro
+  assert.equal(patchSemente({ a: doAdmin }, { a: { valor: "sim", por: "semente" } }), null);
+  assert.deepEqual(patchSemente({ a: velho("x"), b: { ...doAdmin, por: "curadoria" } }, { c: { valor: "sim" } }), { atributos: { c: { valor: "sim" }, a: null } });
+  // o Admin edita um doc antigo com chave que saiu da tabela: não trava
+  const dep = espelhoFalso();
+  antigo("aws--amazon-ebs", { saida_gratis: { ...doAdmin } });
+  const e = await corpoDe(rotaAdminCloud(req("PUT", { gratis: "" }), env, ADMIN, "", "aws--amazon-ebs", dep, { agora: AGORA + 3 * HORA }));
+  assert.equal(e.status, 200, JSON.stringify(e.j));
+  assert.ok(!("saida_gratis" in docDe(env, "cloud", "aws--amazon-ebs").atributos));
+});
+
+test("filtro renomeado: \"Só alternativas aos cinco grandes\", mesma regra (tipo do provedor), sem falar de preço", () => {
+  const ui = readFileSync(new URL("../public/arch-ui.js", import.meta.url), "utf8");
+  assert.ok(ui.includes("Só alternativas aos cinco grandes"));
+  assert.ok(!/mais baratas|preços oficiais|Preço de referência|preco_ref|ac-f-preco/.test(ui), "nada de preço na tela nem no Admin");
+  assert.deepEqual(PROVEDORES.filter((p) => p.tipo === "grande").map((p) => p.id).sort(), A.GRANDES.slice().sort());
+  const l = A.filtrarCloud(leve, { alt: true }, PROVEDORES);
+  assert.ok(l.length > 0 && l.every((s) => !A.GRANDES.includes(s.provedor)));
+  assert.equal(l.length, leve.filter((s) => PROVEDORES.find((p) => p.id === s.provedor).tipo === "alternativa").length);
+  assert.equal(A.lerFiltros("alt=1").alt, true, "o mesmo parâmetro no hash");
 });
 
 // ---------- rotas ----------
@@ -144,10 +247,10 @@ test("rotas de Admin: 404 para quem não é Admin; adicionar, editar (conferido 
   assert.equal(docDe(env, "cloud", "hetzner--storage-box").por, "admin");
   assert.equal((await rotaAdminCloud(req("POST", novo), env, ADMIN, "", "", dep)).status, 409, "repetido");
   assert.equal((await rotaAdminCloud(req("POST", { ...novo, nome: "X", cobranca: "R$ 10 por mês" }), env, ADMIN, "", "", dep)).status, 400);
-  const e = await corpoDe(await rotaAdminCloud(req("PUT", { gratis: "Até 10 GB.", conferirHoje: true, atributos: { protocolos: "SFTP, SMB" } }), env, ADMIN, "", "hetzner--storage-box", dep, { agora: AGORA + HORA }));
+  const e = await corpoDe(await rotaAdminCloud(req("PUT", { gratis: "Até 10 GB.", conferirHoje: true, atributos: { protocolos: { valor: "SFTP, SMB", fonte: "https://docs.hetzner.com/storage/storage-box/" } } }), env, ADMIN, "", "hetzner--storage-box", dep, { agora: AGORA + HORA }));
   assert.equal(e.status, 200, JSON.stringify(e.j));
   const doc = docDe(env, "cloud", "hetzner--storage-box");
-  assert.equal(doc.gratis, "Até 10 GB."); assert.equal(doc.conferido, new Date(AGORA + HORA).toISOString()); assert.equal(doc.atributos.protocolos.valor, "SFTP, SMB");
+  assert.equal(doc.gratis, "Até 10 GB."); assert.equal(doc.conferido, new Date(AGORA + HORA).toISOString()); assert.deepEqual(doc.atributos.protocolos.valor, ["SFTP", "SMB"]); assert.equal(doc.atributos.protocolos.por, "admin");
   assert.equal(doc.resumo, novo.resumo, "o resto fica"); assert.equal(doc.adicionado, new Date(AGORA).toISOString());
   assert.ok(env.DB.log.some((s) => /UPDATE docs SET data = \?, atualizado = \? WHERE collection = 'cloud' AND id = \?/.test(s)), "com a chave");
   assert.ok(dep.gravados.some((g) => g.id === "hetzner--storage-box"), "write-through");
@@ -286,28 +389,42 @@ test("hash de comparação inválido não abre a tabela: volta para a grade com 
   assert.equal(A.conjunto(["b", "a", "b"]), "a,b"); assert.equal(A.conjunto("cloudflare--r2,aws--amazon-s3"), A.conjunto(["aws--amazon-s3", "cloudflare--r2"]), "identidade do conjunto sem ordem");
 });
 
-test("montagem da comparação: linha vazia some, diferença marcada; Markdown do ADR só com fatos e fontes", () => {
+test("montagem da comparação: linhas da matriz na ordem da tabela, vazias marcadas, diferença e fonte; Markdown do ADR sem preço", () => {
   const ids = ["aws--amazon-s3", "cloudflare--r2", "backblaze--backblaze-b2", "wasabi--wasabi-hot-cloud-storage"];
   const servs = ids.map((id) => leve.find((s) => s.id === id));
+  // doc antigo com preço de referência e link de preços: nada disso aparece
+  servs[0] = { ...servs[0], preco_ref: { texto: "US$ 0,023 por GB", fonte: "https://aws.amazon.com/s3/pricing/", em: SEMENTE_EM }, links: { ...servs[0].links, precos: "https://aws.amazon.com/s3/pricing/" } };
   const novidades = { "cloudflare--r2": [{ titulo: "R2 ganha classe de acesso raro", publicado: "2026-11-10T00:00:00Z", url: "https://developers.cloudflare.com/changelog/r2" }] };
   const roteiro = { "aws--amazon-s3": [{ titulo: "S3 Tables em preview", quando: "", fonte: "https://aws.amazon.com/x" }] };
   const c = A.montarComparacao(servs, { aba: "cloud", provs: PROVEDORES, novidades, roteiro, agora: AGORA });
   assert.equal(c.colunas.length, 4); assert.equal(c.colunas[1].provedor.nome, "Cloudflare");
   const k = c.linhas.map((l) => l.k);
-  assert.ok(!k.includes("preco_ref"), "ninguém tem preço de referência: a linha some");
-  assert.ok(!k.includes("at:blocos") && !k.includes("at:conformidade"), "atributo sem valor em todos some");
-  assert.ok(k.includes("at:api_s3") && k.includes("at:saida_gratis") && k.includes("novidade") && k.includes("roteiro"));
-  const api = c.linhas.find((l) => l.k === "at:api_s3"), saida = c.linhas.find((l) => l.k === "at:saida_gratis");
-  assert.equal(api.diferente, false, "todos sim: sem destaque"); assert.equal(saida.diferente, true, "valores diferentes: destaque");
-  assert.deepEqual(saida.celulas, ["não", "sim", "parcial", "parcial"]);
-  assert.equal(c.linhas.find((l) => l.k === "conferido").celulas[0], "ainda não conferido");
+  assert.ok(!k.some((x) => /preco/.test(x)), "sem linha de preço");
+  // as linhas da matriz, todas, na ordem da tabela (as vazias vêm marcadas para a tela esconder)
+  const matriz = c.linhas.filter((l) => l.carac);
+  assert.deepEqual(matriz.map((l) => l.k.slice(3)), A.chavesDe("objetos").map((x) => x.k));
+  const api = matriz.find((l) => l.k === "at:api_s3"), ver = matriz.find((l) => l.k === "at:versionamento"), sla = matriz.find((l) => l.k === "at:sla");
+  assert.deepEqual(api.celulas, ["sim", "sim", "sim", "sim"]); assert.equal(api.diferente, false, "todos sim: sem destaque");
+  assert.ok(api.fontes.every((f) => f && /^https:/.test(f.fonte) && f.em), "cada célula com a fonte e a data");
+  assert.equal(ver.diferente, true, "valor e vazio: diferente"); assert.equal(ver.celulas[1], "");
+  assert.equal(sla.vazia, true, "ninguém tem SLA conferido: vazia"); assert.equal(api.vazia, false);
+  assert.ok(c.resumoCaps.total === 4 * A.chavesDe("objetos").length && c.resumoCaps.conferidas > 0 && c.resumoCaps.conferidas < c.resumoCaps.total);
+  assert.equal(c.resumoCaps.conferidas, servs.reduce((n, s) => n + Object.values(s.atributos).filter((x) => x.fonte).length, 0));
+  assert.equal(c.linhas.find((l) => l.k === "conferido").celulas[0], "em 19/11/2026", "conferido pela data das capacidades");
+  assert.ok(c.links.every((l) => !("precos" in l)));
   const um = A.linha("x", "X", ["", "", ""]); assert.equal(um, null);
   const md = A.markdownAdr(c, { agora: AGORA });
   assert.match(md, /^## Opções consideradas\n/);
   assert.match(md, /\| \| Amazon S3 \(Amazon Web Services\) \| R2 \(Cloudflare\) \|/);
   assert.match(md, /\| API compatível com S3 \| sim \| sim \| sim \| sim \|/);
+  assert.match(md, /\| Versionamento \| sim \| não conferido \| não conferido \| sim \|/);
+  assert.ok(!/\| SLA publicado \|/.test(md), "linha vazia não vai para o ADR");
   assert.match(md, /\| Última novidade \| – \| R2 ganha classe de acesso raro \(10\/11\/2026\) \|/);
+  assert.match(md, /capacidades conferidas/);
   assert.match(md, /### Fontes\n\n- Amazon S3, página do produto: https:\/\/aws\.amazon\.com\/s3\/ \(consultado em 19\/11\/2026\)/);
+  assert.match(md, /- Amazon S3, api compatível com s3: https:\/\/aws\.amazon\.com\/s3\/faqs\/ \(conferido em 19\/11\/2026\)/);
+  // nada de preço no Markdown do ADR: nem o preço de referência antigo, nem o link, nem valor em dinheiro
+  assert.ok(!/US\$|R\$|€|preço|preços|pricing|0,023/i.test(md), "sem preço");
   assert.ok(!/\b(prós|contras|recomend|vencedor|melhor)\b/i.test(md), "sem avaliação");
   const tab = md.split("\n").filter((x) => x.startsWith("|"));
   assert.ok(tab.every((x) => x.split(/(?<!\\)\|/).length === 7), "tabela bem formada: 4 opções mais o rótulo");
@@ -477,7 +594,11 @@ test("dossiês: contrato, travas, existente dentro da validade, novo no dia 31, 
   const d = a.j.dossie;
   assert.match(d.id, /^d[0-9a-f]{16}$/);
   const guardado = docDe(env, "arch-dossies", d.id);
-  assert.deepEqual(Object.keys(guardado).sort(), ["aba", "contexto", "criado", "estado", "expiraEm", "fontes", "forcado", "ids", "markdown", "pedidoEm", "por", "prontoEm", "resposta", "subcategoria"].sort());
+  assert.deepEqual(Object.keys(guardado).sort(), ["aba", "contexto", "criado", "estado", "expiraEm", "fontes", "forcado", "ids", "markdown", "pedidoEm", "por", "prontoEm", "resposta", "roteiro", "subcategoria"].sort());
+  // o roteiro para a IA: capacidades, limites, maturidade, dependência, operação e cenários, sem preço
+  assert.match(guardado.roteiro, /Objetos/); assert.match(guardado.roteiro, /API compatível com S3/);
+  for (const t of [/Limites e cotas/, /Maturidade/, /Dependência do fornecedor/, /Operação/, /Encaixe por cenário/, /Não inclua preço/, /Backup de 20 TB/]) assert.match(guardado.roteiro, t);
+  assert.ok(!/\b(melhor|recomendad|barat|oportunidade)/i.test(guardado.roteiro), "sem juízo");
   assert.equal(guardado.estado, "pendente"); assert.equal(guardado.subcategoria, "objetos"); assert.equal(guardado.contexto, "Backup de 20 TB com leitura rara."); assert.equal(guardado.por, ADMIN.email);
   // mesmo conjunto em outra ordem, pendente: devolve o que existe
   const b = await post({ aba: "cloud", ids: ids.slice().reverse() });
