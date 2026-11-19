@@ -218,23 +218,27 @@ function telaGradeCloud(box, est) {
   if (!l.length) { conteudo.append(el("p", { class: "ls-vazio" }, "Nenhum serviço com esses filtros.")); return; }
   conteudo.append(el("p", { class: "ls-aviso ac-conta" }, `${l.length} ${l.length === 1 ? "serviço" : "serviços"}`));
   const grupos = A.agrupar(l, f.por, catsCloud(), provs());
-  const cats = el("div", { class: "ls-cats ac-cats" });
+  const cats = el("div", { class: "ls-cats-col" });
   if (f.por === "provedor") {
     for (const g of grupos) {
       const n = g.cats.reduce((k, c) => k + c.itens.length, 0);
       cats.append(el("section", { class: "ls-cat ac-bloco-prov", "aria-label": g.prov.nome, style: "--pc:" + g.prov.cor }, el("h3", {}, provEl(g.prov, "p"), el("span", { class: "k" }, String(n))),
-        ...g.cats.map((c) => el("div", { class: "ls-sub" }, el("h4", {}, c.nome), el("div", { class: "ac-grade" }, ...c.itens.map(cartaoCloud))))));
+        ...g.cats.map((c) => el("div", { class: "ls-sub" }, el("h4", {}, c.nome), el("div", { class: "ac-grade" }, ...c.itens.map((x) => cartaoCloud(x, true)))))));
     }
   } else {
     for (const c of grupos) {
       const n = c.subs.reduce((k, s) => k + s.itens.length, 0);
       cats.append(el("section", { class: "ls-cat", "aria-label": c.nome }, el("h3", {}, c.nome, el("span", { class: "k" }, String(n))),
-        ...c.subs.map((s) => el("div", { class: "ls-sub ac-sub" }, el("h4", {}, s.nome), el("div", { class: "ac-grade" }, ...s.itens.map(cartaoCloud))))));
+        ...c.subs.map((s) => el("div", { class: "ls-sub ac-sub" }, el("h4", {}, s.nome), el("div", { class: "ac-grade" }, ...s.itens.map((x) => cartaoCloud(x, !!f.q)))))));
     }
   }
-  conteudo.append(cats);
+  conteudo.append(el("div", { class: "ls-cats ac-cats" }, cats));
 }
-function cartaoCloud(s) {
+/* Cartão compacto (pedido de 19/11, 16h31): o ícone do provedor (o nome dele só na dica: title, aria-label e um balão
+   que abre no passar do mouse, no foco do teclado e no toque), o nome do serviço (até 2 linhas, inteiro no title), a
+   subcategoria numa linha pequena quando a grade não está agrupada por ela (por provedor ou com busca) e a caixa
+   Comparar sem texto ao lado. O resumo fica no detalhe. */
+function cartaoCloud(s, comSub) {
   const A = ARCH();
   const p = A.provDe(provs(), s.provedor);
   const m = A.marcavel(s.id, AC.sel, servs(), catsCloud());
@@ -247,13 +251,23 @@ function cartaoCloud(s) {
     else AC.sel = AC.sel.filter((x) => x !== s.id);
     const y = window.scrollY; renderLandscape(); window.scrollTo({ top: y }); const n = $("ac-x-" + s.id); if (n) n.focus();
   });
-  const a = el("a", { class: "ac-nome", href: "#arch/cloud/" + encodeURIComponent(s.id) }, s.nome);
+  const a = el("a", { class: "ac-nome", href: "#arch/cloud/" + encodeURIComponent(s.id), title: s.nome }, s.nome);
   a.addEventListener("click", (e) => abrirServico(s.id, e));
   const fora = AC.sel.length && !marcado && !m.ok;
+  const sub = comSub ? nomeSubCloud(s) : "";
   return el("article", { class: "ac-card" + (marcado ? " marcado" : "") + (fora ? " fora" : ""), id: "ac-c-" + s.id, style: "--pc:" + (p ? p.cor : "#888") },
-    provEl(p, "m"), a, el("p", { class: "ac-resumo", title: s.resumo }, s.resumo || "–"),
-    el("div", { class: "ac-pe" }, s.gratis ? el("span", { class: "dd-badge b-novo", title: s.gratis }, "plano grátis") : el("span"),
-      el("label", { class: "ac-cx", title: m.ok ? "Marcar para comparar" : m.motivo }, cx, el("span", { "aria-hidden": "true" }, "Comparar"))));
+    dicaProvedor(p), el("div", { class: "ac-meio" }, a, sub ? el("span", { class: "ac-sub-lin", title: sub }, sub) : null),
+    el("label", { class: "ac-cx", title: m.ok ? "Comparar" : m.motivo }, cx));
+}
+const nomeSubCloud = (s) => { for (const c of catsCloud()) for (const x of c.subcategorias || c.subs || []) if (x.id === s.subcategoria && (!s.categoria || c.id === s.categoria)) return x.nome; return ""; };
+/* ícone do provedor com o nome numa dica: botão de verdade (foco e toque), sem texto escrito; sem ícone, o logotipo do
+   Lookout esmaecido com a mesma dica */
+function dicaProvedor(p) {
+  const nome = p ? p.nome : "Provedor desconhecido";
+  const b = el("button", { type: "button", class: "ac-dica", title: nome, "aria-label": "Provedor: " + nome, "data-dica": nome }, iconeEl(p ? ARCH().iconeDe({}, p) : [], "m"));
+  b.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); const ab = !b.classList.contains("aberta"); document.querySelectorAll(".ac-dica.aberta").forEach((x) => x.classList.remove("aberta")); b.classList.toggle("aberta", ab); });
+  b.addEventListener("blur", () => b.classList.remove("aberta"));
+  return b;
 }
 function abrirServico(id, e) {
   if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)) return;

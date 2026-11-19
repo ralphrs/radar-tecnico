@@ -255,6 +255,8 @@ h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: 
 /* Lidas: o mesmo ✓ dos cartões, cheio quando ligado */
 .t-lida[aria-pressed="true"] .v-c { fill: currentColor; }
 .t-lida[aria-pressed="true"] .v-p { stroke: var(--card); }
+/* Meus times (Esportes): o mesmo desenho dos outros chips, com o ♥ do time do coração */
+.t-meus .t-meus-i { font-size: 13px; line-height: 1; color: var(--err); }
 .sub { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-left: var(--space-3); border-left: 2px solid color-mix(in srgb, var(--primary) 40%, transparent); }
 .dd-input { display: flex; height: var(--control-h); width: 100%; border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--card); padding: 4px var(--space-3); font: 400 14px/20px var(--font-sans); color: var(--foreground); box-shadow: var(--shadow-sm); }
 .dd-input::placeholder { color: var(--muted-foreground); }
@@ -1999,13 +2001,95 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .esp-tab td.esp-pts { font-weight: 600; }
 .esp-tab tr.esp-z td { background: color-mix(in srgb, var(--z) 8%, var(--card)); }
 .esp-tab tr.esp-z td:first-child { box-shadow: inset 3px 0 0 var(--z); }
-.esp-tab tr.esp-meu td { font-weight: 600; }
-.esp-tab tr.esp-meu td.esp-time::after { content: "seu time"; margin-left: 8px; font: 500 10.5px/1 var(--font-sans); color: var(--primary); text-transform: uppercase; letter-spacing: .04em; }
 @media (max-width: 699px) {
   .esp-tab td, .esp-tab th { padding: 8px 8px; }
   .esp-tab td.esp-time { max-width: 132px; }
-  .esp-tab tr.esp-meu td.esp-time::after { content: none; }
 }
+/* Marca do time do coração (♥) e dos seguidos (★), sempre com texto ou glifo além da cor; o rótulo some no celular */
+.esp-marca { display: inline-flex; align-items: center; gap: 3px; flex: none; font: 600 10.5px/1 var(--font-sans); letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; }
+.esp-marca.coracao { color: var(--err); }
+.esp-marca.seguido { color: var(--primary); }
+.esp-marca i { font-style: normal; font-size: 12px; text-transform: none; letter-spacing: 0; }
+.esp-tab tr.esp-meu td { font-weight: 600; }
+.esp-tab tr.esp-meu.coracao td { background: color-mix(in srgb, var(--err) 7%, var(--card)); }
+.esp-tab tr.esp-meu.seguido td { background: color-mix(in srgb, var(--primary) 6%, var(--card)); }
+.esp-tab tr.esp-meu td.esp-time .esp-marca { margin-left: 6px; }
+@media (max-width: 699px) { .esp-marca .esp-marca-rot { display: none; } }
+/* Pergunta do time do coração e seletor de Meus times: um cartão no topo da seção, nunca um modal */
+.esp-sel { border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); background: color-mix(in srgb, var(--primary) 4%, var(--card)); }
+.esp-sel h3 { margin: 2px 0 4px; font: 600 16px/1.3 var(--font-display); }
+.esp-sel-passo { font: 500 11.5px/1 var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .05em; margin: 4px 0 2px; }
+.esp-sel .pers-dica { margin: 0 0 10px; }
+.esp-sel-grade { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 6px; }
+.esp-sel-op { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-md, 8px); background: var(--card); font: 500 13.5px/1.25 var(--font-sans); color: var(--foreground); }
+.esp-sel-op:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+.esp-sel-op:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.esp-sel-op[aria-pressed="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--card)); font-weight: 600; }
+.esp-sel-op .esp-sel-nome { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-sel-op small { display: block; font: 400 11.5px/1.2 var(--font-sans); color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-sel-op .esp-sel-ok { flex: none; width: 18px; text-align: center; color: var(--primary); font-weight: 700; }
+.esp-sel-pe { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.esp-sel-pe .esp-sel-esq { margin-right: auto; }
+.esp-sel-vazio { margin: 10px 0 0; font-size: 13px; color: var(--muted-foreground); }
+.esp-sel-esc { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+@media (max-width: 699px) {
+  .esp-sel-grade { grid-template-columns: 1fr 1fr; }
+  .esp-sel-pe .dd-btn { flex: 1 1 auto; justify-content: center; }
+  .esp-sel-pe .esp-sel-esq { margin-right: 0; flex-basis: 100%; }
+}
+@media (max-width: 380px) { .esp-sel-grade { grid-template-columns: 1fr; } }
+/* Linha discreta de Meus times e o bloco com cada time seguido */
+.esp-mt-linha { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted-foreground); }
+.esp-mt-linha .esp-mt-quem { display: inline-flex; align-items: center; gap: 8px; color: var(--foreground); font-weight: 600; min-width: 0; }
+.esp-mt-linha .dd-btn { min-height: 32px; }
+.esp-mt { display: flex; flex-direction: column; gap: 8px; }
+.esp-mt h2 { margin: 0; font: 600 15px/1.3 var(--font-display); }
+.esp-mt-grade { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px; }
+.esp-mt-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 14px; box-shadow: var(--shadow-sm); min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.esp-mt-card.coracao { border-color: color-mix(in srgb, var(--err) 40%, var(--border)); }
+.esp-mt-cab { display: flex; align-items: center; gap: 10px; min-width: 0; font: 600 14.5px/1.25 var(--font-display); }
+.esp-mt-cab .esp-n { min-width: 0; }
+.esp-mt-l { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; font-size: 13px; font-variant-numeric: tabular-nums; align-items: baseline; }
+.esp-mt-l > span:first-child { font: 500 11px/1.4 var(--font-sans); text-transform: uppercase; letter-spacing: .04em; color: var(--muted-foreground); }
+.esp-mt-l b { font-weight: 600; }
+.esp-mt-l small { color: var(--muted-foreground); font-size: 12px; }
+.esp-mt-not { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.esp-mt-not a { color: var(--foreground); text-decoration: none; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.esp-mt-not a:hover { text-decoration: underline; }
+@media (max-width: 699px) { .esp-mt-grade { grid-template-columns: minmax(0, 1fr); } .esp-mt-card { padding: 10px 12px; } }
+/* Faixa de jogos acima da tabela: carrossel com rolagem nativa e scroll-snap; o cartão do coração fica preso à esquerda */
+.esp-faixa { margin: 8px 0 4px; min-width: 0; }
+.esp-faixa-cab { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font: 500 11.5px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.esp-faixa-cab span { flex: 1 1 auto; }
+.esp-faixa-seta { all: unset; box-sizing: border-box; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--foreground); display: inline-flex; align-items: center; justify-content: center; }
+.esp-faixa-seta svg { width: 16px; height: 16px; }
+.esp-faixa-seta:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.esp-faixa-seta:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.esp-faixa-seta:disabled { opacity: .35; cursor: default; }
+@media (pointer: coarse) { .esp-faixa-seta { display: none; } }
+.esp-faixa-trilho { --fixo: min(204px, 50%); display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline-start: calc(var(--fixo) + 8px); padding: 2px 2px 8px; scrollbar-width: thin; position: relative; }
+.esp-faixa-trilho.sem-fixo { scroll-padding-inline-start: 0; }
+.esp-faixa-trilho:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 8px; }
+@media (prefers-reduced-motion: no-preference) { .esp-faixa-trilho { scroll-behavior: smooth; } }
+.esp-faixa-lista { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; }
+.esp-faixa-lista > li { flex: none; scroll-snap-align: start; }
+.esp-jc { box-sizing: border-box; width: 176px; flex: none; border: 1px solid var(--border); border-radius: 10px; background: var(--card); padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.esp-jc.in { border-color: color-mix(in srgb, var(--err) 45%, var(--border)); }
+.esp-jc.fixo { position: sticky; left: 0; z-index: 2; width: var(--fixo); scroll-snap-align: start; background: var(--card); border-color: color-mix(in srgb, var(--err) 55%, var(--border)); box-shadow: 10px 0 12px -8px rgb(0 0 0 / .28), 0 0 0 4px var(--card); }
+.esp-jc-cab { display: flex; justify-content: space-between; gap: 6px; font: 500 11.5px/1.2 var(--font-sans); color: var(--muted-foreground); white-space: nowrap; }
+.esp-jc-cab .esp-vivo { font-size: 11.5px; }
+.esp-jc-time { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.esp-jc-time .esp-n { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esp-jc-time.coracao .esp-n, .esp-jc-time.seguido .esp-n { font-weight: 600; }
+.esp-jc-gol { flex: none; min-width: 14px; text-align: right; font-weight: 700; }
+.esp-jc.pre .esp-jc-gol { color: var(--muted-foreground); font-weight: 400; }
+.esp-jc-fixo { font: 600 10.5px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .04em; color: var(--err); }
+/* Campeonatos fora de temporada: atrás de um link no fim da lista */
+.esp-fora-bt { align-self: flex-start; }
+.esp-fora { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.esp-fora > li.esp-fora-item { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 8px 12px; border: 1px dashed var(--border); border-radius: var(--radius-lg); font-size: 13.5px; }
+.esp-fora-item b { font-weight: 600; }
+.esp-fora-item small { color: var(--muted-foreground); font-size: 12.5px; flex: 1 1 auto; }
 .esp-leg { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--muted-foreground); }
 .esp-leg li { display: inline-flex; align-items: center; gap: 6px; }
 .esp-leg i { width: 12px; height: 12px; border-radius: 3px; background: color-mix(in srgb, var(--z) 22%, var(--card)); box-shadow: inset 3px 0 0 var(--z); }
@@ -2119,8 +2203,13 @@ html.tech-ls .barra-linha { display: none; }
 .ls-aviso { margin: 0; font-size: 13px; color: var(--muted-foreground); }
 .ls-aviso b { color: var(--warn); font-weight: 600; }
 .ls-aviso.erro { color: var(--err); }
-.ls-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: var(--space-4); align-items: start; }
-.ls-cat { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); min-width: 0; overflow: hidden; }
+/* Contêineres de categoria encostados, cada um com a altura do seu conteúdo (pedido de 19/11, 16h31): colunas CSS dentro de
+   uma moldura com a borda e os cantos arredondados; cada bloco desenha só a borda da direita e a de baixo, e a moldura
+   esconde as da última coluna e da última linha (margem de -1px), então nunca há borda dupla. A ordem do DOM (e do
+   teclado e do leitor de tela) é a de leitura: coluna por coluna. */
+.ls-cats { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--card); box-shadow: var(--shadow-sm); }
+.ls-cats > .ls-cats-col { columns: 3 340px; column-gap: 0; margin: 0 -1px -1px 0; }
+.ls-cat { background: var(--card); border: 0; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 0; box-shadow: none; min-width: 0; overflow: hidden; break-inside: avoid; display: block; width: 100%; box-sizing: border-box; }
 .ls-cat > h3 { display: flex; align-items: baseline; gap: 8px; margin: 0; padding: 10px 14px; font: 600 15px/1.25 var(--font-display); background: color-mix(in srgb, var(--primary) 8%, var(--card)); border-bottom: 1px solid var(--border); }
 .ls-cat > h3 .k { font: 500 12px var(--font-mono); color: var(--muted-foreground); }
 .ls-sub { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px 12px; padding: 10px 12px; border-top: 1px solid var(--border); align-items: start; }
@@ -2162,19 +2251,23 @@ html.tech-ls .barra-linha { display: none; }
 .ac-comparar[disabled] { opacity: .45; cursor: not-allowed; pointer-events: none; box-shadow: none; }
 .ac-motivo { font-size: 13px; color: var(--muted-foreground); }
 .ac-recorte { font-weight: 600; }
-.ac-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 8px; min-width: 0; }
-.ac-sub { grid-template-columns: 112px minmax(0, 1fr); }
-@media (max-width: 559px) { .ac-sub, .ac-bloco-prov .ls-sub { grid-template-columns: minmax(0, 1fr); } }
-.ac-card { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px 10px 6px 12px; border: 1px solid var(--border); border-left: 4px solid var(--pc, var(--border)); border-radius: var(--radius-md); background: var(--card); transition: opacity .15s; }
+/* Cloud, cartão compacto (19/11, 16h31): ícone com dica, nome em até 2 linhas, subcategoria opcional e a caixa Comparar */
+.ac-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 132px), 1fr)); gap: 6px; min-width: 0; }
+.ac-sub, .ac-bloco-prov .ls-sub { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.ac-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px; min-width: 0; min-height: 44px; padding: 4px 4px 4px 7px; border: 1px solid var(--border); border-left: 3px solid var(--pc, var(--border)); border-radius: var(--radius-md); background: var(--card); transition: opacity .15s; }
 .ac-card:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); border-left-color: var(--pc, var(--border)); }
 .ac-card.marcado { outline: 2px solid var(--primary); outline-offset: -1px; }
 .ac-recortando .ac-card.fora { opacity: .42; }
-.ac-card .ac-nome { font: 600 14px/1.25 var(--font-sans); color: var(--foreground); text-decoration: none; overflow-wrap: anywhere; }
+.ac-meio { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ac-card .ac-nome { font: 600 13px/1.25 var(--font-sans); color: var(--foreground); text-decoration: none; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ac-card .ac-nome::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
 .ac-card .ac-nome:focus-visible { outline: none; } .ac-card:has(.ac-nome:focus-visible) { outline: 2px solid var(--ring); outline-offset: 2px; }
-.ac-resumo { margin: 0; font-size: 12.5px; line-height: 1.35; color: var(--muted-foreground); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-.ac-pe { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; min-height: 32px; }
-.ac-cx { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted-foreground); min-height: 32px; padding: 0 2px; cursor: pointer; }
+.ac-sub-lin { font: 400 11px/1.25 var(--font-sans); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-dica { all: unset; position: relative; z-index: 2; display: inline-flex; border-radius: 6px; cursor: help; }
+.ac-dica:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ac-dica::after { content: attr(data-dica); position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 5; padding: 4px 8px; border-radius: 6px; background: var(--foreground); color: var(--background); font: 500 12px/1.3 var(--font-sans); white-space: nowrap; pointer-events: none; opacity: 0; visibility: hidden; box-shadow: var(--shadow-sm); }
+.ac-dica:hover::after, .ac-dica:focus-visible::after, .ac-dica.aberta::after { opacity: 1; visibility: visible; }
+.ac-cx { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; min-width: 32px; min-height: 36px; cursor: pointer; }
 .ac-cx input { width: 18px; height: 18px; margin: 0; }
 .ac-cx:has(input:disabled) { cursor: not-allowed; opacity: .6; }
 .ac-bloco-prov > h3 { border-left: 4px solid var(--pc); }
@@ -2340,7 +2433,7 @@ html.tech-ls .barra-linha { display: none; }
 .wdg-ls li a b { font-weight: 600; }
 @media (max-width: 699px) {
   .ls-cab h2 { font-size: 21px; }
-  .ls-cats { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+  .ls-cats > .ls-cats-col { columns: 1; }
   .ls-sub { grid-template-columns: minmax(0, 1fr); padding: 8px 10px; }
   .ls-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .ls-ferr input.dd-input { flex: 1 1 100%; max-width: none; }
@@ -2423,6 +2516,7 @@ html.tech-ls .barra-linha { display: none; }
             <button class="chip t-rel" type="button" id="so-relevantes" aria-pressed="false"></button>
             <button class="chip t-fav" type="button" id="so-favoritos" aria-pressed="false"></button>
             <button class="chip t-lida" type="button" id="so-lidas" aria-pressed="false"></button>
+            <button class="chip t-meus" type="button" id="so-meus" aria-pressed="false" hidden></button>
             <button class="chip" type="button" id="modo-resumos"></button>
           </div>
         </div>
@@ -2500,6 +2594,7 @@ html.tech-ls .barra-linha { display: none; }
       <button class="chip t-rel" type="button" id="topo-relevantes" aria-pressed="false"></button>
       <button class="chip t-fav" type="button" id="topo-favoritos" aria-pressed="false"></button>
       <button class="chip t-lida" type="button" id="topo-lidas" aria-pressed="false"></button>
+      <button class="chip t-meus" type="button" id="topo-meus" aria-pressed="false" hidden></button>
       <span class="feed-div" aria-hidden="true"></span>
       <button class="chip" type="button" id="topo-resumos"></button>
     </div>
@@ -2528,6 +2623,7 @@ html.tech-ls .barra-linha { display: none; }
   <a class="conta-item" role="menuitem" tabindex="-1" href="#listas" id="conta-listas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>Minhas listas</a>
   <div class="conta-sep" role="separator" id="conta-sep-cart"></div>
   <a class="conta-item" role="menuitem" tabindex="-1" href="#esportes/config" id="conta-esportes" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m12 7 4 3-1.5 4.5h-5L8 10z"/><path d="M12 3v4M21 10l-5 0M18 19l-3-4.5M6 19l3-4.5M3 10h5"/></svg>Meus esportes</a>
+  <a class="conta-item" role="menuitem" tabindex="-1" href="#esportes/times" id="conta-meus-times" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="M12 15.5c-2.2-1.4-3.5-2.7-3.5-4.2a1.8 1.8 0 0 1 3.5-.6 1.8 1.8 0 0 1 3.5.6c0 1.5-1.3 2.8-3.5 4.2z"/></svg>Meus times</a>
   <div class="conta-sep" role="separator" id="conta-sep-esp" hidden></div>
   <button class="conta-item" type="button" role="menuitem" tabindex="-1" id="aparencia" data-fica></button>
   <button class="conta-item" type="button" role="menuitemcheckbox" tabindex="-1" id="conta-traducao" aria-checked="true" data-fica></button>
@@ -2914,6 +3010,8 @@ let tBusca = 0; /* busca do feed esperando o usuário parar de digitar */
 let soRel = false, soFav = false, favs = {}, favCol = null;
 /* Lidas (public/lidas.js, src/lidas.js): ids marcados na conta, mais recente primeiro. soLidas: o chip "Lidas" ligado. */
 let soLidas = false, lidas = new Set(), lidasOrdem = [];
+/* Esportes (19/11): o chip "Meus times" ligado mostra só as notícias que citam os times seguidos (Esportes.noticiaDoTime) */
+let soMeus = false;
 /* Ordem dos itens dentro de cada tema */
 const ORDENS = [
   { id: "data", nome: "Data", dica: "Publicados mais recentemente primeiro" },
@@ -2984,7 +3082,7 @@ function aplicarRadar() {
   if (tipo === "alta") { tipo = "todos"; soRel = true; }
   if (tipo === "youtube") tipo = "video";
   if (!TIPOS.some((t) => t.id === tipo)) tipo = "todos";
-  busca = ""; soFav = false; soLidas = false; slide = 0;
+  busca = ""; soFav = false; soLidas = false; soMeus = false; slide = 0;
   recentes = []; antigos = []; itens = []; meta = null; destaque = null; podeMais = false; carregando = false; carregado = false;
   expandidos = new Set();
   document.title = r.titulo + " · Lookout";
@@ -3070,7 +3168,9 @@ const fonteEl = (i) => el("span", { class: "fonte" }, bandeira(i), i.fonte || ho
 const tipoDe = (i) => (i.tipo === "youtube" ? "video" : i.tipo);
 const passaTipo = (i, t) => t === "todos" || tipoDe(i) === t;
 const passaRel = (i) => !soRel || Number(i.relevancia) >= 3;
-const passaBase = (i) => passaBusca(i) && passaRel(i) && passaEscopo(i);
+const meusTimesNoChip = () => radar === "esportes" && !inicio && typeof espSeguidos === "function" && espSeguidos().length > 0;
+const passaMeus = (i) => !soMeus || !meusTimesNoChip() || citaMeusTimes(i);
+const passaBase = (i) => passaBusca(i) && passaRel(i) && passaEscopo(i) && passaMeus(i);
 /* Lista de onde os filtros partem: o feed inteiro ou só os favoritos */
 /* Com o chip Lidas ligado, só as lidas (dos favoritos, se o chip Favoritos também estiver ligado) */
 const fonteItens = () => { const l = soFav ? favsDoRadar().map(([id, f]) => tv({ ...f, _id: id })).sort(ordem) : itens; return soLidas ? l.filter(ehLida) : l; };
@@ -5405,7 +5505,8 @@ function renderFeed() {
     }
     bloco.append(sec);
   }
-  f.append(bloco.children.length ? bloco : el("div", { class: "vazio" }, el("strong", {}, "Nada encontrado"), "Nenhum item corresponde aos filtros ou à busca. Tente outro tipo ou tema, ou limpe os filtros."));
+  f.append(bloco.children.length ? bloco : soMeus && meusTimesNoChip() ? el("div", { class: "vazio" }, el("strong", {}, "Nenhuma notícia dos seus times"), "Nada no feed cita os times que você segue com esses filtros. Desligue o chip Meus times para ver tudo, ou mude os times em Meus times.")
+    : el("div", { class: "vazio" }, el("strong", {}, "Nada encontrado"), "Nenhum item corresponde aos filtros ou à busca. Tente outro tipo ou tema, ou limpe os filtros."));
   if (podeMais && !soFav) {
     /* carregar mais: as não lidas novas entram antes do bloco das lidas (ordenar refaz a lista inteira) */
     const b = el("button", { class: "dd-btn dd-btn--outline alvo", type: "button", id: "carregar-antigos", style: "align-self:center;margin-top:var(--space-6)" }, carregando ? "Carregando…" : "Carregar mais antigos");
@@ -5485,11 +5586,21 @@ function renderAlternancias() {
     l.setAttribute("aria-pressed", String(soLidas));
     l.insertAdjacentHTML("beforeend", VISTO); l.append("Lidas", el("span", { class: "k" }, String(lidasDoRadar().length)));
     $(mid).textContent = resumosAbertos ? "Recolher resumos" : "Expandir resumos";
+    /* Meus times: só em Esportes, com algum time seguido; a contagem é a do feed com os outros filtros */
+    const m = $(fid.replace("favoritos", "meus")); m.textContent = "";
+    const temMeus = meusTimesNoChip();
+    m.hidden = !temMeus;
+    if (temMeus) {
+      m.setAttribute("aria-pressed", String(soMeus));
+      const n = fonteItens().filter((i) => passaBusca(i) && passaRel(i) && passaEscopo(i) && citaMeusTimes(i)).length;
+      m.append(el("span", { class: "t-meus-i", "aria-hidden": "true" }, "♥"), "Meus times", el("span", { class: "k" }, String(n)));
+      m.title = "Só as notícias dos times que você segue";
+    }
   });
 }
 /* Contador de filtros ativos no botão da barra e total no rodapé do painel */
 function renderContador() {
-  const n = temasSel.size + subsSel.size + (escopo !== "todos") + soRel + soFav + soLidas + (busca.trim() ? 1 : 0);
+  const n = temasSel.size + subsSel.size + (escopo !== "todos") + soRel + soFav + soLidas + (soMeus && meusTimesNoChip()) + (busca.trim() ? 1 : 0);
   const c = $("contador"), b = $("abrir-filtros");
   c.hidden = !n; c.textContent = String(n);
   b.dataset.ativo = String(n > 0);
@@ -5692,7 +5803,7 @@ function alternarResumos() {
   render();
 }
 function limparFiltros() {
-  temasSel.clear(); subsSel.clear(); escopo = "todos"; soRel = false; soFav = false; soLidas = false; busca = "";
+  temasSel.clear(); subsSel.clear(); escopo = "todos"; soRel = false; soFav = false; soLidas = false; soMeus = false; busca = "";
   try { localStorage.setItem("radar-escopo" + R().sufixo, "todos"); } catch (e) {}
   try { localStorage.setItem("radar-filtro" + R().sufixo, "todos"); localStorage.setItem("radar-relevantes", "0"); } catch (e) {}
   render();
@@ -5706,12 +5817,15 @@ $("limpar-filtros").addEventListener("click", limparFiltros);
 $("topo-relevantes").addEventListener("click", alternarRel);
 $("topo-favoritos").addEventListener("click", alternarSoFav);
 $("topo-lidas").addEventListener("click", alternarSoLidas);
+const alternarSoMeus = () => { soMeus = !soMeus; render(); };
+$("so-meus").addEventListener("click", alternarSoMeus);
+$("topo-meus").addEventListener("click", alternarSoMeus);
 $("topo-resumos").addEventListener("click", alternarResumos);
 $("nav-limpar").addEventListener("click", () => { limparFiltros(); irParaFeed(); $("nav-todos").focus({ preventScroll: true }); });
 
 /* Painel de filtros */
 let abridor = null, assinatura = "";
-const estado = () => [[...temasSel].join(","), [...subsSel].join(","), ordenacao, escopo, soRel, soFav, soLidas, busca, tipo].join("|");
+const estado = () => [[...temasSel].join(","), [...subsSel].join(","), ordenacao, escopo, soRel, soFav, soLidas, soMeus, busca, tipo].join("|");
 function abrirPainel(foco) {
   const p = $("painel");
   if (p.hidden) {
@@ -6733,6 +6847,8 @@ function renderPers() {
     /* os do radar só aparecem para quem tem carteira ou filtro salvo; Esportes, só as competições ligadas */
     if (def.pessoal && !def.id.startsWith("carteira-") && pessoalOculto(def.id)) return;
     if (espOculto(def.id)) return;
+    /* rodada e tabela de campeonato fora de temporada não entram no seletor (o doc já lido diz) */
+    { const l = ligaDoWidget(def.id), d = l && espDocs.get(l); if (d && !ES.emAndamento(d)) return; }
     const gid = grupoDoWidget(def.id);
     if (q && !semAcento(def.titulo + " " + nomeGrupoPadrao(gid)).toLowerCase().includes(q)) return;
     if (!por.has(gid)) por.set(gid, []);
@@ -10860,8 +10976,23 @@ const espLiberado = () => !secoesLiberadas || secoesLiberadas.includes("esportes
 const espPrefsOu = () => espPrefs || ES.respostaPrefs(null);
 const espLigadas = () => ES.ligadas(espPrefsOu());
 const espTimes = () => espPrefsOu().times || [];
-const espTimeDe = (liga) => espTimes().find((t) => t.liga === liga) || null;
-const espMeuTime = () => espTimes()[0] || null;
+/* Time de interesse numa competição (destaque da tabela, Próximos, widgets): o do coração se ele joga nela, senão o
+   primeiro seguido dela (Meus times), senão o primeiro dela em "Times que eu acompanho" (Meus esportes) */
+function espTimeDe(liga) {
+  for (const k of espSeguidos()) { const t = espConhecidos.get(k); if (t && t.ligas.includes(liga)) return { liga, id: String(t.id), nome: t.nome }; }
+  return espTimes().find((t) => t.liga === liga) || null;
+}
+/* O time do widget "próximo jogo": o do coração (na primeira competição dele em andamento), senão o primeiro seguido,
+   senão o primeiro de "Times que eu acompanho" */
+function espMeuTime() {
+  for (const k of espSeguidos()) {
+    const t = espConhecidos.get(k);
+    if (!t || !t.ligas.length) continue;
+    const liga = t.ligas.find((l) => { const d = espDocs.get(l); return d && ES.emAndamento(d); }) || t.ligas[0];
+    return { liga, id: String(t.id), nome: t.nome };
+  }
+  return espTimes()[0] || null;
+}
 /* jogadores de tênis acompanhados (nome digitado), por liga */
 const espJogadores = () => espPrefsOu().jogadores || [];
 const espJogadoresDe = (liga) => espJogadores().filter((x) => x.liga === liga);
@@ -10951,20 +11082,23 @@ const ehMeu = (j, t) => !!t && (j.ids || []).includes(t.id);
    celular e no Início: "Lakers" em vez de "Los Angeles Lakers") */
 function jogoEl(j, t, curto, medio, d) {
   const p = ES.partesData(j.data);
-  const meuM = ehMeu(j, t) && j.ids[0] === t.id, meuV = ehMeu(j, t) && j.ids[1] === t.id;
-  const nome = (n, sig, meu, k) => {
+  const liga = (d && d.liga) || (t && t.liga) || "";
+  /* marca de cada lado: o do coração (♥) e os seguidos (★); o time de interesse antigo também fica em negrito */
+  const marcas = [0, 1].map((k) => marcaTime(liga, j.ids && j.ids[k]) || (ehMeu(j, t) && j.ids[k] === t.id ? "seguido" : ""));
+  const nome = (n, sig, k) => {
     const x = curto && sig ? sig : (medio && j.curtos && j.curtos[k]) || n;
     const esc = escudoEl(escDoDoc(d, j.ids && j.ids[k]), { sigla: sig, nome: n, tam: 20 });
-    const txt = el("span", { class: "esp-n" }, meu ? el("b", {}, x) : x);
-    return k ? [esc, txt] : [txt, esc];
+    const txt = el("span", { class: "esp-n" }, marcas[k] ? el("b", {}, x) : x);
+    const m = marcaTimeEl(marcas[k], true);
+    return k ? [esc, txt, m] : [m, txt, esc];
   };
   const placar = j.placar ? j.placar[0] + " × " + j.placar[1] : p ? p.hora : "×";
   const tit = [j.mandante, j.visitante].join(" × ") + (j.estadio ? " · " + j.estadio : "") + (p ? " · " + p.semana + " " + p.ddmm + " " + p.hora : "");
-  return el("li", { class: "esp-jogo " + j.estado + (ehMeu(j, t) ? " meu" : ""), title: tit },
+  return el("li", { class: "esp-jogo " + j.estado + (marcas[0] || marcas[1] ? " meu" : ""), title: tit },
     el("span", { class: "esp-q" }, quandoJogo(j)),
-    el("span", { class: "esp-m" }, ...nome(j.mandante, j.siglas && j.siglas[0], meuM, 0)),
+    el("span", { class: "esp-m" }, ...nome(j.mandante, j.siglas && j.siglas[0], 0)),
     el("span", { class: "esp-p", "aria-label": j.placar ? `${j.placar[0]} a ${j.placar[1]}` : "a jogar" }, j.estado === "pre" ? "×" : placar),
-    el("span", { class: "esp-v" }, ...nome(j.visitante, j.siglas && j.siglas[1], meuV, 1)));
+    el("span", { class: "esp-v" }, ...nome(j.visitante, j.siglas && j.siglas[1], 1)));
 }
 const listaJogos = (js, t, curto, medio, d) => el("ul", { class: "esp-jogos" }, ...js.map((j) => jogoEl(j, t, curto, medio, d)));
 const celular = () => window.matchMedia("(max-width: 699px)").matches;
@@ -10993,16 +11127,18 @@ function tabelaEsp(liga, d) {
   const linhas = (d.tabela || []).filter((r) => r && r.time);
   if (!linhas.length) return [el("p", { class: "esp-vazio" }, ES.LIGAS[liga] && !ES.LIGAS[liga].zonas.length ? "Competição em mata-mata: não tem tabela de pontos." : "A tabela desta competição ainda não chegou.")];
   const t = espTimeDe(liga);
+  /* coração (♥) e seguidos (★); o time de interesse de Meus esportes conta como seguido */
+  const marcaLinha = (r) => marcaTime(liga, r.id) || (t && r.id === t.id ? "seguido" : "");
   const grupos = linhas.some((r) => r.grupo);
   const cols = grupos ? [COL_GRUPO, ...colsDaLiga(liga)] : colsDaLiga(liga);
   const tab = Tabela.criar({
     id: "esp-tab-" + ES.slugLiga(liga), colunas: cols, linhas, rotuloConta: "times", classeTabela: "cot-tab esp-tab",
     padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 50 }, semOrdem: "Na ordem da classificação.",
-    attrsLinha: (r) => { const z = corZona(r.zona); return { class: (z ? "esp-z" : "") + (t && r.id === t.id ? " esp-meu" : ""), ...(z ? { style: "--z:" + z } : {}), title: r.zona ? ES.ZONAS_NOME[r.zona] || "" : "" }; },
+    attrsLinha: (r) => { const z = corZona(r.zona), m = marcaLinha(r); return { class: (z ? "esp-z" : "") + (m ? " esp-meu " + m : ""), ...(z ? { style: "--z:" + z } : {}), title: r.zona ? ES.ZONAS_NOME[r.zona] || "" : "" }; },
     celula: (c, r) => {
       const v = r[c.id];
       if (c.id === "pos") return el("td", { class: "esp-pos" }, v == null ? "–" : String(v));
-      if (c.id === "time") return el("td", { class: "esp-time", title: r.time }, el("span", { class: "esp-tm" }, escudoEl(escDoDoc(d, r.id), { sigla: r.sigla, nome: r.time, tam: 20 }), el("span", { class: "esp-n" }, (celular() && r.curto) || r.time)));
+      if (c.id === "time") return el("td", { class: "esp-time", title: r.time }, el("span", { class: "esp-tm" }, escudoEl(escDoDoc(d, r.id), { sigla: r.sigla, nome: r.time, tam: 20 }), el("span", { class: "esp-n" }, (celular() && r.curto) || r.time), marcaTimeEl(marcaLinha(r))));
       if (c.id === "grupo") return el("td", { class: "esp-grupo" }, v || "–");
       if (c.id === "sg") return el("td", {}, v == null ? "–" : (v > 0 ? "+" : "") + v);
       if (c.id === "pct") return el("td", { class: "esp-pts", title: v == null ? "" : "Aproveitamento: " + fmtPctEsp(v) + "% das partidas" }, fmtPctEsp(v));
@@ -11115,7 +11251,7 @@ function cartaoEsp(liga) {
   const corpo = el("div", { class: "esp-corpo", id: corpoId });
   if (d === undefined && !espDocs.has(liga)) corpo.append(esqueleto(4));
   else if (!d) corpo.append(el("p", { class: "esp-vazio" }, "Sem dados desta competição ainda."));
-  else corpo.append(...corpoEsp(liga, d, aba).filter(Boolean));
+  else corpo.append(...[faixaJogos(liga, d), ...corpoEsp(liga, d, aba)].filter(Boolean));
   const pe = el("div", { class: "esp-pe" }, el("span", {}, "Dados: " + fonteTxt(d)), d && d.atualizado ? el("span", { title: fmtData(d.atualizado) }, "atualizado " + fmtRel(d.atualizado)) : null);
   return el("section", { class: "esp-card esp-" + def.esporte + (fechado ? " fechado" : ""), id: "esp-" + s, "aria-labelledby": "esp-tit-" + s }, el("div", { class: "esp-cab" }, tit, seg), corpo, d ? pe : null);
 }
@@ -11123,22 +11259,375 @@ function renderEsportes(forcar) {
   const box = $("esportes-box");
   const mostra = !inicio && radar === "esportes" && espLiberado();
   box.hidden = !mostra;
-  if (!mostra) { if (box.firstChild) box.textContent = ""; espVisto = ""; return; }
+  /* fora de Esportes: o "Agora não" vale só até a próxima visita */
+  if (!mostra) { if (box.firstChild) box.textContent = ""; espVisto = ""; espAgoraNao = false; if (espSel && espSel.modo === "pergunta") espSel = null; return; }
   if (!espPrefs && !espPrefsLendo) lerPrefsEsportes().then(() => { renderEsportes(); carregarEsportes(); });
+  if (espTimesP === undefined && !espTimesLendo) lerTimesEsportes().then(() => { renderEsportes(); carregarLigasDosTimes(); if (radar === "esportes" && !inicio) { renderAlternancias(); renderContador(); } });
   carregarEsportes();
+  carregarLigasDosTimes();
   const ligas = espLigadas();
+  /* a pergunta do time do coração abre sozinha (Esportes.devePerguntar) */
+  if (!espSel && ES.devePerguntar(espTimesP, { agoraNao: espAgoraNao })) espSel = { modo: "pergunta", passo: 1, coracao: null, seguidos: new Set(espSeguidos()), busca: "", erro: "", salvando: false };
+  const ligasMt = [...new Set(espSeguidos().flatMap((k) => (espConhecidos.get(k) || { ligas: [] }).ligas))];
   /* render() roda a cada filtro do feed: os cartões só são refeitos quando o que eles mostram mudou */
-  const k = JSON.stringify([ligas, espTimes(), espJogadores(), ligas.map((l) => { const d = espDocs.get(l); return d === undefined ? "?" : d ? d.atualizado : "-"; }), espEstado, window.innerWidth < 700, window.innerWidth < 360, Math.floor(Date.now() / 60000)]);
+  const k = JSON.stringify([ligas, espTimes(), espJogadores(), [...ligas, ...ligasMt].map((l) => { const d = espDocs.get(l); return d === undefined ? "?" : d ? d.atualizado : "-"; }), espEstado, espTimesP || null, espConhecidos.size, !!espSel, espVerFora, [...espVerMesmo], itens.length, itens[0] && itens[0]._id, window.innerWidth < 700, window.innerWidth < 360, Math.floor(Date.now() / 60000)]);
   if (!forcar && k === espVisto) return;
   espVisto = k;
+  /* o foco e o cursor voltam ao mesmo campo depois de redesenhar (a busca do seletor, um botão) */
+  const ativo = document.activeElement && box.contains(document.activeElement) ? document.activeElement : null;
+  const foco = ativo && ativo.id, selIni = ativo && "selectionStart" in ativo ? ativo.selectionStart : null;
+  const rolagens = new Map([...box.querySelectorAll(".esp-faixa-trilho")].map((x) => [x.id, x.scrollLeft]));
   box.textContent = "";
   const cfg = el("a", { class: "dd-btn dd-btn--outline alvo", href: "#esportes/config", id: "esp-config", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>' });
   cfg.append("Meus esportes");
+  /* topo: a pergunta (ou o seletor aberto por "Meus times"); respondida, a linha discreta e o bloco Meus times */
+  if (espSel) box.append(seletorTimes());
+  else if (espTimesP) { box.append(linhaMeusTimes()); const mt = blocoMeusTimes(); if (mt) box.append(mt); }
   box.append(el("div", { class: "esp-topo" }, el("h2", { id: "esp-titulo" }, "Competições"), cfg));
-  if (!ligas.length) { box.append(el("p", { class: "esp-vazio" }, "Nenhuma competição ligada. Escolha as suas em Meus esportes.")); return; }
-  ligas.forEach((l) => { const c = cartaoEsp(l); if (c) box.append(c); });
+  if (!ligas.length) { box.append(el("p", { class: "esp-vazio" }, "Nenhuma competição ligada. Escolha as suas em Meus esportes.")); }
+  else {
+    /* só os campeonatos em andamento (Esportes.emAndamento); doc ainda não lido ou sem dados fica, para não sumir à toa */
+    const fora = ligas.filter((l) => { const d = espDocs.get(l); return !!d && !ES.emAndamento(d); });
+    const vis = ligas.filter((l) => !fora.includes(l));
+    vis.forEach((l) => { const c = cartaoEsp(l); if (c) box.append(c); });
+    if (!vis.length) box.append(el("p", { class: "esp-vazio" }, fora.length === 1 ? "O seu campeonato não está em andamento agora." : "Nenhum dos seus campeonatos está em andamento agora."));
+    if (fora.length) {
+      const bt = el("button", { type: "button", class: "dd-btn dd-btn--link esp-fora-bt", id: "esp-fora-bt", "aria-expanded": String(espVerFora), "aria-controls": "esp-fora" },
+        (espVerFora ? "Esconder" : "Ver") + ` campeonatos encerrados ou que ainda não começaram (${fora.length})`);
+      bt.addEventListener("click", () => { espVerFora = !espVerFora; renderEsportes(true); const b = $("esp-fora-bt"); if (b) b.focus({ preventScroll: true }); });
+      box.append(bt);
+      if (espVerFora) {
+        const ul = el("ul", { class: "esp-fora", id: "esp-fora" });
+        fora.forEach((l) => {
+          const s = ES.slugLiga(l), ver = espVerMesmo.has(l);
+          const b = el("button", { type: "button", class: "dd-btn dd-btn--outline", id: "esp-fora-ver-" + s, "aria-expanded": String(ver) }, ver ? "Esconder" : "Ver mesmo assim");
+          b.addEventListener("click", () => { if (ver) espVerMesmo.delete(l); else espVerMesmo.add(l); renderEsportes(true); const x = $("esp-fora-ver-" + s); if (x) x.focus({ preventScroll: true }); });
+          ul.append(el("li", { class: "esp-fora-item" }, el("b", {}, ES.LIGAS[l].nome), el("small", {}, textoFora(espDocs.get(l))), b));
+          if (ver) { const c = cartaoEsp(l); if (c) ul.append(el("li", {}, c)); }
+        });
+        box.append(ul);
+      }
+    }
+  }
+  if (foco && $(foco)) { const f = $(foco); f.focus({ preventScroll: true }); if (selIni != null && f.setSelectionRange) { try { f.setSelectionRange(selIni, selIni); } catch (e) {} } }
+  rolagens.forEach((x, id) => { const t = $(id); if (t && x) { t.style.scrollBehavior = "auto"; t.scrollLeft = x; t.style.scrollBehavior = ""; } });
 }
 window.addEventListener("resize", () => { if (!inicio && radar === "esportes") renderEsportes(); });
+
+/* ---- Meus times (pedidos de 19/11): time do coração, times seguidos, a pergunta, o bloco "Meus times" e a faixa ----
+   /api/esportes/times (src/esportes.js): { coracao, seguidos, perguntado, conhecidos }, em prefs/<email> id
+   "esportes-times". A chave do time é Esportes.chaveTime (o id da ESPN no futebol; "basquete-<id>" na NBA). Regras puras
+   em /esportes.js: devePerguntar, jogosDoCabecalho, situacaoCampeonato, emAndamento, noticiaDoTime. A pergunta é um
+   cartão no topo da seção (nunca um modal): "Agora não" esconde nesta visita a Esportes; volta na próxima, até a
+   pessoa salvar ou escolher "Não torço para nenhum time". */
+var espTimesP, espTimesLendo = null, espConhecidos = new Map();
+var espAgoraNao = false, espSel = null, espVerFora = false;
+const espVerMesmo = new Set();
+const espCoracao = () => (espTimesP && espTimesP.coracao) || null;
+const espSeguidos = () => (espTimesP && espTimesP.seguidos) || [];
+function aplicarTimes(j) {
+  if (!j || typeof j !== "object") return;
+  espTimesP = { coracao: j.coracao || null, seguidos: Array.isArray(j.seguidos) ? j.seguidos : [], perguntado: j.perguntado || null };
+  if (Array.isArray(j.conhecidos)) { espConhecidos = new Map(j.conhecidos.filter((x) => x && x.chave).map((x) => [x.chave, x])); espFrases.clear(); }
+  espCasamentos = new WeakMap();
+}
+function lerTimesEsportes(fresco) {
+  if (!espLiberado()) return Promise.resolve(null);
+  if (espTimesP && !fresco) return Promise.resolve(espTimesP);
+  if (espTimesLendo) return espTimesLendo;
+  espTimesLendo = (async () => {
+    try {
+      const r = await fetch("/api/esportes/times", { credentials: "same-origin", cache: "no-store", headers: { "X-Requested-With": "XMLHttpRequest" } });
+      if (r.ok) aplicarTimes(await r.json());
+    } catch (e) {}
+    finally { espTimesLendo = null; }
+    return espTimesP;
+  })();
+  return espTimesLendo;
+}
+/* id da ESPN de uma chave (sem os conhecidos ainda, a chave do futebol já é o id) */
+const idDaChave = (k) => { const t = espConhecidos.get(k); return t ? String(t.id) : String(k || "").replace(/^[a-z]+-/, ""); };
+/* "coracao", "seguido" (em Meus times ou em "Times que eu acompanho" daquela competição) ou "" */
+function marcaTime(liga, id) {
+  const k = ES.chaveTime(liga, id);
+  if (!k) return "";
+  if (k === espCoracao()) return "coracao";
+  if (espSeguidos().includes(k)) return "seguido";
+  if (espTimes().some((t) => t.liga === liga && String(t.id) === String(id))) return "seguido";
+  return "";
+}
+/* ♥ e ★ com o rótulo por extenso (que some no celular) e o nome para leitor de tela */
+function marcaTimeEl(marca, curta) {
+  if (!marca) return null;
+  const cor = marca === "coracao";
+  return el("span", { class: "esp-marca " + marca, title: cor ? "Seu time do coração" : "Time que você segue" },
+    el("i", { "aria-hidden": "true" }, cor ? "♥" : "★"), curta ? null : el("span", { class: "esp-marca-rot", "aria-hidden": "true" }, cor ? "seu time" : "seguido"),
+    el("span", { class: "sr" }, cor ? " (seu time do coração)" : " (time que você segue)"));
+}
+/* id da ESPN do time do coração numa competição, se ele é do mesmo esporte dela */
+function coracaoNaLiga(liga) {
+  const k = espCoracao();
+  if (!k) return null;
+  const id = idDaChave(k);
+  return ES.chaveTime(liga, id) === k ? id : null;
+}
+const nomeTimeCurto = (j, k) => (j.curtos && j.curtos[k]) || nomeClube(k ? j.visitante : j.mandante);
+const fmtDiaAno = (iso) => { const d = new Date(iso); if (isNaN(d)) return ""; const ano = d.getFullYear() !== new Date().getFullYear(); return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", ...(ano ? { year: "numeric" } : {}), timeZone: "America/Sao_Paulo" }); };
+/* "último jogo em 07/12 · volta em 28/01", "começa em 25/01", "sem jogo marcado" */
+function textoFora(d) {
+  const s = ES.situacaoCampeonato(d, Date.now());
+  const partes = [];
+  if (s.ultimo) partes.push("último jogo em " + fmtDiaAno(s.ultimo));
+  if (s.proximo) partes.push((s.ultimo ? "volta em " : "começa em ") + fmtDiaAno(s.proximo));
+  return partes.join(" · ") || "sem jogo marcado nos dados coletados";
+}
+
+/* ---- notícia x time: regra em Esportes.noticiaDoTime; as tabelas de expressões e os resultados ficam guardados ---- */
+const espFrases = new Map();
+var espCasamentos = new WeakMap();
+const espOutros = () => [...espConhecidos.values()];
+function timeParaCasar(k) { const t = espConhecidos.get(k); return t ? { nome: t.nome, curto: t.curto || "", pais: t.pais || "" } : null; }
+function citaTime(i, k) {
+  const t = timeParaCasar(k);
+  if (!t || !i) return false;
+  let m = espCasamentos.get(i);
+  if (!m) { m = new Map(); espCasamentos.set(i, m); }
+  if (m.has(k)) return m.get(k);
+  if (!espFrases.has(k)) espFrases.set(k, ES.frasesDoTime(t, espOutros()));
+  const r = ES.noticiaDoTime(i, t, espOutros(), espFrases.get(k));
+  m.set(k, r);
+  return r;
+}
+const citaMeusTimes = (i) => espSeguidos().some((k) => citaTime(i, k));
+
+/* ---- faixa de jogos acima da tabela (pedido de 19/11, 15h30) ----
+   Esportes.jogosDoCabecalho: os jogos de hoje e dos próximos 7 dias da competição, com o do time do coração preso à
+   esquerda (position: sticky dentro da faixa). Rolagem nativa com scroll-snap, arrasto no toque, setas no desktop
+   (esmaecidas no começo e no fim) e as setas do teclado com a faixa focada. Sem autoplay. */
+const SETA_ESQ = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+const SETA_DIR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+function cartaoJogo(j, d, liga, fixo) {
+  const vivo = j.estado === "in", fim = j.estado === "post";
+  const p = ES.partesData(j.data, "America/Sao_Paulo");
+  const dia = ES.rotuloDiaCartao(j.data, Date.now());
+  const quando = vivo ? el("span", { class: "esp-vivo" }, "ao vivo" + (j.minuto ? " · " + j.minuto : "")) : j.detalhe === "adiado" ? "adiado" : fim ? "encerrado" : p ? p.hora : "";
+  const lado = (k) => {
+    const id = j.ids && j.ids[k], marca = marcaTime(liga, id), nome = nomeTimeCurto(j, k);
+    return el("div", { class: "esp-jc-time" + (marca ? " " + marca : "") }, escudoEl(escDoDoc(d, id), { sigla: j.siglas && j.siglas[k], nome, tam: 20 }),
+      el("span", { class: "esp-n", title: k ? j.visitante : j.mandante }, nome), marcaTimeEl(marca, true),
+      el("b", { class: "esp-jc-gol" }, j.placar && (vivo || fim) ? String(j.placar[k]) : ""));
+  };
+  const rot = `${j.mandante} ${j.placar && (vivo || fim) ? j.placar[0] + " a " + j.placar[1] : "contra"} ${j.visitante}, ${dia}${vivo ? ", ao vivo" : fim ? ", encerrado" : p ? " às " + p.hora : ""}`;
+  return el("article", { class: "esp-jc " + j.estado + (fixo ? " fixo" : ""), "aria-label": (fixo ? "Seu time: " : "") + rot },
+    fixo ? el("div", { class: "esp-jc-fixo", "aria-hidden": "true" }, "♥ Seu time") : null,
+    el("div", { class: "esp-jc-cab", "aria-hidden": "true" }, el("span", {}, dia), el("span", {}, quando)), lado(0), lado(1));
+}
+function faixaJogos(liga, d) {
+  const def = ES.LIGAS[liga];
+  if (!d || !def || def.tenis || def.semTabela) return null;
+  const { fixo, lista } = ES.jogosDoCabecalho(ES.jogosDoDoc(d), liga, coracaoNaLiga(liga), Date.now());
+  if (!fixo && !lista.length) return null;
+  const s = ES.slugLiga(liga);
+  const trilho = el("div", { class: "esp-faixa-trilho" + (fixo ? "" : " sem-fixo"), id: "esp-faixa-" + s, tabindex: "0", role: "region", "aria-label": `Jogos de hoje e dos próximos 7 dias: ${def.curto}` });
+  if (fixo) trilho.append(cartaoJogo(fixo, d, liga, true));
+  if (lista.length) trilho.append(el("ul", { class: "esp-faixa-lista" }, ...lista.map((j) => el("li", {}, cartaoJogo(j, d, liga, false)))));
+  const ant = el("button", { type: "button", class: "esp-faixa-seta", id: "esp-faixa-ant-" + s, "aria-label": "Jogos anteriores", "aria-controls": trilho.id, html: SETA_ESQ });
+  const prox = el("button", { type: "button", class: "esp-faixa-seta", id: "esp-faixa-prox-" + s, "aria-label": "Próximos jogos", "aria-controls": trilho.id, html: SETA_DIR });
+  /* passo: a largura visível menos o cartão fixo, para o próximo cartão cair logo depois dele */
+  const passo = () => { const f = trilho.querySelector(".esp-jc.fixo"); return Math.max(160, trilho.clientWidth - (f ? f.offsetWidth + 8 : 0) - 24); };
+  const pintar = () => { const max = trilho.scrollWidth - trilho.clientWidth - 2; ant.disabled = trilho.scrollLeft <= 2; prox.disabled = trilho.scrollLeft >= max; };
+  ant.addEventListener("click", () => trilho.scrollBy({ left: -passo() }));
+  prox.addEventListener("click", () => trilho.scrollBy({ left: passo() }));
+  trilho.addEventListener("scroll", pintar, { passive: true });
+  trilho.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); trilho.scrollBy({ left: (e.key === "ArrowRight" ? 1 : -1) * 184 }); }
+    else if (e.key === "Home") { e.preventDefault(); trilho.scrollTo({ left: 0 }); }
+    else if (e.key === "End") { e.preventDefault(); trilho.scrollTo({ left: trilho.scrollWidth }); }
+  });
+  ant.disabled = true;
+  requestAnimationFrame(pintar);
+  const total = lista.length + (fixo ? 1 : 0);
+  return el("div", { class: "esp-faixa" }, el("div", { class: "esp-faixa-cab" }, el("span", {}, "Hoje e próximos 7 dias · " + total + (total === 1 ? " jogo" : " jogos")), ant, prox), trilho);
+}
+
+/* ---- seletor: a pergunta (dois passos) e o "Meus times" para mudar a qualquer hora ---- */
+/* sugestões sem busca: o coração e os seguidos, os de "Times que eu acompanho", e os times das competições ligadas
+   que estão em andamento, na ordem delas */
+function sugestoesTimes() {
+  const out = [], vistos = new Set();
+  const pôr = (k) => { if (k && !vistos.has(k) && espConhecidos.has(k)) { vistos.add(k); out.push(espConhecidos.get(k)); } };
+  espSeguidos().forEach(pôr);
+  espTimes().forEach((t) => pôr(ES.chaveTime(t.liga, t.id)));
+  const ligas = espLigadas().filter((l) => { const d = espDocs.get(l); return !d || ES.emAndamento(d); });
+  for (const l of ligas) for (const t of espConhecidos.values()) if (t.ligas.includes(l)) pôr(t.chave);
+  for (const t of espConhecidos.values()) pôr(t.chave);
+  return out;
+}
+function buscarTimes(q) {
+  const s = semAcento(q).toLowerCase().trim();
+  if (!s) return sugestoesTimes();
+  const casa = (t) => [t.nome, t.curto, nomeClube(t.nome)].some((n) => n && semAcento(n).toLowerCase().includes(s)) || (t.sigla && t.sigla.toLowerCase() === s);
+  const comeca = (t) => [t.nome, t.curto, nomeClube(t.nome)].some((n) => n && semAcento(n).toLowerCase().startsWith(s));
+  return [...espConhecidos.values()].filter(casa).sort((a, b) => Number(comeca(b)) - Number(comeca(a)) || a.nome.localeCompare(b.nome, "pt-BR"));
+}
+const ligasDoTime = (t) => t.ligas.map((l) => nomeLiga(l)).join(", ");
+function escudoConhecido(t, tam = 20) { return escudoEl(t.escudo || escDoDoc(espDocs.get(t.ligas[0]), t.id), { sigla: t.sigla, nome: t.nome, tam }); }
+function abrirMeusTimes() {
+  if (!espLiberado()) return;
+  espSel = { modo: "editar", passo: espCoracao() ? 2 : 1, coracao: espCoracao(), seguidos: new Set(espSeguidos()), busca: "", erro: "", salvando: false };
+  lerTimesEsportes().then(() => renderEsportes(true));
+  renderEsportes(true);
+  requestAnimationFrame(() => { const c = $("esp-sel"); if (c) { c.scrollIntoView({ block: "start", behavior: "smooth" }); const f = $("esp-sel-busca"); if (f) f.focus({ preventScroll: true }); } });
+}
+function fecharSeletor(agoraNao) {
+  if (agoraNao) espAgoraNao = true;
+  espSel = null;
+  renderEsportes(true);
+  const b = $("esp-mt-abrir") || $("esp-config"); if (b) b.focus({ preventScroll: true });
+}
+async function salvarMeusTimes(semTime) {
+  if (!espSel || espSel.salvando) return;
+  const coracao = semTime ? null : espSel.coracao;
+  const seguidos = [...espSel.seguidos].filter((k) => k !== coracao && (semTime ? k !== espSel.coracao : true));
+  espSel.salvando = true; espSel.erro = ""; renderEsportes(true);
+  try {
+    const r = await fetch("/api/esportes/times", { method: "PUT", credentials: "same-origin", cache: "no-store", headers: { "content-type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({ coracao, seguidos }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.erro && /\s/.test(j.erro) ? j.erro : "Não deu para salvar agora. Tente de novo.");
+    aplicarTimes(j);
+    espSel = null;
+    [...wDados.keys()].forEach((k) => { if (k.startsWith("esportes-")) wDados.delete(k); });
+    renderEsportes(true);
+    if (!inicio && radar === "esportes") { renderAlternancias(); renderFeed(); renderContador(); }
+    const b = $("esp-mt-abrir"); if (b) b.focus({ preventScroll: true });
+  } catch (e) { if (espSel) { espSel.salvando = false; espSel.erro = e.message; renderEsportes(true); } }
+}
+function opcaoTime(t, { marcado, coracao, aoEscolher, idx }) {
+  const b = el("button", { type: "button", class: "esp-sel-op", id: "esp-sel-op-" + idx, "aria-pressed": String(!!marcado) },
+    escudoConhecido(t), el("span", { class: "esp-sel-nome" }, nomeClube(t.nome), el("small", {}, ligasDoTime(t))),
+    coracao ? marcaTimeEl("coracao", true) : el("span", { class: "esp-sel-ok", "aria-hidden": "true" }, marcado ? "✓" : ""));
+  b.addEventListener("click", aoEscolher);
+  return el("li", {}, b);
+}
+function seletorTimes() {
+  const sel = espSel;
+  const pergunta = sel.modo === "pergunta";
+  const box = el("section", { class: "esp-card esp-sel", id: "esp-sel", "aria-labelledby": "esp-sel-tit" });
+  const nConhecidos = espConhecidos.size;
+  const busca = el("input", { class: "dd-input", id: "esp-sel-busca", type: "search", placeholder: "Buscar pelo nome do time", value: sel.busca, autocomplete: "off", enterkeyhint: "search", "aria-label": "Buscar time pelo nome", "aria-controls": "esp-sel-grade" });
+  const grade = el("ul", { class: "esp-sel-grade", id: "esp-sel-grade", "aria-live": "polite" });
+  const pintar = () => {
+    grade.textContent = "";
+    const lista = buscarTimes(sel.busca).slice(0, sel.busca.trim() ? 24 : 12);
+    if (!nConhecidos) { grade.append(el("li", { class: "esp-sel-vazio" }, espTimesLendo || espTimesP === undefined ? "Carregando os times…" : "Os times aparecem aqui depois da primeira coleta das tabelas.")); return; }
+    if (!lista.length) { grade.append(el("li", { class: "esp-sel-vazio" }, "Nenhum time com esse nome nas tabelas coletadas.")); return; }
+    lista.forEach((t, n) => {
+      if (sel.passo === 1) grade.append(opcaoTime(t, { idx: n, marcado: sel.coracao === t.chave, coracao: sel.coracao === t.chave, aoEscolher: () => { sel.coracao = t.chave; sel.seguidos.add(t.chave); sel.passo = 2; sel.busca = ""; sel.erro = ""; renderEsportes(true); const f = $("esp-sel-tit"); if (f) f.focus({ preventScroll: true }); } }));
+      else grade.append(opcaoTime(t, { idx: n, marcado: sel.seguidos.has(t.chave), coracao: sel.coracao === t.chave, aoEscolher: () => {
+        if (sel.coracao === t.chave) return;
+        if (sel.seguidos.has(t.chave)) sel.seguidos.delete(t.chave);
+        else if (sel.seguidos.size >= ES.MAX_SEGUIDOS) { sel.erro = `Dá para seguir até ${ES.MAX_SEGUIDOS} times.`; renderEsportes(true); return; }
+        else sel.seguidos.add(t.chave);
+        sel.erro = ""; renderEsportes(true); const f = $("esp-sel-op-" + n); if (f) f.focus({ preventScroll: true });
+      } }));
+    });
+  };
+  busca.addEventListener("input", () => { sel.busca = busca.value; pintar(); });
+  busca.addEventListener("keydown", (e) => { if (e.key === "Escape" && busca.value) { e.preventDefault(); e.stopPropagation(); busca.value = ""; sel.busca = ""; pintar(); } });
+  const sair = el("button", { type: "button", class: "dd-btn dd-btn--ghost", id: "esp-sel-sair" }, pergunta ? "Agora não" : "Cancelar");
+  sair.addEventListener("click", () => fecharSeletor(pergunta));
+  const pe = el("div", { class: "esp-sel-pe" });
+  if (sel.passo === 1) {
+    box.append(el("p", { class: "esp-sel-passo" }, "Passo 1 de 2"), el("h3", { id: "esp-sel-tit", tabindex: "-1" }, "Qual é o seu time do coração?"),
+      el("p", { class: "pers-dica" }, "Ele aparece primeiro aqui em Esportes, com uma marca própria nas tabelas e nos jogos."), busca, grade);
+    const nenhum = el("button", { type: "button", class: "dd-btn dd-btn--link esp-sel-esq", id: "esp-sel-nenhum" }, "Não torço para nenhum time");
+    nenhum.addEventListener("click", () => salvarMeusTimes(true));
+    pe.append(nenhum, sair);
+    if (sel.coracao) { const seg = el("button", { type: "button", class: "dd-btn dd-btn--primary", id: "esp-sel-seguir" }, "Continuar"); seg.addEventListener("click", () => { sel.passo = 2; sel.busca = ""; renderEsportes(true); }); pe.append(seg); }
+  } else {
+    const t = sel.coracao && espConhecidos.get(sel.coracao);
+    box.append(el("p", { class: "esp-sel-passo" }, pergunta || !espCoracao() ? "Passo 2 de 2" : "Meus times"), el("h3", { id: "esp-sel-tit", tabindex: "-1" }, "De quais times você quer receber atualizações?"),
+      el("p", { class: "pers-dica" }, (t ? `${nomeClube(t.nome)} já vem marcado. ` : "") + `Marque até ${ES.MAX_SEGUIDOS}. Os jogos, a posição na tabela e as notícias deles ficam no topo de Esportes.`));
+    const marcados = [...sel.seguidos].map((k) => espConhecidos.get(k)).filter(Boolean);
+    if (marcados.length) box.append(el("div", { class: "esp-sel-esc", "aria-label": "Times marcados" }, ...marcados.map((x) => el("span", { class: "chip esp-chip-time" }, escudoConhecido(x), nomeClube(x.nome), x.chave === sel.coracao ? marcaTimeEl("coracao", true) : null))));
+    box.append(busca, grade);
+    const voltar = el("button", { type: "button", class: "dd-btn dd-btn--link esp-sel-esq", id: "esp-sel-voltar" }, t ? "Trocar o time do coração" : "Escolher um time do coração");
+    voltar.addEventListener("click", () => { sel.passo = 1; sel.busca = ""; renderEsportes(true); });
+    const salvar = el("button", { type: "button", class: "dd-btn dd-btn--primary", id: "esp-sel-salvar", ...(sel.salvando ? { disabled: "" } : {}) }, sel.salvando ? "Salvando…" : "Salvar");
+    salvar.addEventListener("click", () => salvarMeusTimes(false));
+    pe.append(voltar, sair, salvar);
+  }
+  if (sel.erro) box.append(el("p", { class: "esp-erro", role: "alert" }, sel.erro));
+  box.append(pe);
+  pintar();
+  return box;
+}
+
+/* ---- linha de Meus times e o bloco com cada time seguido ---- */
+function linhaMeusTimes() {
+  const k = espCoracao(), t = k && espConhecidos.get(k), n = espSeguidos().length;
+  const abrir = el("button", { type: "button", class: "dd-btn dd-btn--outline", id: "esp-mt-abrir" }, "Meus times");
+  abrir.addEventListener("click", abrirMeusTimes);
+  const quem = t ? el("span", { class: "esp-mt-quem" }, escudoConhecido(t), nomeClube(t.nome), marcaTimeEl("coracao", true)) : el("span", { class: "esp-mt-quem" }, "Sem time do coração");
+  const segue = n - (k ? 1 : 0);
+  return el("div", { class: "esp-mt-linha" }, quem, segue > 0 ? el("span", {}, "· seguindo mais " + segue) : null, abrir);
+}
+/* último resultado (ou o jogo em andamento), próximo jogo e posição de um time nas competições em andamento */
+function resumoDoTime(t) {
+  const jogos = [], posicoes = [];
+  for (const liga of t.ligas) {
+    const d = espDocs.get(liga);
+    if (!d || !ES.emAndamento(d)) continue;
+    for (const j of ES.jogosDoDoc(d)) if ((j.ids || []).map(String).includes(String(t.id))) jogos.push({ j, d, liga });
+    const r = (d.tabela || []).find((x) => String(x.id) === String(t.id));
+    if (r && r.pos != null) posicoes.push({ liga, r });
+  }
+  const agora = Date.now();
+  const vivo = jogos.find((x) => x.j.estado === "in");
+  const ult = vivo || jogos.filter((x) => x.j.estado === "post").sort((a, b) => String(b.j.data).localeCompare(String(a.j.data)))[0];
+  const prox = jogos.filter((x) => x.j.estado === "pre" && Date.parse(x.j.data) > agora - 3 * 3600000).sort((a, b) => String(a.j.data).localeCompare(String(b.j.data)))[0];
+  return { ult, prox, posicoes };
+}
+function placarCurto(x) {
+  const j = x.j, s = j.siglas || [];
+  const [a, b] = [s[0] || nomeTimeCurto(j, 0), s[1] || nomeTimeCurto(j, 1)];
+  return j.placar ? `${a} ${j.placar[0]} × ${j.placar[1]} ${b}` : `${a} × ${b}`;
+}
+function cartaoMeuTime(k, noticias) {
+  const t = espConhecidos.get(k);
+  if (!t) return null;
+  const cor = k === espCoracao();
+  const { ult, prox, posicoes } = resumoDoTime(t);
+  const linha = (rot, ...conteudo) => el("div", { class: "esp-mt-l" }, el("span", {}, rot), el("span", {}, ...conteudo));
+  const quando = (x) => { const p = ES.partesData(x.j.data, "America/Sao_Paulo"); return ES.rotuloDiaCartao(x.j.data, Date.now()) + (p && x.j.estado === "pre" ? " · " + p.hora : "") + " · " + nomeLiga(x.liga); };
+  const card = el("li", { class: "esp-mt-card" + (cor ? " coracao" : "") },
+    el("div", { class: "esp-mt-cab" }, escudoConhecido(t, 28), el("span", { class: "esp-n" }, nomeClube(t.nome)), marcaTimeEl(cor ? "coracao" : "seguido")));
+  if (ult) card.append(linha(ult.j.estado === "in" ? "Agora" : "Último", el("b", {}, placarCurto(ult)), " ", ult.j.estado === "in" ? el("span", { class: "esp-vivo" }, "ao vivo" + (ult.j.minuto ? " · " + ult.j.minuto : "")) : el("small", {}, quando(ult))));
+  if (prox) card.append(linha("Próximo", el("b", {}, placarCurto(prox)), " ", el("small", {}, quando(prox))));
+  if (!ult && !prox) card.append(linha("Jogos", el("small", {}, "Nenhum jogo nos campeonatos em andamento.")));
+  if (posicoes.length) card.append(linha("Tabela", ...posicoes.flatMap((x, n) => [n ? " · " : "", el("b", {}, x.r.pos + "º"), " " + (x.r.grupo ? x.r.grupo + ", " : "") + nomeLiga(x.liga)])));
+  const ns = noticias.slice(0, 2);
+  card.append(linha("Notícias", ns.length ? el("ul", { class: "esp-mt-not" }, ...ns.map((i) => { const v = tv(i); return el("li", {}, el("a", { href: i.url, target: "_blank", rel: "noopener", title: v.titulo }, v.titulo), el("small", {}, " " + (i.fonte || hostDe(i.url)) + " · " + fmtRel(i.publicado || i.coletado))); })) : el("small", {}, "Nenhuma notícia recente no feed.")));
+  return card;
+}
+function blocoMeusTimes() {
+  const ks = espSeguidos().filter((k) => espConhecidos.has(k));
+  if (!ks.length) return null;
+  const doFeed = radar === "esportes" ? itens : [];
+  const recentes = (k) => doFeed.filter((i) => citaTime(i, k)).sort((a, b) => String(b.publicado || b.coletado || "").localeCompare(String(a.publicado || a.coletado || "")));
+  const grade = el("ul", { class: "esp-mt-grade" }, ...ks.map((k) => cartaoMeuTime(k, recentes(k))).filter(Boolean));
+  return el("section", { class: "esp-mt", "aria-labelledby": "esp-mt-tit" }, el("h2", { id: "esp-mt-tit" }, "Meus times"), grade);
+}
+/* lê os docs das competições dos times seguidos (mesmo as que a pessoa não ligou), para o bloco e a faixa */
+function carregarLigasDosTimes() {
+  const ligas = new Set();
+  for (const k of espSeguidos()) { const t = espConhecidos.get(k); if (t) t.ligas.forEach((l) => ligas.add(l)); }
+  ligas.forEach((l) => {
+    if (espLendo.has(l) || espDocs.has(l)) return;
+    espLendo.add(l);
+    lerEsp(l).finally(() => { espLendo.delete(l); renderEsportes(); });
+  });
+}
 
 /* ---- Meus esportes: competições (ligar, desligar, ordem) e times que a pessoa acompanha ---- */
 var espP = null, espPAberto = false, espPAbridor = null, espArrasto = null;
@@ -11244,7 +11733,9 @@ function desenharMeusEsportes(foco) {
       const desce = el("button", { type: "button", class: "dd-btn dd-btn--outline dd-btn--icon", id: "esp-desce-" + ES.slugLiga(id), "aria-label": "Descer " + def.nome, ...(n === ids.length - 1 ? { disabled: "" } : {}) }, "↓");
       desce.addEventListener("click", () => { moverEsp(id, espP.ordem.indexOf(ids[n + 1])); desenharMeusEsportes(n + 1 === ids.length - 1 ? sobe.id : desce.id); });
       const alca = el("span", { class: "esp-alca", draggable: "true", title: "Arraste para mudar a ordem", html: ALCA });
-      const li = el("li", { class: "esp-cfg-item", "data-liga": id }, alca, el("label", { for: chk.id }, chk, el("span", {}, def.nome, def.pais ? el("small", {}, " ", emojiPais(def.pais)) : null)), el("span", { class: "esp-cfg-setas" }, sobe, desce));
+      /* fora de temporada (Esportes.emAndamento): continua ligável, com o aviso; o cartão fica atrás do link na aba */
+      const dLiga = espDocs.get(id), fora = !!dLiga && !ES.emAndamento(dLiga);
+      const li = el("li", { class: "esp-cfg-item", "data-liga": id }, alca, el("label", { for: chk.id }, chk, el("span", {}, def.nome, def.pais ? el("small", {}, " ", emojiPais(def.pais)) : null, fora ? el("small", { title: textoFora(dLiga) }, " · fora de temporada") : null)), el("span", { class: "esp-cfg-setas" }, sobe, desce));
       alca.addEventListener("dragstart", (e) => { espArrasto = id; try { e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move"; } catch (er) {} requestAnimationFrame(() => li.classList.add("arrastando")); });
       alca.addEventListener("dragend", () => { espArrasto = null; li.classList.remove("arrastando"); ul.querySelectorAll(".cai-antes").forEach((x) => x.classList.remove("cai-antes")); });
       li.addEventListener("dragover", (e) => { if (!espArrasto || espArrasto === id) return; e.preventDefault(); ul.querySelectorAll(".cai-antes").forEach((x) => { if (x !== li) x.classList.remove("cai-antes"); }); li.classList.add("cai-antes"); });
@@ -11262,8 +11753,12 @@ function desenharMeusEsportes(foco) {
     b.addEventListener("click", () => { espP.times.splice(n, 1); espP.mexeu = true; desenharMeusEsportes(espP.times.length ? "esp-time-x-" + Math.min(n, espP.times.length - 1) : "esp-time-q"); });
     chips.append(b);
   });
-  if (!espP.times.length) chips.append(el("span", { class: "pers-dica" }, "Nenhum time ainda. O primeiro da lista vira o card “próximo jogo” do Início e aparece destacado na tabela."));
+  if (!espP.times.length) chips.append(el("span", { class: "pers-dica" }, "Nenhum time ainda. Para estes, o Lookout busca a agenda completa uma vez por dia."));
   corpo.append(chips);
+  /* time do coração e times seguidos moram em Meus times (o mesmo seletor do topo de Esportes) */
+  const mt = el("button", { type: "button", class: "dd-btn dd-btn--link", id: "esp-cfg-meus-times" }, "Time do coração e times seguidos: Meus times");
+  mt.addEventListener("click", () => { fecharMeusEsportes(); abrirMeusTimes(); });
+  corpo.append(mt);
   const inp = el("input", { class: "dd-input", id: "esp-time-q", placeholder: "Buscar time pelo nome", value: espP.busca, autocomplete: "off", role: "combobox", "aria-expanded": "false", "aria-controls": "esp-time-sug", "aria-autocomplete": "list", "aria-label": "Buscar time" });
   const sug = el("ul", { class: "lst-sug", id: "esp-time-sug", role: "listbox", "aria-label": "Times", hidden: "" });
   let opcoes = [];
@@ -11388,7 +11883,7 @@ $("esp-folha").addEventListener("keydown", (e) => {
 });
 function ajustarMenuEsportes() {
   const ok = espLiberado();
-  $("conta-esportes").hidden = !ok; $("conta-sep-esp").hidden = !ok;
+  $("conta-esportes").hidden = !ok; $("conta-sep-esp").hidden = !ok; $("conta-meus-times").hidden = !ok;
 }
 
 /* ---- Vai e vem (11/11): uma negociação por card ----
@@ -11409,7 +11904,13 @@ function lerCatalogoVv() {
   lerMeta("esportes-escudos").then((d) => { if (d && d !== vvCatalogo) { vvCatalogo = d; if (!inicio && radar === "esportes") renderFeed(); } });
 }
 /* times de futebol de Meus esportes; sem nenhum, o Inter */
-const vvTimes = () => { const ts = espTimes().filter((t) => ES.LIGAS[t.liga] && ES.LIGAS[t.liga].esporte === "futebol"); return ts.length ? ts : [{ liga: "bra.1", id: "", nome: "Internacional" }]; };
+/* times de futebol de Meus times (o do coração primeiro) e de "Times que eu acompanho"; sem nenhum, o Inter */
+const vvTimes = () => {
+  const ts = [];
+  for (const k of espSeguidos()) { const t = espConhecidos.get(k); if (t && t.esporte === "futebol" && t.ligas.length && !ts.some((x) => x.id === String(t.id))) ts.push({ liga: t.ligas[0], id: String(t.id), nome: t.nome }); }
+  for (const t of espTimes()) if (ES.LIGAS[t.liga] && ES.LIGAS[t.liga].esporte === "futebol" && !ts.some((x) => x.id === String(t.id))) ts.push(t);
+  return ts.length ? ts : [{ liga: "bra.1", id: "", nome: "Internacional" }];
+};
 const nomeTimeVv = (t) => nomeClube(t.nome);
 const COR_ETAPA = { rumor: "var(--muted-foreground)", interesse: "var(--info)", proposta: "var(--primary)", acerto: "var(--warn)", oficial: "var(--ok)",
   recusada: "var(--err)", melou: "var(--err)", renovou: "var(--brand-end)", fica: "var(--muted-foreground)", aberto: "var(--muted-foreground)" };
@@ -11544,7 +12045,7 @@ function espOculto(id) {
 }
 function leitorEsp(id) {
   if (id === "esportes-meu-time") return async (f) => {
-    await lerPrefsEsportes();
+    await Promise.all([lerPrefsEsportes(), lerTimesEsportes()]);
     const t = espMeuTime();
     if (!t) return { d: null, marca: "sem-time" };
     const d = await lerEsp(t.liga, f);
@@ -11560,7 +12061,7 @@ function leitorEsp(id) {
   };
   const l = ligaDoWidget(id);
   if (!l) return null;
-  return async (f) => { await lerPrefsEsportes(); const d = await lerEsp(l, f); return d === undefined ? undefined : { d, marca: marcaDe(d) + JSON.stringify(espTimeDe(l)) }; };
+  return async (f) => { await Promise.all([lerPrefsEsportes(), lerTimesEsportes()]); const d = await lerEsp(l, f); return d === undefined ? undefined : { d, marca: marcaDe(d) + JSON.stringify(espTimeDe(l)) + JSON.stringify(espSeguidos()) }; };
 }
 /* Com grupos (Libertadores, conferências da NBA), o card de tabela mostra o grupo do time de interesse, senão o primeiro */
 function grupoTabEsp(d, liga) {
@@ -11577,7 +12078,12 @@ const corposEsp = {
   "esportes-rodada"(d, fm, id) {
     if (!d) return [vazioW("Sem dados desta competição ainda.")];
     const liga = ligaDoWidget(id), t = espTimeDe(liga);
-    const { js } = jogosDoCard(d);
+    /* fora de temporada: uma frase com a data do último jogo ou da volta, no lugar da rodada velha */
+    if (!ES.emAndamento(d)) return [vazioW(nomeLiga(liga) + " fora de temporada: " + textoFora(d) + ".")];
+    /* os jogos do coração e dos seguidos primeiro (a ordem do resto fica como era) */
+    const peso = (j) => Math.max(0, ...[0, 1].map((k) => ({ coracao: 2, seguido: 1 })[marcaTime(liga, j.ids && j.ids[k])] || 0));
+    const { js: js0 } = jogosDoCard(d);
+    const js = js0.slice().sort((a, b) => peso(b) - peso(a));
     /* tênis: as partidas do dia, nome curto, placar por sets */
     if (ES.LIGAS[liga] && ES.LIGAS[liga].tenis) {
       if (!js.length) return [vazioW("Nenhuma partida hoje.")];
@@ -11593,6 +12099,7 @@ const corposEsp = {
   "esportes-tabela"(d, fm, id) {
     if (!d) return [vazioW("Sem dados desta competição ainda.")];
     const liga = ligaDoWidget(id), t = espTimeDe(liga);
+    if (!ES.emAndamento(d)) return [vazioW(nomeLiga(liga) + " fora de temporada: " + textoFora(d) + ".")];
     const tab = d.tabela || [], grupo = grupoTabEsp(d, liga);
     const linhas = tab.filter((r) => !r.grupo || r.grupo === grupo);
     if (!linhas.length) return [vazioW("A tabela ainda não chegou.")];
@@ -11601,7 +12108,7 @@ const corposEsp = {
     /* futebol: jogos e pontos; NBA: campanha (V-D) e % */
     const futebol = !ES.LIGAS[liga] || ES.LIGAS[liga].esporte === "futebol";
     const campanha = (r) => (r.v == null || r.d == null ? "–" : r.v + "-" + r.d + (r.e ? "-" + r.e : ""));
-    const tr = (r) => { const z = corZona(r.zona); return el("tr", { class: (z ? "esp-z" : "") + (t && r.id === t.id ? " esp-meu" : ""), ...(z ? { style: "--z:" + z } : {}) }, el("td", {}, String(r.pos ?? "–")), el("td", { title: r.time }, el("span", { class: "esp-tm" }, escudoEl(escDoDoc(d, r.id), { sigla: r.sigla, nome: r.time, tam: 20 }), el("span", { class: "esp-n" }, r.curto || r.time))),
+    const tr = (r) => { const z = corZona(r.zona), m = marcaTime(liga, r.id) || (t && r.id === t.id ? "seguido" : ""); return el("tr", { class: (z ? "esp-z" : "") + (m ? " esp-meu" : ""), ...(z ? { style: "--z:" + z } : {}) }, el("td", {}, String(r.pos ?? "–")), el("td", { title: r.time }, el("span", { class: "esp-tm" }, escudoEl(escDoDoc(d, r.id), { sigla: r.sigla, nome: r.time, tam: 20 }), el("span", { class: "esp-n" }, r.curto || r.time), marcaTimeEl(m, true))),
       futebol ? el("td", { title: "Jogos" }, String(r.j ?? "–")) : el("td", { title: "Vitórias e derrotas" }, campanha(r)),
       futebol ? el("td", { title: "Pontos" }, el("b", {}, String(r.pts ?? "–"))) : el("td", { title: "Aproveitamento (%)" }, el("b", {}, fmtPctEsp(r.pct)))); };
     const rows = topo.map(tr);
@@ -11917,7 +12424,7 @@ function desenharGrade(box) {
     if (!todos.length) { conteudo.append(el("p", { class: "ls-vazio" }, lsAdmin ? "Nenhuma tecnologia ainda. Use Adicionar tecnologia e cole a URL do GitHub." : "Nenhuma tecnologia no landscape ainda.")); return; }
     if (!l.length) { conteudo.append(el("p", { class: "ls-vazio" }, "Nenhuma tecnologia com esses filtros.")); return; }
     if (lsF.modo === "tabela") { conteudo.append(tabelaLs(l)); return; }
-    const cats = el("div", { class: "ls-cats" });
+    const cats = el("div", { class: "ls-cats-col" });
     const usados = new Set();
     for (const c of lsCats) {
       const subs = c.subcategorias.map((s) => ({ s, ts: l.filter((t) => t.categoria === c.id && t.subcategoria === s.id) })).filter((x) => x.ts.length);
@@ -11929,7 +12436,7 @@ function desenharGrade(box) {
     }
     const soltas = l.filter((t) => !usados.has(t.id));
     if (soltas.length) cats.append(el("section", { class: "ls-cat", "aria-label": "Sem categoria" }, el("h3", {}, "Sem categoria", el("span", { class: "k" }, String(soltas.length))), el("div", { class: "ls-sub" }, el("h4", {}, "Outras"), el("div", { class: "ls-grade" }, ...soltas.map(cartao)))));
-    conteudo.append(cats);
+    conteudo.append(el("div", { class: "ls-cats" }, cats));
   }
   pintarConteudo();
 }
@@ -12454,6 +12961,9 @@ window.addEventListener("hashchange", () => {
   const h = radarDoHash();
   if (!h) { irInicio(true); if (location.hash !== "#inicio") escreverHash(); return; }
   const querConfig = h === "esportes" && partesDoHash()[1] === "config";
+  /* #esportes/times (menu da conta): abre o seletor de Meus times no topo de Esportes e o endereço volta a #esportes */
+  const querTimes = h === "esportes" && partesDoHash()[1] === "times";
+  if (querTimes) { if (inicio || radar !== "esportes") trocarRadar("esportes", true); else fecharMeusEsportes(); abrirMeusTimes(); escreverHash(); return; }
   if (!inicio && h === radar && h === "tech") {
     const ia = lsId, y = window.scrollY;
     const ca = archChave;
@@ -12472,6 +12982,8 @@ window.addEventListener("hashchange", () => {
   trocarRadar(h, true);
   if (querConfig) abrirMeusEsportes();
 });
+/* #esportes/times chegou pelo endereço: o seletor abre quando /api/me liberar a seção (o endereço já volta a #esportes) */
+const abrirTimesNaEntrada = partesDoHash()[0] === "esportes" && partesDoHash()[1] === "times";
 escreverHash();
 render();
 renderListas();
@@ -12492,7 +13004,7 @@ if (inicio) entrarInicio();
   if (Array.isArray(me.secoes)) secoesLiberadas = me.secoes;
   meuNome = String(me.nome || "").trim();
   ajustarMenuCarteira(); ajustarMenuEsportes();
-  if (espLiberado()) lerPrefsEsportes().then(() => { if (inicio && !carteiraVista && painelMontado) montarGrade(); renderEsportes(); });
+  if (espLiberado()) Promise.all([lerPrefsEsportes(), lerTimesEsportes()]).then(() => { if (inicio && !carteiraVista && painelMontado) montarGrade(); renderEsportes(); });
   const vis = radaresVisiveis();
   if (!vis.length) {
     desligar.forEach((f) => { try { if (typeof f === "function") f(); } catch (e) {} }); desligar = []; geracao++;
@@ -12516,6 +13028,7 @@ if (inicio) entrarInicio();
   }
   else renderRadares();
   if (!inicio && radar === "esportes" && partesDoHash()[1] === "config" && espLiberado()) abrirMeusEsportes();
+  if (!inicio && radar === "esportes" && abrirTimesNaEntrada && espLiberado()) abrirMeusTimes();
   setInterval(() => {
     if (inicio) { atualizarCabInicio(); return; }
     renderStatus(); renderUrgente(); if ($("lat-urgente")) renderLateral();

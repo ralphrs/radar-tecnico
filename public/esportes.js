@@ -487,8 +487,260 @@
     return p.semana + " " + p.ddmm;
   }
 
+  /* ==== Time do coração, times seguidos, campeonato em andamento e faixa de jogos (pedidos de 19/11) ==== */
+  const DIA_MS = 86_400_000;
+  /* Chave do time: o id da ESPN no futebol (o mesmo em todas as competições); fora do futebol, o esporte na frente
+     ("basquete-13"), porque os ids da NBA (1 a 30) podem coincidir com ids de clubes. */
+  function chaveTime(liga, id) {
+    const l = LIGAS[liga], s = String(id == null ? "" : id).trim();
+    if (!s) return "";
+    return !l || l.esporte === "futebol" ? s : l.esporte + "-" + s;
+  }
+  /* Todos os jogos que um doc de competição traz (agenda dos dias buscados, rodada, próximos, últimos e a agenda dos
+     times), um por id, em ordem de data. A agenda (`agenda.jogos`) é a mais nova; o resto completa. */
+  function jogosDoDoc(doc) {
+    if (!doc || typeof doc !== "object") return [];
+    const porId = new Map();
+    const pega = (lista) => { for (const j of Array.isArray(lista) ? lista : []) { if (!j || typeof j !== "object" || !j.data) continue; const k = j.id || j.data + "|" + (j.mandante || "") + "|" + (j.visitante || ""); if (!porId.has(k)) porId.set(k, j); } };
+    pega(doc.agenda && doc.agenda.jogos);
+    pega(doc.rodada && doc.rodada.jogos);
+    pega(doc.proximos); pega(doc.ultimos);
+    for (const t of Object.values(doc.times && typeof doc.times === "object" ? doc.times : {})) if (t) { pega(t.proximos); pega(t.ultimos); }
+    return [...porId.values()].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  }
+  /* Dia do calendário ("2026-11-19" ou "20261119") ao meio-dia de São Paulo, em ms */
+  const msDoDia = (d) => { const s = String(d || "").replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3"); const t = Date.parse(s.slice(0, 10) + "T12:00:00-03:00"); return isNaN(t) ? NaN : t; };
+  /* Em andamento (pedido de 19/11): há jogo da competição nos últimos 10 dias ou nos próximos 21 (jogos guardados ou
+     dias do calendário da ESPN, `diasJogo`), jogo ao vivo, ou a fonte marca a temporada como em curso (`temporadaJanela`
+     da ESPN, fora da pré-temporada e das férias; no tênis, um torneio com início e fim em volta de agora).
+     Devolve { andamento, ultimo, proximo }: a data do último jogo e a do próximo (ou do início previsto) que se conhecem. */
+  function situacaoCampeonato(doc, agora = Date.now()) {
+    const out = { andamento: false, ultimo: null, proximo: null };
+    if (!doc || typeof doc !== "object") return out;
+    const t = Number(agora), de = t - 10 * DIA_MS, ate = t + 21 * DIA_MS;
+    const datas = [];
+    for (const j of jogosDoDoc(doc)) {
+      const x = Date.parse(j.data);
+      if (isNaN(x)) continue;
+      if (j.estado === "in") out.andamento = true;
+      datas.push([x, j.estado]);
+    }
+    for (const d of Array.isArray(doc.diasJogo) ? doc.diasJogo : []) { const x = msDoDia(d); if (!isNaN(x)) datas.push([x, ""]); }
+    for (const tr of Array.isArray(doc.torneios) ? doc.torneios : []) {
+      const a = Date.parse(tr && tr.inicio), b = Date.parse(tr && tr.fim);
+      if (!isNaN(a)) datas.push([a, ""]);
+      if (!isNaN(b)) datas.push([b, ""]);
+      if (!isNaN(a) && a <= t && (isNaN(b) ? t - a < 14 * DIA_MS : t <= b + DIA_MS)) out.andamento = true;
+      if (tr && tr.aoVivo) out.andamento = true;
+    }
+    for (const [x, estado] of datas) {
+      if (x >= de && x <= ate) out.andamento = true;
+      if (x <= t || estado === "post") { if (out.ultimo === null || x > out.ultimo) out.ultimo = x; }
+      else if (out.proximo === null || x < out.proximo) out.proximo = x;
+    }
+    const jan = doc.temporadaJanela;
+    if (jan && typeof jan === "object") {
+      const a = Date.parse(jan.inicio), b = Date.parse(jan.fim), tipo = Number(jan.tipo);
+      if (!isNaN(a) && !isNaN(b) && a <= t && t <= b && tipo !== 1 && tipo !== 4) out.andamento = true;
+      if (!isNaN(a) && a > t && (out.proximo === null || a < out.proximo)) out.proximo = a;
+    }
+    return { andamento: out.andamento, ultimo: out.ultimo === null ? null : new Date(out.ultimo).toISOString(), proximo: out.proximo === null ? null : new Date(out.proximo).toISOString() };
+  }
+  const emAndamento = (doc, agora = Date.now()) => situacaoCampeonato(doc, agora).andamento;
+
+  /* Dia em São Paulo (AAAA-MM-DD) */
+  const diaEmSP = (ms) => { try { return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ms)); } catch (e) { return ""; } };
+  /* Rótulo do dia nos cartões da faixa, no fuso de São Paulo: "Hoje", "Amanhã", "Ontem" ou "Sáb 21/11" */
+  function rotuloDiaCartao(iso, agora = Date.now()) {
+    const t = Date.parse(iso);
+    if (isNaN(t)) return "";
+    const d = diaEmSP(t), a = Number(agora);
+    if (d === diaEmSP(a)) return "Hoje";
+    if (d === diaEmSP(a + DIA_MS)) return "Amanhã";
+    if (d === diaEmSP(a - DIA_MS)) return "Ontem";
+    const p = partesData(iso, "America/Sao_Paulo");
+    return p ? p.semana.charAt(0).toUpperCase() + p.semana.slice(1) + " " + p.ddmm : "";
+  }
+  /* Faixa de jogos acima da tabela (pedido de 19/11, 15h30). `jogos`: os da competição (jogosDoDoc); `coracao`: o id
+     da ESPN do time do coração (ou null). Devolve { fixo, lista }:
+     - lista: os jogos de hoje em São Paulo (qualquer estado; o ao vivo que começou ontem também conta como de hoje) e
+       depois os dos próximos 7 dias que ainda não acabaram, em ordem de data;
+     - fixo: o jogo do coração nesta competição: o de hoje; senão o próximo (marcado para depois de agora, sem limite
+       de dias); senão o último resultado. Sem time ou sem jogo dele, null. O fixo não se repete na lista. */
+  function jogosDoCabecalho(jogos, campeonato, coracao, agora = Date.now()) {
+    const t = Number(agora), hoje = diaEmSP(t), limite = diaEmSP(t + 7 * DIA_MS);
+    const js = (Array.isArray(jogos) ? jogos : []).filter((j) => j && typeof j === "object" && !isNaN(Date.parse(j.data)));
+    const dia = (j) => diaEmSP(Date.parse(j.data));
+    const ehHoje = (j) => j.estado === "in" || dia(j) === hoje;
+    const porData = (a, b) => Date.parse(a.data) - Date.parse(b.data);
+    const deHoje = js.filter(ehHoje).sort(porData);
+    const semana = js.filter((j) => !ehHoje(j) && j.estado !== "post" && dia(j) > hoje && dia(j) <= limite).sort(porData);
+    let fixo = null;
+    const c = coracao == null ? "" : String(coracao);
+    if (c) {
+      const dele = js.filter((j) => Array.isArray(j.ids) && j.ids.map(String).includes(c));
+      fixo = dele.filter(ehHoje).sort(porData)[0]
+        || dele.filter((j) => j.estado === "pre" && Date.parse(j.data) > t).sort(porData)[0]
+        || dele.filter((j) => j.estado === "post").sort((a, b) => porData(b, a))[0] || null;
+    }
+    const igual = (a, b) => !!a && !!b && (a === b || (!!a.id && a.id === b.id));
+    const lista = [...deHoje, ...semana].filter((j) => !igual(j, fixo));
+    return { fixo, lista };
+  }
+
+  /* ---- Meus times: prefs/<email>, id "esportes-times": { coracao, seguidos, perguntado, v } ----
+     coracao: a chave do time (chaveTime) ou null; seguidos: até MAX_SEGUIDOS chaves, o do coração sempre entre elas e
+     primeiro; perguntado: quando a pessoa respondeu (Salvar ou "Não torço para nenhum time"); v: versão do formato.
+     `conhecidos`: os times que o Lookout conhece (Map ou lista de { chave }), os das tabelas e jogos coletados. */
+  const MAX_SEGUIDOS = 10, V_TIMES = 1;
+  const CHAVE_OK = /^[A-Za-z0-9-]{1,40}$/;
+  function temConhecido(conhecidos, k) {
+    if (!conhecidos) return false;
+    if (conhecidos instanceof Map) return conhecidos.has(k);
+    if (Array.isArray(conhecidos)) return conhecidos.some((x) => x && x.chave === k);
+    return Object.prototype.hasOwnProperty.call(conhecidos, k);
+  }
+  function validarTimes(b, conhecidos) {
+    if (!b || typeof b !== "object" || Array.isArray(b)) return { erro: "corpo" };
+    for (const k of Object.keys(b)) if (!["coracao", "seguidos"].includes(k)) return { erro: "campo " + String(k).slice(0, 20) };
+    const coracao = b.coracao === undefined || b.coracao === null || b.coracao === "" ? null : b.coracao;
+    if (coracao !== null && (typeof coracao !== "string" || !CHAVE_OK.test(coracao))) return { erro: "Time do coração inválido." };
+    if (coracao !== null && !temConhecido(conhecidos, coracao)) return { erro: "Não achei esse time nas tabelas coletadas." };
+    const lista = b.seguidos === undefined ? [] : b.seguidos;
+    if (!Array.isArray(lista)) return { erro: "seguidos" };
+    const seguidos = coracao ? [coracao] : [];
+    for (const k of lista) {
+      if (typeof k !== "string" || !CHAVE_OK.test(k)) return { erro: "Time seguido inválido." };
+      if (!temConhecido(conhecidos, k)) return { erro: "Não achei um dos times nas tabelas coletadas." };
+      if (!seguidos.includes(k)) seguidos.push(k);
+    }
+    if (seguidos.length > MAX_SEGUIDOS) return { erro: `Dá para seguir até ${MAX_SEGUIDOS} times.` };
+    return { times: { coracao, seguidos } };
+  }
+  /* O salvo conferido para o GET. Time que sumiu das tabelas continua (a coleta pode só não ter passado por ele);
+     id estragado sai. Quem nunca respondeu: tudo vazio e perguntado null. */
+  function respostaTimes(salvo) {
+    const ok = (k) => typeof k === "string" && CHAVE_OK.test(k);
+    const s = salvo && typeof salvo === "object" ? salvo : null;
+    const coracao = s && ok(s.coracao) ? s.coracao : null;
+    const seguidos = [];
+    if (coracao) seguidos.push(coracao);
+    for (const k of s && Array.isArray(s.seguidos) ? s.seguidos : []) if (ok(k) && !seguidos.includes(k) && seguidos.length < MAX_SEGUIDOS) seguidos.push(k);
+    const perguntado = s && typeof s.perguntado === "string" && !isNaN(Date.parse(s.perguntado)) ? s.perguntado : null;
+    return { coracao, seguidos, perguntado, v: V_TIMES, atualizado: (s && s.atualizado) || null };
+  }
+  /* Abre o cartão "Qual é o seu time do coração?"? Sim quando a pessoa não tem time do coração, nunca respondeu
+     (Salvar ou "Não torço para nenhum time" gravam `perguntado`) e não tocou em "Agora não" nesta visita a Esportes.
+     prefs ainda não lido (undefined): não, para o cartão não piscar. */
+  function devePerguntar(prefs, { agoraNao = false } = {}) {
+    if (!prefs || typeof prefs !== "object") return false;
+    if (prefs.coracao) return false;
+    if (prefs.perguntado) return false;
+    return !agoraNao;
+  }
+
+  /* ---- Notícia x time (pedido de 19/11) ----
+     Regra, nesta ordem:
+     1. Campo da curadoria: `clube` do item (ou origem/destino da `transferencia`) com o mesmo clube, pela chave do nome
+        com os apelidos (chaveClube). O tema "inter" é do Internacional.
+     2. Texto (título e resumo, original e tradução): os nomes do time, o nome curto e os apelidos dele (APELIDOS),
+        procurando sempre a expressão mais longa primeiro, para "Inter Miami" e "Inter de Milão" não virarem "Inter".
+        Uma expressão só conta se apontar para um time só: "Inter" sozinho vale o Internacional quando o item é do Brasil
+        (temas inter, gauchao, brasileirao, copadobrasil; subtema brasil ou inter; ou abrangência nacional), a Internazionale
+        quando é da Itália e nada quando o país do item não se sabe. `outros` (os times conhecidos) entra para desempatar
+        nomes repetidos ("Spurs" é o Tottenham e o San Antonio).
+     3. Nome que também é palavra comum ("internacional", "vitória", "sport", "santos", "juventude"...) só conta escrito
+        com maiúscula, fora do começo de frase e sem "dos"/"das" antes ("Lucas dos Santos" não é o Santos). */
+  const TEMAS_BR = new Set(["inter", "gauchao", "brasileirao", "copadobrasil"]);
+  const TEMA_CLUBE = { inter: { nome: "Internacional", pais: "BR" } };
+  const PALAVRAS_COMUNS = new Set(["internacional", "nacional", "vitoria", "sport", "santos", "juventude", "cruzeiro", "fortaleza", "remo", "operario", "guarani", "bahia", "ceara", "goias", "america", "atletico", "athletico", "botafogo", "independiente", "real", "united", "city", "jazz", "magic", "kings", "heat"]);
+  const FRASES_FORA = ["magic johnson", "sport tv", "sportv", "copa america", "mundial clubes", "liga nacional", "futebol internacional", "mercado internacional", "cenario internacional", "torneio internacional", "festival jazz"];
+  function paisDoItem(i) {
+    if (!i || typeof i !== "object") return "";
+    if (TEMAS_BR.has(i.tema) || i.subtema === "brasil" || i.subtema === "inter") return "BR";
+    if (i.tema === "internacional" || i.subtema === "internacional" || i.escopo === "internacional") return "";
+    return i.escopo === "nacional" ? "BR" : "";
+  }
+  const semAc = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+  /* palavras do texto: { n: normalizada, o: original, ini: começo de frase, ant: a anterior normalizada } */
+  function palavras(texto) {
+    const out = [];
+    const re = /[\p{L}\p{N}]+(?:[-'][\p{L}\p{N}]+)*|[.!?:;|\n]/gu;
+    let ini = true, ant = "", m;
+    while ((m = re.exec(String(texto || "")))) {
+      const w = m[0];
+      if (/^[.!?:;|\n]$/.test(w)) { ini = true; continue; }
+      for (const parte of w.split(/[-']/)) {
+        const n = semAc(parte).toLowerCase();
+        if (!n) continue;
+        out.push({ n, o: parte, ini, ant });
+        ini = false; ant = n;
+      }
+    }
+    return out;
+  }
+  /* tabela de expressões: frase normalizada (sem fc, de, do, da...) → [{ alvo, pais }] */
+  function tabelaFrases(time, outros) {
+    const t = new Map();
+    const pôr = (frase, alvo, pais) => { const f = normClube(frase); if (!f || !alvo) return; if (!t.has(f)) t.set(f, []); const l = t.get(f); if (!l.some((x) => x.alvo === alvo && x.pais === pais)) l.push({ alvo, pais: pais || "" }); };
+    for (const a of APELIDOS) for (const n of a.nomes) pôr(n, a.alvos[0], a.pais);
+    for (const a of APELIDOS) for (const n of a.alvos) pôr(n, a.alvos[0], a.pais && a.alvos.length === 1 && a.nomes.includes(n) ? a.pais : "");
+    /* nome próprio que também é apelido dependente de país ("Inter" da Internazionale): vale só no país do time */
+    const comPais = new Set(APELIDOS.filter((a) => a.pais).flatMap((a) => a.nomes));
+    const proprio = (frase, alvo, p) => { const f = normClube(frase); if (!comPais.has(f)) pôr(frase, alvo, ""); else if (p) pôr(frase, alvo, p); };
+    const daqui = (x) => { const p = paisNorm(x.pais); const alvo = chaveClube(x.nome, p); proprio(x.nome, alvo, p); if (x.curto) proprio(x.curto, alvo, p); return alvo; };
+    for (const x of Array.isArray(outros) ? outros : []) if (x && x.nome && x !== time) daqui(x);
+    const alvo = daqui(time);
+    for (const f of FRASES_FORA) pôr(f, "~fora", "");
+    return { t, alvo };
+  }
+  function citaNoTexto(texto, time, pais, frases) {
+    const ws = palavras(texto).filter((w) => !PALAVRAS_FORA.has(w.n));
+    const { t, alvo } = frases;
+    const maxLen = 5;
+    for (let i = 0; i < ws.length;) {
+      let achou = null, len = 0;
+      for (let k = Math.min(maxLen, ws.length - i); k >= 1; k--) {
+        const f = ws.slice(i, i + k).map((w) => w.n).join(" ");
+        if (t.has(f)) { achou = f; len = k; break; }
+      }
+      if (!achou) { i++; continue; }
+      const cands = new Set(t.get(achou).filter((x) => !x.pais || x.pais === pais).map((x) => x.alvo));
+      const w0 = ws[i];
+      const comum = len === 1 && PALAVRAS_COMUNS.has(achou);
+      const vale = !comum || (/^\p{Lu}/u.test(w0.o) && !w0.ini && w0.ant !== "dos" && w0.ant !== "das");
+      if (vale && cands.size === 1 && cands.has(alvo)) return true;
+      i += len;
+    }
+    return false;
+  }
+  /* time: { nome, curto?, pais? } (pais: ISO2 da liga nacional dele). outros: os times conhecidos, para desempate. */
+  function noticiaDoTime(item, time, outros, _frases) {
+    if (!item || typeof item !== "object" || !time || !time.nome) return false;
+    const pais = paisDoItem(item);
+    const pTime = paisNorm(time.pais);
+    const alvo = chaveClube(time.nome, pTime);
+    const mesmo = (nome, p) => { const q = paisNorm(p) || pais || pTime; return !!nome && (!paisNorm(p) || !pTime || paisNorm(p) === pTime) && chaveClube(nome, q) === alvo; };
+    if (item.clube && mesmo(item.clube, "")) return true;
+    const tc = TEMA_CLUBE[item.tema];
+    if (tc && (!pTime || pTime === tc.pais) && chaveClube(tc.nome, tc.pais) === alvo) return true;
+    const tr = item.transferencia && typeof item.transferencia === "object" ? item.transferencia : null;
+    if (tr) for (const c of [tr.origem, tr.destino]) if (c && typeof c === "object" && mesmo(c.clube, c.pais)) return true;
+    const frases = _frases || tabelaFrases(time, outros);
+    const texto = [item.titulo_pt, item.titulo, item.resumo_pt, item.resumo].filter(Boolean).join(" | ");
+    return citaNoTexto(texto, time, pais, frases);
+  }
+  /* Notícias que citam algum dos times (o filtro "Meus times"). As tabelas de expressões saem uma vez por time. */
+  function filtrarMeusTimes(itens, times, outros) {
+    const ts = (Array.isArray(times) ? times : []).filter((x) => x && x.nome).map((x) => ({ x, f: tabelaFrases(x, outros) }));
+    if (!ts.length) return [];
+    return (Array.isArray(itens) ? itens : []).filter((i) => ts.some(({ x, f }) => noticiaDoTime(i, x, outros, f)));
+  }
+
   raiz.Esportes = { LIGAS, ORDEM_LIGAS, ESPORTES, SEMPRE, PADRAO, MAX_TIMES, MAX_JOGADORES, ZONAS_NOME, ZONAS_COR, slugLiga, zonaDe, legendaDe, colunasDe, rodadaDe, abasDe, periodo, nomeGrupo,
     rodadaTenis, placarSets, ladoDoJogador, semRetiradas, padraoPrefs, ordemCompleta, ligadas, validarPrefs, respostaPrefs, fusoLocal, partesData, rotuloDia,
     escudoOk, PAIS_LIGA, LIGAS_ESCUDOS, paisNorm, normClube, APELIDOS, timeDoCatalogo, escudoDe, chaveClube,
-    ETAPAS, DESFECHOS, ETAPA, etapaDe, PESO_ETAPA, transferenciaLimpa, ehNegociacao, chaveNegociacao, agruparNegociacoes, ordenarNegociacoes, negociacaoDoTime, filtrarNegociacoes, QUEM_VV, ETAPA_VV };
+    ETAPAS, DESFECHOS, ETAPA, etapaDe, PESO_ETAPA, transferenciaLimpa, ehNegociacao, chaveNegociacao, agruparNegociacoes, ordenarNegociacoes, negociacaoDoTime, filtrarNegociacoes, QUEM_VV, ETAPA_VV,
+    chaveTime, jogosDoDoc, situacaoCampeonato, emAndamento, rotuloDiaCartao, jogosDoCabecalho, MAX_SEGUIDOS, V_TIMES, validarTimes, respostaTimes, devePerguntar,
+    paisDoItem, noticiaDoTime, filtrarMeusTimes, frasesDoTime: tabelaFrases, PALAVRAS_COMUNS };
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -19,7 +19,7 @@ import { rotaLeitura, cronLeitura, lerFundamentos } from "./leitura.js";
 // Radar de dividendos: o mesmo arquivo que a página carrega (critérios, avisos e validação dos filtros salvos)
 import "../public/radar-filtro.js";
 import { validarTabelas, mesclarTabelas, respostaTabelas, validarLayout, respostaLayout } from "./prefs.js";
-import { cronEsportes, validarPrefsEsportes, respostaPrefsEsportes } from "./esportes.js";
+import { cronEsportes, validarPrefsEsportes, respostaPrefsEsportes, rotaTimesEsportes } from "./esportes.js";
 import { comSeguranca } from "./seguranca.js";
 import { cronLandscape, rotaLandscape, rotaAdminLandscape } from "./landscape.js";
 import { rotaCloud, rotaAdminCloud } from "./cloud.js";
@@ -625,6 +625,12 @@ async function atender(request, env, ctx) {
     if (p === "/api/prefs/esportes") {
       if (!corpoJson(request)) return json({ erro: "json" }, 415);
       return prefsEsportes(request, env, quem);
+    }
+    // Time do coração e times seguidos (src/esportes.js, rotaTimesEsportes): prefs/<email>, id "esportes-times"
+    if (p === "/api/esportes/times") {
+      if (!libera(quem.secoes, "esportes")) return json({ erro: "secao" }, 403);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      return rotaTimesEsportes(request, env, quem, { lerLinhas, gravarNoEspelho });
     }
     if (p === "/api/prefs/traducao") {
       if (!corpoJson(request)) return json({ erro: "json" }, 415);

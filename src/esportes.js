@@ -127,8 +127,13 @@ export function lerScoreboard(j, liga) {
   const numero = (j && j.week && num(j.week.number)) ?? null;
   const jogos = lerJogos(j, liga);
   const tipoT = (j && j.season && j.season.type) ?? (lg && lg.season && lg.season.type);
+  // janela da temporada (19/11): season.startDate e endDate da liga, com o tipo (1 pré-temporada, 2 temporada regular,
+  // 3 pós-temporada, 4 fora de temporada); sem as duas datas, null
+  const sz = (lg && lg.season) || (j && j.season) || {};
+  const ini = iso(sz.startDate), fim = iso(sz.endDate);
+  const janela = ini && fim ? { inicio: ini, fim, tipo: num(tipoT && typeof tipoT === "object" ? tipoT.type ?? tipoT.id : tipoT) } : null;
   return {
-    jogos, numero,
+    jogos, numero, janela,
     temporada: num((j && j.season && j.season.year) ?? (lg && lg.season && lg.season.year)),
     tipoTemporada: num(tipoT && typeof tipoT === "object" ? tipoT.type ?? tipoT.id : tipoT),
     nome: txt(lg && (lg.name || lg.abbreviation)),
@@ -138,7 +143,12 @@ export function lerScoreboard(j, liga) {
 
 // Dias (AAAAMMDD em São Paulo) a buscar além de hoje: os do calendário da ESPN dentro da janela, os mais perto de hoje
 // primeiro, no máximo `max`. Sem calendário, os vizinhos fixos (ontem, amanhã, depois...).
-export function diasExtras(calendario, agora = Date.now(), max = DIAS_EXTRA) {
+// Com `vistos` ({ AAAAMMDD: ISO da última busca }, doc.agenda.vistos, 19/11): rodízio, para a faixa de jogos ter a
+// semana inteira sem pedir mais nada. Primeiro os dias de 3 atrás a 7 à frente, o buscado há mais tempo antes (nunca
+// buscado é o mais antigo; ontem e amanhã contam o dobro do tempo, para voltarem mais vezes), o mais perto desempata;
+// depois os de 8 a 10 à frente. O número de chamadas por passada é o mesmo de antes (no máximo `max`).
+const DIAS_SEMANA = 7;
+export function diasExtras(calendario, agora = Date.now(), max = DIAS_EXTRA, vistos = null) {
   const hoje = diaSP(agora);
   const dias = new Set();
   for (const c of calendario || []) { const t = Date.parse(c); if (!isNaN(t)) dias.add(diaSP(t)); }
@@ -147,7 +157,44 @@ export function diasExtras(calendario, agora = Date.now(), max = DIAS_EXTRA) {
     const de = diaSP(agora, JANELA[0]), ate = diaSP(agora, JANELA[1]);
     lista = [...dias].filter((d) => d !== hoje && d >= de && d <= ate).sort((a, b) => Math.abs(a - hoje) - Math.abs(b - hoje) || a - b);
   } else lista = [-1, 1, 2, 3, -2].map((n) => diaSP(agora, n));
+  if (vistos && typeof vistos === "object") {
+    const semana = diaSP(agora, DIAS_SEMANA), ontem = diaSP(agora, -1), amanha = diaSP(agora, 1);
+    const idade = (d) => { const t = Date.parse(vistos[d]); if (isNaN(t)) return Infinity; const x = agora - t; return d === ontem || d === amanha ? x * 2 : x; };
+    const ordem = new Map(lista.map((d, i) => [d, i]));
+    lista = lista.slice().sort((a, b) => Number(a > semana) - Number(b > semana) || idade(b) - idade(a) || ordem.get(a) - ordem.get(b));
+  }
   return lista.slice(0, max);
+}
+// Agenda da competição (19/11): os jogos dos dias buscados agora mais os guardados dos dias que ficaram de fora desta
+// passada, de 10 dias atrás a 10 à frente (no máximo 160), e quando cada dia foi buscado. O dia buscado agora troca
+// tudo o que havia dele.
+const AGENDA_MAX = 160;
+export function juntarAgenda(antes, jogos, buscados, agora = Date.now()) {
+  const quando = new Date(agora).toISOString();
+  const de = agora - 10 * 86_400_000, ate = agora + 11 * 86_400_000;
+  const novos = new Set(buscados);
+  const porId = new Map();
+  const chave = (j) => j.id || j.data + "|" + j.mandante;
+  for (const j of jogos || []) if (j && j.data) porId.set(chave(j), j);
+  for (const j of (antes && Array.isArray(antes.jogos) ? antes.jogos : [])) {
+    if (!j || !j.data) continue;
+    const t = Date.parse(j.data);
+    if (isNaN(t) || t < de || t > ate || novos.has(diaSP(t)) || porId.has(chave(j))) continue;
+    porId.set(chave(j), j);
+  }
+  const vistos = {};
+  const vmin = diaSP(agora, -11), vmax = diaSP(agora, 11);
+  for (const [d, v] of Object.entries((antes && antes.vistos) || {})) if (/^\d{8}$/.test(d) && d >= vmin && d <= vmax && !isNaN(Date.parse(v))) vistos[d] = v;
+  for (const d of novos) vistos[d] = quando;
+  const lista = [...porId.values()].sort(porData);
+  return { jogos: lista.length > AGENDA_MAX ? lista.filter((j) => Date.parse(j.data) >= agora - 3 * 86_400_000).slice(0, AGENDA_MAX) : lista, vistos };
+}
+// Dias com jogo do calendário da ESPN (AAAA-MM-DD em São Paulo), sem repetir, no máximo 400: é o que diz se a
+// competição está em andamento quando a janela da rodada não alcança o próximo jogo
+export function diasDoCalendario(calendario) {
+  const ds = new Set();
+  for (const c of calendario || []) { const t = Date.parse(c); if (!isNaN(t)) ds.add(diaSP(t).replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3")); }
+  return [...ds].sort().slice(-400);
 }
 
 // Rodada atual a partir dos jogos de uma janela de dias: o número de rodada do jogo ao vivo (ou do mais perto de agora),
@@ -662,18 +709,25 @@ export async function atualizarLiga(env, liga, { fila, times = [], forcar = null
         if (sb.temporada) doc.temporada = sb.temporada;
         const vistos = new Set(sb.jogos.map((x) => x.id));
         const juntar = (outro) => { for (const j of outro.jogos) if (!vistos.has(j.id)) { vistos.add(j.id); sb.jogos.push(j); } };
-        // os outros dias com jogo; se o orçamento acabar no meio, fica com o que veio
-        for (const dia of diasExtras(sb.calendario, agora, def.diasExtras ?? DIAS_EXTRA)) {
+        const buscados = [diaSP(agora)];
+        // os outros dias com jogo (em rodízio pela agenda guardada); se o orçamento acabar no meio, fica com o que veio
+        for (const dia of diasExtras(sb.calendario, agora, def.diasExtras ?? DIAS_EXTRA, (antes.agenda && antes.agenda.vistos) || {})) {
           let outro;
           try { const jd = (await fila(urlScoreboard(liga, dia))).json; outro = lerScoreboard(jd, liga); Object.assign(escudos, lerEscudos(jd)); }
           catch (e) { if (e.limite) break; continue; }
           juntar(outro);
+          buscados.push(dia);
           if (sb.numero == null && outro.numero != null) sb.numero = outro.numero;
         }
         if (!sb.jogos.length && def.reserva === "ge" && !(antes.rodada && antes.rodada.jogos && antes.rodada.jogos.length)) espnFalhou = true;
-        doc.rodada = escolherRodada(sb.jogos, agora, sb.numero, def.raioRodada ?? 2);
-        doc.proximos = proximosDe(sb.jogos, agora);
-        doc.ultimos = ultimosDe(sb.jogos);
+        // agenda (19/11): o que veio agora mais os dias guardados que ficaram fora desta passada
+        doc.agenda = juntarAgenda(antes.agenda, sb.jogos, buscados, agora);
+        const todos = doc.agenda.jogos;
+        if (sb.calendario.length) doc.diasJogo = diasDoCalendario(sb.calendario);
+        if (sb.janela) doc.temporadaJanela = sb.janela;
+        doc.rodada = escolherRodada(todos, agora, sb.numero, def.raioRodada ?? 2);
+        doc.proximos = proximosDe(todos, agora);
+        doc.ultimos = ultimosDe(todos);
         doc.rodadaEm = quandoIso; delete doc.tentativas.rodada;
         if (!espnFalhou) doc.fonte = "espn";
       } catch (e) { if (e.limite) throw e; if (def.reserva === "ge" && e.status >= 400 && e.status < 500) espnFalhou = true; else erro("rodada", e); }
@@ -974,3 +1028,83 @@ export async function cronEsportes(env, quando, { pausa = PAUSA, orcamento = ORC
 // ---------- Meus esportes (/api/prefs/esportes) ----------
 export const validarPrefsEsportes = (b) => E.validarPrefs(b);
 export const respostaPrefsEsportes = (salvo) => E.respostaPrefs(salvo);
+
+// ---------- Meus times (/api/esportes/times, pedido de 19/11) ----------
+// Time do coração e times seguidos de cada pessoa em prefs/<email>, id "esportes-times" ({ coracao, seguidos,
+// perguntado, v, atualizado }; formato e validação em public/esportes.js: validarTimes, respostaTimes). Só a rota da
+// própria pessoa lê e grava aqui; o cron e as curadorias não tocam. Os times aceitos são os que o Lookout conhece: os
+// das tabelas e dos jogos guardados em meta/esportes-<liga> (futebol e NBA; o tênis não tem time).
+export const ID_TIMES = "esportes-times";
+const LIGAS_COM_TIME = () => E.ORDEM_LIGAS.filter((l) => !E.LIGAS[l].tenis);
+// docs: Map (ou objeto) liga → doc. Devolve Map chave → { chave, id, nome, curto, sigla, escudo, esporte, pais, ligas },
+// em ordem de nome. O país é o da liga nacional em que o time aparece (copa não dá país).
+export function timesConhecidos(docs) {
+  const out = new Map();
+  const entradas = docs instanceof Map ? [...docs.entries()] : Object.entries(docs || {});
+  const ordem = new Map(E.ORDEM_LIGAS.map((l, i) => [l, i]));
+  entradas.sort((a, b) => (ordem.get(a[0]) ?? 99) - (ordem.get(b[0]) ?? 99));
+  for (const [liga, d] of entradas) {
+    const def = E.LIGAS[liga];
+    if (!def || def.tenis || !d || typeof d !== "object") continue;
+    for (const t of timesDoDoc(d)) {
+      const chave = E.chaveTime(liga, t.id);
+      if (!chave || !/^[A-Za-z0-9-]{1,40}$/.test(chave)) continue;
+      const x = out.get(chave) || { chave, id: t.id, nome: t.nome, curto: t.curto || "", sigla: t.sigla || "", escudo: "", esporte: def.esporte, pais: "", ligas: [] };
+      if (!x.ligas.includes(liga)) x.ligas.push(liga);
+      if (!x.escudo && t.escudo) x.escudo = E.escudoOk(t.escudo);
+      if (!x.sigla && t.sigla) x.sigla = t.sigla;
+      if (!x.pais && def.pais && (def.esporte !== "futebol" || E.PAIS_LIGA[liga])) x.pais = def.pais;
+      out.set(chave, x);
+    }
+  }
+  return new Map([...out.entries()].sort((a, b) => a[1].nome.localeCompare(b[1].nome, "pt-BR")));
+}
+// Times conhecidos guardados na memória do isolate por 5 min: cada visita a Esportes pede o GET, e os docs das ligas
+// mudam no máximo a cada 15 min
+let cacheConhecidos = null;
+const CONHECIDOS_TTL = 5 * MIN;
+export function limparCacheTimes() { cacheConhecidos = null; }
+async function lerConhecidos(env, deps, agora = Date.now()) {
+  if (cacheConhecidos && agora - cacheConhecidos.em < CONHECIDOS_TTL) return cacheConhecidos.mapa;
+  const ids = LIGAS_COM_TIME().map(idDoc);
+  const linhas = await deps.lerLinhas(env, `SELECT id, data FROM docs WHERE collection = 'meta' AND id IN (${ids.map(() => "?").join(", ")})`, ids, "meta");
+  const docs = new Map();
+  for (const r of linhas || []) { try { docs.set(String(r.id).slice("esportes-".length), JSON.parse(r.data)); } catch (e) {} }
+  const mapa = timesConhecidos(docs);
+  cacheConhecidos = { em: agora, mapa };
+  return mapa;
+}
+const jsonR = (dados, status = 200) => new Response(JSON.stringify(dados), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
+// GET → { coracao, seguidos, perguntado, v, atualizado, conhecidos: [time] }; PUT { coracao, seguidos } grava e marca
+// `perguntado` (qualquer resposta conta: Salvar, com ou sem time, e "Não torço para nenhum time").
+// deps: { lerLinhas, gravarNoEspelho } do Worker. A seção Esportes é conferida antes, em src/index.js.
+export async function rotaTimesEsportes(request, env, quem, deps, agora = Date.now()) {
+  if (!quem || !quem.email) return jsonR({ erro: "login" }, 401);
+  const col = "prefs/" + quem.email;
+  const lerSalvo = async () => {
+    const l = await deps.lerLinhas(env, "SELECT id, data FROM docs WHERE collection = ? AND id = ?", [col, ID_TIMES], "prefs");
+    try { return l && l[0] ? JSON.parse(l[0].data) : null; } catch (e) { return null; }
+  };
+  if (request.method === "GET") {
+    const [salvo, conhecidos] = await Promise.all([lerSalvo(), lerConhecidos(env, deps, agora)]);
+    return jsonR({ ...E.respostaTimes(salvo), conhecidos: [...conhecidos.values()] });
+  }
+  if (request.method === "PUT") {
+    const corpo = await request.text();
+    if (corpo.length > 3000) return jsonR({ erro: "grande" }, 413);
+    let b;
+    try { b = JSON.parse(corpo); } catch (e) { return jsonR({ erro: "json" }, 400); }
+    const conhecidos = await lerConhecidos(env, deps, agora);
+    const v = E.validarTimes(b, conhecidos);
+    if (v.erro) return jsonR({ erro: v.erro }, 400);
+    const quando = new Date(agora).toISOString();
+    const doc = { coracao: v.times.coracao, seguidos: v.times.seguidos, perguntado: quando, v: E.V_TIMES, atualizado: quando };
+    const data = JSON.stringify(doc);
+    await env.DB.prepare(
+      "INSERT INTO docs (collection, id, data, coletado, atualizado) VALUES (?, ?, ?, '', ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data, atualizado = excluded.atualizado"
+    ).bind(col, ID_TIMES, data, quando).run();
+    deps.gravarNoEspelho(env, [{ collection: col, id: ID_TIMES, data, coletado: "", atualizado: quando }]);
+    return jsonR({ ok: true, ...E.respostaTimes(doc), conhecidos: [...conhecidos.values()] });
+  }
+  return jsonR({ erro: "metodo" }, 405);
+}
