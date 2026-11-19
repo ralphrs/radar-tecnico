@@ -153,6 +153,53 @@ form.ped-form{display:block}
 .coleta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px}
 .coleta .conta-txt{flex:1 1 220px;min-width:0}
 .coleta .barra{max-width:260px;margin-top:4px}
+/* Rotinas (src/rotinas.js): o que rodou, o que não rodou ou está parado. Tabela no computador, lista empilhada no celular */
+.rot-topo{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+.rot-topo h2{margin:0}
+.rot-topo .conta-txt{display:block;margin-top:2px}
+.rot-resumo{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;margin:6px 0 0;font-size:15px}
+.rot-resumo b{font-variant-numeric:tabular-nums}
+.rot-resumo .sep{color:var(--mut)}
+.rot-destaque{margin:10px 0 4px;padding:10px 12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--err) 35%,var(--line));background:color-mix(in srgb,var(--err) 7%,var(--card));font-size:14px;overflow-wrap:anywhere}
+.rot-ok{margin:10px 0 4px;padding:10px 12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--ok) 35%,var(--line));background:color-mix(in srgb,var(--ok) 7%,var(--card));font-size:14px}
+.card h3.rot-h{font-size:13px;margin:18px 0 2px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.rot-tab{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
+.rot-tab th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:600;text-align:left;padding:6px 8px 6px 0;border-bottom:1px solid var(--line)}
+.rot-tab td{padding:9px 8px 9px 0;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;overflow-wrap:anywhere}
+.rot-tab tr:last-child td{border-bottom:0}
+.rot-tab col.c-nome{width:26%}.rot-tab col.c-est{width:14%}.rot-tab col.c-ult{width:17%}.rot-tab col.c-esp{width:18%}
+.rot-tab .rot-nome b{font-weight:600}
+.rot-tab .rot-nome small,.rot-tab .rot-esp small{display:block;color:var(--mut);font-size:12px;line-height:1.35}
+.rot-tab .rot-obs{color:var(--mut);font-size:13px}
+.rot-tab .rot-obs.ruim{color:var(--fg)}
+.rot-abs{display:none;color:var(--mut)}
+.rot-rel{white-space:normal}
+.selo{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px 1px 7px;white-space:nowrap;line-height:20px}
+.selo::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.selo-em-dia{background:color-mix(in srgb,var(--ok) 13%,transparent);color:var(--ok)}
+.selo-com-erro{background:color-mix(in srgb,#c2410c 13%,transparent);color:#c2410c}
+.selo-atrasada{background:color-mix(in srgb,var(--av-warn) 16%,transparent);color:var(--av-warn)}
+.selo-parada{background:color-mix(in srgb,var(--err) 14%,transparent);color:var(--err)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .selo-com-erro{color:#fb923c}}
+:root[data-theme=dark] .selo-com-erro{color:#fb923c}
+.rot-feeds{font-size:14px;margin:8px 0 0}
+.rot-feeds a{cursor:pointer}
+@media (max-width:640px){
+  .rot-tab,.rot-tab tbody,.rot-tab tr,.rot-tab td{display:block;width:auto}
+  .rot-tab colgroup,.rot-tab thead{display:none}
+  .rot-tab tr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:3px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .rot-tab tr:last-child{border-bottom:0}
+  .rot-tab td{border:0;padding:0}
+  .rot-tab td.rot-nome{grid-column:1}
+  .rot-tab td.rot-est{grid-column:2;grid-row:1;align-self:start}
+  .rot-tab td.rot-ult,.rot-tab td.rot-esp,.rot-tab td.rot-obs{grid-column:1 / -1;font-size:13px}
+  .rot-tab td[data-r]::before{content:attr(data-r) ": ";color:var(--mut)}
+  .rot-tab td.rot-obs:empty{display:none}
+  .rot-tab .rot-esp small{display:inline}
+  .rot-tab .rot-esp small::before{content:" · "}
+  .rot-abs{display:inline}
+  .rot-abs::before{content:", "}
+}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -165,6 +212,14 @@ form.ped-form{display:block}
     </div>
     <button class="conta-btn" type="button" id="conta" aria-haspopup="menu" aria-expanded="false" aria-controls="conta-menu" aria-label="Conta" title="Conta"><span class="conta-av" id="conta-av" aria-hidden="true"></span></button>
   </header>
+
+  <section class="card" id="rotinas-card" aria-labelledby="rotinas-titulo">
+    <div class="rot-topo">
+      <div><h2 id="rotinas-titulo">Rotinas</h2><span class="conta-txt" id="rotinas-quando" aria-live="polite"></span></div>
+      <button type="button" id="rotinas-atualizar">Atualizar</button>
+    </div>
+    <div id="rotinas" aria-live="polite"><p class="vazio">Carregando…</p></div>
+  </section>
 
   <section class="card" id="custos-card">
     <h2>Custos e consumo</h2>
@@ -237,7 +292,7 @@ form.ped-form{display:block}
     <ul id="pedidos"><li class="vazio">Carregando…</li></ul>
   </section>
 
-  <section class="card">
+  <section class="card" id="fontes-card">
     <h2>Rendimento das fontes</h2>
     <p class="dica">Dos links que o robô trouxe nos últimos 10 dias, quantos a curadoria publicou e quantos descartou, por quê. Fonte que nunca emplaca nada é candidata a sair da lista. Subreddits aparecem só com os posts em Nos fóruns.</p>
     <div class="coleta"><button type="button" id="coleta-agora">Ler os feeds agora</button><div class="conta-txt" id="coleta-andamento" aria-live="polite"></div></div>
@@ -1019,6 +1074,111 @@ $("coleta-agora").addEventListener("click", async () => {
 });
 carregarColeta();
 carregarCuradoria().then(() => rotaHash());
+
+/* Rotinas (GET /api/admin/rotinas, src/rotinas.js): o que está em dia, o que atrasou e o que parou, com o tempo desde a
+   última vez que funcionou. Relê ao abrir e a cada 60 s enquanto a aba está visível; o botão Atualizar relê na hora. */
+const ROT = { ultimo: 0, timer: null, carregando: false };
+const SELO = { "em dia": "em-dia", "com erro": "com-erro", atrasada: "atrasada", parada: "parada" };
+function haTempo(min) {
+  if (min == null) return "nunca";
+  if (min < 1) return "agora há pouco";
+  if (min < 60) return "há " + min + " min";
+  const h = Math.floor(min / 60);
+  if (h < 24) return "há " + h + " h";
+  const d = Math.floor(h / 24);
+  return d === 1 ? "há 1 dia" : "há " + d + " dias";
+}
+const dataHora = (iso) => { const d = new Date(iso); return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) + " às " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); };
+const porExtenso = (iso) => { const d = new Date(iso); return d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }) + ", " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); };
+const curtaData = (iso) => diaHora(iso);
+const duracao = (v) => (v == null ? "" : v < 1000 ? fmt(v) + " ms" : f1(v / 1000) + " s");
+function celulaUltima(l) {
+  const iso = l.ultimaVez || l.ultimaOk;
+  if (!iso) return '<td class="rot-ult" data-r="Última vez que funcionou"><span class="rot-rel">nunca</span></td>';
+  return `<td class="rot-ult" data-r="Última vez que funcionou"><span class="rot-rel" title="${esc(dataHora(iso))}">${esc(haTempo(l.idadeMin))}</span><span class="rot-abs">${esc(porExtenso(iso))}</span></td>`;
+}
+function obsWorker(l) {
+  const p = [];
+  const ruim = l.estado !== "em dia";
+  // a mensagem vale enquanto a falha for a última coisa registrada (um sucesso depois apaga o aviso)
+  if (l.msg && l.ultimoErro && (!l.ultimaOk || l.ultimoErro >= l.ultimaOk)) p.push(l.msg);
+  else if (l.msg && ruim && !l.ultimoErro) p.push(l.msg);
+  if (l.nunca) p.push(l.aguardando ? `ainda não chegou a hora desde que o registro começou (${curtaData(l.desde)})` : l.desde ? `nunca rodou desde ${curtaData(l.desde)}, quando o registro começou` : "nada registrado ainda");
+  else if (l.perdida && (l.estado === "atrasada" || l.estado === "parada")) p.push(l.janela ? `a janela de ${curtaData(l.perdida)} passou sem rodar` : `devia ter rodado ${curtaData(l.perdida)}`);
+  if (l.semTrabalhoDesde && !ruim) p.push("sem trabalho desde " + curtaData(l.semTrabalhoDesde));
+  else if (l.semTrabalhoDesde === null && !ruim && !l.ultimaOk) p.push("sem trabalho desde que o registro começou");
+  if (l.nota) p.push(l.nota);
+  return p;
+}
+function obsCuradoria(l) {
+  const p = [];
+  if (l.msg) p.push(l.msg);
+  if (l.id === "plantao") {
+    p.push(l.pendentes ? `${l.pendentes} ${l.pendentes === 1 ? "pedido esperando" : "pedidos esperando"}, o mais antigo ${haTempo(l.esperaMin)}` : "nenhum pedido esperando");
+    return p;
+  }
+  if (l.nunca) p.push("nenhuma rodada registrada");
+  p.push(`24 h: ${l.itens24h} ${l.itens24h === 1 ? "item" : "itens"} · 7 dias: ${l.itens7d}`);
+  if (l.novosNaUltima != null) p.push(`${l.novosNaUltima} ${l.novosNaUltima === 1 ? "novo" : "novos"} na última`);
+  return p;
+}
+function linhaRotina(l, obs) {
+  const sub = [l.detalhe, l.ms != null ? "levou " + duracao(l.ms) : ""].filter(Boolean).join(" · ");
+  const o = obs(l);
+  const ruim = l.estado !== "em dia";
+  return `<tr data-id="${esc(l.id)}" data-estado="${esc(l.estado)}"><td class="rot-nome"><b>${esc(l.nome)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</td>`
+    + `<td class="rot-est"><span class="selo selo-${SELO[l.estado] || "parada"}">${esc(l.estado)}</span></td>`
+    + celulaUltima(l)
+    + `<td class="rot-esp" data-r="Esperado">${esc(l.esperado)}</td>`
+    + `<td class="rot-obs${ruim ? " ruim" : ""}">${o.map(esc).join(" · ")}</td></tr>`;
+}
+function tabelaRotinas(linhas, obs, rotulo) {
+  return `<table class="rot-tab" aria-label="${esc(rotulo)}"><colgroup><col class="c-nome"><col class="c-est"><col class="c-ult"><col class="c-esp"><col></colgroup>`
+    + "<thead><tr><th>Rotina</th><th>Estado</th><th>Última vez que funcionou</th><th>Esperado</th><th>Observação</th></tr></thead><tbody>"
+    + linhas.map((l) => linhaRotina(l, obs)).join("") + "</tbody></table>";
+}
+const nPlural = (n, um, varios) => `<b>${n}</b> ${n === 1 ? um : varios}`;
+function pintarRotinas(r) {
+  const s = r.resumo;
+  let h = `<p class="rot-resumo">${nPlural(s.emDia, "em dia", "em dia")}<span class="sep">·</span>${nPlural(s.comErro, "com erro", "com erro")}<span class="sep">·</span>${nPlural(s.atrasadas, "atrasada", "atrasadas")}<span class="sep">·</span>${nPlural(s.paradas, "parada", "paradas")}</p>`;
+  if (s.destaque) {
+    const d = s.destaque;
+    h += `<p class="rot-destaque" id="rotinas-destaque"><strong>Parada há mais tempo: ${esc(d.nome)}.</strong> ${d.id === "plantao" ? (d.pendentes === 1 ? "Um pedido de rodar agora" : d.pendentes + " pedidos de rodar agora") + " esperando, o mais antigo " + esc(haTempo(d.esperaMin)) + "." : d.nunca ? (d.idadeMin != null ? "Nunca rodou desde que o registro começou, " + esc(haTempo(d.idadeMin)) + "." : "Nunca rodou.") : "Funcionou pela última vez " + esc(haTempo(d.idadeMin)) + (d.ultimaVez ? ", " + esc(dataHora(d.ultimaVez)) : "") + "."}</p>`;
+  } else if (!s.atrasadas && !s.comErro) h += '<p class="rot-ok">Tudo rodando no horário.</p>';
+  h += '<h3 class="rot-h">Curadorias</h3><p class="dica" style="margin:0 0 4px">Tarefas agendadas fora do Worker: aqui entra só o rastro delas no banco. Em dia até 13 h desde a última rodada, atrasada até 26 h.</p>';
+  h += tabelaRotinas(r.curadorias, obsCuradoria, "Curadorias");
+  h += '<h3 class="rot-h">Worker</h3><p class="dica" style="margin:0 0 4px">Etapas do cron de minuto em minuto. Atrasada passando de 2 vezes o intervalo; parada passando de 6. As de uma vez por dia ou por mês contam da janela perdida.</p>';
+  h += tabelaRotinas(r.worker, obsWorker, "Rotinas do Worker");
+  const feeds = r.worker.find((l) => l.id === "feeds");
+  if (feeds && feeds.feedsComFalha != null) h += `<p class="rot-feeds" id="rotinas-feeds">${feeds.feedsComFalha ? `<b>${feeds.feedsComFalha}</b> ${feeds.feedsComFalha === 1 ? "feed com falha" : "feeds com falha"} agora.` : "Nenhum feed com falha agora."} <a href="#fontes-card" data-rolar="fontes-card">Ver no Rendimento das fontes</a></p>`;
+  $("rotinas").innerHTML = h;
+  $("rotinas-quando").textContent = "Lido às " + new Date(r.agora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+async function carregarRotinas() {
+  if (ROT.carregando) return;
+  ROT.carregando = true;
+  const bt = $("rotinas-atualizar"); bt.disabled = true;
+  try { pintarRotinas(await api("/api/admin/rotinas")); ROT.ultimo = Date.now(); }
+  catch (e) { $("rotinas").innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
+  finally { ROT.carregando = false; bt.disabled = false; }
+}
+function agendarRotinas() {
+  clearInterval(ROT.timer); ROT.timer = null;
+  if (document.visibilityState !== "visible") return;
+  if (Date.now() - ROT.ultimo >= 60000) carregarRotinas();
+  ROT.timer = setInterval(() => { if (document.visibilityState === "visible") carregarRotinas(); }, 60000);
+}
+$("rotinas-atualizar").addEventListener("click", carregarRotinas);
+document.addEventListener("visibilitychange", agendarRotinas);
+// o link para o card de fontes rola até ele sem mexer no endereço (o #instrucoes/<secao> do editor usa o hash)
+$("rotinas").addEventListener("click", (e) => {
+  const a = e.target.closest("[data-rolar]");
+  if (!a) return;
+  e.preventDefault();
+  const alvo = $(a.dataset.rolar);
+  if (alvo) { alvo.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); alvo.setAttribute("tabindex", "-1"); alvo.focus({ preventScroll: true }); }
+});
+agendarRotinas();
 
 carregarGrupos().then(() => carregar()).catch((err) => { $("lista").innerHTML = '<li class="vazio">' + esc(err.message) + "</li>"; });
 </script>

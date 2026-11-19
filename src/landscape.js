@@ -458,6 +458,8 @@ export async function rodadaLandscape(env, { agora = Date.now(), orcamento = ORC
   atual.semToken = !temToken;
   atual.rodada = { quando, pedidos: out.pedidos, partes: out.partes, erros: Object.keys(erros).length ? erros : undefined, parou: out.parou || undefined };
   await gravarSistema(env, "landscape-estado", atual);
+  // a primeira mensagem de erro, curta, para a linha do Landscape no relatório das rotinas (src/rotinas.js)
+  if (out.erros) out.msg = Object.entries(erros).slice(0, 1).map(([k, v]) => k + ": " + String(v).slice(0, 100)).join("");
   return out;
 }
 

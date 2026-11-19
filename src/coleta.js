@@ -286,22 +286,24 @@ export function pegar(url) {
 }
 
 // Devolve o status HTTP da resposta (0 quando não houve resposta), para a coleta do Reddit parar no 429.
-async function lerUm(env, f) {
+async function lerUm(env, f, falhas = null) {
+  // falhas: lista da coleta (src/rotinas.js, linha "Leitura dos feeds" do Admin); cada falha vira "Fonte: motivo"
+  const reg = (ok, erro, ...resto) => { if (!ok && falhas) falhas.push(f.fonte + ": " + String(erro).slice(0, 80)); return registrar(env, f, ok, erro, ...resto); };
   let r;
   try {
     r = await pegar(f.url);
   } catch (e) {
-    await registrar(env, f, false, String(e && e.message || e).slice(0, 200), 0, 0);
+    await reg(false, String(e && e.message || e).slice(0, 200), 0, 0);
     return 0;
   }
-  if (!r.ok) { await registrar(env, f, false, "HTTP " + r.status, 0, 0, r.status); return r.status; }
+  if (!r.ok) { await reg(false, "HTTP " + r.status, 0, 0, r.status); return r.status; }
   const xml = (await r.text()).slice(0, 3_000_000);
   const reddit = f.tipo === "reddit";
   const lidos = reddit ? lerReddit(xml) : lerFeed(xml);
   if (!lidos.length) {
     // subreddit sem post novo responde um <feed> sem <entry>: não é erro
-    if (reddit && /<feed[\s>]/i.test(xml.slice(0, 2000))) { await registrar(env, f, true, "", 0, 0, r.status); return r.status; }
-    await registrar(env, f, false, "nenhum item reconhecido", 0, 0, r.status);
+    if (reddit && /<feed[\s>]/i.test(xml.slice(0, 2000))) { await reg(true, "", 0, 0, r.status); return r.status; }
+    await reg(false, "nenhum item reconhecido", 0, 0, r.status);
     return r.status;
   }
 
@@ -311,7 +313,7 @@ async function lerUm(env, f) {
   // todos (141 de 141 em 04/11/2026) e isso custava token. novos_total do feeds_estado conta os posts novos no fórum.
   if (reddit) {
     const novosForum = await gravarForuns(env, f, recentes);
-    await registrar(env, f, true, "", lidos.length, novosForum, r.status);
+    await reg(true, "", lidos.length, novosForum, r.status);
     return r.status;
   }
   const itens = [];
@@ -319,7 +321,7 @@ async function lerUm(env, f) {
     const url = urlCanonica(i.url);
     itens.push({ ...i, url, id: await idDe(url) });
   }
-  if (!itens.length) { await registrar(env, f, true, "", lidos.length, 0, r.status); return r.status; }
+  if (!itens.length) { await reg(true, "", lidos.length, 0, r.status); return r.status; }
 
   // descarta o que já é candidato ou já está no banco (pelo id e pela url)
   const ids = itens.map((i) => i.id), urls = itens.map((i) => i.url);
@@ -342,7 +344,7 @@ async function lerUm(env, f) {
     // tipo e link_externo ficam vazios: desde 04/11/2026 só feeds comuns chegam aqui (candidatos reddit antigos saem em 10 dias)
     await env.DB.batch(novos.map((i) => ins.bind(i.id, f.radar, i.url, i.titulo, f.fonte, f.pais, i.publicado, i.trecho, f.url, t, "", "")));
   }
-  await registrar(env, f, true, "", lidos.length, novos.length, r.status);
+  await reg(true, "", lidos.length, novos.length, r.status);
   return r.status;
 }
 
@@ -376,21 +378,24 @@ export async function gravarForuns(env, f, posts) {
   return r.reduce((s, x) => s + ((x && x.meta && x.meta.changes) || 0), 0);
 }
 
-// Devolve { feeds, reddit }: quantos feeds normais e quantos subreddits foram lidos neste minuto.
+// Devolve { feeds, reddit, falhas, falhasReddit }: quantos feeds normais e quantos subreddits foram lidos neste minuto,
+// e o que falhou (src/rotinas.js).
 // A sonda (src/sonda.js) só testa URL do Reddit quando a coleta não usou a vez dele.
 export async function coletar(env) {
   await garantirColunas(env);
   const { normais, reddit, forcada } = await feedsDaVez(env);
-  const falha = (f) => (e) => registrar(env, f, false, "falha: " + String(e && e.message || e).slice(0, 180), 0, 0).then(() => 0);
+  // falhas e falhasReddit: "Fonte: motivo" de cada feed que falhou neste minuto, para o relatório das rotinas
+  const falhas = [], falhasReddit = [];
+  const falha = (f, l) => (e) => { const m = "falha: " + String(e && e.message || e).slice(0, 180); l.push(f.fonte + ": " + m.slice(0, 80)); return registrar(env, f, false, m, 0, 0).then(() => 0); };
   // Leitura forçada: até 30 feeds, 5 abertos de cada vez; fora dela, os 6 da vez juntos, como sempre
   const normal = forcada
-    ? emPool(normais, FORCADA.SIMULTANEAS, FORCADA.ORCAMENTO_MS, (f) => lerUm(env, f).catch(falha(f)))
-    : Promise.all(normais.map((f) => lerUm(env, f).catch(falha(f)))).then(() => normais.length);
+    ? emPool(normais, FORCADA.SIMULTANEAS, FORCADA.ORCAMENTO_MS, (f) => lerUm(env, f, falhas).catch(falha(f, falhas)))
+    : Promise.all(normais.map((f) => lerUm(env, f, falhas).catch(falha(f, falhas)))).then(() => normais.length);
   // Reddit em fila, um de cada vez: 429 encerra a vez do Reddit neste minuto
   let lidosReddit = 0;
   for (const f of reddit.slice(0, REDDIT.POR_MINUTO)) {
     lidosReddit++;
-    const status = await lerUm(env, f).catch(falha(f));
+    const status = await lerUm(env, f, falhasReddit).catch(falha(f, falhasReddit));
     if (status === 429) break;
   }
   const lidos = await normal;
@@ -399,9 +404,9 @@ export async function coletar(env) {
     const { pendentes, ...s } = forcada;
     const quando = iso(new Date());
     await gravarForcada(env, { ...s, faltam, ultima: quando, fim: faltam ? null : quando });
-    return { feeds: lidos, reddit: lidosReddit, forcada: { faltam } };
+    return { feeds: lidos, reddit: lidosReddit, falhas, falhasReddit, forcada: { faltam } };
   }
-  return { feeds: lidos, reddit: lidosReddit };
+  return { feeds: lidos, reddit: lidosReddit, falhas, falhasReddit };
 }
 
 // Card "Rendimento das fontes" do admin (/api/admin/fontes em src/index.js): results são as linhas de candidatos por feed.

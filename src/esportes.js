@@ -966,6 +966,8 @@ export async function cronEsportes(env, quando, { pausa = PAUSA, orcamento = ORC
   } catch (e) { erros.cron = String((e && e.message) || e); }
   try { await gravarErros(env, erros); } catch (e) {}
   out.erros = Object.keys(erros).length;
+  // as duas primeiras mensagens, curtas, para a linha de Esportes no relatório das rotinas (src/rotinas.js)
+  if (out.erros) out.msg = Object.entries(erros).slice(0, 2).map(([k, v]) => k + ": " + String(v).slice(0, 70)).join(" | ");
   return out;
 }
 

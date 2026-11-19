@@ -2,13 +2,13 @@ import { emailDoAccess, accessConfigurado } from "./auth.js";
 import { coletar, limpar, garantirColunas, ehReddit, REDDIT, juntarFontes, rotaColetaAgora } from "./coleta.js";
 import { rotaAdminCuradoria } from "./curadoria.js";
 import { FEEDS, SECOES_COM_FORUM } from "./feeds.js";
-import { cronMercado, pedirAtualizacao, cronB3 } from "./mercado.js";
+import { cronMercado, pedirAtualizacao, cronB3, partesDoMinuto } from "./mercado.js";
 import { cronEua } from "./eua.js";
 import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
 import { adminCustos } from "./custos.js";
 import { secoesDe, secaoDe, libera, adminGrupos, adminMembro, guardarSecoes, SECOES } from "./grupos.js";
 import { cronSonda, adminSonda } from "./sonda.js";
-import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1, gravarNoEspelho, removerDoEspelho, PREFIXOS_PESSOAIS } from "./espelho.js";
+import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1, gravarNoEspelho, removerDoEspelho, PREFIXOS_PESSOAIS, stubEspelho } from "./espelho.js";
 import { rotaLidas } from "./lidas.js";
 import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
 import { rotaPapel, cronPapel, ID_OK as PAPEL_ID_OK } from "./papel.js";
@@ -23,6 +23,7 @@ import { cronEsportes, validarPrefsEsportes, respostaPrefsEsportes } from "./esp
 import { comSeguranca } from "./seguranca.js";
 import { cronLandscape, rotaLandscape, rotaAdminLandscape } from "./landscape.js";
 import { cronTraducao, estadoAdmin as estadoTraducao, envContado, contarFetch, contagens } from "./traducao.js";
+import { novoBatimento, etapa, gravarBatimento, LER, CONSULTAS_BATIMENTO, rotaRotinas } from "./rotinas.js";
 // Tradução das notícias: a preferência "Mostrar notícias traduzidas" (validação e padrão) mora em public/traducao.js
 import "../public/traducao.js";
 const RF = globalThis.RadarFiltro;
@@ -667,6 +668,13 @@ async function atender(request, env, ctx) {
       return rotaAdminLandscape(request, env, quem, p === "/api/admin/landscape-categorias" ? "categorias" : "", id, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
     }
 
+    // Rotinas (src/rotinas.js): o que rodou, o que não rodou ou está parado, e há quanto tempo. Só o Admin; os outros
+    // recebem o mesmo 404 das rotas de Admin do Landscape. Duas consultas ao D1 e o estado do espelho (Durable Object).
+    if (p === "/api/admin/rotinas") {
+      if (!quem.admin) return json({ erro: "rota" }, 404);
+      return rotaRotinas(request, env, quem, { estadoEspelho: env.ESPELHO ? () => stubEspelho(env).estado() : null });
+    }
+
     // Curadoria (src/curadoria.js): instruções de cada seção, pedidos e "rodar agora"; e a leitura forçada dos feeds
     // (src/coleta.js). Só o Admin; os outros recebem o mesmo 404 das rotas de Admin do Landscape, antes do 403 genérico.
     if (p === "/api/admin/instrucoes" || p.startsWith("/api/admin/instrucoes/") || p === "/api/admin/pedidos" || p.startsWith("/api/admin/pedidos/") || p === "/api/admin/coleta-agora") {
@@ -715,67 +723,82 @@ async function agendado(evento, envOriginal) {
     try { await etapas(evento, env, conta); } finally { contagens.delete(conta); }
 }
 
-async function etapas(evento, env, conta) {
-    const minuto = new Date(evento.scheduledTime || Date.now()).getUTCMinutes();
+async function etapas(evento, env, conta, relogio = () => Date.now()) {
+    const quando = evento.scheduledTime || Date.now();
+    const minuto = new Date(quando).getUTCMinutes();
+    // Batimento (src/rotinas.js): cada etapa marca o resultado na memória; tudo vai para _sistema/rotinas uma vez, no fim,
+    // antes da sincronia do espelho. etapa() relança a exceção, e cada try segue com o console.error de sempre.
+    const bat = novoBatimento(relogio);
     let coleta = null;
-    try { coleta = await coletar(env); } catch (e) { console.error("coleta", e); }
-    try { await cronMercado(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("mercado", e); }
-    try { await cronB3(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("b3", e); }
-    try { await cronEua(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("eua", e); }
-    try { await cronCvm(env, evento.scheduledTime || Date.now()); } catch (e) { console.error("cvm", e); }
+    try { coleta = await etapa(bat, ["feeds", "foruns"], () => coletar(env), LER.coleta); } catch (e) { console.error("coleta", e); }
+    const partes = partesDoMinuto(quando);
+    const idsMercado = [(partes.moedas || partes.bolsa || partes.indicadores) && "mercado", partes.cripto && "cripto"].filter(Boolean);
+    try { await etapa(bat, idsMercado, () => cronMercado(env, quando), LER.mercado(partes)); } catch (e) { console.error("mercado", e); }
+    try { await etapa(bat, "b3", () => cronB3(env, quando), LER.b3); } catch (e) { console.error("b3", e); }
+    try { await etapa(bat, "eua", () => cronEua(env, quando), LER.eua); } catch (e) { console.error("eua", e); }
+    try { await etapa(bat, "cvm", () => cronCvm(env, quando), LER.cvm); } catch (e) { console.error("cvm", e); }
     // Esportes (src/esportes.js): sonda no começo e, a cada 5 min, rodada, tabela e jogos dos times das competições ligadas
-    try { const r = await cronEsportes(env, evento.scheduledTime || Date.now()); if (r && (r.ligas.length || r.erros)) console.log("esportes", JSON.stringify(r)); } catch (e) { console.error("esportes", String((e && e.message) || e).slice(0, 120)); }
+    try { const r = await etapa(bat, "esportes", () => cronEsportes(env, quando), LER.esportes); if (r && (r.ligas.length || r.erros)) console.log("esportes", JSON.stringify(r)); } catch (e) { console.error("esportes", String((e && e.message) || e).slice(0, 120)); }
     // Landscape (src/landscape.js): semente (uma vez), sonda e coleta do GitHub e do HN, no máximo 6 pedidos por minuto
-    try { const r = await cronLandscape(env, evento.scheduledTime || Date.now()); if (r && (r.pedidos || r.semente || r.erro || r.parou)) console.log("landscape", JSON.stringify(r)); } catch (e) { console.error("landscape", String((e && e.message) || e).slice(0, 120)); }
+    try { const r = await etapa(bat, "landscape", () => cronLandscape(env, quando), LER.landscape); if (r && (r.pedidos || r.semente || r.erro || r.parou)) console.log("landscape", JSON.stringify(r)); } catch (e) { console.error("landscape", String((e && e.message) || e).slice(0, 120)); }
     // Reddit: uma URL por minuto somando coleta e sonda; se a coleta falhou antes de saber, a sonda não arrisca
-    try { await cronSonda(env, { redditLivre: !!coleta && !coleta.reddit }); } catch (e) { console.error("sonda", e); }
-    try { const r = await cronPapel(env, evento.scheduledTime || Date.now()); if (r && r.candidatos) console.log("papel", JSON.stringify(r)); } catch (e) { console.error("papel", e); }
+    try { await etapa(bat, "sonda", () => cronSonda(env, { redditLivre: !!coleta && !coleta.reddit }), LER.sonda); } catch (e) { console.error("sonda", e); }
+    try { const r = await etapa(bat, "papel", () => cronPapel(env, quando), LER.papel); if (r && r.candidatos) console.log("papel", JSON.stringify(r)); } catch (e) { console.error("papel", e); }
     // Leitura do dia: 10h40 a 10h49 UTC (7h40 em São Paulo), depois do informe da CVM das 10h17
     try {
       const podeVer = async (email) => { const admin = email === String(env.ADMIN_EMAIL || "").trim().toLowerCase(); if (!admin && !(await env.DB.prepare("SELECT 1 FROM usuarios WHERE email = ?").bind(email).first())) return false; return libera(await secoesDe(env, email, admin), "investimentos"); };
-      const r = await cronLeitura(env, evento.scheduledTime || Date.now(), { lerLinhas, lerLinha, gravarNoEspelho }, podeVer);
+      const r = await etapa(bat, "leitura", () => cronLeitura(env, quando, { lerLinhas, lerLinha, gravarNoEspelho }, podeVer), LER.leitura);
       if (r && (r.geradas || r.erros)) console.log("leitura", JSON.stringify(r));
     } catch (e) { console.error("leitura", String((e && e.message) || e).slice(0, 120)); }
     // Simulador de reinvestimento: fecha o mês anterior de quem tem simulação, no dia 1 entre 6h e 6h59 em Brasília
-    try { const r = await cronSimulador(env, evento.scheduledTime || Date.now(), { gravarNoEspelho }); if (r && (r.fechadas || r.erros)) console.log("simulador", JSON.stringify(r)); } catch (e) { console.error("simulador", String((e && e.message) || e).slice(0, 120)); }
+    try { const r = await etapa(bat, "simulador", () => cronSimulador(env, quando, { gravarNoEspelho }), LER.simulador); if (r && (r.fechadas || r.erros)) console.log("simulador", JSON.stringify(r)); } catch (e) { console.error("simulador", String((e && e.message) || e).slice(0, 120)); }
     // Minhas listas por regra: recalcula as ligadas de todo mundo no minuto 41 (grava só as que mudaram)
-    try { const r = await cronListas(env, evento.scheduledTime || Date.now(), { lerLinha, lerFundamentos, gravarNoEspelho }); if (r && r.listas) console.log("listas", JSON.stringify(r)); } catch (e) { console.error("listas", String((e && e.message) || e).slice(0, 120)); }
+    try { const r = await etapa(bat, "listas", () => cronListas(env, quando, { lerLinha, lerFundamentos, gravarNoEspelho }), LER.listas); if (r && r.listas) console.log("listas", JSON.stringify(r)); } catch (e) { console.error("listas", String((e && e.message) || e).slice(0, 120)); }
     if (minuto === 7) {
       // Índice que a coleta precisa (barato: só confere o catálogo). Fica aqui para valer mesmo onde o schema.sql não foi reaplicado.
       try { await env.DB.prepare("CREATE INDEX IF NOT EXISTS docs_url ON docs (json_extract(data, '$.url'))").run(); } catch (e) { console.error("indice", e); }
-      try { console.log("limpeza", JSON.stringify(await limpar(env))); } catch (e) { console.error("limpeza", e); }
+      try { console.log("limpeza", JSON.stringify(await etapa(bat, "limpeza", () => limpar(env), LER.limpeza))); } catch (e) { console.error("limpeza", e); }
     }
-    try { await importarHistorico(env); } catch (e) { console.error("historico", e); }
+    try { await etapa(bat, "historico", () => importarHistorico(env), LER.historico); } catch (e) { console.error("historico", e); }
     // Tradução das notícias (src/traducao.js): depois das coletas e da limpeza, até 8 chamadas ao Workers AI, dentro do
-    // que sobra de subrequests nesta invocação (conta.d1 + conta.fetch), com a reserva do espelho logo abaixo
+    // que sobra de subrequests nesta invocação (conta.d1 + conta.fetch), com a reserva do espelho logo abaixo. As duas
+    // consultas do batimento, que vêm depois, entram nessa conta.
     try {
-      const r = await cronTraducao(env, { agora: evento.scheduledTime || Date.now(), gastos: conta.d1 + conta.fetch });
+      const r = await etapa(bat, "traducao", () => cronTraducao(env, { agora: quando, gastos: conta.d1 + conta.fetch + CONSULTAS_BATIMENTO }), LER.traducao);
       if (r && (r.chamadas || r.marcas || r.semFolga || (r.pausa && r.chamadas !== undefined))) console.log("traducao", JSON.stringify({ ...r, d1: conta.d1, fetch: conta.fetch }));
     } catch (e) { console.error("traducao", String((e && e.message) || e).slice(0, 120)); }
+    // Uma leitura e uma gravação de _sistema/rotinas; nunca lança. A sincronia do espelho tem o estado próprio, no
+    // Durable Object, que o relatório lê de lá.
+    await gravarBatimento(env, bat);
     await sincronizarEspelho(env);
 }
+
+// Para os testes (test/rotinas.test.mjs): o cron com o relógio injetado.
+export { etapas as _etapasDoCron };
 
 // Importa o histórico em partes (public/seed/NNN.json), uma por minuto, até acabar.
 async function importarHistorico(env) {
   {
     const estado = await env.DB.prepare("SELECT data FROM docs WHERE collection = '_sistema' AND id = 'seed'").first();
     const s = estado ? JSON.parse(estado.data) : { parte: 0, fim: false };
-    if (s.fim) return;
+    // O retorno vai para a linha Histórico do relatório das rotinas: { parte } quando importou, { fim } ou { semIndice } quando não
+    if (s.fim) return { fim: true };
     const idx = await env.ASSETS.fetch(new Request("https://lookout.local/seed/index.json"));
-    if (!idx.ok) return;
+    if (!idx.ok) return { semIndice: true };
     const { partes } = await idx.json();
     if (s.parte >= partes.length) {
       await salvarEstado(env, { ...s, fim: true, terminou: agoraIso() });
-      return;
+      return { fim: true };
     }
     const r = await env.ASSETS.fetch(new Request(`https://lookout.local/seed/${partes[s.parte]}`));
-    if (!r.ok) return;
+    if (!r.ok) throw new Error(`parte ${partes[s.parte]}: HTTP ${r.status}`);
     const docs = await r.json();
     const stmt = env.DB.prepare("INSERT OR IGNORE INTO docs (collection, id, data, coletado) VALUES (?, ?, ?, ?)");
     for (let i = 0; i < docs.length; i += 50) {
       await env.DB.batch(docs.slice(i, i + 50).map((d) => stmt.bind(d.c, d.id, JSON.stringify(d.data), d.k || "")));
     }
     await salvarEstado(env, { parte: s.parte + 1, fim: s.parte + 1 >= partes.length, atualizado: agoraIso() });
+    return { parte: s.parte + 1 };
   }
 }
 

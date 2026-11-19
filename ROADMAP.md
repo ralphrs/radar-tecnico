@@ -183,6 +183,10 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [ ] Colar no Admin o texto atual de cada tarefa como versão 1 das instruções, antes de trocar o prompt delas
 - [ ] Conferir em produção a primeira leitura forçada: tempo real por minuto (log `coleta`) e se algum feed lento segura o minuto perto dos 35 s
 
+## Pedidos de 19/11
+- [x] Relatório das rotinas no Admin: card Rotinas no topo com o que está em dia, com erro, atrasado ou parado e há quanto tempo, para as curadorias (rastro em `meta/status*`, itens em 24 h e 7 dias, plantão) e para cada etapa do cron (batimento em `_sistema/rotinas`, uma leitura e uma gravação por minuto), com a tabela de intervalos esperados (docs/LOOKOUT.md, "Rotinas: o relatório do Admin") (19/11)
+- [ ] Rotinas: conferir em produção os primeiros dias do batimento (se alguma etapa aparece atrasada sem estar, sobretudo EUA no horário de verão de Nova York e a leitura do dia com o cofre)
+
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
 - [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)

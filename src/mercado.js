@@ -178,7 +178,7 @@ async function bolsa(env) {
 }
 
 // Pregão da B3: segunda a sexta, 10h às 18h10 em Brasília (13h às 21h10 UTC, sem horário de verão).
-const pregaoAberto = (d) => { const dia = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(); return dia >= 1 && dia <= 5 && m >= 13 * 60 && m <= 21 * 60 + 10; };
+export const pregaoAberto = (d) => { const dia = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(); return dia >= 1 && dia <= 5 && m >= 13 * 60 && m <= 21 * 60 + 10; };
 
 async function lerPainel(env) {
   const r = await env.DB.prepare("SELECT data FROM docs WHERE collection = 'meta' AND id = 'mercado'").first();

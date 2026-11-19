@@ -954,6 +954,62 @@ Botão no card Rendimento das fontes. O `POST` não lê nada na hora: grava `_si
 - **Instruções** (`/admin#instrucoes/<secao>`, abre pela linha da seção; Voltar do navegador fecha): aviso fixo "As regras de segurança ficam na própria tarefa e não são editadas aqui: em qual seção ela grava e o que nunca toca.", área de texto grande em fonte monoespaçada, contagem de caracteres, Salvar desligado sem mudança, "Descartar mudanças", aviso de mudança não salva ao sair (Voltar, Fechar, outra seção ou fechar a aba), versões anteriores com Ver e Restaurar (Restaurar só traz o texto para a área; quem grava é o Salvar). No 409, o botão "Trazer a versão do banco".
 - **Pedidos à curadoria:** campo de texto (contagem até 500), seção, interruptor "Vale em toda rodada", Adicionar. Lista com estado, quando foi atendido, a resposta da curadoria e quantos itens entraram; Cancelar (pendente), Reabrir (fechado) e Excluir (com confirmação). Vazio: "Nenhum pedido por enquanto. Dá para pedir um link para incluir, um assunto para a curadoria procurar ou uma fonte para olhar com mais atenção."
 
+## Rotinas: o relatório do Admin
+
+Pedido de 19/11, depois que a aba Tech ficou 10 dias sem notícia nova e a tradução 3 dias sem rodar sem que nada na tela dissesse. É o primeiro card do `/admin`: o que está em dia, o que atrasou e o que parou, com o tempo desde a última vez que funcionou. Código em `src/rotinas.js`; testes em `test/rotinas.test.mjs`.
+
+### Estados
+
+- **em dia**; **com erro**: rodou, mas há falha registrada depois do último sucesso ou junto dele (erro parcial conta: cripto que caiu para a reserva, feed com falha, ESPN 403); **atrasada**; **parada**.
+- Rotinas periódicas: atrasada passando de 2 vezes o intervalo esperado (2 janelas perdidas), parada passando de 6.
+- Rotinas de janela (uma vez por dia, uma vez por mês): a conta começa na janela perdida. Perdeu uma, atrasada; perdeu duas seguidas, parada. Fora da janela não é atraso (domingo para a B3, o mês inteiro para o simulador).
+- Nunca rodou desde que o registro existe (e já passou uma janela): parada. Antes da primeira janela, em dia com "ainda não chegou a hora".
+- "Rodou" quer dizer que a etapa tinha trabalho e terminou sem exceção. Sem trabalho (fila vazia, nada vencido) também conta como funcionando; a linha diz "sem trabalho desde ...".
+- Folga de 2 min depois de cada janela antes de contar como perdida.
+- Curadorias (tarefas agendadas, fora do Worker): só o rastro em `meta/status*` (`ultimaRodada`, `novosNaUltima`). Em dia até 13 h desde a última rodada, atrasada de 13 h a 26 h, parada acima de 26 h. Rodou e nenhum item entrou nas últimas 24 h (pela coluna `coletado` da collection de itens da seção): com erro, "rodou, mas nada entrou nas últimas 24 h". A linha mostra os itens de 24 h e de 7 dias.
+- Plantão: pedidos `agora` pendentes em `pedidos-curadoria`. O mais antigo esperando há mais de 2 h, atrasado; mais de 6 h, parado (a tarefa de plantão não está rodando). "Última vez que funcionou" é o último pedido `agora` atendido.
+- Resumo no topo: "N em dia · N com erro · N atrasadas · N paradas" e a parada há mais tempo em destaque (a que nunca rodou conta desde que o registro existe).
+
+### Intervalos esperados
+
+Tabela `ROTINAS` em `src/rotinas.js`, num lugar só; o texto da coluna "Esperado" é este. Horários de São Paulo.
+
+| Rotina | Esperado | Janela no cron (UTC) | Tipo |
+|---|---|---|---|
+| Leitura dos feeds | a cada minuto | todo minuto | periódica |
+| Fóruns (Reddit) | a cada minuto | todo minuto | periódica |
+| Cotações de mercado (moedas, bolsa e indicadores) | a cada 30 min | minutos 3 e 33 | periódica |
+| Cotações de cripto | a cada 30 min | minutos 16 e 46 | periódica |
+| B3 | a cada 30 min com pregão aberto, e às 18h35 | minutos 5 e 35 de 13h a 21h10, seg. a sex., e 21h35 | só com pregão |
+| EUA | a cada 30 min com Nova York aberta, e às 16h35 de lá | minutos 8 e 38 no pregão de NY, e 16h35 de NY | só com pregão |
+| CVM | uma vez por dia, 7h17 | 10h17 | de janela |
+| Esportes | a cada 5 min | minutos terminados em 4 e 9 | periódica |
+| Landscape | a cada minuto | todo minuto | periódica |
+| Sonda de feeds | a cada minuto, quando há URL na fila | todo minuto | periódica |
+| Fichas de papel | a cada hora, aos 23 min | minuto 23 | periódica |
+| Leitura do dia | uma vez por dia, 7h40 | 10h40 a 10h49 | de janela |
+| Listas por regra | a cada hora, aos 41 min | minuto 41 | periódica |
+| Simulador de reinvestimento | dia 1 de cada mês, 6h | dia 1, 9h a 9h59 | de janela |
+| Limpeza | a cada hora, aos 7 min | minuto 7 | periódica |
+| Histórico (importação inicial) | a cada minuto, até acabar | todo minuto | periódica |
+| Tradução | a cada minuto | todo minuto | periódica |
+| Sincronia do espelho | a cada minuto | todo minuto | periódica |
+
+### Batimento do cron
+
+- Um doc só, `_sistema/rotinas`: `{ criado, atualizado, porId: { <id>: { ok, erro, msg, ms, feitos, vazio, nota } } }`. `ok`: última vez com trabalho e sem exceção; `erro` e `msg` (até 160 caracteres): última falha, inteira ou parcial; `ms`: quanto levou; `feitos`: número ou texto curto; `vazio`: última vez sem trabalho; `nota`: o porquê (pausa, "importação terminou").
+- Cada etapa do `scheduled` passa por `etapa()` e marca o resultado na memória; fora da janela não marca nada. No fim, antes da sincronia do espelho, **uma leitura e uma gravação** (`INSERT ... ON CONFLICT(collection, id)`, chave explícita). Nenhum pedido externo a mais.
+- Falha ao ler ou gravar o batimento é engolida com `console.error("rotinas", ...)`; o cron segue. Erro numa etapa continua no `try` dela, com o `console.error` de sempre, e não impede as outras.
+- A tradução reserva as duas consultas do batimento na conta de subrequests (`conta.d1 + conta.fetch + 2`).
+- A sincronia do espelho roda depois do batimento: a linha dela sai do estado que o Durable Object já guarda (`ultima_sincronia`, `erro`, `ultima_tentativa`, `duracao_ms`), lido pela rota.
+- Tradução sem folga de subrequests conta como erro ("não rodou: sem folga"); pausa por cota ou teto e fila vazia contam como sem trabalho.
+
+### Rota e tela
+
+- `GET /api/admin/rotinas` (só Admin; os outros recebem o mesmo 404 das rotas de Admin do Landscape): `{ agora, registroDesde, consultas, resumo, curadorias: [...], worker: [...] }`. Cada linha com `id`, `nome`, `estado`, `ultimaOk`, `ultimaVez`, `ultimoErro`, `msg`, `esperado`, `idadeMin`; curadorias com `itens24h`, `itens7d`, `novosNaUltima`; plantão com `pendentes`, `esperaMin`; Worker com `ms`, `feitos`, `nota`, `semTrabalhoDesde`, `perdida` (a primeira janela perdida) e, na linha dos feeds, `feedsComFalha`.
+- Lê do D1 direto, em **duas consultas**: os cinco `meta/status*` mais `_sistema/rotinas` num SELECT só; e um UNION ALL de três termos com os itens por seção (24 h e 7 dias), o plantão e os feeds com falha (contados como no card Rendimento das fontes). Mais uma chamada ao Durable Object do espelho.
+- Card **Rotinas**, o primeiro do Admin: resumo, destaque, a tabela das curadorias e a do Worker (Rotina, Estado com selo de cor e texto, Última vez que funcionou com "há 3 h" e a data no title, Esperado, Observação), parada e atrasada em cima. No celular a tabela vira lista empilhada, com a data por extenso. Embaixo, quantos feeds estão com falha e o link para o card Rendimento das fontes. Botão Atualizar; relê ao abrir e a cada 60 s enquanto a aba está visível.
+
 ## Menu da conta
 
 Avatar no cabeçalho (página e `/admin`): nome e e-mail, Minha carteira, Minha meta, Importar extratos e Minhas listas (com Investimentos), Meus esportes (com Esportes), Aparência, Notícias traduzidas (só na página; veja "Tradução"), Administração (só o Admin), **Trocar de conta** e Sair. "Trocar de conta" (ajuda: "Sai e abre o login para escolher outra conta do Google") vai para `/cdn-cgi/access/logout` e antes grava `radar-trocar=1` no `sessionStorage`. O Access não volta sozinho para o login depois do logout; ao abrir o site de novo ele pede o login e aí dá para escolher a outra conta. O `radar-trocar` fica só como marca, sem uso por enquanto.
