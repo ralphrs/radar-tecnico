@@ -238,7 +238,9 @@ function telaGradeCloud(box, est) {
 /* O nome do serviço cabe sempre em uma linha (pedido de 19/11, 16h48): a largura mínima do cartão é a do maior nome do
    catálogo inteiro, medida uma vez no navegador com o cartão de verdade, e vale para todos (variável --ac-w). */
 let acLargura = { chave: "", px: 0 };
-function larguraDoCartao(conteudo) {
+function larguraDoCartao(conteudo, depois) {
+  // a grade é montada fora da página: a medida só existe depois de entrar no documento
+  if (!conteudo.isConnected) { if (!depois) requestAnimationFrame(() => larguraDoCartao(conteudo, true)); return; }
   const todos = servs();
   const chave = todos.length + "|" + todos.reduce((k, s) => k + s.nome.length, 0);
   if (acLargura.chave !== chave || !acLargura.px) {
