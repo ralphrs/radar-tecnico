@@ -396,4 +396,6 @@ test("ícone da notícia: clube da curadoria, título, delegação e palavra com
   assert.equal(ES.iconeDaNoticia({ titulo: "Federação muda o calendário" }, cat), null);
   assert.equal(ES.iconeDaNoticia({ titulo: "x", clube: "Seleção Brasileira" }, cat).tipo, "pais");
   assert.equal(ES.iconeDaNoticia({ titulo: "Grêmio joga hoje" }, null), null);
+  assert.equal(ES.iconeDaNoticia({ titulo: "Scaloni mantém a camisa 10 da Argentina sem dono" }, cat).nome, "Argentina");
+  assert.equal(ES.iconeDaNoticia({ titulo: "Técnico elogia a torcida Brasileira no estádio" }, cat), null);
 });

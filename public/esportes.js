@@ -797,6 +797,15 @@
         }
       }
     }
+    // por último, país citado no título com maiúscula ("da Argentina"): bandeira
+    for (const texto of [item.titulo, item.titulo_pt]) {
+      const ws = palavras(texto || "");
+      for (let i = 0; i < ws.length; i++) {
+        if (!/^\p{Lu}/u.test(ws[i].o)) continue;
+        const ps = (ws[i + 2] && PAIS_POR_NOME.get(ws[i].n + " " + ws[i + 1].n + " " + ws[i + 2].n)) || (ws[i + 1] && PAIS_POR_NOME.get(ws[i].n + " " + ws[i + 1].n)) || PAIS_POR_NOME.get(ws[i].n);
+        if (ps && !/a$|o$/.test(ws[i].n.length > 0 && PAISES_ICONE.some(([, , ns]) => ns[0] === ws[i].n || ns[0].startsWith(ws[i].n + " ")) ? "" : ws[i].n)) return ps;
+      }
+    }
     return null;
   }
 
