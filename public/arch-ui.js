@@ -201,7 +201,7 @@ function telaGradeCloud(box, est) {
     const n = baseSemProv.filter((s) => s.provedor === p.id).length;
     if (!servs().some((s) => s.provedor === p.id)) continue;
     const on = f.provs.includes(p.id);
-    const b = el("button", { class: "chip ac-chip-prov", type: "button", id: "ac-p-" + p.id, "aria-pressed": String(on), style: "--pc:" + p.cor }, iconeEl(A.iconeDe({}, p), "m"), el("span", { class: "lg" }, p.nome), el("span", { class: "k" }, String(n)));
+    const b = el("button", { class: "chip ac-chip-prov", type: "button", id: "ac-p-" + p.id, "aria-pressed": String(on), style: estiloProv(p) }, iconeEl(A.iconeDe({}, p), "m"), el("span", { class: "lg" }, p.nome), el("span", { class: "k" }, String(n)));
     b.addEventListener("click", () => mudar({ provs: on ? f.provs.filter((x) => x !== p.id) : f.provs.concat(p.id) }, "ac-p-" + p.id));
     chips.append(b);
   }
@@ -258,6 +258,11 @@ function larguraDoCartao(conteudo) {
    que abre no passar do mouse, no foco do teclado e no toque), o nome do serviço (sempre em uma linha, inteiro no title), a
    subcategoria numa linha pequena quando a grade não está agrupada por ela (por provedor ou com busca) e a caixa
    Comparar sem texto ao lado. O resumo fica no detalhe. */
+// Cor do provedor (até três): --pc é a principal, --pgh a faixa do contorno do chip e --pgv a da lateral do cartão
+function estiloProv(p) {
+  const A = ARCH(), cores = A.coresDe(p || {});
+  return `--pc:${cores[0]};--pgh:${A.faixaCores(cores, "direita")};--pgv:${A.faixaCores(cores, "baixo")}`;
+}
 function cartaoCloud(s, comSub) {
   const A = ARCH();
   const p = A.provDe(provs(), s.provedor);
@@ -275,7 +280,7 @@ function cartaoCloud(s, comSub) {
   a.addEventListener("click", (e) => abrirServico(s.id, e));
   const fora = AC.sel.length && !marcado && !m.ok;
   const sub = comSub ? nomeSubCloud(s) : "";
-  return el("article", { class: "ac-card" + (marcado ? " marcado" : "") + (fora ? " fora" : ""), id: "ac-c-" + s.id, style: "--pc:" + (p ? p.cor : "#888") },
+  return el("article", { class: "ac-card" + (marcado ? " marcado" : "") + (fora ? " fora" : ""), id: "ac-c-" + s.id, style: estiloProv(p) },
     dicaProvedor(p), el("div", { class: "ac-meio" }, a, sub ? el("span", { class: "ac-sub-lin", title: sub }, sub) : null),
     el("label", { class: "ac-cx", title: m.ok ? "Comparar" : m.motivo }, cx));
 }

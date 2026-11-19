@@ -59,3 +59,12 @@ test("nome curto do cartão de Cloud: sai o prefixo do provedor, fica o resto", 
   assert.equal(A.nomeCurto("R2", "cloudflare"), "R2");
   assert.equal(A.nomeCurto("Amazonas Algo", "aws"), "Amazonas Algo");
 });
+
+test("cores do provedor: até três, do doc, da tabela ou a cor única; faixa em blocos iguais", () => {
+  assert.deepEqual(A.coresDe({ id: "gcp", cor: "#4285F4" }), ["#4285F4", "#EA4335", "#FBBC04"]);
+  assert.deepEqual(A.coresDe({ id: "hetzner", cor: "#D50C2D" }), ["#D50C2D"]);
+  assert.deepEqual(A.coresDe({ id: "gcp", cores: ["#111111", "nada", "#222222", "#333333", "#444444"] }), ["#111111", "#222222", "#333333"]);
+  assert.deepEqual(A.coresDe(null), ["#888888"]);
+  assert.equal(A.faixaCores(["#111111", "#222222"], "direita"), "linear-gradient(to right, #111111 0% 50%, #222222 50% 100%)");
+  assert.match(A.faixaCores(["#111111", "#222222", "#333333"], "baixo"), /^linear-gradient\(to bottom, #111111 0% 33%, #222222 33% 67%, #333333 67% 100%\)$/);
+});

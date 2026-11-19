@@ -5,7 +5,7 @@
  * src/arch.js) e os testes em Node importam pelo efeito e leem globalThis.Arch. Sem import nem export.
  *
  * Hashes: #arch/tools, #arch/tools/<id>, #arch/tools/comparar/<id>,<id>[/profunda], #arch/cloud[?filtros],
- *   #arch/cloud/<id>, #arch/cloud/comparar/<id>,<id>[/profunda], #arch/<aba>/profundas[/<id>].
+ *   #arch/cloud/<id>, #arch/cloud/comparar/<id>,<id>[/profunda], #arch/<aba>/profundas[/<id>], #arch/stacks[/<id>].
  *   Os antigos #tech/landscape[/<id>] abrem a aba Tools (lerHash marca antigo: true e a página troca o endereço).
  *
  * Serviço de nuvem (collection `cloud`, id `<provedor>--<slug>`): veja validarServico.
@@ -24,6 +24,7 @@
   const ID_PROV = /^[a-z0-9-]{1,30}$/;
   const ID_CAT = /^[a-z0-9-]{1,40}$/;
   const ID_DOSSIE = /^d[0-9a-f]{16}$/;
+  const ID_STACK = /^s[0-9a-f]{12}$/; /* o mesmo de Stacks.ID_STACK (public/stacks.js) */
   const POR = ["semente", "admin", "curadoria", "dossie"];
   const ABAS = ["tools", "cloud"];
 
@@ -446,6 +447,11 @@
     const p = h.split("/").map((x) => { try { return decodeURIComponent(x); } catch (e) { return ""; } });
     let antigo = false, aba, resto;
     if (p[0] === "tech" && p[1] === "landscape") { antigo = true; aba = "tools"; resto = p.slice(2); }
+    else if (p[0] === "arch" && p[1] === "stacks") {
+      /* aba Stacks (pedido de 19/11, 15h22): #arch/stacks (lista) e #arch/stacks/<id> (a stack); id fora do formato, a lista */
+      const id = ID_STACK.test(p[2] || "") ? p[2] : null;
+      return { aba: "stacks", tela: id ? "stack" : "lista", id, ids: [], profunda: false, filtros: FILTROS_VAZIOS(), antigo: p.length > (id ? 3 : 2) && !!p.slice(id ? 3 : 2).join("") };
+    }
     else if (p[0] === "arch") { aba = p[1] === "cloud" ? "cloud" : "tools"; resto = p.slice(2); antigo = !ABAS.includes(p[1]) && p[1] !== undefined && p[1] !== ""; }
     else return null;
     const out = { aba, tela: "grade", id: null, ids: [], profunda: false, filtros: aba === "cloud" ? lerFiltros(q) : FILTROS_VAZIOS(), antigo };
@@ -461,6 +467,7 @@
     return out;
   }
   function escreverHash(e) {
+    if (e && e.aba === "stacks") return "#arch/stacks" + (e.tela === "stack" && e.id && ID_STACK.test(e.id) ? "/" + e.id : "");
     const aba = e && e.aba === "cloud" ? "cloud" : "tools";
     let h = "#arch/" + aba;
     if (e.tela === "detalhe" && e.id) h += "/" + encodeURIComponent(e.id);
@@ -718,7 +725,28 @@
     return n;
   }
 
-  raiz.Arch = { DIA, nomeCurto, MAX_COMPARAR, CONTEXTO_MAX, VALIDADE_DIAS, MARKDOWN_MAX, ID_SERV, ID_PROV, ID_CAT, ID_DOSSIE, POR, ABAS, MOTIVOS, COMUNS, ATRIBUTOS, LINKS,
+  /* Cores do provedor (pedido de 19/11, 16h50): até três, para a faixa lateral do cartão e o contorno do chip de filtro.
+     Vale `cores` do doc do provedor quando houver (lista de hexadecimais); senão a tabela abaixo; senão a `cor` única. */
+  const CORES_PROV = {
+    aws: ["#232F3E", "#FF9900"], gcp: ["#4285F4", "#EA4335", "#FBBC04"], azure: ["#0078D4", "#50E6FF"], oci: ["#C74634"],
+    cloudflare: ["#F38020", "#FAAE40"], akamai: ["#0096D6", "#FF9933"], ovhcloud: ["#000E9C", "#59D2EF"], supabase: ["#3ECF8E", "#1C1C1C"],
+  };
+  const HEX = /^#[0-9a-f]{6}$/i;
+  function coresDe(prov) {
+    const p = prov && typeof prov === "object" ? prov : {};
+    const doDoc = Array.isArray(p.cores) ? p.cores.filter((c) => typeof c === "string" && HEX.test(c)).slice(0, 3) : [];
+    if (doDoc.length) return doDoc;
+    if (CORES_PROV[p.id]) return CORES_PROV[p.id].slice();
+    return [HEX.test(p.cor || "") ? p.cor : "#888888"];
+  }
+  // Faixa em blocos iguais, sem degradê: "to right" para o contorno do chip, "to bottom" para a lateral do cartão
+  function faixaCores(cores, direcao) {
+    const l = (cores && cores.length ? cores : ["#888888"]).slice(0, 3), n = l.length;
+    const partes = l.map((c, i) => `${c} ${Math.round((i * 100) / n)}% ${Math.round(((i + 1) * 100) / n)}%`);
+    return `linear-gradient(${direcao === "baixo" ? "to bottom" : "to right"}, ${partes.join(", ")})`;
+  }
+
+  raiz.Arch = { DIA, nomeCurto, CORES_PROV, coresDe, faixaCores, MAX_COMPARAR, CONTEXTO_MAX, VALIDADE_DIAS, MARKDOWN_MAX, ID_SERV, ID_PROV, ID_CAT, ID_DOSSIE, POR, ABAS, MOTIVOS, COMUNS, ATRIBUTOS, LINKS,
     COMUNS_CLOUD, CAPACIDADES, ehCloud, soConhecidas, conferidoDe, roteiroProfunda, GRANDES,
     semAcento, slug, urlOk, isoOk, temPreco, temPalavra, chavesDe, carac, textoCarac, validarCarac, validarAtributos, validarProvedores, validarCategorias,
     nomeSub, catDaSub, idServico, validarServico, provDe, filtrarCloud, agrupar, equivalentes, podeComparar, marcavel, conjunto,

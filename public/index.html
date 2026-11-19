@@ -2246,9 +2246,9 @@ html.tech-ls .barra-linha { display: none; }
 .ac-rot { font-size: 12px; color: var(--muted-foreground); }
 .ac-prov { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font: 600 12px/1.2 var(--font-sans); }
 .ac-prov-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ac-chip-prov { gap: 6px; border-color: var(--pc, var(--border)); }
-.ac-chip-prov:hover { border-color: var(--pc, var(--border)); background: color-mix(in srgb, var(--pc, var(--primary)) 8%, var(--card)); }
-.ac-chip-prov[aria-pressed="true"] { border-color: var(--pc, var(--primary)); box-shadow: inset 0 0 0 1px var(--pc, var(--primary)); background: color-mix(in srgb, var(--pc, var(--primary)) 14%, var(--card)); color: var(--foreground); }
+.ac-chip-prov { gap: 6px; border: 1.5px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, var(--pgh, linear-gradient(var(--border), var(--border))) border-box; }
+.ac-chip-prov:hover { background: linear-gradient(color-mix(in srgb, var(--pc, var(--primary)) 8%, var(--card)), color-mix(in srgb, var(--pc, var(--primary)) 8%, var(--card))) padding-box, var(--pgh, linear-gradient(var(--border), var(--border))) border-box; }
+.ac-chip-prov[aria-pressed="true"] { border-width: 2.5px; font-weight: 600; color: var(--foreground); background: linear-gradient(color-mix(in srgb, var(--pc, var(--primary)) 16%, var(--card)), color-mix(in srgb, var(--pc, var(--primary)) 16%, var(--card))) padding-box, var(--pgh, linear-gradient(var(--primary), var(--primary))) border-box; }
 .ac-barra-cmp { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .ac-comparar[disabled] { opacity: .45; cursor: not-allowed; pointer-events: none; box-shadow: none; }
 .ac-motivo { font-size: 13px; color: var(--muted-foreground); }
@@ -2258,6 +2258,7 @@ html.tech-ls .barra-linha { display: none; }
 .ac-sub, .ac-bloco-prov .ls-sub { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .ac-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px; min-width: 0; min-height: 44px; padding: 4px 4px 4px 7px; border: 1px solid var(--border); border-left: 3px solid var(--pc, var(--border)); border-radius: var(--radius-md); background: var(--card); transition: opacity .15s; }
 .ac-card:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); border-left-color: var(--pc, var(--border)); }
+.ac-card::before { content: ""; position: absolute; left: -3px; top: -1px; bottom: -1px; width: 3px; background: var(--pgv, var(--pc, var(--border))); border-radius: var(--radius-md) 0 0 var(--radius-md); pointer-events: none; }
 .ac-card.marcado { outline: 2px solid var(--primary); outline-offset: -1px; }
 .ac-recortando .ac-card.fora { opacity: .42; }
 .ac-meio { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
