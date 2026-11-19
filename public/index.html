@@ -799,6 +799,9 @@ section.tema > h2 small { font: 400 12px var(--font-mono); color: var(--muted-fo
 .ler-mais { align-self: flex-start; margin-top: -2px; padding: 0; border: 0; background: none; font: 500 13px/20px var(--font-sans); color: var(--primary); cursor: pointer; border-radius: var(--radius-sm); }
 .ler-mais:hover { text-decoration: underline; text-underline-offset: 3px; }
 .item-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.item-topo > .item-ic { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-top: 1px; }
+.item-topo > .item-ic-pais { font-size: 19px; line-height: 1; }
+.item-topo > .titulo { flex: 1 1 auto; min-width: 0; }
 .item-topo .titulo { min-width: 0; }
 .fav { flex: none; width: 32px; height: 32px; margin: -5px -6px 0 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--muted-foreground); cursor: pointer; }
 .fav svg { width: 18px; height: 18px; fill: none; }
@@ -5377,6 +5380,21 @@ function listasDe(itensGrupo, op = {}) {
   return [ul];
 }
 const sepLidas = (n) => el("li", { class: "lidas-sep", role: "separator", "aria-label": `Lidas, ${n}` }, `Lidas · ${n}`);
+/* Esportes (19/11, 17h03): escudo do time ou bandeira da delegação da notícia, antes do título (Esportes.iconeDaNoticia).
+   Sem time ou delegação reconhecidos, nada aparece. Nunca foto de pessoa. */
+const iconeNoticiaCache = new WeakMap();
+function iconeNoticiaEsporte(i) {
+  if (radar !== "esportes" && !String(i._col || "").includes("esportes")) return null;
+  if (typeof ES === "undefined" || !ES.iconeDaNoticia) return null;
+  if (typeof lerCatalogoVv === "function") lerCatalogoVv();
+  let c = iconeNoticiaCache.get(i);
+  if (!c || c.cat !== vvCatalogo) { c = { cat: vvCatalogo, r: ES.iconeDaNoticia(i, vvCatalogo) }; iconeNoticiaCache.set(i, c); }
+  const r = c.r;
+  if (!r) return null;
+  if (r.tipo === "pais") return el("span", { class: "item-ic item-ic-pais", role: "img", "aria-label": r.nome, title: r.nome }, r.bandeira);
+  const e = escudoEl(r.escudo, { sigla: r.sigla || sigla(r.nome), nome: r.nome, tam: 20 });
+  return el("span", { class: "item-ic", title: r.nome, role: "img", "aria-label": r.nome }, e);
+}
 function itemEl(i, op = {}) {
   const novo = meta && i.rodada === meta.ultimaRodada;
   const k = i._id || i.url || i.titulo;
@@ -5407,6 +5425,7 @@ function itemEl(i, op = {}) {
   const acoes = i._id ? (op.botaoLida ? el("div", { class: "acoes-item" }, lidaBotao(i), favBotao(i)) : favBotao(i)) : null;
   return el("li", { class: lida ? "item lida" : "item", ...(op.botaoLida && i._id ? { "data-lid": chaveLida(i) } : {}) },
     el("div", { class: "item-topo" },
+      iconeNoticiaEsporte(i),
       aTit,
       acoes),
     el("div", { class: "meta" },

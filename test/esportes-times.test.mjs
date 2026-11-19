@@ -381,3 +381,19 @@ test("cron: a agenda guarda a semana, o calendário vira diasJogo e a janela da 
   assert.equal(cab.fixo.id, "1");
   assert.deepEqual(cab.lista.map((j) => j.id), ["2", "3"]);
 });
+
+test("ícone da notícia: clube da curadoria, título, delegação e palavra comum", () => {
+  const ES = globalThis.Esportes;
+  const esc = (n) => `https://a.espncdn.com/i/teamlogos/soccer/500/${n}.png`;
+  const cat = { times: { 1: { nome: "Grêmio", sigla: "GRE", escudo: esc(1), pais: "BR" }, 2: { nome: "Santos", sigla: "SAN", escudo: esc(2), pais: "BR" }, 3: { nome: "Manchester City", sigla: "MCI", escudo: esc(3), pais: "GB" } },
+    mapa: { gremio: ["1"], santos: ["2"], "manchester city": ["3"] } };
+  assert.equal(ES.iconeDaNoticia({ titulo: "Volante renova até 2028", clube: "Grêmio", tema: "gremio" }, cat).nome, "Grêmio");
+  assert.equal(ES.iconeDaNoticia({ titulo: "Manchester City vence fora de casa", tema: "internacional" }, cat).sigla, "MCI");
+  assert.equal(ES.iconeDaNoticia({ titulo: "Os santos do dia e a rodada", escopo: "nacional" }, cat), null);
+  const p = ES.iconeDaNoticia({ titulo: "Seleção brasileira é convocada para amistosos" }, cat);
+  assert.equal(p.tipo, "pais"); assert.equal(p.nome, "Brasil"); assert.equal(p.bandeira, "🇧🇷");
+  assert.equal(ES.iconeDaNoticia({ titulo: "Delegação da Argentina chega ao Rio" }, cat).nome, "Argentina");
+  assert.equal(ES.iconeDaNoticia({ titulo: "Federação muda o calendário" }, cat), null);
+  assert.equal(ES.iconeDaNoticia({ titulo: "x", clube: "Seleção Brasileira" }, cat).tipo, "pais");
+  assert.equal(ES.iconeDaNoticia({ titulo: "Grêmio joga hoje" }, null), null);
+});

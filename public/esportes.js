@@ -731,6 +731,75 @@
     return citaNoTexto(texto, time, pais, frases);
   }
   /* Notícias que citam algum dos times (o filtro "Meus times"). As tabelas de expressões saem uma vez por time. */
+  /* Ícone da notícia (pedido de 19/11, 17h03): o escudo do time ou a bandeira da delegação a que a notícia se refere.
+     Ordem: o campo `clube` da curadoria; o destino e a origem da `transferencia`; depois o título (original e
+     tradução), em trechos de 3, 2 e 1 palavras. Palavra sozinha que também é palavra comum ("Santos", "Vitória",
+     "Real") não vale pelo título. Seleção ou delegação: bandeira do país quando o `clube` é um país ou quando o título
+     traz "seleção", "delegação" ou "time" seguido do país. Nunca foto de pessoa. Devolve
+     { tipo: "time", nome, sigla, escudo } | { tipo: "pais", nome, bandeira } | null. */
+  const PAISES_ICONE = [
+    ["BR", "Brasil", ["brasil", "brasileira", "brasileiro", "selecao brasileira", "canarinho"]], ["AR", "Argentina", ["argentina", "argentino"]],
+    ["UY", "Uruguai", ["uruguai", "uruguaia", "uruguaio"]], ["CL", "Chile", ["chile", "chilena", "chileno"]], ["CO", "Colômbia", ["colombia", "colombiana", "colombiano"]],
+    ["PY", "Paraguai", ["paraguai", "paraguaia", "paraguaio"]], ["PE", "Peru", ["peru", "peruana", "peruano"]], ["EC", "Equador", ["equador", "equatoriana", "equatoriano"]],
+    ["BO", "Bolívia", ["bolivia", "boliviana", "boliviano"]], ["VE", "Venezuela", ["venezuela", "venezuelana"]], ["MX", "México", ["mexico", "mexicana", "mexicano"]],
+    ["US", "Estados Unidos", ["estados unidos", "eua", "americana", "norte americana"]], ["CA", "Canadá", ["canada", "canadense"]],
+    ["PT", "Portugal", ["portugal", "portuguesa"]], ["ES", "Espanha", ["espanha", "espanhola"]], ["FR", "França", ["franca", "francesa"]], ["DE", "Alemanha", ["alemanha", "alema"]],
+    ["IT", "Itália", ["italia", "italiana"]], ["GB", "Inglaterra", ["inglaterra", "inglesa"]], ["NL", "Holanda", ["holanda", "holandesa", "paises baixos"]],
+    ["BE", "Bélgica", ["belgica", "belga"]], ["HR", "Croácia", ["croacia", "croata"]], ["MA", "Marrocos", ["marrocos", "marroquina"]], ["JP", "Japão", ["japao", "japonesa"]],
+    ["KR", "Coreia do Sul", ["coreia do sul", "sul coreana"]], ["AU", "Austrália", ["australia", "australiana"]], ["SN", "Senegal", ["senegal", "senegalesa"]],
+    ["NG", "Nigéria", ["nigeria", "nigeriana"]], ["CN", "China", ["china", "chinesa"]], ["SA", "Arábia Saudita", ["arabia saudita", "saudita"]],
+  ];
+  const bandeira = (iso) => String.fromCodePoint(...[...iso].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+  const PAIS_POR_NOME = new Map(PAISES_ICONE.flatMap(([iso, nome, ns]) => ns.map((n) => [n, { tipo: "pais", nome, iso, bandeira: bandeira(iso) }])));
+  const MARCA_DELEGACAO = new Set(["selecao", "delegacao", "time", "equipe", "comitiva"]);
+  function paisDoNome(nome) {
+    const k = semAc(nome).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/^(selecao|delegacao) (d[aeo]s? )?/, "");
+    return PAIS_POR_NOME.get(k) || null;
+  }
+  function iconeDaNoticia(item, catalogo) {
+    if (!item || typeof item !== "object") return null;
+    const pais = paisDoItem(item);
+    const time = (nome, p) => {
+      const t = timeDoCatalogo(nome, catalogo, p === undefined ? pais : p);
+      return t ? { tipo: "time", id: t.id, nome: t.nome || String(nome), sigla: t.sigla || "", escudo: escudoOk(t.escudo) || "" } : null;
+    };
+    const tr = item.transferencia && typeof item.transferencia === "object" ? item.transferencia : null;
+    const dados = [item.clube && { n: item.clube }, tr && tr.destino && { n: tr.destino.clube, p: tr.destino.pais }, tr && tr.origem && { n: tr.origem.clube, p: tr.origem.pais }].filter((x) => x && x.n);
+    for (const d of dados) {
+      const t = time(d.n, d.p ? d.p : undefined) || time(d.n);
+      if (t) return t;
+      const ps = paisDoNome(d.n);
+      if (ps) return ps;
+    }
+    for (const texto of [item.titulo, item.titulo_pt, item._orig && item._orig.titulo]) {
+      if (!texto) continue;
+      const ws = palavras(texto);
+      for (let i = 0; i < ws.length; i++) {
+        if (MARCA_DELEGACAO.has(ws[i].n)) {
+          for (let j = i + 1; j <= Math.min(i + 3, ws.length - 1); j++) {
+            const ps = PAIS_POR_NOME.get(ws[j].n) || (ws[j + 1] ? PAIS_POR_NOME.get(ws[j].n + " " + ws[j + 1].n) : null);
+            if (ps) return ps;
+          }
+        }
+      }
+      for (const tam of [3, 2, 1]) {
+        for (let i = 0; i + tam <= ws.length; i++) {
+          const parte = ws.slice(i, i + tam);
+          const frase = parte.map((w) => w.n).join(" ");
+          if (FRASES_FORA.includes(frase)) continue;
+          if (tam > 1 && (normClube(frase).split(" ").length < tam || !parte.some((w) => /^\p{Lu}/u.test(w.o)))) continue;
+          if (tam === 1) {
+            const w = parte[0];
+            if (w.n.length < 4 || PALAVRAS_COMUNS.has(w.n) || !/^\p{Lu}/u.test(w.o) || PAIS_POR_NOME.has(w.n)) continue;
+          }
+          const t = time(frase);
+          if (t) return t;
+        }
+      }
+    }
+    return null;
+  }
+
   function filtrarMeusTimes(itens, times, outros) {
     const ts = (Array.isArray(times) ? times : []).filter((x) => x && x.nome).map((x) => ({ x, f: tabelaFrases(x, outros) }));
     if (!ts.length) return [];
@@ -742,5 +811,5 @@
     escudoOk, PAIS_LIGA, LIGAS_ESCUDOS, paisNorm, normClube, APELIDOS, timeDoCatalogo, escudoDe, chaveClube,
     ETAPAS, DESFECHOS, ETAPA, etapaDe, PESO_ETAPA, transferenciaLimpa, ehNegociacao, chaveNegociacao, agruparNegociacoes, ordenarNegociacoes, negociacaoDoTime, filtrarNegociacoes, QUEM_VV, ETAPA_VV,
     chaveTime, jogosDoDoc, situacaoCampeonato, emAndamento, rotuloDiaCartao, jogosDoCabecalho, MAX_SEGUIDOS, V_TIMES, validarTimes, respostaTimes, devePerguntar,
-    paisDoItem, noticiaDoTime, filtrarMeusTimes, frasesDoTime: tabelaFrases, PALAVRAS_COMUNS };
+    paisDoItem, noticiaDoTime, filtrarMeusTimes, iconeDaNoticia, paisDoNome, frasesDoTime: tabelaFrases, PALAVRAS_COMUNS };
 })(typeof globalThis !== "undefined" ? globalThis : this);
