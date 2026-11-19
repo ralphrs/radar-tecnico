@@ -2259,6 +2259,10 @@ html.tech-ls .barra-linha { display: none; }
 .ac-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px; min-width: 0; min-height: 44px; padding: 4px 4px 4px 7px; border: 1px solid var(--border); border-left: 3px solid var(--pc, var(--border)); border-radius: var(--radius-md); background: var(--card); transition: opacity .15s; }
 .ac-card:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); border-left-color: var(--pc, var(--border)); }
 .ac-card::before { content: ""; position: absolute; left: -3px; top: -1px; bottom: -1px; width: 3px; background: var(--pgv, var(--pc, var(--border))); border-radius: var(--radius-md) 0 0 var(--radius-md); pointer-events: none; }
+.ac-sub-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; min-width: 0; position: sticky; top: var(--ac-topo, 0px); z-index: 3; background: var(--card); padding: 4px 0; }
+.ac-sub-cab h4 { margin: 0; }
+.ac-sub-acoes { display: inline-flex; gap: 6px; align-items: center; }
+.ac-cmp-sub, .ac-cmp-limpar { min-height: 32px; padding: 4px 12px; font-size: 13px; }
 .ac-card.marcado { outline: 2px solid var(--primary); outline-offset: -1px; }
 .ac-recortando .ac-card.fora { opacity: .42; }
 .ac-meio { min-width: 0; display: flex; flex-direction: column; gap: 1px; }

@@ -223,13 +223,13 @@ function telaGradeCloud(box, est) {
     for (const g of grupos) {
       const n = g.cats.reduce((k, c) => k + c.itens.length, 0);
       cats.append(el("section", { class: "ls-cat ac-bloco-prov", "aria-label": g.prov.nome, style: "--pc:" + g.prov.cor }, el("h3", {}, provEl(g.prov, "p"), el("span", { class: "k" }, String(n))),
-        ...g.cats.map((c) => el("div", { class: "ls-sub" }, el("h4", {}, c.nome), el("div", { class: "ac-grade" }, ...c.itens.map((x) => cartaoCloud(x, true)))))));
+        ...g.cats.map((c) => el("div", { class: "ls-sub" }, cabSub(c.nome, c.itens, limpar), el("div", { class: "ac-grade" }, ...c.itens.map((x) => cartaoCloud(x, true)))))));
     }
   } else {
     for (const c of grupos) {
       const n = c.subs.reduce((k, s) => k + s.itens.length, 0);
       cats.append(el("section", { class: "ls-cat", "aria-label": c.nome }, el("h3", {}, c.nome, el("span", { class: "k" }, String(n))),
-        ...c.subs.map((s) => el("div", { class: "ls-sub ac-sub" }, el("h4", {}, s.nome), el("div", { class: "ac-grade" }, ...s.itens.map((x) => cartaoCloud(x, !!f.q)))))));
+        ...c.subs.map((s) => el("div", { class: "ls-sub ac-sub" }, cabSub(s.nome, s.itens, limpar), el("div", { class: "ac-grade" }, ...s.itens.map((x) => cartaoCloud(x, !!f.q)))))));
     }
   }
   conteudo.append(el("div", { class: "ls-cats ac-cats" }, cats));
@@ -260,6 +260,19 @@ function larguraDoCartao(conteudo, depois) {
    que abre no passar do mouse, no foco do teclado e no toque), o nome do serviço (sempre em uma linha, inteiro no title), a
    subcategoria numa linha pequena quando a grade não está agrupada por ela (por provedor ou com busca) e a caixa
    Comparar sem texto ao lado. O resumo fica no detalhe. */
+/* Comparar perto de onde se marca (pedido de 19/11, 16h55): o cabeçalho da subcategoria que tem serviço marcado ganha o
+   botão Comparar (esmaecido com um só marcado, com o motivo no title) e o de limpar a seleção. O botão do topo continua. */
+function cabSub(nome, itens, aoLimpar) {
+  const h = el("h4", {}, nome);
+  if (!itens.some((x) => AC.sel.includes(x.id))) return h;
+  const r = ARCH().podeComparar(AC.sel, servs());
+  const b = el("button", { class: "dd-btn dd-btn--primary ac-comparar ac-cmp-sub", type: "button", title: r.pode ? "" : r.motivo }, r.pode ? `Comparar (${AC.sel.length})` : "Comparar");
+  if (!r.pode) { b.disabled = true; b.setAttribute("aria-disabled", "true"); b.setAttribute("aria-label", "Comparar. " + r.motivo); }
+  b.addEventListener("click", () => { if (ARCH().podeComparar(AC.sel, servs()).pode) abrirComparar("cloud", AC.sel); });
+  const x = el("button", { class: "dd-btn dd-btn--ghost ac-cmp-limpar", type: "button", "aria-label": "Limpar a seleção para comparar" }, "Limpar");
+  x.addEventListener("click", aoLimpar);
+  return el("div", { class: "ac-sub-cab" }, h, el("span", { class: "ac-sub-acoes" }, b, x));
+}
 // Cor do provedor (até três): --pc é a principal, --pgh a faixa do contorno do chip e --pgv a da lateral do cartão
 function estiloProv(p) {
   const A = ARCH(), cores = A.coresDe(p || {});
