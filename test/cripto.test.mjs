@@ -180,6 +180,33 @@ test("Binance: completa as oito moedas em reais quando o CoinGecko recusa, numa 
   assert.deepEqual(lerBinance([{ symbol: "BTCBRL", lastPrice: "0" }, { symbol: "XYZBRL", lastPrice: "3" }, null].filter(Boolean)), []);
 });
 
+test("Finnhub: com o token, traz as oito moedas convertidas pelo dólar quando o CoinGecko recusa; o token não vaza no erro", async () => {
+  const FH = "finnhub.io";
+  await comFetch({ [CG]: new Response("muitos pedidos", { status: 429 }), [FH]: { c: 100, dp: 2.5, t: 1763380000 } }, async (pedidos) => {
+    const r = await cripto({ finnhubToken: "segredo-123", dolar: 5.5 });
+    assert.deepEqual(r.lista.map((i) => i.id), ["btc", "eth", "sol", "bnb", "xrp", "ada", "doge", "usdt"]);
+    assert.ok(r.lista.every((i) => i.fonte === "Finnhub" && i.variacao === 2.5));
+    assert.equal(r.lista.find((i) => i.id === "btc").valor, 550, "preço em dólar vezes o dólar do painel");
+    assert.equal(r.lista.find((i) => i.id === "usdt").valor, 100, "tether já vem em reais (USDTBRL)");
+    assert.equal(pedidos.length, 9, "CoinGecko e um quote por moeda");
+    assert.ok(pedidos.slice(1).some((u) => /BINANCE%3ABTCUSDT/.test(u)) && pedidos.slice(1).some((u) => /BINANCE%3AUSDTBRL/.test(u)));
+  });
+  // sem dólar não converte: passa para as outras fontes e registra o motivo
+  await comFetch({ [CG]: new Response("x", { status: 429 }), [AW]: AWESOME_CRIPTO }, async () => {
+    const r = await cripto({ finnhubToken: "segredo-123", dolar: null });
+    assert.match(r.erro, /Finnhub: sem a cotação do dólar/);
+    assert.ok(!r.erro.includes("segredo-123"));
+  });
+  // Finnhub fora: a mensagem não leva o token
+  await comFetch({ [AW]: AWESOME_CRIPTO }, async () => {
+    const r = await cripto({ finnhubToken: "segredo-123", dolar: 5.5 });
+    assert.match(r.erro, /Finnhub: /);
+    assert.ok(!r.erro.includes("segredo-123"), "o token não aparece em erros.cripto");
+  });
+  // sem token, a Finnhub nem é tentada
+  await comFetch({ [CG]: RESPOSTA_CHEIA }, async (pedidos) => { await cripto(); assert.equal(pedidos.length, 1); });
+});
+
 test("queda para a reserva: CoinGecko fora, o Mercado Bitcoin traz o que negocia; sem ele, BTC e ETH da AwesomeAPI", async () => {
   await comFetch({ [CG]: new Response("muitos pedidos", { status: 429 }), [AW]: AWESOME_CRIPTO }, async () => {
     const env = { DB: d1Falso() };

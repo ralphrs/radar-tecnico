@@ -132,16 +132,40 @@ async function criptoBinance() {
   try { return lerBinance(await pegar(URL_BINANCE)); }
   catch (e) { return lerBinance(await pegar("https://data-api.binance.vision/api/v3/ticker/24hr?symbols=" + simbolosBinance(CRIPTO.slice(0, 2)))); } // um par fora da lista derruba o pedido inteiro
 }
+// Finnhub (o mesmo token das ações americanas, FINNHUB_TOKEN): um quote por moeda, no par com USDT da Binance, convertido
+// pelo dólar que o painel já tem. É a única fonte de cripto que responde ao Worker com segurança: em 19/11 o CoinGecko e
+// a AwesomeAPI devolveram 429, e a Binance e o Mercado Bitcoin, 403. O tether vem do par USDTBRL, já em reais.
+export function lerFinnhubCripto(q, [, id, nome, sigla, casas], dolar) {
+  const v = q ? num(q.c) : null;
+  if (v === null || v <= 0) return null;
+  const emReais = sigla === "USDT" ? v : v * dolar;
+  const t = q.t ? new Date(Number(q.t) * 1000) : null;
+  return { id, nome, sigla, valor: Math.round(emReais * 1e6) / 1e6, variacao: num(q.dp), unidade: "R$", casas, fonte: "Finnhub", data: t && !isNaN(t) ? t.toISOString() : "" };
+}
+async function criptoFinnhub(token, dolar) {
+  if (!token) throw new Error("sem FINNHUB_TOKEN");
+  if (!(dolar > 0)) throw new Error("sem a cotação do dólar para converter");
+  const um = async (c) => {
+    const par = c[3] === "USDT" ? "BINANCE:USDTBRL" : `BINANCE:${c[3]}USDT`;
+    try { return lerFinnhubCripto(await pegar(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(par)}&token=${encodeURIComponent(token)}`), c, dolar); }
+    catch (e) { return { falha: String(e.message || e).replace(token, "…").slice(0, 80) }; }
+  };
+  const r = await Promise.all(CRIPTO.map(um));
+  const lista = r.filter((x) => x && !x.falha);
+  if (!lista.length) throw new Error((r.find((x) => x && x.falha) || { falha: "resposta sem preço" }).falha);
+  return lista;
+}
 // Devolve { lista, erro }. Normal: um pedido só (CoinGecko). Se ele falhar ou vier incompleto, completam o que faltou,
-// nesta ordem: Binance, Mercado Bitcoin e, só para bitcoin e ether, a AwesomeAPI. `erro` junta o motivo de cada fonte
+// nesta ordem: Finnhub (com token), Binance, Mercado Bitcoin e, só para bitcoin e ether, a AwesomeAPI. `erro` junta o motivo de cada fonte
 // que falhou (aparece em meta/mercado.erros.cripto). Lança quando nada veio, para o painel manter o último valor bom.
-export async function cripto() {
+export async function cripto({ finnhubToken = "", dolar = null } = {}) {
   let lista = [];
   const erros = [];
   const tem = new Set();
   const completar = (reserva) => { for (const r of reserva) if (!tem.has(r.id)) { lista.push(r); tem.add(r.id); } };
   const tentar = async (nome, fn) => { try { const l = await fn(); if (!l.length) erros.push(nome + ": resposta sem moedas"); completar(l); } catch (e) { erros.push(nome + ": " + String(e.message || e).slice(0, 120)); } };
   await tentar("CoinGecko", async () => lerCoingecko(await pegar(URL_COINGECKO)));
+  if (tem.size < CRIPTO.length && finnhubToken) await tentar("Finnhub", () => criptoFinnhub(finnhubToken, dolar));
   if (tem.size < CRIPTO.length) await tentar("Binance", criptoBinance);
   if (tem.size < CRIPTO.length) await tentar("Mercado Bitcoin", criptoMercadoBitcoin);
   if (!tem.has("btc") || !tem.has("eth")) await tentar("AwesomeAPI", criptoAwesome);
@@ -194,7 +218,8 @@ export async function atualizarMercado(env, partes) {
   if (partes.moedas) tarefas.push(["moedas", moedas()]);
   if (partes.indicadores) tarefas.push(["indicadores", indicadores()]);
   if (partes.bolsa) tarefas.push(["bolsa", bolsa(env)]);
-  const pCripto = partes.cripto ? cripto() : null;
+  const usd = porId.get("usd");
+  const pCripto = partes.cripto ? cripto({ finnhubToken: env.FINNHUB_TOKEN || "", dolar: usd ? usd.valor : null }) : null;
   if (pCripto) pCripto.catch(() => {}); // o erro é tratado lá embaixo; isto só evita rejeição solta enquanto as outras partes rodam
   const agora = new Date().toISOString();
   for (const [nome, p] of tarefas) {
