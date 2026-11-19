@@ -547,3 +547,118 @@ test("widget tech-landscape: catálogo de Tech, formatos 1x1 e 2x1, e as novidad
   assert.match(n[0].texto, /\+100 estrelas em 7 dias \(\+10%\)/);
   assert.equal(L.novidades(lista, AGORA, 1).length, 1);
 });
+
+// ---------- modelo (pedido de 19/11) ----------
+test("modelo: a tabela tem os cinco, modeloDe devolve a entrada; vazio e valor desconhecido ficam sem etiqueta", () => {
+  assert.deepEqual(L.MODELOS.map((m) => m.id), ["aberto", "aberto-pago", "fonte-disponivel", "freemium", "pago"]);
+  for (const m of L.MODELOS) {
+    assert.ok(m.rotulo && m.curto && m.explicacao && m.tom, m.id + " completo");
+    assert.equal(L.modeloDe({ modelo: m.id }), m);
+  }
+  assert.equal(L.modeloDe({ modelo: "aberto" }).rotulo, "Open source");
+  assert.equal(L.modeloDe({ modelo: "aberto-pago" }).rotulo, "Open source + nuvem paga");
+  assert.equal(L.modeloDe({ modelo: "fonte-disponivel" }).rotulo, "Código disponível");
+  assert.equal(L.modeloDe({ modelo: "freemium" }).rotulo, "Freemium");
+  assert.equal(L.modeloDe({ modelo: "pago" }).rotulo, "Pago");
+  for (const d of [{}, { modelo: "" }, { modelo: null }, { modelo: "Aberto" }, { modelo: "proprietario" }, { modelo: " pago" }, { modelo: 3 }, { modelo: ["pago"] }, null, undefined, "pago"])
+    assert.equal(L.modeloDe(d), null, JSON.stringify(d));
+  assert.equal(new Set(L.MODELOS.map((m) => m.tom)).size, 5, "um tom para cada");
+  assert.ok(L.MODELOS.every((m) => !/desconhecido|melhor|recomendad/i.test(m.rotulo + m.explicacao)));
+  assert.deepEqual(L.validarModelo(undefined), { mexe: false });
+  assert.deepEqual(L.validarModelo(""), { mexe: true, modelo: null });
+  assert.deepEqual(L.validarModelo(null), { mexe: true, modelo: null });
+  assert.deepEqual(L.validarModelo("freemium"), { mexe: true, modelo: "freemium" });
+  assert.ok(L.validarModelo("gratis").erro); assert.ok(L.validarModelo(1).erro);
+});
+
+test("filtro da grade: modelo combinado com categoria, busca, linguagem e licença; chips só com os modelos que existem", () => {
+  const t = (id, nome, categoria, modelo, ling = "Go", lic = "MIT") => ({ id, repo: "o/" + id, nome, categoria, subcategoria: "s", modelo, leve: { linguagem: ling, licenca: lic } });
+  const lista = [
+    t("a", "Alfa", "obs", "aberto"), t("b", "Beta", "obs", "aberto-pago", "Rust"), t("c", "Gama", "dados", "aberto"),
+    t("d", "Delta", "dados", "pago", "Go", "Proprietária"), t("e", "Épsilon", "obs", ""), t("f", "Zeta", "obs", "inventado"),
+  ];
+  const ids = (f) => L.filtrar(lista, f).map((x) => x.id).join(",");
+  assert.equal(ids({}), "a,b,c,d,e,f");
+  assert.equal(ids({ modelos: ["aberto"] }), "a,c");
+  assert.equal(ids({ modelos: ["aberto"], categoria: "obs" }), "a", "modelo e categoria juntos");
+  assert.equal(ids({ modelos: ["aberto", "aberto-pago"], categoria: "obs" }), "a,b", "vários modelos: qualquer um deles");
+  assert.equal(ids({ modelos: ["pago"], categoria: "obs" }), "");
+  assert.equal(ids({ categoria: "dados" }), "c,d");
+  assert.equal(ids({ modelos: ["aberto"], busca: "gam" }), "c", "e a busca");
+  assert.equal(ids({ busca: "epsilon" }), "e", "busca sem acento");
+  assert.equal(ids({ busca: "o/b" }), "b", "busca pelo repositório");
+  assert.equal(ids({ modelos: ["aberto", "aberto-pago"], ling: "Rust" }), "b");
+  assert.equal(ids({ lic: "Proprietária", modelos: ["pago"] }), "d");
+  assert.equal(ids({ modelos: ["inventado"] }), "", "valor fora da tabela não vira filtro");
+  assert.deepEqual(L.contarModelos(lista).map((m) => m.id + ":" + m.n), ["aberto:2", "aberto-pago:1", "pago:1"], "na ordem da tabela, sem vazio nem desconhecido");
+  assert.deepEqual(L.contarModelos([]), []);
+  // widget: a novidade leva o modelo da tecnologia (vazio quando não tem ou não é da tabela)
+  const d = (n) => new Date(AGORA - n * DIA).toISOString();
+  const nov = L.novidades([{ id: "a--a", nome: "A", modelo: "freemium", leve: { release: { tag: "v1", data: d(1) } } }, { id: "b--b", nome: "B", modelo: "x", leve: { release: { tag: "v2", data: d(2) } } }], AGORA);
+  assert.deepEqual(nov.map((x) => x.modelo), ["freemium", ""]);
+});
+
+test("modelo nas rotas: o Admin grava e recusa; a lista leve e o detalhe devolvem; o cron de coleta não mexe", async () => {
+  const env = { DB: d1Falso(), GITHUB_TOKEN: "t" };
+  const dep = espelhoFalso();
+  await semearLandscape(env, AGORA);
+  // como em produção: o campo já está no doc de quase todas (um valor fora da tabela vira "sem etiqueta" na leitura)
+  env.DB.db.prepare("UPDATE docs SET data = json_set(data, '$.modelo', 'aberto-pago') WHERE collection = 'landscape' AND id = 'signoz--signoz'").run();
+  env.DB.db.prepare("UPDATE docs SET data = json_set(data, '$.modelo', 'outra-coisa') WHERE collection = 'landscape' AND id = 'stablyai--orca'").run();
+  // editar: grava só o modelo, o resto do doc fica
+  const ed = await corpoDe(await rotaAdminLandscape(req("PUT", { modelo: "aberto" }), env, ADMIN, "", "openobserve--openobserve", dep));
+  assert.equal(ed.status, 200, JSON.stringify(ed.j));
+  assert.equal(ed.j.modelo, "aberto");
+  const oo = docDe(env, "openobserve--openobserve");
+  assert.equal(oo.modelo, "aberto"); assert.equal(oo.nome, "OpenObserve"); assert.equal(oo.categoria, "observabilidade"); assert.equal(oo.por, "semente");
+  assert.ok(env.DB.log.some((s) => /json_patch/.test(s) && /WHERE collection = 'landscape' AND id = \?/.test(s)), "pelo json_patch, com a chave");
+  assert.ok(dep.gravados.some((g) => g.id === "openobserve--openobserve" && JSON.parse(g.data).modelo === "aberto"), "write-through no espelho");
+  // recusa: fora da tabela, com outro caso, com espaço, número
+  for (const m of ["proprietario", "Aberto", " aberto", 7, ["aberto"], { id: "aberto" }])
+    assert.equal((await rotaAdminLandscape(req("PUT", { modelo: m }), env, ADMIN, "", "openobserve--openobserve", dep)).status, 400, JSON.stringify(m));
+  assert.equal(docDe(env, "openobserve--openobserve").modelo, "aberto", "recusado não muda nada");
+  assert.equal((await rotaAdminLandscape(req("PUT", { nome: "OO", modelo: "x" }), env, ADMIN, "", "openobserve--openobserve", dep)).status, 400);
+  assert.equal(docDe(env, "openobserve--openobserve").nome, "OpenObserve", "com um campo recusado, nenhum grava");
+  // quem não é Admin: 404
+  assert.equal((await rotaAdminLandscape(req("PUT", { modelo: "pago" }), env, CONVIDADO, "", "openobserve--openobserve", dep)).status, 404);
+  // "sem etiqueta" tira a chave; editar outro campo não mexe no modelo
+  await rotaAdminLandscape(req("PUT", { modelo: "freemium" }), env, ADMIN, "", "louislam--uptime-kuma", dep);
+  await rotaAdminLandscape(req("PUT", { nome: "Uptime Kuma 2" }), env, ADMIN, "", "louislam--uptime-kuma", dep);
+  assert.equal(docDe(env, "louislam--uptime-kuma").modelo, "freemium");
+  const sem = await corpoDe(await rotaAdminLandscape(req("PUT", { modelo: "" }), env, ADMIN, "", "louislam--uptime-kuma", dep));
+  assert.equal(sem.status, 200); assert.equal(sem.j.modelo, "");
+  assert.ok(!("modelo" in docDe(env, "louislam--uptime-kuma")), "sem etiqueta: a chave sai do doc");
+  // adicionar: o modelo vale para todas do lote; fora da tabela, 400 sem gravar nada
+  const add = await corpoDe(await rotaAdminLandscape(req("POST", { urls: "https://github.com/grafana/loki\nhttps://github.com/grafana/tempo", categoria: "observabilidade", subcategoria: "plataformas", modelo: "fonte-disponivel" }), env, ADMIN, "", "", dep));
+  assert.equal(add.status, 200, JSON.stringify(add.j));
+  assert.deepEqual(add.j.adicionadas.map((x) => x.modelo), ["fonte-disponivel", "fonte-disponivel"]);
+  assert.equal(docDe(env, "grafana--tempo").modelo, "fonte-disponivel");
+  const ruim = await rotaAdminLandscape(req("POST", { urls: "https://github.com/jaegertracing/jaeger", categoria: "observabilidade", subcategoria: "plataformas", modelo: "open-source" }), env, ADMIN, "", "", dep);
+  assert.equal(ruim.status, 400); assert.match((await ruim.json()).erro, /Modelo/);
+  assert.equal(docDe(env, "jaegertracing--jaeger"), null);
+  const semMod = await corpoDe(await rotaAdminLandscape(req("POST", { urls: "https://github.com/jaegertracing/jaeger", categoria: "observabilidade", subcategoria: "plataformas", modelo: "" }), env, ADMIN, "", "", dep));
+  assert.equal(semMod.status, 200); assert.ok(!("modelo" in docDe(env, "jaegertracing--jaeger")));
+  // o cron de coleta roda (todas as partes, várias rodadas) e não apaga nem muda o modelo
+  const antes = Object.fromEntries(env.DB.db.prepare("SELECT id, json_extract(data, '$.modelo') AS m FROM docs WHERE collection = 'landscape'").all().map((r) => [r.id, r.m]));
+  await comFetch(fetchFalso(), async () => { for (let i = 0; i < 30; i++) await cronLandscape(env, AGORA + i * 60_000); });
+  assert.equal(docDe(env, "openobserve--openobserve").gh.estrelas, 23000, "a coleta rodou");
+  assert.ok(docDe(env, "openobserve--openobserve").leve && !docDe(env, "openobserve--openobserve").leve.coletando);
+  const depois = Object.fromEntries(env.DB.db.prepare("SELECT id, json_extract(data, '$.modelo') AS m FROM docs WHERE collection = 'landscape'").all().map((r) => [r.id, r.m]));
+  assert.deepEqual(depois, antes, "modelo igual em todas depois da coleta");
+  assert.ok(!env.DB.log.some((s) => /json_remove|json_set/.test(s) && /landscape/.test(s)), "o cron só usa json_patch nos campos dele");
+  // semente de novo: não passa por cima
+  env.DB.db.prepare("DELETE FROM docs WHERE collection = '_sistema' AND id = 'landscape-semente'").run();
+  await semearLandscape(env, AGORA + DIA);
+  assert.equal(docDe(env, "openobserve--openobserve").modelo, "aberto");
+  // lista leve e detalhe devolvem o campo (desconhecido vira "")
+  const g = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "", dep));
+  const por = Object.fromEntries(g.j.tecnologias.map((x) => [x.id, x.modelo]));
+  assert.equal(por["openobserve--openobserve"], "aberto"); assert.equal(por["signoz--signoz"], "aberto-pago");
+  assert.equal(por["grafana--loki"], "fonte-disponivel"); assert.equal(por["louislam--uptime-kuma"], ""); assert.equal(por["stablyai--orca"], "", "fora da tabela: sem etiqueta");
+  assert.ok(g.j.tecnologias.every((x) => typeof x.modelo === "string"));
+  const d = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "signoz--signoz", dep));
+  assert.equal(d.j.tec.modelo, "aberto-pago");
+  assert.equal(d.j.parecidas.find((x) => x.id === "openobserve--openobserve").modelo, "aberto", "as parecidas vêm da lista leve");
+  assert.equal((await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "stablyai--orca", dep))).j.tec.modelo, "");
+  assert.equal((await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "louislam--uptime-kuma", dep))).j.tec.modelo, "");
+});

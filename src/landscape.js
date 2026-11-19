@@ -7,7 +7,7 @@
 //
 // Banco (D1, com espelho de leitura como as outras collections):
 // - landscape/<id>: um doc por tecnologia (id = owner--repo em minúsculas). O Admin grava os campos dele (repo, nome,
-//   categoria, subcategoria, site, feed, adicionado, por) e o cron os dele (gh, releases, sobre, hn, gh_destaques, blog,
+//   categoria, subcategoria, site, feed, modelo, adicionado, por) e o cron os dele (gh, releases, sobre, hn, gh_destaques, blog,
 //   serie, leve, em, atualizado, erro), cada um com json_patch na própria chave: um não apaga o que o outro gravou.
 // - meta/landscape-categorias: a árvore de categorias e a ordem.
 // - landscape/<email>, id "notas": as notas do Admin (só ele lê e grava).
@@ -546,7 +546,7 @@ const json = (dados, status = 200) => new Response(JSON.stringify(dados), { stat
 // o resto vem do UNION ALL, com json_object só dos campos da grade (o doc inteiro tem README, série e comentários).
 export const SQL_LEVE = "SELECT id, data FROM docs WHERE 0 UNION ALL SELECT id, json_object('repo', json_extract(data, '$.repo'), 'nome', json_extract(data, '$.nome'), "
   + "'categoria', json_extract(data, '$.categoria'), 'subcategoria', json_extract(data, '$.subcategoria'), 'site', json_extract(data, '$.site'), "
-  + "'adicionado', json_extract(data, '$.adicionado'), 'descricao', json_extract(data, '$.gh.descricao'), 'descricao_pt', json_extract(data, '$.gh.descricao_pt'), 'erro', json_extract(data, '$.erro'), "
+  + "'adicionado', json_extract(data, '$.adicionado'), 'modelo', json_extract(data, '$.modelo'), 'descricao', json_extract(data, '$.gh.descricao'), 'descricao_pt', json_extract(data, '$.gh.descricao_pt'), 'erro', json_extract(data, '$.erro'), "
   + "'leve', json(json_extract(data, '$.leve'))) AS data FROM docs WHERE collection = 'landscape'";
 export async function listaLeve(env, deps) {
   const linhas = await deps.lerLinhas(env, SQL_LEVE, [], "landscape");
@@ -557,7 +557,7 @@ export async function listaLeve(env, deps) {
     if (!d || !L.ID_OK.test(r.id)) continue;
     const leve = d.leve && typeof d.leve === "object" ? { ...d.leve } : { coletando: true };
     if (leve.marca && !L.marcaOk(leve.marca, leve.dono)) leve.marca = "";
-    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", adicionado: d.adicionado || null, descricao: d.descricao || "", ...(d.descricao_pt ? { descricao_pt: d.descricao_pt } : {}), erro: d.erro || "", leve });
+    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", modelo: L.modeloDe(d) ? d.modelo : "", adicionado: d.adicionado || null, descricao: d.descricao || "", ...(d.descricao_pt ? { descricao_pt: d.descricao_pt } : {}), erro: d.erro || "", leve });
   }
   out.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
   return out;
@@ -642,6 +642,7 @@ export async function rotaLandscape(request, env, quem, resto, deps) {
   let doc;
   try { doc = JSON.parse(r.data); } catch { return json({ erro: "doc" }, 500); }
   const { por, ...tec } = doc;
+  tec.modelo = L.modeloDe(tec) ? tec.modelo : "";
   if (tec.gh && !L.marcaOk(tec.gh.marca, tec.gh.dono && tec.gh.dono.tipo)) tec.gh = { ...tec.gh, marca: "" };
   if (tec.gh && tec.gh.dono) tec.gh = { ...tec.gh, dono: { login: tec.gh.dono.login, tipo: tec.gh.dono.tipo } };
   const ref = { repo: tec.repo || L.repoDoId(id), nome: tec.nome, site: tec.site || (tec.gh && tec.gh.site) || "" };
@@ -762,6 +763,9 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
     const site = L.urlOk(b.site), feed = L.urlOk(b.feed);
     if (site === null) return json({ erro: "O site precisa ser um endereço http(s)." }, 400);
     if (feed === null) return json({ erro: "O feed precisa ser um endereço http(s)." }, 400);
+    // o modelo vale para todas as do lote (nome, site e feed só quando é uma)
+    const mod = L.validarModelo(b.modelo);
+    if (mod.erro) return json({ erro: mod.erro }, 400);
     const { results } = await env.DB.prepare("SELECT id FROM docs WHERE collection = 'landscape'").all();
     const ja = new Set((results || []).map((r) => r.id));
     const novas = lidas.validas.filter((x) => !ja.has(x.id));
@@ -769,13 +773,13 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
     if (ja.size + novas.length > L.MAX_TECNOLOGIAS) return json({ erro: `O landscape guarda até ${L.MAX_TECNOLOGIAS} tecnologias.` }, 400);
     const umaSo = lidas.validas.length === 1;
     const nome = L.nomeLimpo(b.nome);
-    const docs = novas.map((x) => ({ id: x.id, doc: { repo: x.repo, nome: (umaSo && nome) || x.repo.split("/")[1], categoria: cat.cid, subcategoria: cat.sid, site: umaSo ? site : "", feed: umaSo ? feed : "", adicionado: quando, por: "admin", atualizado: quando } }));
+    const docs = novas.map((x) => ({ id: x.id, doc: { repo: x.repo, nome: (umaSo && nome) || x.repo.split("/")[1], categoria: cat.cid, subcategoria: cat.sid, site: umaSo ? site : "", feed: umaSo ? feed : "", ...(mod.modelo ? { modelo: mod.modelo } : {}), adicionado: quando, por: "admin", atualizado: quando } }));
     if (cat.mudou) await gravarCategorias(env, deps, cat.categorias, quando);
     if (docs.length) {
       await env.DB.batch(docs.map((d) => env.DB.prepare("INSERT OR IGNORE INTO docs (collection, id, data, coletado, atualizado) VALUES ('landscape', ?, ?, '', ?)").bind(d.id, JSON.stringify(d.doc), quando)));
       deps.gravarNoEspelho(env, docs.map((d) => ({ collection: "landscape", id: d.id, data: JSON.stringify(d.doc), coletado: "", atualizado: quando })));
     }
-    return json({ ok: true, adicionadas: docs.map((d) => ({ id: d.id, repo: d.doc.repo, nome: d.doc.nome, categoria: d.doc.categoria, subcategoria: d.doc.subcategoria, site: d.doc.site, adicionado: quando, leve: { coletando: true } })),
+    return json({ ok: true, adicionadas: docs.map((d) => ({ id: d.id, repo: d.doc.repo, nome: d.doc.nome, categoria: d.doc.categoria, subcategoria: d.doc.subcategoria, site: d.doc.site, modelo: d.doc.modelo || "", adicionado: quando, leve: { coletando: true } })),
       repetidas, recusadas: lidas.recusadas, categorias: cat.categorias });
   }
   if (!L.ID_OK.test(id) || id.length > 160) return json({ erro: "id" }, 400);
@@ -793,6 +797,10 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
   if (b.nome !== undefined) { const n = L.nomeLimpo(b.nome); if (!n) return json({ erro: "O nome não pode ficar vazio." }, 400); patch.nome = n; }
   if (b.site !== undefined) { const s = L.urlOk(b.site); if (s === null) return json({ erro: "O site precisa ser um endereço http(s)." }, 400); patch.site = s; }
   if (b.feed !== undefined) { const f = L.urlOk(b.feed); if (f === null) return json({ erro: "O feed precisa ser um endereço http(s)." }, 400); patch.feed = f; }
+  // modelo: só o Admin grava, pelo mesmo json_patch; "" ou null vira null, que tira a chave do doc
+  const mod = L.validarModelo(b.modelo);
+  if (mod.erro) return json({ erro: mod.erro }, 400);
+  if (mod.mexe) patch.modelo = mod.modelo;
   let cats = null;
   if (b.categoria !== undefined || b.subcategoria !== undefined || b.novaCategoria || b.novaSubcategoria) {
     const cat = escolherCategoria(await lerCategoriasD1(env), { categoria: b.categoria ?? atual.categoria, subcategoria: b.subcategoria, novaCategoria: b.novaCategoria, novaSubcategoria: b.novaSubcategoria });
@@ -804,5 +812,5 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
   await patchDoc(env, id, patch, quando);
   const r = await env.DB.prepare("SELECT data, coletado, atualizado FROM docs WHERE collection = 'landscape' AND id = ?").bind(id).first();
   if (r) deps.gravarNoEspelho(env, [{ collection: "landscape", id, data: r.data, coletado: r.coletado || "", atualizado: r.atualizado }]);
-  return json({ ok: true, ...patch, ...(cats ? { categorias: cats } : {}) });
+  return json({ ok: true, ...patch, ...("modelo" in patch ? { modelo: patch.modelo || "" } : {}), ...(cats ? { categorias: cats } : {}) });
 }

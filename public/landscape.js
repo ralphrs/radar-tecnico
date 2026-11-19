@@ -5,7 +5,7 @@
  * Sem import nem export, nem nada do navegador ou do Worker.
  *
  * Tecnologia (collection `landscape`, id `owner--repo` em minúsculas): { repo: "Owner/Repo", nome, categoria, subcategoria,
- *   site, feed, adicionado, por, gh: {...}, releases: [...], sobre, hn: { historias, comentarios }, gh_destaques: [...],
+ *   site, feed, modelo?, adicionado, por, gh: {...}, releases: [...], sobre, hn: { historias, comentarios }, gh_destaques: [...],
  *   serie: [[AAAA-MM-DD, estrelas], ...], leve: {...}, em: { <parte>: iso }, atualizado, erro? }
  * Categorias (meta/landscape-categorias): { categorias: [{ id, nome, subcategorias: [{ id, nome }] }], atualizado }
  * Notas do Admin (landscape/<email>, id `notas`): { porId: { <id>: { situacao, nota, link, atualizado } }, atualizado }
@@ -38,6 +38,51 @@
   const SITUACOES = [
     { id: "avaliando", nome: "Avaliando" }, { id: "testando", nome: "Testando" }, { id: "uso", nome: "Uso" }, { id: "descartei", nome: "Descartei" },
   ];
+
+  /* ---------- modelo (pedido de 19/11) ----------
+     O que a tecnologia é do ponto de vista de licença e de quem paga: campo `modelo` no doc, gravado só pelo Admin.
+     Uma tabela só: id (fixo, é o que está no banco), rótulo, curto (cabe no cartão da grade), explicação (vai no
+     title, na legenda e no detalhe) e tom (cor da etiqueta na página, sempre junto do texto). Vazio ou id que não está
+     aqui: sem etiqueta. */
+  const MODELOS = [
+    { id: "aberto", rotulo: "Open source", curto: "Open source", explicacao: "Código aberto, sem oferta paga de quem mantém o projeto.", tom: "verde" },
+    { id: "aberto-pago", rotulo: "Open source + nuvem paga", curto: "Open + nuvem", explicacao: "Código aberto; a empresa por trás vende a versão hospedada ou recursos extras.", tom: "teal" },
+    { id: "fonte-disponivel", rotulo: "Código disponível", curto: "Cód. disponível", explicacao: "O código é público, mas a licença restringe o uso (BSL, SSPL, Elastic e parecidas).", tom: "ambar" },
+    { id: "freemium", rotulo: "Freemium", curto: "Freemium", explicacao: "Produto fechado com plano grátis.", tom: "azul" },
+    { id: "pago", rotulo: "Pago", curto: "Pago", explicacao: "Produto fechado, sem plano grátis que sirva para uso de verdade.", tom: "cinza" },
+  ];
+  const modeloPorId = (v) => (typeof v === "string" && v ? MODELOS.find((m) => m.id === v) || null : null);
+  /* A entrada da tabela para o doc (ou item da lista leve), ou null */
+  const modeloDe = (doc) => modeloPorId(doc && typeof doc === "object" ? doc.modelo : null);
+  /* Corpo do Admin: undefined não mexe; "" ou null tira a etiqueta (null no json_patch apaga a chave); id da tabela grava. */
+  function validarModelo(v) {
+    if (v === undefined) return { mexe: false };
+    if (v === null || v === "") return { mexe: true, modelo: null };
+    if (!modeloPorId(v)) return { erro: "Modelo desconhecido." };
+    return { mexe: true, modelo: v };
+  }
+  /* Filtro da grade e da tabela: busca pelo nome ou repositório, linguagem, licença, categoria e modelos (vários valem
+     juntos, qualquer um deles; lista vazia é todos). Não ordena. */
+  function filtrar(lista, f = {}) {
+    const q = semAcento(f.busca || "").trim();
+    const mods = new Set(Array.isArray(f.modelos) ? f.modelos : []);
+    return (Array.isArray(lista) ? lista : []).filter((t) => {
+      if (!t) return false;
+      const l = t.leve || {};
+      if (q && !semAcento((t.nome || "") + " " + (t.repo || "")).includes(q)) return false;
+      if (f.ling && l.linguagem !== f.ling) return false;
+      if (f.lic && l.licenca !== f.lic) return false;
+      if (f.categoria && t.categoria !== f.categoria) return false;
+      if (mods.size) { const m = modeloDe(t); if (!m || !mods.has(m.id)) return false; }
+      return true;
+    });
+  }
+  /* Chips do filtro: só os modelos que aparecem na lista, na ordem da tabela, com a contagem */
+  function contarModelos(lista) {
+    const n = new Map();
+    for (const t of Array.isArray(lista) ? lista : []) { const m = modeloDe(t); if (m) n.set(m.id, (n.get(m.id) || 0) + 1); }
+    return MODELOS.filter((m) => n.has(m.id)).map((m) => ({ ...m, n: n.get(m.id) }));
+  }
 
   /* ---------- ids e URLs ---------- */
   const idDe = (repo) => String(repo || "").toLowerCase().replace("/", "--");
@@ -361,10 +406,11 @@
     for (const t of Array.isArray(lista) ? lista : []) {
       const l = t && t.leve;
       if (!l || l.coletando) continue;
-      if (l.release && idadeDias(l.release.data, agora) <= 7) out.push({ id: t.id, nome: t.nome, tipo: "release", data: l.release.data, texto: "lançou " + l.release.tag });
+      const modelo = modeloDe(t) ? t.modelo : "";
+      if (l.release && idadeDias(l.release.data, agora) <= 7) out.push({ id: t.id, nome: t.nome, modelo, tipo: "release", data: l.release.data, texto: "lançou " + l.release.tag });
       const base = l.estrelas != null && l.ganho7 != null ? l.estrelas - l.ganho7 : null;
-      if (base && base > 0 && l.ganho7 / base > 0.05) out.push({ id: t.id, nome: t.nome, tipo: "estrelas", data: new Date(agora).toISOString(), texto: `+${formatoCurto(l.ganho7)} estrelas em 7 dias (+${fmt1((l.ganho7 / base) * 100)}%)` });
-      if (l.hn && (l.hn.pontos || 0) > 100 && idadeDias(l.hn.data, agora) <= 7) out.push({ id: t.id, nome: t.nome, tipo: "hn", data: l.hn.data, texto: `no Hacker News com ${l.hn.pontos} pontos: ${l.hn.titulo}` });
+      if (base && base > 0 && l.ganho7 / base > 0.05) out.push({ id: t.id, nome: t.nome, modelo, tipo: "estrelas", data: new Date(agora).toISOString(), texto: `+${formatoCurto(l.ganho7)} estrelas em 7 dias (+${fmt1((l.ganho7 / base) * 100)}%)` });
+      if (l.hn && (l.hn.pontos || 0) > 100 && idadeDias(l.hn.data, agora) <= 7) out.push({ id: t.id, nome: t.nome, modelo, tipo: "hn", data: l.hn.data, texto: `no Hacker News com ${l.hn.pontos} pontos: ${l.hn.titulo}` });
     }
     out.sort((a, b) => String(b.data || "").localeCompare(String(a.data || "")));
     return out.slice(0, n);
@@ -373,5 +419,6 @@
   raiz.Landscape = { DIA, MAX_TECNOLOGIAS, CORPO_MAX, SERIE_MAX, TRECHO_MAX, SOBRE_MAX, NOME_MAX, NOTA_MAX, URL_MAX, ID_OK, ID_CAT, SITUACOES,
     idDe, repoDoId, lerUrlRepo, lerUrls, urlOk, marcaDe, marcaOk, monograma, formatoCurto, diaSP, idadeDias, atividade, ehNova, releaseRecente,
     somarPonto, ganho, entidades, textoPuro, trecho, textoDoReadme, cita, temPalavra, nomeDistinto, escolherComentarios,
-    slug, nomeLimpo, validarCategorias, acharCategoria, validarNotas, leveDe, novidades, semAcento };
+    slug, nomeLimpo, validarCategorias, acharCategoria, validarNotas, leveDe, novidades, semAcento,
+    MODELOS, modeloDe, validarModelo, filtrar, contarModelos };
 })(typeof globalThis !== "undefined" ? globalThis : this);

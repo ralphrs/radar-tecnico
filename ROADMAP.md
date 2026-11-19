@@ -186,6 +186,8 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 ## Pedidos de 19/11
 - [x] Relatório das rotinas no Admin: card Rotinas no topo com o que está em dia, com erro, atrasado ou parado e há quanto tempo, para as curadorias (rastro em `meta/status*`, itens em 24 h e 7 dias, plantão) e para cada etapa do cron (batimento em `_sistema/rotinas`, uma leitura e uma gravação por minuto), com a tabela de intervalos esperados (docs/LOOKOUT.md, "Rotinas: o relatório do Admin") (19/11)
 - [ ] Rotinas: conferir em produção os primeiros dias do batimento (se alguma etapa aparece atrasada sem estar, sobretudo EUA no horário de verão de Nova York e a leitura do dia com o cofre)
+- [x] Landscape: etiqueta do modelo de cada tecnologia (Open source, Open source + nuvem paga, Código disponível, Freemium, Pago) no cartão, no widget, na tabela e no detalhe (com a explicação e a licença do GitHub), chips para filtrar por modelo, legenda "O que são as etiquetas?" e o campo Modelo no Adicionar e no Editar do Admin (docs/LOOKOUT.md, "Modelo") (19/11)
+- [ ] Landscape: tecnologia sem repositório no GitHub (produto fechado) ainda não entra no Landscape
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

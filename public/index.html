@@ -12,6 +12,7 @@
   --accent: #f6f8fd; --primary: #7c3aed; --primary-foreground: #ffffff; --brand-start: #8b5cf6; --brand-end: #4f8ff7; --olho: #7c3aed;
   --border: rgba(30, 45, 80, 0.12); --input: rgba(30, 45, 80, 0.22); --ring: var(--primary);
   --info: #6b5aa8; --ok: #2f7a5c; --warn: #8a6320; --err: #b03a44; --chart-1: #7a4f93;
+  --mod-verde: #22704e; --mod-teal: #156a72; --mod-ambar: #84561a; --mod-azul: #2a58a6; --mod-cinza: #3a4357;
   --shadow-sm: 0 1px 2px rgba(30, 26, 39, 0.06); --shadow-md: 0 4px 14px rgba(30, 26, 39, 0.08);
   --overlay: color-mix(in srgb, var(--foreground) 45%, transparent);
   --radius-sm: 4px; --radius-md: 8px; --radius-lg: 14px; --radius-xl: 18px;
@@ -27,6 +28,7 @@
     --accent: #0f1524; --primary: #8b5cf6; --olho: #ffffff;
     --border: rgba(140, 160, 210, 0.16); --input: rgba(150, 170, 220, 0.3);
     --info: #a79ae0; --ok: #6bbd97; --warn: #d6ab63; --err: #d8737d; --chart-1: #b184c8;
+    --mod-verde: #6fc39c; --mod-teal: #5ec1c9; --mod-ambar: #ddb067; --mod-azul: #8fb1f5; --mod-cinza: #c5ccda;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
     --overlay: color-mix(in srgb, var(--background) 72%, transparent);
     color-scheme: dark;
@@ -37,6 +39,7 @@
   --accent: #0f1524; --primary: #8b5cf6; --olho: #ffffff;
   --border: rgba(140, 160, 210, 0.16); --input: rgba(150, 170, 220, 0.3);
   --info: #a79ae0; --ok: #6bbd97; --warn: #d6ab63; --err: #d8737d; --chart-1: #b184c8;
+  --mod-verde: #6fc39c; --mod-teal: #5ec1c9; --mod-ambar: #ddb067; --mod-azul: #8fb1f5; --mod-cinza: #c5ccda;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
   --overlay: color-mix(in srgb, var(--background) 72%, transparent);
   color-scheme: dark;
@@ -2133,6 +2136,33 @@ html.tech-ls .barra-linha { display: none; }
 .ls-selos { position: absolute; top: 4px; left: 4px; right: 4px; display: flex; justify-content: space-between; gap: 4px; pointer-events: none; }
 .ls-selos .dd-badge { padding: 0 5px; font-size: 10px; line-height: 14px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
 .ls-selos .dd-badge:only-child { margin-left: auto; }
+/* modelo (pedido de 19/11): etiqueta com texto e cor pelo tom (Landscape.MODELOS); pago fica cheio, para não depender só
+   do matiz. No cartão a linha existe sempre (vazia em quem não tem), para a grade não ficar irregular. */
+.dd-badge.ls-mod { --c: var(--mod-cinza); color: var(--c); border-color: color-mix(in srgb, var(--c) 42%, transparent); background: color-mix(in srgb, var(--c) 10%, var(--card)); font-weight: 600; }
+.ls-mod.m-verde { --c: var(--mod-verde); } .ls-mod.m-teal { --c: var(--mod-teal); } .ls-mod.m-ambar { --c: var(--mod-ambar); } .ls-mod.m-azul { --c: var(--mod-azul); }
+.dd-badge.ls-mod.m-cinza { background: var(--mod-cinza); border-color: var(--mod-cinza); color: var(--card); }
+.ls-card .ls-mod-lin { display: flex; justify-content: center; max-width: 100%; height: 16px; flex: none; }
+.ls-card .ls-mod-lin .dd-badge { padding: 0 5px; font-size: 10px; line-height: 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.ls-mods { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ls-mods .chip { height: 30px; padding: 0 10px; gap: 6px; font-size: 12.5px; }
+.ls-mods .chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.ls-mods .chip .ct { display: none; }
+.ls-mods .rotulo { margin: 0 2px 0 0; font-size: 12px; }
+.ls-leg { font-size: 12.5px; }
+.ls-leg > summary { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--muted-foreground); padding: 6px 2px; border-radius: 4px; list-style: none; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+.ls-leg > summary::-webkit-details-marker { display: none; }
+.ls-leg > summary:hover { color: var(--foreground); }
+.ls-leg > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ls-leg[open] > summary { color: var(--foreground); }
+.ls-leg dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 12px; align-items: baseline; margin: 6px 0 0; padding: 12px 14px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); max-width: 640px; }
+.ls-leg dt { margin: 0; } .ls-leg dd { margin: 0; color: var(--foreground); line-height: 1.45; }
+.ls-leg .dica { grid-column: 1 / -1; margin: 2px 0 0; color: var(--muted-foreground); font-size: 12px; }
+.ls-topo .ls-mod-info { grid-column: 1 / -1; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 10px; margin: 0; font-size: 13.5px; line-height: 1.45; }
+.ls-topo .ls-mod-info dt { color: var(--muted-foreground); margin: 0; }
+.ls-topo .ls-mod-info dd { margin: 0; overflow-wrap: anywhere; }
+.ls-topo .ls-mod-info code { font: 500 12.5px var(--font-mono); }
+.ls-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.wdg-ls .n .dd-badge { padding: 0 5px; font-size: 10px; line-height: 14px; }
 .ls-ponto { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; background: color-mix(in srgb, var(--muted-foreground) 55%, transparent); }
 .ls-ponto.verde { background: var(--ok); } .ls-ponto.ambar { background: var(--warn); }
 .ls-marca { flex: none; width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: var(--secondary); }
@@ -2234,6 +2264,7 @@ html.tech-ls .barra-linha { display: none; }
   .ls-topo h2 { font-size: 21px; }
   .ls-bloco { padding: 12px; }
 }
+@media (max-width: 699px) { .ls-leg dl { grid-template-columns: minmax(0, 1fr); gap: 2px 0; } .ls-leg dd { margin-bottom: 8px; } .ls-mods .chip { height: 34px; } .ls-mods .chip .ct { display: inline; } .ls-mods .chip .lg:has(+ .ct) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 @media (max-width: 370px) { .ls-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 
@@ -11544,7 +11575,8 @@ function subtituloEsp(id, x) {
 var LS = window.Landscape;
 var tvisao = "noticias", lsId = null, lsLista = null, lsCats = [], lsErro = "", lsCarregando = false, lsAdmin = false, lsEstadoAdmin = null;
 var lsDet = new Map(), lsDetErro = new Map(), lsRolagem = 0, lsDaGrade = false, lsAviso = "", lsConfirmaTirar = false, lsHnOrdem = "pontos";
-var lsF = { busca: "", ling: "", lic: "", ordem: "estrelas", modo: "grade" };
+var lsLegenda = false;
+var lsF = { busca: "", ling: "", lic: "", modelos: [], ordem: "estrelas", modo: "grade" };
 try { const s = JSON.parse(localStorage.getItem("radar-landscape") || "null"); if (s) { if (["grade", "tabela"].includes(s.modo)) lsF.modo = s.modo; if (["estrelas", "crescimento", "atividade", "nome"].includes(s.ordem)) lsF.ordem = s.ordem; } } catch (e) {}
 const lsGuardar = () => { try { localStorage.setItem("radar-landscape", JSON.stringify({ modo: lsF.modo, ordem: lsF.ordem })); } catch (e) {} };
 /* lê #tech/landscape[/id] para as variáveis; devolve true se mudou algo */
@@ -11628,6 +11660,15 @@ function marcaEl(t, tam) {
 const pontoEl = (iso) => { const a = LS.atividade(iso); return el("span", { class: "ls-ponto " + a, title: a === "verde" ? "Commit nos últimos 30 dias" : a === "ambar" ? "Último commit entre 30 e 180 dias" : "Sem commit há mais de 180 dias" }); };
 const nomeCat = (cid, sid) => { const c = lsCats.find((x) => x.id === cid); const s = c && c.subcategorias.find((x) => x.id === sid); return { c: c ? c.nome : "Sem categoria", s: s ? s.nome : "" }; };
 const estrelasTxt = (n) => (n == null ? "–" : "★ " + LS.formatoCurto(n));
+/* etiqueta do modelo (LS.MODELOS): texto sempre, cor pelo tom; `curto` no cartão e no widget, com o rótulo inteiro para
+   leitor de tela e no title. Sem modelo (ou com um que não está na tabela): null. */
+function modeloEl(t, curto) {
+  const m = LS.modeloDe(t);
+  if (!m) return null;
+  const abrev = curto && m.curto !== m.rotulo;
+  return el("span", { class: "dd-badge ls-mod m-" + m.tom, title: m.rotulo + ": " + m.explicacao },
+    abrev ? el("span", { "aria-hidden": "true" }, m.curto) : m.rotulo, abrev ? el("span", { class: "ls-sr" }, m.rotulo) : null);
+}
 const dataCurta = (iso) => { const d = new Date(iso || ""); return isNaN(d) ? "–" : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }); };
 const fonteBloco = (fonte, iso) => el("p", { class: "ls-pe" }, fonte + (iso ? " · atualizado " + fmtRel(iso) : " · ainda não coletado"));
 function cartao(t) {
@@ -11637,13 +11678,15 @@ function cartao(t) {
   if (l.release && LS.releaseRecente(l.release)) selos.push(el("span", { class: "dd-badge b-release", title: "Versão nova nesta semana" }, l.release.tag));
   const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : ""), href: "#tech/landscape/" + encodeURIComponent(t.id), id: "ls-c-" + t.id, title: (trLigada && t.descricao_pt) || t.descricao || t.repo },
     selos.length ? el("span", { class: "ls-selos" }, ...selos) : null, marcaEl(t), el("span", { class: "ls-nome" }, t.nome || t.repo),
+    el("span", { class: "ls-mod-lin" }, modeloEl(t, true)),
     el("span", { class: "ls-dado" }, ...(l.coletando ? [t.erro ? "não achado" : "coletando…"] : [pontoEl(l.commit), estrelasTxt(l.estrelas)])));
   a.addEventListener("click", (e) => abrirTec(t.id, e));
   return a;
 }
+/* a regra do filtro é LS.filtrar (busca, linguagem, licença, categoria e modelos), testada em test/landscape.test.mjs */
+const lsFiltro = (semModelo) => ({ busca: lsF.busca, ling: lsF.ling, lic: lsF.lic, modelos: semModelo ? [] : lsF.modelos });
 function lsFiltradas() {
-  const q = semAcento(lsF.busca).toLowerCase().trim();
-  const l = (lsLista || []).filter((t) => (!q || semAcento(t.nome + " " + t.repo).toLowerCase().includes(q)) && (!lsF.ling || (t.leve && t.leve.linguagem) === lsF.ling) && (!lsF.lic || (t.leve && t.leve.licenca) === lsF.lic));
+  const l = LS.filtrar(lsLista || [], lsFiltro());
   const v = (t) => t.leve || {};
   const cmp = {
     estrelas: (a, b) => (v(b).estrelas ?? -1) - (v(a).estrelas ?? -1),
@@ -11691,9 +11734,36 @@ function desenharGrade(box) {
     selectLs("ls-ling", "Linguagem", [["", "Toda linguagem"], ...lings.map((x) => [x, x])], lsF.ling, (v) => { lsF.ling = v; pintarConteudo(); }),
     selectLs("ls-lic", "Licença", [["", "Toda licença"], ...lics.map((x) => [x, x])], lsF.lic, (v) => { lsF.lic = v; pintarConteudo(); }),
     selectLs("ls-ordem", "Ordenar", [["estrelas", "Mais estrelas"], ["crescimento", "Mais crescimento em 30 dias"], ["atividade", "Atividade recente"], ["nome", "Nome"]], lsF.ordem, (v) => { lsF.ordem = v; lsGuardar(); pintarConteudo(); })));
+  /* modelo: chips só dos modelos que existem entre as carregadas (vários valem juntos), com a contagem do que os outros
+     filtros deixam; e a legenda, que abre as cinco definições */
+  const existem = new Set(LS.contarModelos(todos).map((m) => m.id));
+  lsF.modelos = lsF.modelos.filter((id) => existem.has(id));
+  const mods = el("div", { class: "ls-mods", role: "group", "aria-label": "Filtrar por modelo" });
+  const legenda = el("details", { class: "ls-leg", id: "ls-legenda" }, el("summary", {}, "O que são as etiquetas?"),
+    el("dl", {}, ...LS.MODELOS.flatMap((m) => [el("dt", {}, modeloEl({ modelo: m.id })), el("dd", {}, m.explicacao)]),
+      el("p", { class: "dica" }, "Quem marca é o Admin, tecnologia por tecnologia. Sem etiqueta: ainda não marcada.")));
+  /* a grade se redesenha quando chegam dados novos: a legenda continua aberta se estava */
+  if (lsLegenda) legenda.open = true;
+  legenda.addEventListener("toggle", () => { lsLegenda = legenda.open; });
+  function pintarMods() {
+    mods.textContent = "";
+    if (!existem.size) return;
+    const n = new Map(LS.contarModelos(LS.filtrar(todos, lsFiltro(true))).map((m) => [m.id, m.n]));
+    mods.append(el("span", { class: "rotulo", "aria-hidden": "true" }, "Modelo"));
+    for (const m of LS.MODELOS) {
+      if (!existem.has(m.id)) continue;
+      const on = lsF.modelos.includes(m.id);
+      const b = el("button", { class: "chip", type: "button", id: "ls-mod-" + m.id, "aria-pressed": String(on), title: m.explicacao },
+        el("span", { class: "dot", style: "background: var(--mod-" + m.tom + ")", "aria-hidden": "true" }), el("span", { class: "lg" }, m.rotulo), m.curto !== m.rotulo ? el("span", { class: "ct", "aria-hidden": "true" }, m.curto) : null, el("span", { class: "k" }, String(n.get(m.id) || 0)));
+      b.addEventListener("click", () => { lsF.modelos = on ? lsF.modelos.filter((x) => x !== m.id) : lsF.modelos.concat(m.id); pintarConteudo(); const x = $("ls-mod-" + m.id); if (x) x.focus(); });
+      mods.append(b);
+    }
+  }
+  box.append(el("div", { class: "ls-ferr ls-ferr-mod" }, mods, legenda));
   const conteudo = el("div", { id: "ls-conteudo" });
   box.append(conteudo);
   function pintarConteudo() {
+    pintarMods();
     conteudo.textContent = "";
     const l = lsFiltradas();
     if (!todos.length) { conteudo.append(el("p", { class: "ls-vazio" }, lsAdmin ? "Nenhuma tecnologia ainda. Use Adicionar tecnologia e cole a URL do GitHub." : "Nenhuma tecnologia no landscape ainda.")); return; }
@@ -11726,6 +11796,7 @@ function tabelaLs(l) {
     { id: "commit", rotulo: "Último commit", tipo: "data", valor: (t) => v(t).commit },
     { id: "linguagem", rotulo: "Linguagem", tipo: "texto", valor: (t) => v(t).linguagem || null },
     { id: "licenca", rotulo: "Licença", tipo: "texto", valor: (t) => v(t).licenca || null },
+    { id: "modelo", rotulo: "Modelo", tipo: "texto", valor: (t) => (LS.modeloDe(t) ? LS.modeloDe(t).rotulo : null) },
     { id: "issues", rotulo: "Issues abertas", tipo: "num", valor: (t) => v(t).issues },
   ];
   const link = (t) => { const a = el("a", { href: "#tech/landscape/" + encodeURIComponent(t.id) }, marcaEl(t, "p"), t.nome); a.addEventListener("click", (e) => abrirTec(t.id, e)); return a; };
@@ -11740,10 +11811,11 @@ function tabelaLs(l) {
       if (c.id === "release") return el("td", { class: "num", title: v(t).release ? v(t).release.tag : "" }, v(t).release ? v(t).release.tag + " · " + dataCurta(v(t).release.data) : "–");
       if (c.id === "commit") return el("td", { class: "num" }, ...(v(t).commit ? [pontoEl(v(t).commit), " ", dataCurta(v(t).commit)] : ["–"]));
       if (c.id === "issues") return el("td", { class: "num" }, v(t).issues == null ? "–" : v(t).issues.toLocaleString("pt-BR"));
+      if (c.id === "modelo") return el("td", {}, modeloEl(t) || "–");
       return el("td", {}, c.valor(t) || "–");
     },
     cel: (t) => el("div", { class: "ls-lin" }, link(t), el("span", { class: "num" }, estrelasTxt(v(t).estrelas)),
-      el("small", {}, [nomeCat(t.categoria, t.subcategoria).s || nomeCat(t.categoria).c, v(t).linguagem, v(t).licenca, v(t).release ? "release " + v(t).release.tag : null, v(t).ganho30 != null ? "+" + LS.formatoCurto(v(t).ganho30) + " em 30 dias" : null].filter(Boolean).join(" · "))),
+      el("small", {}, [nomeCat(t.categoria, t.subcategoria).s || nomeCat(t.categoria).c, LS.modeloDe(t) ? LS.modeloDe(t).rotulo : null, v(t).linguagem, v(t).licenca, v(t).release ? "release " + v(t).release.tag : null, v(t).ganho30 != null ? "+" + LS.formatoCurto(v(t).ganho30) + " em 30 dias" : null].filter(Boolean).join(" · "))),
     classeCel: "ls-celista",
   });
   return el("div", { class: "ls-tabela" }, tab.el);
@@ -11907,9 +11979,13 @@ function desenharDetalhe(box, id) {
   const n = nomeCat(t.categoria, t.subcategoria);
   const site = t.site || g.site || "";
   document.title = (t.nome || t.repo) + " · Landscape · Lookout";
-  const chips = [el("span", { class: "dd-badge b-clube" }, n.c + (n.s ? " › " + n.s : ""))];
+  const mod = LS.modeloDe(t);
+  const chips = [el("span", { class: "dd-badge b-clube" }, n.c + (n.s ? " › " + n.s : "")), modeloEl(t)];
   if (g.linguagem) chips.push(el("span", { class: "dd-badge b-noticia" }, g.linguagem));
-  if (g.licenca) chips.push(el("span", { class: "dd-badge b-noticia", title: "Licença" }, g.licenca));
+  /* modelo explicado em texto e a licença que o GitHub informa (gh.licenca), quando existem */
+  const info = [];
+  if (mod) info.push(el("dt", {}, "Modelo"), el("dd", { id: "ls-mod-exp" }, mod.rotulo + ". " + mod.explicacao));
+  if (g.licenca) info.push(el("dt", {}, "Licença"), el("dd", { id: "ls-licenca" }, el("code", {}, g.licenca), " (informada pelo GitHub)"));
   if (g.arquivado) chips.push(el("span", { class: "dd-badge b-review" }, "arquivado"));
   if (t.erro) chips.push(el("span", { class: "dd-badge b-video" }, t.erro));
   if (!t.gh && !t.erro) chips.push(el("span", { class: "dd-badge b-novo" }, "coletando…"));
@@ -11917,7 +11993,7 @@ function desenharDetalhe(box, id) {
   const topo = el("div", { class: "ls-topo" }, marcaEl(t, "g"),
     el("div", {}, el("h2", {}, t.nome || t.repo), el("span", { class: "ls-repo" }, el("a", { href: ghLink(t.repo), target: "_blank", rel: "noopener" }, t.repo)), site ? el("span", { class: "ls-repo" }, " · ", el("a", { href: site, target: "_blank", rel: "noopener" }, site.replace(/^https?:\/\//, "").replace(/\/$/, ""))) : null),
     ...(() => { const gv = lsV(g, ["descricao"]); if (!gv.descricao) return [null]; const p = el("p", { class: "ls-desc" }, gv.descricao); return [p, gv._trad ? el("div", { class: "n ls-trad" }, lsTroca(gv, "desc", { descricao: p })) : null]; })(),
-    el("div", { class: "ls-chips" }, ...chips), botoes);
+    el("div", { class: "ls-chips" }, ...chips), info.length ? el("dl", { class: "ls-mod-info" }, ...info) : null, botoes);
   if (lsAdmin) {
     const ed = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ls-editar", "aria-haspopup": "dialog", "aria-controls": "ls-folha" }, "Editar");
     ed.addEventListener("click", () => abrirFolhaLs("editar", t));
@@ -12043,28 +12119,35 @@ function desenharFolhaLs() {
     let urls = null, nome, site, feed;
     if (!ed) {
       urls = el("textarea", { class: "dd-input", id: "ls-f-urls", placeholder: "https://github.com/dono/repositorio", spellcheck: "false", autocomplete: "off" });
-      f.append(el("div", {}, el("label", { class: "rotulo", for: "ls-f-urls" }, "URL do GitHub"), urls, el("p", { class: "dica" }, "Uma por linha para adicionar várias de uma vez. Nome, site e feed só valem quando é uma só.")));
+      f.append(el("div", {}, el("label", { class: "rotulo", for: "ls-f-urls" }, "URL do GitHub"), urls, el("p", { class: "dica" }, "Uma por linha para adicionar várias de uma vez. Nome, site e feed só valem quando é uma só; o modelo vale para todas.")));
     }
     const cat = camposCategoria(ed ? t.categoria : lsCats[0] && lsCats[0].id, ed ? t.subcategoria : null);
     nome = el("input", { class: "dd-input", id: "ls-f-nome", maxlength: "60", placeholder: ed ? "" : "o nome do repositório, se ficar vazio", value: ed ? t.nome || "" : "" });
     site = el("input", { class: "dd-input", id: "ls-f-site", type: "url", placeholder: "https://", value: ed ? t.site || "" : "" });
     feed = el("input", { class: "dd-input", id: "ls-f-feed", type: "url", placeholder: "https:// do RSS ou Atom do blog", value: ed ? t.feed || "" : "" });
+    const modelo = el("select", { class: "dd-input", id: "ls-f-modelo" }, el("option", { value: "" }, "Sem etiqueta"), ...LS.MODELOS.map((m) => el("option", { value: m.id }, m.rotulo)));
+    modelo.value = ed && LS.modeloDe(t) ? t.modelo : "";
+    const modDica = el("p", { class: "dica", id: "ls-f-modelo-dica" });
+    const dizModelo = () => { const m = LS.MODELOS.find((x) => x.id === modelo.value); modDica.textContent = m ? m.explicacao : "A tecnologia fica sem etiqueta de modelo."; };
+    modelo.addEventListener("change", dizModelo); dizModelo();
     f.append(cat.el, el("div", {}, el("label", { class: "rotulo", for: "ls-f-nome" }, "Nome de exibição"), nome),
       el("div", {}, el("label", { class: "rotulo", for: "ls-f-site" }, "Site oficial (opcional)"), site, el("p", { class: "dica" }, "Vazio usa o site que o GitHub informa.")),
+      el("div", {}, el("label", { class: "rotulo", for: "ls-f-modelo" }, "Modelo"), modelo, modDica),
       el("div", {}, el("label", { class: "rotulo", for: "ls-f-feed" }, "Feed do blog ou changelog (opcional)"), feed), erroEl);
     corpo.append(f);
     const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-f-salvar" }, ed ? "Salvar" : "Adicionar");
     ok.disabled = lsP.salvando;
     ok.addEventListener("click", async () => {
-      const b = { ...cat.valor(), nome: nome.value.trim(), site: site.value.trim(), feed: feed.value.trim() };
+      const b = { ...cat.valor(), nome: nome.value.trim(), site: site.value.trim(), feed: feed.value.trim(), modelo: modelo.value };
       if (!ed) b.urls = urls.value;
       lsP.salvando = true; ok.disabled = true; erroEl.textContent = "";
       try {
         if (ed) {
           const j = await apiLs("PUT", "/api/admin/landscape/" + encodeURIComponent(t.id), b);
           if (j.categorias) lsCats = j.categorias;
-          const x = (lsLista || []).find((y) => y.id === t.id); if (x) Object.assign(x, { nome: j.nome || x.nome, categoria: j.categoria || x.categoria, subcategoria: j.subcategoria || x.subcategoria, site: j.site ?? x.site });
-          const dd = lsDet.get(t.id); if (dd) Object.assign(dd.tec, { nome: j.nome || dd.tec.nome, categoria: j.categoria || dd.tec.categoria, subcategoria: j.subcategoria || dd.tec.subcategoria, site: j.site ?? dd.tec.site, feed: j.feed ?? dd.tec.feed });
+          const x = (lsLista || []).find((y) => y.id === t.id); if (x) Object.assign(x, { nome: j.nome || x.nome, categoria: j.categoria || x.categoria, subcategoria: j.subcategoria || x.subcategoria, site: j.site ?? x.site, modelo: j.modelo ?? x.modelo });
+          const dd = lsDet.get(t.id); if (dd) Object.assign(dd.tec, { nome: j.nome || dd.tec.nome, categoria: j.categoria || dd.tec.categoria, subcategoria: j.subcategoria || dd.tec.subcategoria, site: j.site ?? dd.tec.site, feed: j.feed ?? dd.tec.feed, modelo: j.modelo ?? dd.tec.modelo });
+          wDados.delete("tech-landscape");
           fecharFolhaLs(); renderLandscape(); carregarDetalhe(t.id);
         } else {
           const j = await apiLs("POST", "/api/admin/landscape", b);
@@ -12150,7 +12233,7 @@ corpos["tech-landscape"] = (d, fm = { c: 1, r: 1 }) => {
   const n = LS.novidades((d && d.tecnologias) || [], Date.now(), fm.c > 1 ? 5 : 3);
   if (!n.length) return [vazioW(d && d.tecnologias && d.tecnologias.length ? "Nada novo nas tecnologias acompanhadas nesta semana." : "Nenhuma tecnologia no landscape ainda.")];
   return [el("ul", { class: "wdg-lista wdg-ls" }, ...n.map((x) => el("li", {}, el("a", { href: "#tech/landscape/" + encodeURIComponent(x.id) }, el("b", {}, x.nome), " " + x.texto),
-    el("div", { class: "n" }, el("span", {}, x.tipo === "release" ? "release" : x.tipo === "hn" ? "Hacker News" : "estrelas"), el("span", {}, x.tipo === "estrelas" ? "nesta semana" : fmtRel(x.data))))))];
+    el("div", { class: "n" }, el("span", {}, x.tipo === "release" ? "release" : x.tipo === "hn" ? "Hacker News" : "estrelas"), el("span", {}, x.tipo === "estrelas" ? "nesta semana" : fmtRel(x.data)), modeloEl(x, true)))))];
 };
 
 /* push: sair do Início para uma seção (ou voltar a ele pela aba) cria uma entrada no histórico, para o "voltar"

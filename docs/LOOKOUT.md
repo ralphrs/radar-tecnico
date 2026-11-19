@@ -334,11 +334,29 @@ Pedido de 12/11. Área da seção Tech no formato do landscape da CNCF: as tecno
 
 - **Rotas por hash**: `#tech/landscape` (a grade) e `#tech/landscape/<id>` (o detalhe). Em Tech, a chave **Notícias | Landscape** fica embaixo da barra de abas. Tech abre nas Notícias; o endereço com `/landscape` abre direto o Landscape. Sem colunas laterais (classe `tech-ls`, como o Início).
 - **Grade**: um bloco por categoria (título e contagem), com as subcategorias como faixas com rótulo e os cartões lado a lado. Cartão pequeno e quadrado: marca, nome, ponto de atividade (verde com commit nos últimos 30 dias, âmbar de 30 a 180, cinza depois ou sem dado) e estrelas em formato curto ("12,4 mil"). Selo "novo" até 14 dias depois de entrar, selo com a versão quando saiu release nos últimos 7 dias. Recém-adicionada aparece tracejada, "coletando…", e a página relê a lista a cada minuto enquanto houver alguma assim.
-- **Em cima**: busca pelo nome, linguagem, licença, ordem (estrelas, crescimento em 30 dias, atividade, nome) e a chave **Grade | Tabela**. A tabela usa `public/tabela.js` (id `landscape`): nome, categoria, estrelas, +30 dias, último release, último commit, linguagem, licença, issues abertas; no celular vira lista. Modo e ordem ficam no `localStorage` (`radar-landscape`).
+- **Em cima**: busca pelo nome, linguagem, licença, ordem (estrelas, crescimento em 30 dias, atividade, nome) e a chave **Grade | Tabela**; embaixo, os chips de **Modelo** (veja "Modelo"). A tabela usa `public/tabela.js` (id `landscape`): nome, categoria, estrelas, +30 dias, último release, último commit, linguagem, licença, modelo, issues abertas; no celular vira lista. Modo e ordem ficam no `localStorage` (`radar-landscape`).
 - **Celular**: categorias empilhadas, 3 cartões por linha (2 abaixo de 370 px). Conferido com toque emulado em 384 e 360 px: nada alarga a página.
 - **Detalhe**: cabeçalho (marca, nome, `owner/repo` com link, descrição do GitHub, site, categoria, linguagem, licença, "arquivado", botões GitHub e Site) e os blocos, cada um com a fonte e "atualizado há X": Números (estrelas com a série diária em gráfico e o ganho em 7 e 30 dias, forks, watchers, issues abertas sem os PRs, PRs abertos, contribuidores, tamanho, criado em, último commit, barra de linguagens), Versões (10 últimos releases, pré-release marcado, primeiras linhas das notas em texto puro, cadência em 90 dias), Sobre (primeiros parágrafos do README em texto puro, até ~1.200 caracteres, topics e "Ler o README completo no GitHub"), Parecidas (a mesma subcategoria, com estrelas, atividade e licença), Notícias (do Lookout, do Hacker News com "Mais pontos | Mais recentes" e, quando o Admin informa o feed, o blog oficial), O que estão dizendo (comentários do HN, posts do Reddit e issues e PRs com mais 👍) e Minhas notas (só o Admin).
 - **Navegação**: abrir o detalhe cria entrada no histórico; o Voltar do navegador (e o "← Landscape") traz a grade na mesma rolagem. O logotipo leva ao Início. Detalhe aberto pelo widget volta ao Início pelo Voltar.
 - **Admin**: "Adicionar tecnologia" abre a folha lateral (de baixo no celular) com a URL do GitHub (várias, uma por linha, entram em lote), categoria e subcategoria (escolher ou "Nova…"), nome, site e feed (os três só com uma URL). No detalhe, "Editar" (nome, categoria, subcategoria, site, feed) e "Tirar do landscape", com confirmação na própria tela (sem `confirm()`); tirar apaga só o doc daquela tecnologia. "Organizar categorias": renomear, subir e descer categorias e subcategorias, criar e tirar as vazias e mover cada tecnologia para outra subcategoria (vale na hora). Sem `GITHUB_TOKEN`, a grade mostra ao Admin "sem token do GitHub: coleta lenta"; com o GitHub pausado, até quando.
+
+### Modelo (pedido de 19/11)
+
+Cada tecnologia pode ter uma etiqueta com o modelo dela, no campo `modelo` do doc (collection `landscape`). Quem grava é só o Admin; o cron de coleta nunca mexe (o patch dele não tem a chave, e o teste confere). A tabela é uma só, `Landscape.MODELOS` em `public/landscape.js` (id fixo, rótulo, curto para o cartão, explicação e tom), e `Landscape.modeloDe(doc)` devolve a entrada ou null.
+
+| id | Rótulo | Quer dizer | Tom |
+|---|---|---|---|
+| `aberto` | Open source | Código aberto, sem oferta paga de quem mantém o projeto. | verde |
+| `aberto-pago` | Open source + nuvem paga ("Open + nuvem" no cartão) | Código aberto; a empresa por trás vende a versão hospedada ou recursos extras. | verde-azulado |
+| `fonte-disponivel` | Código disponível ("Cód. disponível" no cartão) | O código é público, mas a licença restringe o uso (BSL, SSPL, Elastic e parecidas). | âmbar |
+| `freemium` | Freemium | Produto fechado com plano grátis. | azul |
+| `pago` | Pago | Produto fechado, sem plano grátis que sirva para uso de verdade. | cinza escuro, cheio |
+
+- Vazio ou valor fora da tabela: sem etiqueta. A leitura devolve `modelo: ""` nesses casos; nada de "desconhecido" na tela.
+- **Tela**: etiqueta (o mesmo `dd-badge`, com texto sempre; as cores são os tokens `--mod-*` dos dois temas, contraste AA) no cartão da grade, numa linha que existe também em quem não tem etiqueta (todos os cartões ficam da mesma altura), na linha do widget `tech-landscape`, na coluna Modelo da tabela e no topo do detalhe, ao lado da categoria. No detalhe, as linhas "Modelo" (a explicação em texto) e "Licença" (o `gh.licenca` do GitHub, quando existe; antes era um chip).
+- **Filtro**: chips por modelo só dos que existem entre as tecnologias carregadas, com a contagem do que a busca, a linguagem e a licença deixam; vários valem juntos (qualquer um deles). A regra é `Landscape.filtrar(lista, { busca, ling, lic, categoria, modelos })`, pura e testada. No celular o chip mostra o curto. "O que são as etiquetas?" abre as cinco definições.
+- **Admin**: campo "Modelo" (as cinco e "Sem etiqueta") em Adicionar (vale para todas as URLs do lote) e em Editar. `POST /api/admin/landscape` e `PUT /api/admin/landscape/<id>` aceitam `modelo`, conferem com `Landscape.validarModelo` (400 "Modelo desconhecido." para o que não está na tabela) e gravam pelo `json_patch` do Admin; "" ou null tira a chave.
+- **Leitura**: `GET /api/landscape` devolve `modelo` em cada tecnologia (mais um campo no `json_object` da consulta leve) e `GET /api/landscape/<id>` em `tec.modelo` e nas parecidas.
 
 ### Imagens
 
@@ -356,7 +374,7 @@ A marca do cartão é o avatar do dono no GitHub **só quando o dono é organiza
 
 - `landscape/<id>` (collection `landscape`, id `owner--repo` em minúsculas, `[a-z0-9._-]+--[a-z0-9._-]+`; o primeiro `--` separa, porque login do GitHub não tem `--`):
   ```
-  { repo, nome, categoria, subcategoria, site, feed, adicionado, por: "admin" | "semente",
+  { repo, nome, categoria, subcategoria, site, feed, modelo?, adicionado, por: "admin" | "semente",
     gh: { nomeCompleto, descricao, site, estrelas, forks, watchers, issuesEPrs, tamanho, linguagem, licenca, topics, criado, push, arquivado,
           padrao, url, dono: { login, tipo, id }, marca, ultimoCommit, linguagens: [{ nome, bytes, pct }], contribuidores, prs },
     releases: [{ tag, nome, data, pre, notas, url }], sobre, gh_destaques: [{ numero, titulo, url, estado, tipo: "issue" | "pr", reacoes, comentarios, criado, autor }],
@@ -364,7 +382,7 @@ A marca do cartão é o avatar do dono no GitHub **só quando o dono é organiza
     blog?: [{ titulo, url, publicado }], serie: [[AAAA-MM-DD, estrelas], ... até 400], leve: {...}, em: { <parte>: iso }, atualizado, erro? }
   ```
   `leve` (`Landscape.leveDe`) é o resumo da grade, da tabela e do widget: `coletando`, `estrelas`, `ganho7`, `ganho30`, `release`, `commit`, `linguagem`, `licenca`, `issues`, `arquivado`, `marca`, `dono` (o tipo) e `hn` (a história de mais pontos da semana). Em `por` vai "admin" ou "semente", nunca o e-mail. A série tem um ponto por dia (dia de São Paulo; o mesmo dia troca o ponto) e o ganho em N dias é o último ponto menos o mais recente com pelo menos N dias de idade (sem ponto tão velho: "sem histórico ainda").
-- Quem grava o quê: o Admin grava os campos dele e o cron os dele, cada um com `UPDATE docs SET data = json_patch(data, ?) … WHERE collection = 'landscape' AND id = ?` (chave explícita; o cron nunca recria um doc que o Admin tirou no meio da rodada).
+- Quem grava o quê: o Admin grava os campos dele (nome, categoria, subcategoria, site, feed, modelo) e o cron os dele, cada um com `UPDATE docs SET data = json_patch(data, ?) … WHERE collection = 'landscape' AND id = ?` (chave explícita; o cron nunca recria um doc que o Admin tirou no meio da rodada).
 - `meta/landscape-categorias`: `{ categorias: [{ id, nome, subcategorias: [{ id, nome }] }], atualizado }`. Até 30 categorias e 30 subcategorias em cada; id `[a-z0-9-]{1,40}`, tirado do nome quando falta. Categoria ou subcategoria com tecnologia dentro não sai (409).
 - `landscape/<email>`, id `notas`: `{ porId: { <id>: { situacao: "avaliando" | "testando" | "uso" | "descartei" | "", nota (até 2.000), link (https), atualizado } }, atualizado }`. Nota vazia apaga a entrada. O cron não toca aqui; excluir um convidado apaga junto.
 - `_sistema/landscape-estado`: `{ porId: { <id>: { marcas: { <parte>: iso }, tent: { <parte>: iso }, feed } }, pausa: { github?: { ate, status, desde }, hn?: {...} }, github: { restante, limite, reset, quando }, rodada: { quando, pedidos, partes, erros?, parou? }, semToken }`.
@@ -398,7 +416,7 @@ As sete primeiras e as quatro categorias iniciais entram pelo próprio cron, na 
 - `GET /api/landscape`: `{ tecnologias: [campos leves], categorias, admin, max }` (403 sem a seção Tech). Uma consulta: `SELECT id, data FROM docs WHERE 0 UNION ALL SELECT id, json_object(<campos leves>) …`, que o espelho aceita e não traz README, série nem comentários.
 - `GET /api/landscape/<id>`: `{ id, tec, noticias, reddit, parecidas, categorias, admin }` (404 se não existe, 400 com id fora do formato).
 - `GET` e `PUT /api/landscape/<id>/notas`: só o Admin (os outros recebem 404).
-- `GET /api/admin/landscape` (estado da coleta, sem token, pausas, falhas e a sonda), `POST /api/admin/landscape` (`{ urls, categoria, subcategoria | novaCategoria, novaSubcategoria, nome?, site?, feed? }`), `PUT` e `DELETE /api/admin/landscape/<id>`, `PUT /api/admin/landscape-categorias`. Quem não é Admin recebe **404** (a rota fica antes do bloqueio genérico de `/api/admin/`, que dá 403).
+- `GET /api/admin/landscape` (estado da coleta, sem token, pausas, falhas e a sonda), `POST /api/admin/landscape` (`{ urls, categoria, subcategoria | novaCategoria, novaSubcategoria, nome?, site?, feed?, modelo? }`), `PUT` e `DELETE /api/admin/landscape/<id>`, `PUT /api/admin/landscape-categorias`. Quem não é Admin recebe **404** (a rota fica antes do bloqueio genérico de `/api/admin/`, que dá 403).
 - Limites: até 300 tecnologias, até 50 URLs por lote, corpo até 8 KB, ids `[a-z0-9._-]+--[a-z0-9._-]+`, URL do GitHub validada por regex (`Landscape.lerUrlRepo`: aceita com ou sem barra, `.git` e caminho extra; recusa outro site, gist, página do GitHub, dono ou repositório fora do formato), site e feed só `http(s)` (link das notas só `https`), nome até 60.
 
 ### Widget
