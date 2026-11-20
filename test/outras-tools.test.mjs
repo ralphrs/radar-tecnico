@@ -39,9 +39,9 @@ test("abaDe: id da tabela de abas; sem o campo ou com valor fora dela, Tools", (
   assert.equal(L.abaDe({ aba: "linguagens" }), "linguagens");
   for (const d of [{}, { aba: "tools" }, { aba: "Outras" }, { aba: "other" }, { aba: "languages" }, { aba: "" }, { aba: null }, { aba: 1 }, null, undefined, "outras", []])
     assert.equal(L.abaDe(d), "tools", JSON.stringify(d));
-  assert.equal(L.nomeAba("outras"), "Other Tools"); assert.equal(L.nomeAba("linguagens"), "Languages"); assert.equal(L.nomeAba("tools"), "Tools"); assert.equal(L.nomeAba("x"), "Tools");
+  assert.equal(L.nomeAba("outras"), "Outras ferramentas"); assert.equal(L.nomeAba("linguagens"), "Linguagens"); assert.equal(L.nomeAba("tools"), "Ferramentas"); assert.equal(L.nomeAba("x"), "Ferramentas");
   // a tabela: id, rótulo e hash de cada aba, na ordem da página (Cloud entra depois de Tools)
-  assert.deepEqual(L.ABAS.map((a) => [a.id, a.rotulo, a.hash]), [["tools", "Tools", "tools"], ["linguagens", "Languages", "languages"], ["outras", "Other Tools", "other"]]);
+  assert.deepEqual(L.ABAS.map((a) => [a.id, a.rotulo, a.hash]), [["tools", "Ferramentas", "tools"], ["linguagens", "Linguagens", "languages"], ["outras", "Outras ferramentas", "other"]]);
   assert.equal(L.abaPorId("linguagens").titulo, "Linguagens e frameworks");
   assert.equal(L.abaPorId("linguagens").subtitulo, "linguagens e frameworks por tipo de uso");
   assert.equal(L.abaPorId("outras").vazio, "Nenhuma ferramenta aqui ainda.");
@@ -61,8 +61,8 @@ test("abaDe: id da tabela de abas; sem o campo ou com valor fora dela, Tools", (
   // categoria da aba
   assert.ok(L.categoriaDaAba({ id: "a", nome: "A" }, "tools").ok);
   assert.ok(L.categoriaDaAba(FINANCAS, "outras").ok);
-  assert.match(L.categoriaDaAba(FINANCAS, "tools").erro, /Finanças e investimentos é da aba Other Tools.*aba Tools/);
-  assert.match(L.categoriaDaAba({ id: "dados", nome: "Dados e coleta" }, "outras").erro, /aba Tools.*aba Other Tools/);
+  assert.match(L.categoriaDaAba(FINANCAS, "tools").erro, /Finanças e investimentos é da aba Outras ferramentas.*aba Ferramentas/);
+  assert.match(L.categoriaDaAba({ id: "dados", nome: "Dados e coleta" }, "outras").erro, /aba Ferramentas.*aba Outras ferramentas/);
   assert.ok(L.categoriaDaAba(null, "tools").erro);
   // validarCategorias guarda só aba: "outras"
   const v = L.validarCategorias({ categorias: [{ nome: "Um", aba: "outras", subcategorias: [] }, { nome: "Dois", aba: "tools", subcategorias: [] }, { nome: "Três", aba: "lixo", subcategorias: [] }, { nome: "Quatro", aba: "linguagens", subcategorias: [] }] });
@@ -75,19 +75,19 @@ test("abaDe: id da tabela de abas; sem o campo ou com valor fora dela, Tools", (
 test("escolherCategoria: só categoria da aba; a nova nasce na aba pedida", () => {
   const cats = [...CATEGORIAS_INICIAIS, FINANCAS];
   assert.equal(escolherCategoria(cats, { categoria: "financas", subcategoria: "bolsa" }, "outras").cid, "financas");
-  assert.match(escolherCategoria(cats, { categoria: "financas", subcategoria: "bolsa" }, "tools").erro, /aba Other Tools/);
-  assert.match(escolherCategoria(cats, { categoria: "dados", subcategoria: "web-scraping" }, "outras").erro, /aba Tools/);
+  assert.match(escolherCategoria(cats, { categoria: "financas", subcategoria: "bolsa" }, "tools").erro, /aba Outras ferramentas/);
+  assert.match(escolherCategoria(cats, { categoria: "dados", subcategoria: "web-scraping" }, "outras").erro, /aba Ferramentas/);
   assert.equal(escolherCategoria(cats, { categoria: "dados", subcategoria: "web-scraping" }).cid, "dados", "sem aba: Tools, como antes");
   const nova = escolherCategoria(cats, { novaCategoria: "Produtividade", novaSubcategoria: "Notas" }, "outras");
   assert.equal(nova.mudou, true);
   assert.equal(nova.categorias.find((c) => c.id === "produtividade").aba, "outras");
-  assert.match(escolherCategoria(cats, { categoria: "financas", subcategoria: "bolsa" }, "linguagens").erro, /aba Other Tools\. Escolha uma categoria da aba Languages/);
+  assert.match(escolherCategoria(cats, { categoria: "financas", subcategoria: "bolsa" }, "linguagens").erro, /aba Outras ferramentas\. Escolha uma categoria da aba Linguagens/);
   assert.equal(escolherCategoria([...cats, BACKEND], { categoria: "back-end", subcategoria: "frameworks" }, "linguagens").sid, "frameworks");
   assert.equal(escolherCategoria(cats, { novaCategoria: "Mobile", novaSubcategoria: "Linguagens" }, "linguagens").categorias.find((c) => c.id === "mobile").aba, "linguagens");
   const novaTools = escolherCategoria(cats, { novaCategoria: "Segurança", novaSubcategoria: "Segredos" }, "tools");
   assert.equal(novaTools.categorias.find((c) => c.id === "seguranca").aba, undefined, "de Tools: sem o campo");
   // nome que já existe noutra aba não vira categoria nova: é recusado
-  assert.match(escolherCategoria(cats, { novaCategoria: "Finanças", novaSubcategoria: "X" }, "tools").erro, /aba Other Tools/);
+  assert.match(escolherCategoria(cats, { novaCategoria: "Finanças", novaSubcategoria: "X" }, "tools").erro, /aba Outras ferramentas/);
 });
 
 // ---------- endereço e voltar ----------
@@ -110,7 +110,7 @@ test("hash: #arch/other e #arch/languages abrem as abas extras (grade, detalhe, 
   // a lista das abas de comparação profunda não ganhou "other" (Other Tools pede com "tools")
   assert.deepEqual(A.ABAS, ["tools", "cloud"]);
   assert.deepEqual(A.abasHash(), ["tools", "cloud", "languages", "other"], "a ordem das abas na página");
-  assert.deepEqual(A.abasHash().map(A.rotuloAba), ["Tools", "Cloud", "Languages", "Other Tools"]);
+  assert.deepEqual(A.abasHash().map(A.rotuloAba), ["Ferramentas", "Cloud", "Linguagens", "Outras ferramentas"]);
   assert.equal(A.abaDossie("languages"), "tools"); assert.equal(A.abaDoc("languages"), "linguagens"); assert.equal(A.abaHashDe({ aba: "linguagens" }), "languages");
   assert.equal(A.ehAbaTec("languages"), true); assert.equal(A.ehAbaTec("cloud"), false); assert.equal(A.ehAbaTec("stacks"), false);
   assert.equal(A.abaDossie("other"), "tools"); assert.equal(A.abaDossie("tools"), "tools"); assert.equal(A.abaDossie("cloud"), "cloud");
@@ -120,12 +120,12 @@ test("hash: #arch/other e #arch/languages abrem as abas extras (grade, detalhe, 
 
 test("voltar do detalhe, da comparação e das profundas leva à grade da aba do endereço", () => {
   const de = (h) => A.voltarPara(A.lerHash(h));
-  assert.deepEqual([de("#arch/other/neosaas--openstock").hash, de("#arch/other/neosaas--openstock").rotulo], ["#arch/other", "← Other Tools"]);
+  assert.deepEqual([de("#arch/other/neosaas--openstock").hash, de("#arch/other/neosaas--openstock").rotulo], ["#arch/other", "← Outras ferramentas"]);
   assert.equal(de("#arch/other/comparar/a--b,c--d/profunda").hash, "#arch/other");
   assert.equal(de("#arch/other/profundas").hash, "#arch/other");
-  assert.deepEqual([de("#arch/languages/golang--go").hash, de("#arch/languages/golang--go").rotulo], ["#arch/languages", "← Languages"]);
+  assert.deepEqual([de("#arch/languages/golang--go").hash, de("#arch/languages/golang--go").rotulo], ["#arch/languages", "← Linguagens"]);
   assert.equal(de("#arch/languages/comparar/a--b,c--d").hash, "#arch/languages");
-  assert.deepEqual([de("#arch/tools/signoz--signoz").hash, de("#arch/tools/signoz--signoz").rotulo], ["#arch/tools", "← Tools"]);
+  assert.deepEqual([de("#arch/tools/signoz--signoz").hash, de("#arch/tools/signoz--signoz").rotulo], ["#arch/tools", "← Ferramentas"]);
   assert.equal(de("#arch/tools/comparar/a--b,c--d").hash, "#arch/tools");
   // Cloud volta com os filtros que estavam no endereço
   const c = de("#arch/cloud/comparar/aws--amazon-s3,cloudflare--r2");
@@ -173,9 +173,9 @@ test("Admin: grava a aba pelo json_patch e recusa categoria de outra aba (400 co
   const put = (id, b) => rotaAdminLandscape(req("PUT", b), env, ADMIN, "", id, dep);
   // POST: Other Tools em categoria de Tools, Tools em categoria de Other Tools, aba desconhecida
   let r = await corpoDe(await post({ urls: "https://github.com/neosaas/openstock", aba: "outras", categoria: "dados", subcategoria: "web-scraping" }));
-  assert.equal(r.status, 400); assert.match(r.j.erro, /Dados e coleta é da aba Tools\. Escolha uma categoria da aba Other Tools/);
+  assert.equal(r.status, 400); assert.match(r.j.erro, /Dados e coleta é da aba Ferramentas\. Escolha uma categoria da aba Outras ferramentas/);
   r = await corpoDe(await post({ urls: "https://github.com/neosaas/openstock", categoria: "financas", subcategoria: "bolsa" }));
-  assert.equal(r.status, 400); assert.match(r.j.erro, /aba Other Tools/);
+  assert.equal(r.status, 400); assert.match(r.j.erro, /aba Outras ferramentas/);
   r = await corpoDe(await post({ urls: "https://github.com/neosaas/openstock", aba: "other", categoria: "financas", subcategoria: "bolsa" }));
   assert.equal(r.status, 400); assert.match(r.j.erro, /Aba desconhecida/);
   assert.equal(docDe(env, "neosaas--openstock"), null, "nada entrou");
@@ -186,14 +186,14 @@ test("Admin: grava a aba pelo json_patch e recusa categoria de outra aba (400 co
   assert.equal(r.j.categorias.find((c) => c.id === "produtividade").aba, "outras");
   // PUT: trocar de aba sem escolher categoria da aba nova
   r = await corpoDe(await put("neosaas--openstock", { aba: "" }));
-  assert.equal(r.status, 400); assert.match(r.j.erro, /Para passar para a aba Tools, escolha uma categoria dessa aba/);
+  assert.equal(r.status, 400); assert.match(r.j.erro, /Para passar para a aba Ferramentas, escolha uma categoria dessa aba/);
   r = await corpoDe(await put("neosaas--openstock", { aba: "", categoria: "financas", subcategoria: "bolsa" }));
-  assert.equal(r.status, 400); assert.match(r.j.erro, /aba Other Tools/);
+  assert.equal(r.status, 400); assert.match(r.j.erro, /aba Outras ferramentas/);
   // categoria de outra aba sem trocar a aba
   r = await corpoDe(await put("neosaas--openstock", { categoria: "dados", subcategoria: "web-scraping" }));
-  assert.equal(r.status, 400); assert.match(r.j.erro, /Dados e coleta é da aba Tools/);
+  assert.equal(r.status, 400); assert.match(r.j.erro, /Dados e coleta é da aba Ferramentas/);
   r = await corpoDe(await put("signoz--signoz", { categoria: "financas", subcategoria: "bolsa" }));
-  assert.equal(r.status, 400); assert.match(r.j.erro, /aba Other Tools/);
+  assert.equal(r.status, 400); assert.match(r.j.erro, /aba Outras ferramentas/);
   assert.equal((await put("signoz--signoz", { aba: "x" })).status, 400);
   assert.equal(docDe(env, "signoz--signoz").categoria, "observabilidade", "nada mudou");
   // dentro da mesma aba, mover funciona como antes
@@ -218,7 +218,7 @@ test("categorias: trocar a aba de uma categoria com tecnologia da outra aba dent
   const cats = (await corpoDe(await rotaLandscape(req("GET"), env, ADMIN, "", dep))).j.categorias;
   const semAba = cats.map((c) => (c.id === "financas" ? { ...c, aba: "tools" } : c));
   let r = await corpoDe(await rotaAdminLandscape(req("PUT", { categorias: semAba }), env, ADMIN, "categorias", "", dep));
-  assert.equal(r.status, 409); assert.match(r.j.erro, /Finanças e investimentos tem tecnologia da aba Other Tools/);
+  assert.equal(r.status, 409); assert.match(r.j.erro, /Finanças e investimentos tem tecnologia da aba Outras ferramentas/);
   const dadosOutras = cats.map((c) => (c.id === "dados" ? { ...c, aba: "outras" } : c));
   r = await corpoDe(await rotaAdminLandscape(req("PUT", { categorias: dadosOutras }), env, ADMIN, "categorias", "", dep));
   assert.equal(r.status, 409);
@@ -314,9 +314,9 @@ test("Languages: grava, separa na lista leve e recusa categoria de outra aba", a
   let r = await corpoDe(await post({ urls: "https://github.com/golang/go", nome: "Go", aba: "linguagens", categoria: "back-end", subcategoria: "linguagens" }));
   assert.equal(r.status, 200, JSON.stringify(r.j)); assert.equal(r.j.adicionadas[0].aba, "linguagens");
   r = await corpoDe(await post({ urls: "https://github.com/gin-gonic/gin", aba: "linguagens", categoria: "financas", subcategoria: "bolsa" }));
-  assert.equal(r.status, 400); assert.match(r.j.erro, /Finanças e investimentos é da aba Other Tools\. Escolha uma categoria da aba Languages/);
+  assert.equal(r.status, 400); assert.match(r.j.erro, /Finanças e investimentos é da aba Outras ferramentas\. Escolha uma categoria da aba Linguagens/);
   r = await corpoDe(await post({ urls: "https://github.com/gin-gonic/gin", aba: "outras", categoria: "back-end", subcategoria: "frameworks" }));
-  assert.equal(r.status, 400); assert.match(r.j.erro, /Back-end é da aba Languages/);
+  assert.equal(r.status, 400); assert.match(r.j.erro, /Back-end é da aba Linguagens/);
   await post({ urls: "https://github.com/neosaas/openstock", aba: "outras", categoria: "financas", subcategoria: "bolsa" });
   const g = (await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "", dep))).j;
   assert.deepEqual(L.daAba(g.tecnologias, "linguagens").map((t) => t.id), ["golang--go"]);

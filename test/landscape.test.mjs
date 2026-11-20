@@ -761,3 +761,82 @@ test("uso nas rotas e no filtro: o Admin grava e recusa, o cron mantém, lista l
   await put({ uso: [], uso_nota: "" }, "signoz--signoz");
   assert.ok(!("uso" in docDe(env, "signoz--signoz")) && !("uso_nota" in docDe(env, "signoz--signoz")));
 });
+
+// ---------- para reavaliar (pedido de 19/11, 23h46) ----------
+test("reavaliarDe: marca saneada ou null; validarReavaliar do corpo do Admin; contagem e filtro", () => {
+  assert.equal(L.reavaliarDe({}), null, "sem o campo: não está marcada");
+  for (const v of [null, undefined, true, "sim", 1, [], ["x"]]) assert.equal(L.reavaliarDe({ reavaliar: v }), null, JSON.stringify(v));
+  assert.equal(L.reavaliarDe(null), null); assert.equal(L.reavaliarDe("x"), null);
+  assert.deepEqual(L.reavaliarDe({ reavaliar: { motivo: "  Parado  há\n um ano. ", em: "2026-11-19T23:00:00Z", por: "ia" } }), { motivo: "Parado há um ano.", em: "2026-11-19T23:00:00.000Z", por: "ia" });
+  assert.deepEqual(L.reavaliarDe({ reavaliar: { motivo: 3, em: "ontem", por: "robô" } }), { motivo: "", em: null, por: null }, "campo ruim vira vazio, a marca continua");
+  assert.equal(L.reavaliarDe({ reavaliar: { motivo: "x".repeat(300), por: "admin" } }).motivo.length, 240);
+  assert.equal(L.reavaliarDe({ reavaliar: { motivo: "a", extra: "<b>" } }).extra, undefined, "só os três campos do contrato");
+  assert.deepEqual(L.validarReavaliar(undefined), { mexe: false });
+  assert.deepEqual(L.validarReavaliar(null), { mexe: true, reavaliar: null });
+  assert.deepEqual(L.validarReavaliar({ motivo: " sem  commit " }), { mexe: true, reavaliar: { motivo: "sem commit" } });
+  assert.deepEqual(L.validarReavaliar({}), { mexe: true, reavaliar: { motivo: "" } });
+  for (const v of [true, "x", 3, [], { motivo: 3 }, { motivo: "x".repeat(241) }]) assert.match(L.validarReavaliar(v).erro || "", /reavaliar/, JSON.stringify(v));
+  const lista = [{ id: "a--a", nome: "Alfa", modelo: "aberto", reavaliar: { motivo: "m" } }, { id: "b--b", nome: "Beta", modelo: "pago", reavaliar: { motivo: "" } }, { id: "c--c", nome: "Gama", modelo: "aberto" }, { id: "d--d", nome: "Delta", reavaliar: null }];
+  assert.equal(L.contarReavaliar(lista), 2); assert.equal(L.contarReavaliar([]), 0); assert.equal(L.contarReavaliar(null), 0);
+  const ids = (f) => L.filtrar(lista, f).map((x) => x.id).join(",");
+  assert.equal(ids({ reavaliar: true }), "a--a,b--b");
+  assert.equal(ids({ reavaliar: false }), "a--a,b--b,c--c,d--d");
+  assert.equal(ids({ reavaliar: true, modelos: ["aberto"] }), "a--a", "com o modelo");
+  assert.equal(ids({ reavaliar: true, busca: "beta" }), "b--b", "com a busca");
+  assert.equal(ids({ reavaliar: true, busca: "gama" }), "", "busca sem marcada");
+});
+
+test("reavaliar nas rotas: lista leve e detalhe devolvem; o Admin marca e tira; tamanho validado; o cron mantém", async () => {
+  const env = { DB: d1Falso(), GITHUB_TOKEN: "t" };
+  const dep = espelhoFalso();
+  await semearLandscape(env, AGORA);
+  // como em produção: quem revisa grava direto no banco, por "ia"
+  env.DB.db.prepare("UPDATE docs SET data = json_set(data, '$.reavaliar', json(?)) WHERE collection = 'landscape' AND id = ?").run(JSON.stringify({ motivo: "Sem commit há 8 meses e poucas estrelas.", em: "2026-11-19T22:00:00Z", por: "ia" }), "stablyai--orca");
+  const put = async (b, id = "signoz--signoz", quem = ADMIN) => corpoDe(await rotaAdminLandscape(req("PUT", b), env, quem, "", id, dep));
+  const marca = await put({ reavaliar: { motivo: "Duplica o OpenObserve.", em: "2000-01-01T00:00:00Z", por: "ia" } });
+  assert.equal(marca.status, 200, JSON.stringify(marca.j));
+  const r = docDe(env, "signoz--signoz").reavaliar;
+  assert.equal(r.motivo, "Duplica o OpenObserve."); assert.equal(r.por, "admin", "o Admin grava por admin, nunca o que veio");
+  assert.ok(Date.parse(r.em) > Date.parse("2026-01-01"), "em é a hora do servidor");
+  assert.deepEqual(marca.j.reavaliar, r);
+  assert.equal(docDe(env, "signoz--signoz").nome, "SigNoz", "o resto do doc fica");
+  assert.ok(dep.gravados.some((g) => g.id === "signoz--signoz" && JSON.parse(g.data).reavaliar), "write-through no espelho");
+  // recusa: tamanho e tipo, com mensagem em pt-BR; nada grava
+  for (const b of [{ reavaliar: { motivo: "x".repeat(241) } }, { reavaliar: "sim" }, { reavaliar: { motivo: 7 } }, { nome: "Outro", reavaliar: true }]) {
+    const x = await put(b);
+    assert.equal(x.status, 400, JSON.stringify(b)); assert.match(x.j.erro, /reavaliar/);
+  }
+  assert.equal(docDe(env, "signoz--signoz").nome, "SigNoz"); assert.equal(docDe(env, "signoz--signoz").reavaliar.motivo, "Duplica o OpenObserve.");
+  assert.equal((await put({ reavaliar: null }, "signoz--signoz", CONVIDADO)).status, 404, "quem não é Admin: 404");
+  // editar outro campo não mexe na marca
+  await put({ nome: "SigNoz" });
+  assert.equal(docDe(env, "signoz--signoz").reavaliar.motivo, "Duplica o OpenObserve.");
+  // marca antiga com chave fora do contrato: marcar de novo não deixa resto
+  env.DB.db.prepare("UPDATE docs SET data = json_set(data, '$.reavaliar.lote', 'r1') WHERE collection = 'landscape' AND id = 'stablyai--orca'").run();
+  // o cron de coleta roda e não apaga nem muda a marca
+  const antes = Object.fromEntries(env.DB.db.prepare("SELECT id, json_extract(data, '$.reavaliar') AS r FROM docs WHERE collection = 'landscape'").all().map((x) => [x.id, x.r]));
+  await comFetch(fetchFalso(), async () => { for (let i = 0; i < 30; i++) await cronLandscape(env, AGORA + i * 60_000); });
+  assert.equal(docDe(env, "openobserve--openobserve").gh.estrelas, 23000, "a coleta rodou");
+  const depois = Object.fromEntries(env.DB.db.prepare("SELECT id, json_extract(data, '$.reavaliar') AS r FROM docs WHERE collection = 'landscape'").all().map((x) => [x.id, x.r]));
+  assert.deepEqual(depois, antes, "reavaliar igual em todas depois da coleta");
+  // lista leve e detalhe devolvem o campo saneado (sem marca: null)
+  const g = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "", dep));
+  const por = Object.fromEntries(g.j.tecnologias.map((x) => [x.id, x.reavaliar]));
+  assert.deepEqual(por["stablyai--orca"], { motivo: "Sem commit há 8 meses e poucas estrelas.", em: "2026-11-19T22:00:00.000Z", por: "ia" }, "sem a chave de fora do contrato");
+  assert.equal(por["signoz--signoz"].por, "admin"); assert.equal(por["openobserve--openobserve"], null);
+  assert.equal(L.filtrar(g.j.tecnologias, { reavaliar: true }).length, 2);
+  assert.deepEqual(L.filtrar(g.j.tecnologias, { reavaliar: true, busca: "orca" }).map((x) => x.id), ["stablyai--orca"], "filtro combinado com a busca");
+  const d = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "stablyai--orca", dep));
+  assert.equal(d.j.tec.reavaliar.motivo, "Sem commit há 8 meses e poucas estrelas.");
+  assert.equal((await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "openobserve--openobserve", dep))).j.tec.reavaliar, null);
+  const ds = await corpoDe(await rotaLandscape(req("GET"), env, CONVIDADO, "openobserve--openobserve", dep));
+  assert.equal(ds.j.parecidas.find((x) => x.id === "signoz--signoz").reavaliar.por, "admin", "as parecidas vêm da lista leve");
+  // marcar de novo por cima de marca com chave de fora: a chave sai
+  await put({ reavaliar: { motivo: "Revisar depois do release." } }, "stablyai--orca");
+  assert.deepEqual(Object.keys(docDe(env, "stablyai--orca").reavaliar).sort(), ["em", "motivo", "por"]);
+  // tirar: null apaga a chave pelo json_patch
+  const tira = await put({ reavaliar: null });
+  assert.equal(tira.status, 200); assert.equal(tira.j.reavaliar, null);
+  assert.ok(!("reavaliar" in docDe(env, "signoz--signoz")), "Manter no radar: a chave sai do doc");
+  assert.ok(env.DB.log.some((s) => /json_patch/.test(s) && /WHERE collection = 'landscape' AND id = \?/.test(s)), "pelo json_patch, com a chave");
+});

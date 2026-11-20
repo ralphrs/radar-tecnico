@@ -33,7 +33,7 @@
      máquina de Tools (a mesma collection `landscape`, com `aba` no doc). Lidas da tabela na hora (o landscape.js pode
      carregar depois deste arquivo). ABAS continua sendo a lista das abas de pedido de comparação profunda: as extras
      pedem com "tools". */
-  const tabelaLs = () => (raiz.Landscape && Array.isArray(raiz.Landscape.ABAS) ? raiz.Landscape.ABAS : [{ id: "tools", rotulo: "Tools", hash: "tools" }]);
+  const tabelaLs = () => (raiz.Landscape && Array.isArray(raiz.Landscape.ABAS) ? raiz.Landscape.ABAS : [{ id: "tools", rotulo: "Ferramentas", hash: "tools" }]);
   const abasHash = () => { const l = tabelaLs().map((a) => a.hash); return [l[0], "cloud", ...l.slice(1)]; };
   const rotuloAba = (aba) => (aba === "cloud" ? "Cloud" : (tabelaLs().find((a) => a.hash === aba) || tabelaLs()[0]).rotulo);
   /* aba do endereço -> id da aba do doc da tecnologia ("tools", "linguagens", "outras"), e o contrário */
@@ -47,7 +47,7 @@
   /* aba do endereço -> aba do pedido de comparação profunda (arch-dossies só conhece tools e cloud) */
   const abaDossie = (aba) => (aba === "cloud" ? "cloud" : "tools");
   /* Voltar do detalhe, da comparação e das comparações profundas: a grade da aba de onde a pessoa veio, que é a aba que
-     está no endereço (Cloud com os filtros). Devolve { estado, hash, rotulo } ("← Other Tools"). */
+     está no endereço (Cloud com os filtros). Devolve { estado, hash, rotulo } ("← Outras ferramentas"). */
   function voltarPara(e) {
     const aba = e && abasHash().includes(e.aba) ? e.aba : "tools";
     const estado = { aba, tela: "grade", id: null, ids: [], profunda: false, filtros: aba === "cloud" && e && e.filtros ? e.filtros : FILTROS_VAZIOS() };

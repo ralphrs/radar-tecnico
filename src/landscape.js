@@ -7,8 +7,12 @@
 //
 // Banco (D1, com espelho de leitura como as outras collections):
 // - landscape/<id>: um doc por tecnologia (id = owner--repo em minúsculas). O Admin grava os campos dele (repo, nome,
-//   categoria, subcategoria, site, feed, modelo, aba, adicionado, por) e o cron os dele (gh, releases, sobre, hn, gh_destaques, blog,
+//   categoria, subcategoria, site, feed, modelo, aba, reavaliar, adicionado, por) e o cron os dele (gh, releases, sobre, hn, gh_destaques, blog,
 //   serie, leve, em, atualizado, erro), cada um com json_patch na própria chave: um não apaga o que o outro gravou.
+// Para reavaliar (pedido de 19/11, 23h46): `reavaliar: { motivo, em, por: "ia" | "admin" }` marca a tecnologia para o
+// Admin olhar de novo. Quem revisa grava direto no banco; o Admin marca e tira pelo PUT (em = hora do servidor, por =
+// "admin"; null apaga a chave no json_patch). O cron nunca tem a chave. Lista leve e detalhe devolvem
+// Landscape.reavaliarDe(doc) (saneado, ou null).
 // - meta/landscape-categorias: a árvore de categorias e a ordem. Cada categoria pode ter `aba` (id de Landscape.ABAS).
 // Abas (pedido de 19/11, 23h02, e adendo das 23h09): `aba: "linguagens"` (Languages) ou `aba: "outras"` (Other Tools) no
 // doc põe a tecnologia nessa aba do ArchLandscape; sem o campo, ou com valor fora da tabela, ela é de Tools. Só o Admin
@@ -558,7 +562,7 @@ const json = (dados, status = 200) => new Response(JSON.stringify(dados), { stat
 // o resto vem do UNION ALL, com json_object só dos campos da grade (o doc inteiro tem README, série e comentários).
 export const SQL_LEVE = "SELECT id, data FROM docs WHERE 0 UNION ALL SELECT id, json_object('repo', json_extract(data, '$.repo'), 'nome', json_extract(data, '$.nome'), "
   + "'categoria', json_extract(data, '$.categoria'), 'subcategoria', json_extract(data, '$.subcategoria'), 'site', json_extract(data, '$.site'), "
-  + "'adicionado', json_extract(data, '$.adicionado'), 'modelo', json_extract(data, '$.modelo'), 'aba', json_extract(data, '$.aba'), 'uso', json(json_extract(data, '$.uso')), 'icone', json_extract(data, '$.icone'), 'descricao', json_extract(data, '$.gh.descricao'), 'descricao_pt', json_extract(data, '$.gh.descricao_pt'), 'erro', json_extract(data, '$.erro'), "
+  + "'adicionado', json_extract(data, '$.adicionado'), 'modelo', json_extract(data, '$.modelo'), 'aba', json_extract(data, '$.aba'), 'uso', json(json_extract(data, '$.uso')), 'reavaliar', json(json_extract(data, '$.reavaliar')), 'icone', json_extract(data, '$.icone'), 'descricao', json_extract(data, '$.gh.descricao'), 'descricao_pt', json_extract(data, '$.gh.descricao_pt'), 'erro', json_extract(data, '$.erro'), "
   + "'leve', json(json_extract(data, '$.leve'))) AS data FROM docs WHERE collection = 'landscape'";
 export async function listaLeve(env, deps) {
   const linhas = await deps.lerLinhas(env, SQL_LEVE, [], "landscape");
@@ -571,7 +575,7 @@ export async function listaLeve(env, deps) {
     if (leve.marca && !L.marcaOk(leve.marca, leve.dono)) leve.marca = "";
     // aba sem notícias: nada de Hacker News no resumo (pode ter sobrado de quando a tecnologia estava noutra aba)
     if (!L.temNoticias(d)) delete leve.hn;
-    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", aba: L.abaDe(d), modelo: L.modeloDe(d) ? L.modeloDe(d).id : "", uso: L.usoDe(d), ...(typeof d.icone === "string" && L.urlOk(d.icone) ? { icone: d.icone } : {}), adicionado: d.adicionado || null, descricao: d.descricao || "", ...(d.descricao_pt ? { descricao_pt: d.descricao_pt } : {}), erro: d.erro || "", leve });
+    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", aba: L.abaDe(d), modelo: L.modeloDe(d) ? L.modeloDe(d).id : "", uso: L.usoDe(d), reavaliar: L.reavaliarDe(d), ...(typeof d.icone === "string" && L.urlOk(d.icone) ? { icone: d.icone } : {}), adicionado: d.adicionado || null, descricao: d.descricao || "", ...(d.descricao_pt ? { descricao_pt: d.descricao_pt } : {}), erro: d.erro || "", leve });
   }
   out.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
   return out;
@@ -661,6 +665,7 @@ export async function rotaLandscape(request, env, quem, resto, deps) {
   if (!tec.modelo || typeof tec.modelo_nota !== "string") delete tec.modelo_nota;
   tec.uso = L.usoDe(tec);
   tec.aba = L.abaDe(tec);
+  tec.reavaliar = L.reavaliarDe(tec);
   if (typeof tec.uso_nota !== "string") delete tec.uso_nota;
   if (tec.icone && !L.urlOk(tec.icone)) delete tec.icone;
   if (tec.gh && !L.marcaOk(tec.gh.marca, tec.gh.dono && tec.gh.dono.tipo)) tec.gh = { ...tec.gh, marca: "" };
@@ -894,6 +899,17 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
   const escolheCat = b.categoria !== undefined || b.novaCategoria;
   if (abaDepois !== abaAntes && !escolheCat) return json({ erro: `Para passar para a aba ${L.nomeAba(abaDepois)}, escolha uma categoria dessa aba.` }, 400);
   if (aba.mexe) patch.aba = L.campoAba(abaDepois).aba || null;
+  // para reavaliar: { motivo } marca (em = agora, por = "admin"), null tira. Chave que sobrou de uma marca antiga e não
+  // está no contrato vai como null, para o json_patch (que mescla objetos) não deixar resto.
+  const reav = L.validarReavaliar(b.reavaliar);
+  if (reav.erro) return json({ erro: reav.erro }, 400);
+  if (reav.mexe) {
+    if (!reav.reavaliar) patch.reavaliar = null;
+    else {
+      const sobra = atual.reavaliar && typeof atual.reavaliar === "object" && !Array.isArray(atual.reavaliar) ? Object.keys(atual.reavaliar).filter((k) => !["motivo", "em", "por"].includes(k)) : [];
+      patch.reavaliar = { ...Object.fromEntries(sobra.map((k) => [k, null])), motivo: reav.reavaliar.motivo, em: quando, por: "admin" };
+    }
+  }
   let cats = null;
   if (escolheCat || b.subcategoria !== undefined || b.novaSubcategoria) {
     const cat = escolherCategoria(await lerCategoriasD1(env), { categoria: b.categoria ?? atual.categoria, subcategoria: b.subcategoria, novaCategoria: b.novaCategoria, novaSubcategoria: b.novaSubcategoria }, abaDepois);
@@ -905,5 +921,5 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
   await patchDoc(env, id, patch, quando);
   const r = await env.DB.prepare("SELECT data, coletado, atualizado FROM docs WHERE collection = 'landscape' AND id = ?").bind(id).first();
   if (r) deps.gravarNoEspelho(env, [{ collection: "landscape", id, data: r.data, coletado: r.coletado || "", atualizado: r.atualizado }]);
-  return json({ ok: true, ...patch, ...("modelo" in patch ? { modelo: patch.modelo || "" } : {}), ...("modelo_nota" in patch ? { modelo_nota: patch.modelo_nota || "" } : {}), ...("uso" in patch ? { uso: patch.uso || [] } : {}), ...("uso_nota" in patch ? { uso_nota: patch.uso_nota || "" } : {}), ...("icone" in patch ? { icone: patch.icone || "" } : {}), ...("aba" in patch ? { aba: patch.aba || "tools" } : {}), ...(cats ? { categorias: cats } : {}) });
+  return json({ ok: true, ...patch, ...("modelo" in patch ? { modelo: patch.modelo || "" } : {}), ...("modelo_nota" in patch ? { modelo_nota: patch.modelo_nota || "" } : {}), ...("uso" in patch ? { uso: patch.uso || [] } : {}), ...("uso_nota" in patch ? { uso_nota: patch.uso_nota || "" } : {}), ...("icone" in patch ? { icone: patch.icone || "" } : {}), ...("aba" in patch ? { aba: patch.aba || "tools" } : {}), ...("reavaliar" in patch ? { reavaliar: L.reavaliarDe(patch) } : {}), ...(cats ? { categorias: cats } : {}) });
 }

@@ -2243,6 +2243,35 @@ html.tech-ls .barra-linha { display: none; }
 .ls-selos { position: absolute; top: 4px; left: 4px; right: 4px; display: flex; justify-content: space-between; gap: 4px; pointer-events: none; }
 .ls-selos .dd-badge { padding: 0 5px; font-size: 10px; line-height: 14px; max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
 .ls-selos .dd-badge:only-child { margin-left: auto; }
+/* Para reavaliar (19/11, 23h46): bandeira vermelha (token --err) com texto ou rótulo acessível, nunca só cor.
+   Compacto: círculo de 16 px no canto de cima à esquerda, por cima do padding (a altura do cartão não muda); os selos
+   "novo" e de versão andam para a direita dele. Destaque: etiqueta "reavaliar" junto da posição, no canto de cima. */
+.ls-band { width: 11px; height: 11px; flex: none; display: block; }
+.ls-reav-ponto { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; background: var(--err); color: var(--card); box-shadow: 0 0 0 1.5px var(--card); }
+.ls-reav-ponto .ls-band { width: 10px; height: 10px; }
+.ls-card.reav .ls-selos { left: 23px; }
+.ls-card.reav .ls-selos .dd-badge { min-width: 0; }
+.ls-card.reav { border-color: color-mix(in srgb, var(--err) 45%, var(--border)); }
+.dd-badge.ls-reav { display: inline-flex; align-items: center; gap: 3px; flex: none; padding: 0 6px 0 4px; font: 600 11px/16px var(--font-sans); color: var(--err); background: color-mix(in srgb, var(--err) 9%, var(--card)); border: 1px solid color-mix(in srgb, var(--err) 50%, transparent); white-space: nowrap; }
+.ls-dest-selos { display: inline-flex; align-items: flex-start; gap: 4px; flex: none; }
+.ls-td-nome .ls-reav { margin-left: 8px; vertical-align: middle; }
+.ls-lin-nome { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.ac-tab thead th .ls-reav { margin-top: 4px; }
+.pf-col .ls-reav-ponto { position: static; flex: none; }
+.ls-reav-f { padding-left: 10px; border-left: 1px solid var(--border); }
+.ls-reav-chip .ls-band { color: var(--err); }
+.ls-reav-chip[aria-pressed="true"] { color: var(--err); border-color: var(--err); background: color-mix(in srgb, var(--err) 10%, var(--card)); }
+.ls-reav-chip .k { color: var(--muted-foreground); }
+.ls-reav-aviso { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--err) 35%, var(--border)); border-left: 3px solid var(--err); border-radius: var(--radius-md); background: color-mix(in srgb, var(--err) 5%, var(--card)); font-size: 13.5px; line-height: 1.45; min-width: 0; }
+.ls-reav-aviso p { margin: 0; overflow-wrap: anywhere; }
+.ls-reav-aviso .tit { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--err); }
+.ls-reav-aviso .tit .ls-band { width: 13px; height: 13px; }
+.ls-reav-aviso .mot { color: var(--foreground); }
+.ls-reav-aviso .acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+.ls-reav-aviso .acoes .dd-btn { height: var(--control-h-sm); }
+.ls-reav-remover { color: var(--err); }
+.ls-reav-ok { grid-column: 1 / -1; margin: 0; font-size: 13.5px; color: var(--muted-foreground); }
+.ls-f-reav input.dd-input:disabled { opacity: .55; }
 /* ArchLandscape (19/11): abas Tools e Cloud, ícone com o logotipo esmaecido, grade de Cloud, comparar e Profunda */
 .arch-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .arch-titulo { margin: 0; font: 600 13px/1.2 var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; }
@@ -12312,8 +12341,8 @@ function subtituloEsp(id, x) {
 var LS = window.Landscape;
 var tvisao = "noticias", lsId = null, lsLista = null, lsCats = [], lsErro = "", lsCarregando = false, lsAdmin = false, lsEstadoAdmin = null;
 var lsDet = new Map(), lsDetErro = new Map(), lsRolagem = 0, lsDaGrade = false, lsAviso = "", lsConfirmaTirar = false, lsHnOrdem = "pontos";
-var lsLegenda = false;
-var lsF = { busca: "", ling: "", lic: "", categoria: "", modelos: [], usos: [], ordem: "estrelas", modo: "grade" };
+var lsLegenda = false, lsAvisoDet = null;
+var lsF = { busca: "", ling: "", lic: "", categoria: "", modelos: [], usos: [], reavaliar: false, ordem: "estrelas", modo: "grade" };
 try { const s = JSON.parse(localStorage.getItem("radar-landscape") || "null"); if (s) { if (["grade", "tabela"].includes(s.modo)) lsF.modo = s.modo; if (["estrelas", "crescimento", "atividade", "nome"].includes(s.ordem)) lsF.ordem = s.ordem; } } catch (e) {}
 const lsGuardar = () => { try { localStorage.setItem("radar-landscape", JSON.stringify({ modo: lsF.modo, ordem: lsF.ordem })); } catch (e) {} };
 /* Abas extras (pedido de 19/11, 23h02 e 23h09): Languages e Other Tools são a mesma máquina de Tools, com `aba` no doc
@@ -12323,7 +12352,7 @@ const lsGuardar = () => { try { localStorage.setItem("radar-landscape", JSON.str
 var lsFPorAba = { tools: lsF };
 function lsFiltrosDaAba() {
   const a = lsAbaHash();
-  if (!lsFPorAba[a]) lsFPorAba[a] = { busca: "", ling: "", lic: "", categoria: "", modelos: [], usos: [], ordem: lsF.ordem, modo: lsF.modo };
+  if (!lsFPorAba[a]) lsFPorAba[a] = { busca: "", ling: "", lic: "", categoria: "", modelos: [], usos: [], reavaliar: false, ordem: lsF.ordem, modo: lsF.modo };
   const f = lsFPorAba[a];
   f.ordem = lsF.ordem; f.modo = lsF.modo;
   lsF = f;
@@ -12454,6 +12483,24 @@ function modeloEl(t, curto) {
   return el("span", { class: "dd-badge ls-mod m-" + m.tom, title: m.rotulo + ": " + m.explicacao },
     abrev ? el("span", { "aria-hidden": "true" }, m.curto) : m.rotulo, abrev ? el("span", { class: "ls-sr" }, m.rotulo) : null);
 }
+/* Para reavaliar (pedido de 19/11, 23h46): marcador vermelho (token --err, AA nos dois temas) com a bandeira, nunca só
+   cor. "ponto": o círculo do canto do cartão compacto (role img, "para reavaliar" no aria-label e o motivo no title);
+   "texto": a etiqueta com "reavaliar" escrito (cartão de destaque, tabela, comparação). Sem marca: null. */
+function bandeiraSvg() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 16 16"); svg.setAttribute("aria-hidden", "true"); svg.setAttribute("focusable", "false"); svg.setAttribute("class", "ls-band");
+  const p = document.createElementNS(svg.namespaceURI, "path"); p.setAttribute("d", "M3 1.5h1.6v13H3z M4.6 2.2H13l-2.3 3.1L13 8.4H4.6z"); p.setAttribute("fill", "currentColor");
+  svg.append(p);
+  return svg;
+}
+function reavMarcaEl(t, modo) {
+  const r = LS.reavaliarDe(t);
+  if (!r) return null;
+  const title = "Para reavaliar" + (r.motivo ? ": " + r.motivo : "");
+  if (modo === "ponto") return el("span", { class: "ls-reav-ponto", role: "img", "aria-label": "para reavaliar", title }, bandeiraSvg());
+  return el("span", { class: "dd-badge ls-reav", title }, bandeiraSvg(), el("span", { class: "ls-sr" }, "para "), "reavaliar");
+}
+const dataLonga = (iso) => { const d = new Date(iso || ""); return isNaN(d) ? "" : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }); };
 const dataCurta = (iso) => { const d = new Date(iso || ""); return isNaN(d) ? "–" : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }); };
 const fonteBloco = (fonte, iso) => el("p", { class: "ls-pe" }, fonte + (iso ? " · atualizado " + fmtRel(iso) : " · ainda não coletado"));
 function cartao(t) {
@@ -12461,8 +12508,9 @@ function cartao(t) {
   const selos = [];
   if (LS.ehNova(t.adicionado)) selos.push(el("span", { class: "dd-badge b-novo" }, "novo"));
   if (l.release && LS.releaseRecente(l.release)) selos.push(el("span", { class: "dd-badge b-release", title: "Versão nova nesta semana" }, l.release.tag));
-  const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : ""), href: hashTec(t.id), id: "ls-c-" + t.id, title: (trLigada && t.descricao_pt) || t.descricao || t.repo },
-    selos.length ? el("span", { class: "ls-selos" }, ...selos) : null, marcaEl(t), el("span", { class: "ls-nome" }, t.nome || t.repo),
+  const reav = reavMarcaEl(t, "ponto");
+  const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : "") + (reav ? " reav" : ""), href: hashTec(t.id), id: "ls-c-" + t.id, title: (trLigada && t.descricao_pt) || t.descricao || t.repo },
+    reav, selos.length ? el("span", { class: "ls-selos" }, ...selos) : null, marcaEl(t), el("span", { class: "ls-nome" }, t.nome || t.repo),
     el("span", { class: "ls-mod-lin" }, modeloEl(t, true)),
     /* opções de uso numa linha miúda que existe sempre (vazia em quem não tem), para os cartões terem a mesma altura */
     el("span", { class: "ls-uso-lin", title: LS.resumoDeUso(t) ? "Opções de uso" : "" }, LS.resumoDeUso(t)),
@@ -12476,11 +12524,11 @@ function cartao(t) {
 function cartaoDestaque(t, posicao) {
   const l = t.leve || {};
   const desc = (trLigada && t.descricao_pt) || t.descricao || "";
-  const a = el("a", { class: "ls-card ls-dest-card" + (l.arquivado ? " arquivado" : ""), href: hashTec(t.id), id: "ls-c-" + t.id, title: desc || t.repo },
+  const a = el("a", { class: "ls-card ls-dest-card" + (l.arquivado ? " arquivado" : "") + (LS.reavaliarDe(t) ? " reav" : ""), href: hashTec(t.id), id: "ls-c-" + t.id, title: desc || t.repo },
     marcaEl(t, "g"),
     el("span", { class: "ls-dest-corpo" },
-      el("span", { class: "ls-dest-topo" }, el("span", { class: "ls-nome" }, t.nome || t.repo),
-        el("span", { class: "dd-badge ls-pos", title: posicao + "º em estrelas na subcategoria" }, el("span", { "aria-hidden": "true" }, posicao + "º"), el("span", { class: "ls-sr" }, ", " + posicao + "º em estrelas na subcategoria"))),
+      el("span", { class: "ls-dest-topo" }, el("span", { class: "ls-nome" }, t.nome || t.repo), el("span", { class: "ls-dest-selos" }, reavMarcaEl(t, "texto"),
+        el("span", { class: "dd-badge ls-pos", title: posicao + "º em estrelas na subcategoria" }, el("span", { "aria-hidden": "true" }, posicao + "º"), el("span", { class: "ls-sr" }, ", " + posicao + "º em estrelas na subcategoria")))),
       el("span", { class: "ls-dest-lin" }, el("span", { class: "ls-dado" }, pontoEl(l.commit), estrelasTxt(l.estrelas)), modeloEl(t, true)),
       el("span", { class: "ls-dest-lin ls-dest-ver" }, l.release ? "versão " + l.release.tag + (l.release.data ? " · " + fmtRel(l.release.data) : "") : "sem release publicado"),
       desc ? el("span", { class: "ls-dest-desc" }, desc) : null));
@@ -12488,7 +12536,7 @@ function cartaoDestaque(t, posicao) {
   return a;
 }
 /* a regra do filtro é LS.filtrar (busca, linguagem, licença, categoria e modelos), testada em test/landscape.test.mjs */
-const lsFiltro = (semModelo, semUso) => ({ busca: lsF.busca, ling: lsF.ling, lic: lsF.lic, categoria: lsF.categoria || "", modelos: semModelo ? [] : lsF.modelos, usos: semUso ? [] : lsF.usos });
+const lsFiltro = (semModelo, semUso, semReav) => ({ busca: lsF.busca, ling: lsF.ling, lic: lsF.lic, categoria: lsF.categoria || "", modelos: semModelo ? [] : lsF.modelos, usos: semUso ? [] : lsF.usos, reavaliar: !semReav && !!lsF.reavaliar });
 function lsFiltradas() {
   const l = LS.filtrar(lsDaAba(), lsFiltro());
   const v = (t) => t.leve || {};
@@ -12557,7 +12605,7 @@ function desenharGrade(box) {
   legenda.addEventListener("toggle", () => { lsLegenda = legenda.open; });
   function pintarMods() {
     mods.textContent = "";
-    pintarUsos();
+    pintarUsos(); pintarReav();
     if (!existem.size) return;
     const n = new Map(LS.contarModelos(LS.filtrar(todos, lsFiltro(true))).map((m) => [m.id, m.n]));
     mods.append(el("span", { class: "rotulo", "aria-hidden": "true" }, "Modelo"));
@@ -12590,7 +12638,20 @@ function desenharGrade(box) {
       usos.append(b);
     }
   }
-  box.append(el("div", { class: "ls-ferr ls-ferr-mod" }, mods, legenda), el("div", { class: "ls-ferr ls-ferr-uso" }, usos));
+  /* para reavaliar: um chip só, que aparece quando a aba tem alguma marcada; a contagem é do que os outros filtros deixam */
+  const reavBox = el("div", { class: "chips ls-reav-f", role: "group", "aria-label": "Filtrar as marcadas para reavaliar" });
+  const nReavAba = LS.contarReavaliar(todos);
+  if (!nReavAba) lsF.reavaliar = false;
+  function pintarReav() {
+    reavBox.textContent = "";
+    if (!nReavAba) return;
+    const n = LS.contarReavaliar(LS.filtrar(todos, lsFiltro(false, false, true)));
+    const on = !!lsF.reavaliar;
+    const b = el("button", { class: "chip ls-reav-chip", type: "button", id: "ls-reav-filtro", "aria-pressed": String(on), title: "Só as marcadas para reavaliar" }, bandeiraSvg(), el("span", { class: "lg" }, "Para reavaliar"), el("span", { class: "k" }, "(" + n + ")"));
+    b.addEventListener("click", () => { lsF.reavaliar = !on; pintarConteudo(); const x = $("ls-reav-filtro"); if (x) x.focus(); });
+    reavBox.append(b);
+  }
+  box.append(el("div", { class: "ls-ferr ls-ferr-mod" }, mods, legenda), el("div", { class: "ls-ferr ls-ferr-uso" }, usos, reavBox));
   const conteudo = el("div", { id: "ls-conteudo" });
   box.append(conteudo);
   function pintarConteudo() {
@@ -12652,7 +12713,7 @@ function tabelaLs(l) {
     id: "landscape", colunas: cols, linhas: l, rotuloConta: lsAbaInfo().varios, classeTabela: "cot-tab ls-tab", padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 50 },
     semOrdem: "Sem critério, vale a ordem escolhida em cima.",
     celula: (c, t) => {
-      if (c.id === "nome") return el("td", {}, link(t));
+      if (c.id === "nome") return el("td", { class: "ls-td-nome" }, link(t), reavMarcaEl(t, "texto"));
       if (c.id === "categoria") return el("td", { class: "cat" }, c.valor(t));
       if (c.id === "estrelas") return el("td", { class: "num" }, v(t).estrelas == null ? "–" : LS.formatoCurto(v(t).estrelas));
       if (c.id === "ganho30") return el("td", { class: "num" }, v(t).ganho30 == null ? "–" : (v(t).ganho30 > 0 ? "+" : "") + LS.formatoCurto(v(t).ganho30));
@@ -12662,7 +12723,7 @@ function tabelaLs(l) {
       if (c.id === "modelo") return el("td", {}, modeloEl(t) || "–");
       return el("td", {}, c.valor(t) || "–");
     },
-    cel: (t) => el("div", { class: "ls-lin" }, link(t), el("span", { class: "num" }, estrelasTxt(v(t).estrelas)),
+    cel: (t) => el("div", { class: "ls-lin" + (LS.reavaliarDe(t) ? " reav" : "") }, el("span", { class: "ls-lin-nome" }, link(t), reavMarcaEl(t, "texto")), el("span", { class: "num" }, estrelasTxt(v(t).estrelas)),
       el("small", {}, [nomeCat(t.categoria, t.subcategoria).s || nomeCat(t.categoria).c, LS.modeloDe(t) ? LS.modeloDe(t).rotulo : null, v(t).linguagem, v(t).licenca, v(t).release ? "release " + v(t).release.tag : null, v(t).ganho30 != null ? "+" + LS.formatoCurto(v(t).ganho30) + " em 30 dias" : null].filter(Boolean).join(" · "))),
     classeCel: "ls-celista",
   });
@@ -12825,6 +12886,39 @@ function blocoNotas(t) {
   sec.append(el("div", { class: "ls-nota-form" }, el("div", { class: "linha" }, sit), nota, link, el("div", { class: "linha" }, salvar, msg)));
   return sec;
 }
+/* Aviso do detalhe para a tecnologia marcada para reavaliar: a data, quem marcou e o motivo em texto. O Admin decide ali
+   mesmo: "Manter no radar" tira a marca (PUT reavaliar: null) e "Remover do Landscape" abre a confirmação de tirar que
+   já existe, dentro da página. Quem não é Admin vê só o aviso. Sem marca: o recado de "marca tirada", se acabou de sair. */
+function avisoReavaliar(t, id) {
+  const r = LS.reavaliarDe(t);
+  if (!r) {
+    if (lsAvisoDet && lsAvisoDet.id === id) { const p = el("p", { class: "ls-reav-ok", role: "status", id: "ls-reav-ok" }, lsAvisoDet.texto); lsAvisoDet = null; return p; }
+    return null;
+  }
+  const quando = dataLonga(r.em);
+  const quem = r.por === "admin" ? " pelo Admin" : r.por === "ia" ? " na revisão da IA" : "";
+  const box = el("div", { class: "ls-reav-aviso", id: "ls-reav-aviso", role: "note" },
+    el("p", { class: "tit" }, bandeiraSvg(), el("span", {}, "Marcada para reavaliar" + (quando ? " em " + quando : "") + quem)),
+    el("p", { class: "mot" }, r.motivo ? "Motivo: " + r.motivo : "Sem motivo anotado."));
+  if (lsAdmin) {
+    const manter = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ls-reav-manter" }, "Manter no radar");
+    const remover = el("button", { class: "dd-btn dd-btn--ghost ls-reav-remover", type: "button", id: "ls-reav-remover" }, "Remover do Landscape");
+    const msg = el("span", { class: "ls-aviso", role: "status" });
+    manter.addEventListener("click", async () => {
+      manter.disabled = true; msg.textContent = "Salvando…"; msg.classList.remove("erro");
+      try {
+        await apiLs("PUT", "/api/admin/landscape/" + encodeURIComponent(id), { reavaliar: null });
+        const x = (lsLista || []).find((y) => y.id === id); if (x) x.reavaliar = null;
+        const dd = lsDet.get(id); if (dd) dd.tec.reavaliar = null;
+        lsAvisoDet = { id, texto: "Marca tirada: " + (t.nome || t.repo) + " continua no radar." };
+        renderLandscape(); const ok = $("ls-reav-ok"); if (ok) { ok.tabIndex = -1; ok.focus({ preventScroll: true }); }
+      } catch (e) { msg.textContent = e.message; msg.classList.add("erro"); manter.disabled = false; }
+    });
+    remover.addEventListener("click", () => { lsConfirmaTirar = true; renderLandscape(); const b = $("ls-tirar-sim"); if (b) b.focus(); });
+    box.append(el("div", { class: "acoes" }, manter, remover, msg));
+  }
+  return box;
+}
 function desenharDetalhe(box, id) {
   const vp = window.Arch.voltarPara({ aba: lsAbaHash() });
   const volta = el("a", { class: "dd-btn dd-btn--link ls-volta", href: vp.hash, id: "ls-voltar" }, vp.rotulo);
@@ -12854,7 +12948,7 @@ function desenharDetalhe(box, id) {
   if (t.erro) chips.push(el("span", { class: "dd-badge b-video" }, t.erro));
   if (!t.gh && !t.erro) chips.push(el("span", { class: "dd-badge b-novo" }, "coletando…"));
   const botoes = el("div", { class: "ls-botoes" }, el("a", { class: "dd-btn dd-btn--outline", href: ghLink(t.repo), target: "_blank", rel: "noopener" }, "GitHub"), site ? el("a", { class: "dd-btn dd-btn--outline", href: site, target: "_blank", rel: "noopener" }, "Site") : null);
-  const topo = el("div", { class: "ls-topo" }, marcaEl(t, "g"),
+  const topo = el("div", { class: "ls-topo" }, avisoReavaliar(t, id), marcaEl(t, "g"),
     el("div", {}, el("h2", {}, t.nome || t.repo), el("span", { class: "ls-repo" }, el("a", { href: ghLink(t.repo), target: "_blank", rel: "noopener" }, t.repo)), site ? el("span", { class: "ls-repo" }, " · ", el("a", { href: site, target: "_blank", rel: "noopener" }, site.replace(/^https?:\/\//, "").replace(/\/$/, ""))) : null),
     ...(() => { const gv = lsV(g, ["descricao"]); if (!gv.descricao) return [null]; const p = el("p", { class: "ls-desc" }, gv.descricao); return [p, gv._trad ? el("div", { class: "n ls-trad" }, lsTroca(gv, "desc", { descricao: p })) : null]; })(),
     el("div", { class: "ls-chips" }, ...chips), info.length ? el("dl", { class: "ls-mod-info" }, ...info) : null, botoes);
@@ -13041,6 +13135,20 @@ function desenharFolhaLs() {
     const usoNota = el("input", { class: "dd-input", id: "ls-f-uso-nota", maxlength: String(LS.USO_NOTA_MAX), placeholder: "por exemplo: a versão self-hosted não tem o painel de equipes", value: (det0 && det0.uso_nota) || "" });
     const icone = el("input", { class: "dd-input", id: "ls-f-icone", type: "url", placeholder: "https:// (opcional; vazio tenta o avatar e o ícone do site)", value: (det0 && det0.icone) || (ed && t.icone) || "" });
     lsP.uso = () => ({ uso: usoCx.filter((x) => x.c.checked).map((x) => x.u.id), uso_nota: usoNota.value.trim(), icone: icone.value.trim() });
+    /* para reavaliar (só no Editar): a caixa marca e o motivo vai junto; o corpo só leva `reavaliar` quando muda, para não
+       trocar a data e o autor de uma marca que ficou igual */
+    let reavCampo = null;
+    if (ed) {
+      const r0 = LS.reavaliarDe(det0 || t);
+      const cx = el("input", { type: "checkbox", id: "ls-f-reav" }); cx.checked = !!r0;
+      const mot = el("input", { class: "dd-input", id: "ls-f-reav-motivo", maxlength: String(LS.REAVALIAR_MAX), placeholder: "por exemplo: parado há meses, faz o mesmo que outra da lista", value: r0 ? r0.motivo : "" });
+      const dicaR = el("p", { class: "dica", id: "ls-f-reav-dica" });
+      const pintarR = () => { mot.disabled = !cx.checked; dicaR.textContent = r0 ? "Marcada em " + (dataLonga(r0.em) || "data não informada") + (r0.por === "admin" ? " pelo Admin" : r0.por === "ia" ? " na revisão da IA" : "") + ". Desmarque para manter no radar." : "Aparece com a bandeira vermelha na grade, na tabela e no detalhe."; };
+      cx.addEventListener("change", pintarR); pintarR();
+      reavCampo = el("fieldset", { class: "ls-f-uso ls-f-reav" }, el("legend", { class: "rotulo" }, "Para reavaliar"), el("label", { class: "ls-f-cx" }, cx, " Marcar para reavaliar"),
+        el("label", { class: "rotulo", for: "ls-f-reav-motivo" }, "Motivo (até " + LS.REAVALIAR_MAX + " caracteres)"), mot, dicaR);
+      lsP.reav = () => { const m = mot.value.replace(/\s+/g, " ").trim(); if (cx.checked) return !r0 || r0.motivo !== m ? { reavaliar: { motivo: m } } : {}; return r0 ? { reavaliar: null } : {}; };
+    } else lsP.reav = () => ({});
     f.append(el("div", {}, el("label", { class: "rotulo", for: "ls-f-aba" }, "Aba"), abaSel, abaDica), catBox, el("div", {}, el("label", { class: "rotulo", for: "ls-f-nome" }, "Nome de exibição"), nome),
       el("div", {}, el("label", { class: "rotulo", for: "ls-f-site" }, "Site oficial (opcional)"), site, el("p", { class: "dica" }, "Vazio usa o site que o GitHub informa.")),
       el("div", { class: "ls-f-mod" }, el("div", {}, el("label", { class: "rotulo", for: "ls-f-modelo" }, "Modelo"), modelo, modDica),
@@ -13048,18 +13156,19 @@ function desenharFolhaLs() {
       el("fieldset", { class: "ls-f-uso" }, el("legend", { class: "rotulo" }, "Opções de uso"), ...usoCx.map(({ u, c }) => el("label", { class: "ls-f-cx", title: u.explicacao }, c, " " + u.rotulo)),
         el("label", { class: "rotulo", for: "ls-f-uso-nota" }, "Nota sobre o uso (opcional)"), usoNota),
       el("div", {}, el("label", { class: "rotulo", for: "ls-f-icone" }, "Ícone (opcional)"), icone),
-      el("div", {}, el("label", { class: "rotulo", for: "ls-f-feed" }, "Feed do blog ou changelog (opcional)"), feed), erroEl);
+      el("div", {}, el("label", { class: "rotulo", for: "ls-f-feed" }, "Feed do blog ou changelog (opcional)"), feed), reavCampo, erroEl);
     corpo.append(f);
     const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-f-salvar" }, ed ? "Salvar" : "Adicionar");
     ok.disabled = lsP.salvando;
     ok.addEventListener("click", async () => {
-      const b = { aba: abaSel.value, ...cat.valor(), nome: nome.value.trim(), site: site.value.trim(), feed: feed.value.trim(), modelo: modelo.value, modelo_nota: modelo.value ? modNota.value.trim() : "", ...lsP.uso() };
+      const b = { aba: abaSel.value, ...cat.valor(), nome: nome.value.trim(), site: site.value.trim(), feed: feed.value.trim(), modelo: modelo.value, modelo_nota: modelo.value ? modNota.value.trim() : "", ...lsP.uso(), ...lsP.reav() };
       if (!ed) b.urls = urls.value;
       lsP.salvando = true; ok.disabled = true; erroEl.textContent = "";
       try {
         if (ed) {
           const j = await apiLs("PUT", "/api/admin/landscape/" + encodeURIComponent(t.id), b);
           if (j.categorias) lsCats = j.categorias;
+          if ("reavaliar" in j) { const x0 = (lsLista || []).find((y) => y.id === t.id); if (x0) x0.reavaliar = j.reavaliar; const d0 = lsDet.get(t.id); if (d0) d0.tec.reavaliar = j.reavaliar; }
           const x = (lsLista || []).find((y) => y.id === t.id); if (x) Object.assign(x, { aba: j.aba || x.aba, nome: j.nome || x.nome, categoria: j.categoria || x.categoria, subcategoria: j.subcategoria || x.subcategoria, site: j.site ?? x.site, modelo: j.modelo ?? x.modelo, uso: j.uso ?? x.uso, icone: j.icone ?? x.icone });
           const dd = lsDet.get(t.id); if (dd) Object.assign(dd.tec, { aba: j.aba || dd.tec.aba, nome: j.nome || dd.tec.nome, categoria: j.categoria || dd.tec.categoria, subcategoria: j.subcategoria || dd.tec.subcategoria, site: j.site ?? dd.tec.site, feed: j.feed ?? dd.tec.feed, modelo: j.modelo ?? dd.tec.modelo, modelo_nota: j.modelo_nota ?? dd.tec.modelo_nota, uso: j.uso ?? dd.tec.uso, uso_nota: j.uso_nota ?? dd.tec.uso_nota, icone: j.icone ?? dd.tec.icone });
           wDados.delete("tech-landscape");

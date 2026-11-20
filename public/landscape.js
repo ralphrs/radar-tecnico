@@ -5,7 +5,7 @@
  * Sem import nem export, nem nada do navegador ou do Worker.
  *
  * Tecnologia (collection `landscape`, id `owner--repo` em minúsculas): { repo: "Owner/Repo", nome, categoria, subcategoria,
- *   site, feed, modelo?, aba?: "outras" | "linguagens", adicionado, por, gh: {...}, releases: [...], sobre, hn: { historias, comentarios }, gh_destaques: [...],
+ *   site, feed, modelo?, aba?: "outras" | "linguagens", reavaliar?: { motivo, em, por }, adicionado, por, gh: {...}, releases: [...], sobre, hn: { historias, comentarios }, gh_destaques: [...],
  *   serie: [[AAAA-MM-DD, estrelas], ...], leve: {...}, em: { <parte>: iso }, atualizado, erro? }
  * Categorias (meta/landscape-categorias): { categorias: [{ id, nome, aba?: "outras" | "linguagens", subcategorias: [{ id, nome }] }], atualizado }
  * Notas do Admin (landscape/<email>, id `notas`): { porId: { <id>: { situacao, nota, link, atualizado } }, atualizado }
@@ -139,8 +139,37 @@
     return USOS.filter((u) => n.has(u.id)).map((u) => ({ ...u, n: n.get(u.id) }));
   }
 
-  /* Filtro da grade e da tabela: busca pelo nome ou repositório, linguagem, licença, categoria e modelos (vários valem
-     juntos, qualquer um deles; lista vazia é todos). Não ordena. */
+  /* ---------- para reavaliar (pedido de 19/11, 23h46) ----------
+     Marca de quem revisa o landscape numa tecnologia que parece pouco promissora, para o Admin olhar de novo e decidir
+     se fica. Campo `reavaliar: { motivo (até 240), em (ISO), por: "ia" | "admin" }` no doc; sem o campo, não está
+     marcada. Quem revisa grava direto no banco (por: "ia"); o Admin marca e desmarca pela tela (por: "admin"). O cron de
+     coleta nunca tem a chave. */
+  const REAVALIAR_MAX = 240;
+  const POR_REAVALIAR = ["ia", "admin"];
+  /* A marca saneada do doc (ou do item da lista leve): { motivo, em, por } ou null. Valor que não é objeto conta como sem
+     marca; motivo vira texto de uma linha cortado em 240; data inválida vira null; `por` fora da lista vira null. */
+  function reavaliarDe(doc) {
+    const r = doc && typeof doc === "object" ? doc.reavaliar : null;
+    if (!r || typeof r !== "object" || Array.isArray(r)) return null;
+    const motivo = typeof r.motivo === "string" ? r.motivo.replace(/\s+/g, " ").trim().slice(0, REAVALIAR_MAX) : "";
+    const t = typeof r.em === "string" ? Date.parse(r.em) : NaN;
+    return { motivo, em: Number.isFinite(t) ? new Date(t).toISOString() : null, por: POR_REAVALIAR.includes(r.por) ? r.por : null };
+  }
+  /* Corpo do Admin: undefined não mexe; null (ou "") tira a marca; { motivo } marca (motivo pode ficar vazio, até 240). */
+  function validarReavaliar(v) {
+    if (v === undefined) return { mexe: false };
+    if (v === null || v === "") return { mexe: true, reavaliar: null };
+    if (typeof v !== "object" || Array.isArray(v)) return { erro: "Para reavaliar: mande { motivo } para marcar ou null para tirar a marca." };
+    if (v.motivo != null && typeof v.motivo !== "string") return { erro: "O motivo para reavaliar precisa ser texto." };
+    const motivo = String(v.motivo || "").replace(/\s+/g, " ").trim();
+    if (motivo.length > REAVALIAR_MAX) return { erro: `O motivo para reavaliar guarda até ${REAVALIAR_MAX} caracteres.` };
+    return { mexe: true, reavaliar: { motivo } };
+  }
+  /* Quantas da lista estão marcadas (o chip "Para reavaliar" só aparece com 1 ou mais) */
+  const contarReavaliar = (lista) => (Array.isArray(lista) ? lista : []).filter((t) => reavaliarDe(t)).length;
+
+  /* Filtro da grade e da tabela: busca pelo nome ou repositório, linguagem, licença, categoria, modelos (vários valem
+     juntos, qualquer um deles; lista vazia é todos), usos e `reavaliar` (true: só as marcadas). Não ordena. */
   function filtrar(lista, f = {}) {
     const q = semAcento(f.busca || "").trim();
     const mods = new Set(Array.isArray(f.modelos) ? f.modelos : []);
@@ -154,6 +183,7 @@
       if (f.categoria && t.categoria !== f.categoria) return false;
       if (mods.size) { const m = modeloDe(t); if (!m || !mods.has(m.id)) return false; }
       if (usos.size) { const u = usoDe(t); if (!u.some((x) => usos.has(x))) return false; }
+      if (f.reavaliar && !reavaliarDe(t)) return false;
       return true;
     });
   }
@@ -195,14 +225,14 @@
      Admin acompanha fora da arquitetura). O que separa é o campo `aba` no doc da tecnologia e em cada categoria de
      meta/landscape-categorias, com o id de uma linha desta tabela. Sem o campo, ou com valor fora dela, é "tools".
      Só o Admin grava; o cron de coleta nunca tem a chave.
-     Uma tabela só: id (o que vai no banco), rótulo (a aba, em inglês como o dono pediu), hash (#arch/<hash>), título e
+     Uma tabela só: id (o que vai no banco), rótulo (o nome da aba na tela, em português desde o adendo de 19/11, 23h47; id e hash continuam os de antes), hash (#arch/<hash>), título e
      subtítulo da grade, o nome de um e de vários itens, a frase da aba vazia e `noticias` (adendo das 23h10: false em
      Other Tools, onde a tecnologia não coleta nem mostra Hacker News, comentários, blog, notícias do Lookout e fóruns). A ordem é a das abas na página, com Cloud
      logo depois de Tools. Aba nova no futuro: mais uma linha aqui. */
   const ABAS = [
-    { id: "tools", rotulo: "Tools", hash: "tools", subtitulo: "tecnologias que eu acompanho", um: "tecnologia", varios: "tecnologias", vazio: "Nenhuma tecnologia no landscape ainda.", adicionar: "Adicionar tecnologia", noticias: true },
-    { id: "linguagens", rotulo: "Languages", hash: "languages", titulo: "Linguagens e frameworks", subtitulo: "linguagens e frameworks por tipo de uso", um: "item", varios: "itens", vazio: "Nenhuma linguagem ou framework aqui ainda.", adicionar: "Adicionar linguagem ou framework", noticias: true },
-    { id: "outras", rotulo: "Other Tools", hash: "other", subtitulo: "outras ferramentas que eu acompanho, fora da arquitetura", um: "ferramenta", varios: "ferramentas", vazio: "Nenhuma ferramenta aqui ainda.", adicionar: "Adicionar ferramenta", noticias: false },
+    { id: "tools", rotulo: "Ferramentas", hash: "tools", subtitulo: "tecnologias que eu acompanho", um: "tecnologia", varios: "tecnologias", vazio: "Nenhuma tecnologia no landscape ainda.", adicionar: "Adicionar tecnologia", noticias: true },
+    { id: "linguagens", rotulo: "Linguagens", hash: "languages", titulo: "Linguagens e frameworks", subtitulo: "linguagens e frameworks por tipo de uso", um: "item", varios: "itens", vazio: "Nenhuma linguagem ou framework aqui ainda.", adicionar: "Adicionar linguagem ou framework", noticias: true },
+    { id: "outras", rotulo: "Outras ferramentas", hash: "other", subtitulo: "outras ferramentas que eu acompanho, fora da arquitetura", um: "ferramenta", varios: "ferramentas", vazio: "Nenhuma ferramenta aqui ainda.", adicionar: "Adicionar ferramenta", noticias: false },
   ];
   const ABA_IDS = ABAS.map((a) => a.id);
   /* A linha da tabela pelo id (ou pelo hash); id desconhecido é Tools */
@@ -222,7 +252,7 @@
     if (v === undefined) return { mexe: false };
     if (v === null || v === "") return { mexe: true, aba: "tools" };
     if (typeof v === "string" && ABA_IDS.includes(v)) return { mexe: true, aba: v };
-    return { erro: "Aba desconhecida: use " + ABA_IDS.filter((x) => x !== "tools").map((x) => '"' + x + '"').join(" ou ") + ", ou deixe vazio para Tools." };
+    return { erro: "Aba desconhecida: use " + ABA_IDS.filter((x) => x !== "tools").map((x) => '"' + x + '"').join(" ou ") + ", ou deixe vazio para Ferramentas." };
   }
   /* O que vai no doc para a aba: Tools não grava o campo */
   const campoAba = (aba) => (normAba(aba) === "tools" ? {} : { aba: normAba(aba) });
@@ -572,5 +602,6 @@
     slug, nomeLimpo, validarCategorias, acharCategoria, validarNotas, leveDe, novidades, semAcento,
     MODELOS, MODELO_ANTIGO, NOTA_MODELO_MAX, modeloDe, porQueModelo, validarModelo, validarNotaModelo, filtrar, contarModelos,
     USOS, USO_NOTA_MAX, usoDe, resumoDeUso, perguntasDeUso, validarUso, validarUsoNota, contarUsos,
-    DESTAQUES, DESTAQUE_MIN, destaquesDaSub, destaquesVisiveis, ABAS, ABA_IDS, abaPorId, abaPorHash, abaDe, nomeAba, temNoticias, PARTES_NOTICIA, daAba, validarAba, campoAba, categoriaDaAba };
+    DESTAQUES, DESTAQUE_MIN, destaquesDaSub, destaquesVisiveis, ABAS, ABA_IDS, abaPorId, abaPorHash, abaDe, nomeAba, temNoticias, PARTES_NOTICIA, daAba, validarAba, campoAba, categoriaDaAba,
+    REAVALIAR_MAX, reavaliarDe, validarReavaliar, contarReavaliar };
 })(typeof globalThis !== "undefined" ? globalThis : this);

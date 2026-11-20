@@ -549,7 +549,8 @@ function telaComparar(box, est) {
     const d = docs[i];
     const ic = aba === "cloud" ? provEl(A.provDe(provs(), d.provedor), "p") : el("span", { class: "ac-prov" }, marcaEl(d, "p"), el("span", { class: "ac-prov-nome" }, d.repo));
     const a = el("a", { href: "#arch/" + aba + "/" + encodeURIComponent(c.id) }, c.nome);
-    cab.append(el("th", { scope: "col", style: c.provedor ? "--pc:" + c.provedor.cor : "" }, ic, a));
+    // marcada para reavaliar (19/11, 23h46): o mesmo marcador da grade ao lado do nome
+    cab.append(el("th", { scope: "col", style: c.provedor ? "--pc:" + c.provedor.cor : "" }, ic, a, aba === "cloud" ? null : reavMarcaEl(d, "texto")));
   });
   tab.append(el("thead", {}, cab));
   const corpo = el("tbody");
@@ -742,7 +743,8 @@ function colunaItem(aba, item) {
     return { nome: A.nomeCurto(item.nome, p || (s && s.provedor) || ""), inteiro: item.nome + (p ? " (" + p.nome + ")" : ""), icone: () => iconeEl(A.iconeDe(s || {}, p), "p") };
   }
   const t = (lsLista || []).find((x) => x.id === item.id);
-  return { nome: item.nome, inteiro: item.nome, icone: () => marcaEl(t || {}, "p") };
+  const reav = t && LS.reavaliarDe(t);
+  return { nome: item.nome, inteiro: item.nome + (reav ? " (para reavaliar)" : ""), icone: () => marcaEl(t || {}, "p"), marca: () => (reav ? reavMarcaEl(t, "ponto") : null) };
 }
 /* Número de fonte: botão pequeno que leva à lista no fim. Entra no histórico (pushState no mesmo endereço, sem mexer no
    hash do roteador): o Voltar do navegador traz de volta ao número clicado. */
@@ -835,7 +837,7 @@ function analiseEstruturada(d, aba, titulo) {
   })));
   // o cabeçalho das colunas, preso no topo (só visual: cada tabela tem o seu para leitor de tela)
   root.append(el("div", { class: "pf-cols", "aria-hidden": "true" }, el("div", { class: "pf-cols-in" }, el("span", { class: "pf-cols-canto" }, n + " opções"),
-    ...itens.map((it) => el("span", { class: "pf-col", title: it.inteiro }, it.icone(), el("span", { class: "pf-col-nome" }, it.nome))))));
+    ...itens.map((it) => el("span", { class: "pf-col", title: it.inteiro }, it.icone(), el("span", { class: "pf-col-nome" }, it.nome), it.marca ? it.marca() : null)))));
   const bloco = (id, t, sub, ...kids) => el("section", { class: "pf-bloco", id, "aria-labelledby": id + "-h" }, el("h3", { id: id + "-h", tabindex: "-1" }, t, sub ? el("small", {}, sub) : null), ...kids);
   // 1. resumo
   if (E.resumo.length) root.append(bloco("pf-resumo", "Resumo", "", el("ul", { class: "pf-resumo" }, ...E.resumo.map((p) => el("li", {}, p.texto, refsEl(p.fontes, fontes))))));
