@@ -1112,9 +1112,80 @@ A mesma máquina dos outros radares: `items-oficina`, `destaques-oficina`, `meta
   - Regras do patch: tudo com fonte https; `json_patch` troca listas inteiras e junta `precos` loja a loja (loja com `null` sai); `busca` é a página de busca pública da loja, sem afiliado; marcas por faixa, nunca veredito; nas madeiras, `dureza.janka` e `durabilidade.classe` como a fonte traz (a nota sai pela regra), `raridade` e `preco` com nota, motivo ou faixa, data e fonte. O site confere tudo na leitura e descarta o que não passa.
 - **Relatório das rotinas**: "Oficina: curadoria" (como as outras curadorias) e "Oficina: levantamento das ferramentas": quantos faltam e quantos têm preço vencido em cada collection e há quanto tempo a tarefa gravou pela última vez (em dia sem pendência; com pendência, em dia até 8 dias, atrasada até 15, parada depois). É o quinto termo da segunda consulta do relatório (`sqlContagens`), no limite de 5 do D1.
 
+## Radar de Saúde
+
+Pedido de 20/11 (14h23): "Crie um radar sobre Saúde e quero notícias sobre os produtos que eu pedir para você adicionar... Retatrutida (ZPHC Store, Synedica). Eu quero que busque a nível mundial, inclusive no reddit. Quero notícias, golpes, legalização no Brasil, etc." É um radar de **acompanhamento por produto**: o Admin cadastra os produtos e a seção junta o que sai no mundo sobre cada um. Seção `saude`, rótulo "Saúde" no menu, título "Radar de Saúde", subtítulo "o que sai no mundo sobre os produtos que você acompanha". Endereços `#saude`, `#saude/<produto>` e, só para o Admin, `#saude/produtos`.
+
+Arquivos: regras puras em `public/saude.js` (`globalThis.Saude`: validação dos produtos, `citaProduto`, filtros, hash), telas em `public/saude-ui.js` (script clássico, antes do principal), Worker em `src/saude.js` (semente, rotas, contrato), testes em `test/saude.test.mjs`.
+
+### Permissão
+
+- `saude` é **fechada por padrão**, como a Oficina (`FECHADAS = ["oficina", "saude"]` em `src/grupos.js`): só o Admin vê, e o convidado só recebe a seção num grupo que a marque. `/api/me`, o menu, os widgets e as rotas (`/api/q`, `/api/doc`, `/api/saude/*`: 403) seguem a mesma regra. Rotas de escrita (`/api/admin/saude/*`) dão 404 para quem não é Admin.
+
+### A máquina comum
+
+`items-saude`, `destaques-saude`, `meta/status-saude`, candidatos com radar `saude` (janela de **14 dias** na coleta), tradução (`_pt`), lidas, favoritos, busca, espelho (`items-saude`, `destaques-saude` e `saude-produtos` em `COLECOES_ESPELHO`), relatório de rotinas ("Saúde: curadoria"), instruções no Admin (`instrucoes/saude`), pedidos e "Rodar agora", widget "Saúde: destaques do dia" (`destaques-saude`; e "Saúde: últimas notícias", `ultimas-saude`), só para quem tem a seção.
+- **Limpeza por idade**: notícia, relato e vídeo saem com mais de 365 dias; estudo, alerta, comunicado e análise não saem (`PRAZOS.saude` em `src/coleta.js`).
+
+### Produtos acompanhados (`saude-produtos`)
+
+- Um doc por produto, id em kebab-case sem acento (`produtos` é reservado: é o endereço da tela do Admin): `{ nome (até 80), apelidos: [até 12, cada um até 60] (outros nomes e grafias), tipo (texto livre até 60), resumo (até 240), marcas: [{ id (kebab), nome (até 60), tipo: "loja" | "marca" | "fabricante" | "laboratorio", nota (até 160) }] (até 20), situacaoBrasil: { texto (até 300), fonte (https), em (AAAA-MM-DD) }, ativo, adicionado, por: "admin" | "semente", atualizado }`. Até 30 produtos.
+- `situacaoBrasil` é opcional e só a curadoria preenche, sempre com fonte; o Admin não grava esse campo (a rota ignora). Na leitura (`Saude.saneado`) cada campo passa pelo esquema: situação sem fonte https ou sem data, marca fora da lista e texto longo demais somem, e a tela mostra "Ainda não levantado".
+- **Semente** (`semearSaude`, no cron, `INSERT OR IGNORE` e a marca `_sistema/saude-semente` com `versao`): um produto, `retatrutida`, nome "Retatrutida", apelidos `retatrutide`, `LY3437943` e `reta`, marcas ZPHC Store (`zphc-store`, loja) e Synedica (`synedica`, marca), ativo. Sem `resumo`, `tipo` nem `situacaoBrasil`: nada de fato de saúde vindo de memória. Com a marca gravada, a semente não roda mais; o que o Admin editou fica e o que ele tirou não volta.
+
+### Rotas
+
+- `GET /api/saude/produtos` (quem tem a seção): `{ produtos, admin, max }`. O Admin recebe também os pausados (ativos primeiro, depois por nome); os outros, só os ativos.
+- Admin (404 para os outros): `POST /api/admin/saude/produtos` (id do corpo ou do nome; 409 se já existe ou com 30 produtos), `PUT /api/admin/saude/produtos/<id>` (parcial, gravado por `json_patch`; apelidos e marcas chegam inteiros; tipo ou resumo vazio sai do doc; `ativo: false` pausa) e `DELETE /api/admin/saude/produtos/<id>`. Corpo até 16 KB; 400 com a frase em português ("Preencha o nome.", "Até 12 apelidos por produto (vieram 13).", "Marca X: escolha o tipo (loja, marca, fabricante, laboratório).", "\"produtos\" é reservado. Escolha outro id."). Write-through no espelho em toda gravação.
+
+### Itens
+
+Além dos campos comuns (`titulo`, `url`, `resumo`, `fonte`, `publicado`, `coletado`, `rodada`, `relevancia`, `_pt`):
+- `produto`: id de `saude-produtos`, obrigatório.
+- `marcas`: lista de ids de marcas daquele produto citadas no conteúdo (pode ser vazia).
+- `tema`: `pesquisa` (estudos, ensaios clínicos, resultados, aprovações em análise), `regulacao` (Anvisa, FDA, EMA e outras agências; legalização, registro, proibição, importação; Brasil primeiro), `golpes` (falsificação, apreensão, loja que não entrega, alerta de agência, fraude), `mercado` (fabricantes, lojas e marcas: o que mudou nelas, recalls, fechamentos, processos), `relatos` (o que usuários contam em fóruns e no Reddit), `seguranca` (efeitos adversos e alertas de saúde publicados por fonte médica ou agência).
+- `tipo`: `noticia`, `estudo`, `alerta`, `comunicado` (de agência ou fabricante), `relato`, `video`, `analise`.
+- `pais` (ISO de 2 letras; `BR` conta como Brasil, o resto e o vazio como fora do Brasil), `idioma`.
+- `confianca`: `oficial` (agência reguladora, fabricante, registro de ensaio), `imprensa`, `cientifica` (periódico ou preprint), `comunidade` (Reddit, fórum).
+- Sem miniatura e sem foto: o ícone do tipo vai antes do título, como na Oficina.
+
+### Tela
+
+- Embaixo do título, o subtítulo e uma linha fixa, pequena: "Radar de notícias. Não é orientação médica." Nenhum outro aviso.
+- **Chips dos produtos ativos** com "Todos" e a contagem. Escolher um troca o endereço para `#saude/<produto>` (entrada nova no histórico) e mostra a **faixa do produto**: nome, tipo quando houver, "Também aparece como ..." (os apelidos), o resumo quando houver, as marcas como chips (clicar filtra por marca, de novo tira) e o bloco **Situação no Brasil** com o texto, "Levantado em DD/MM/AAAA" e o link da fonte; sem `situacaoBrasil`, "Ainda não levantado".
+- **Filtros**: tema (chips com contagem, os de sempre), marca (na faixa), tipo, **Fonte** (confiança: Todas, Oficial, Imprensa, Científica, Comunidade, com contagem), **País** no lugar do "Onde" (Todos, Brasil, Fora do Brasil) e busca. Tudo fica junto no `localStorage` em `radar-saude` (`{ produto, marca, temas, tipo, confianca, pais, q }`, com try/catch); o que não existe mais (produto que saiu, marca tirada, tema desconhecido) é descartado na leitura (`Saude.filtrosOk`). "Limpar filtros" tira marca e confiança também; o produto fica, porque é o endereço.
+- **Item**: selo de confiança escrito ("fonte oficial", "imprensa", "publicação científica"); item de `comunidade` sempre com "relato de usuário, não verificado" (e relato ou post do Reddit sem `confianca` gravada também). Com "Todos", o nome do produto vai num selo; as marcas citadas também. Tema `golpes` e tipo `alerta` ganham uma faixa lateral discreta e o rótulo escrito ("golpe ou fraude", "Alerta"), nunca só cor.
+- **Seção vazia**: "Nada por aqui ainda. A curadoria roda três vezes ao dia." e, para o Admin, "Rodar agora" (o mesmo pedido `agora` de `/api/admin/pedidos`) e o atalho para os produtos.
+- **Produtos acompanhados** (`#saude/produtos`, botão no topo da seção, só o Admin; sem colunas laterais): "← Radar de Saúde" (volta pelo histórico quando veio do feed), "N de 30", "Adicionar produto" (nome, tipo, apelidos um por linha, resumo) e um cartão por produto com os mesmos campos, as marcas (nome, tipo, nota, "Tirar" e "Pôr marca ou loja"), a situação no Brasil só para leitura, Salvar, Pausar ou Reativar e Remover com confirmação na tela. Quem não é Admin e abre o endereço cai no feed.
+
+### Coleta e feeds
+
+- `FEEDS_SAUDE = []` em `src/feeds.js`, no formato da coleta: `["saude", fonte, país, url]` ou, para subreddit, `["saude", fonte, país, url, "reddit"]`; o sexto campo, opcional, é o id do produto quando o feed inteiro é do próprio assunto. **Nenhum endereço de feed nem nome de subreddit foi inventado.** `SAUDE_PARA_SONDAR` traz só os nomes das fontes candidatas: Anvisa (notícias e alertas), FDA (comunicados e alertas de falsificação), EMA, ClinicalTrials.gov, Eli Lilly (comunicados), NEJM, The Lancet, STAT News, Fierce Pharma, Endpoints News, Reuters Health e "subreddits sobre retatrutida e peptídeos, a levantar". Quem revisa acha o feed de cada uma, cola na sonda do Admin e passa os que responderem para `FEEDS_SAUDE`.
+- **Filtro por produto**: candidato do radar `saude` só entra se o título ou o trecho citar um produto ativo (`Saude.citaProduto(texto, produtos, { assunto })`: sem acento e sem caixa, palavra inteira, "reta" não conta dentro de "secretaria"; termo com menos de 4 letras só vale em feed marcado com aquele produto; pausado não conta). Os ativos são lidos uma vez por minuto de cron, e só quando um feed da Saúde está na vez (`produtosAtivos`, a mesma consulta do contrato).
+- A tabela `candidatos` não tem coluna para o produto e o filtro não mexe no schema: **a curadoria reclassifica** cada candidato (produto e marcas pelo título e pelo trecho).
+- **Reddit na Saúde vai para a curadoria**: o post de subreddit da Saúde vira candidato com `tipo = 'reddit'` e o `link_externo`, e não vai para "Nos fóruns" (`SEM_FORUM` em `src/feeds.js`; a Saúde fica fora de `SECOES_COM_FORUM`). O ritmo do Reddit é o de sempre (um subreddit por minuto, cada um a cada 2 h). No Rendimento das fontes, esses subreddits aparecem como feeds da curadoria (lidos, publicados, descartados).
+
+### Contrato da curadoria (o texto da tarefa e das instruções quem escreve é quem revisa)
+
+- Lê `instrucoes` id `saude` e os produtos ativos:
+
+```sql
+SELECT id, data FROM docs WHERE collection = 'saude-produtos' AND json_extract(data, '$.ativo') = 1
+```
+
+- Reserva os candidatos com radar `saude` (reclassificando o produto de cada um), grava os itens em `items-saude` (campos acima), os destaques em `destaques-saude` e o rastro em `meta/status-saude`, como as outras seções. Título e resumo em português. Busca o mundo todo, Reddit e fóruns incluídos (como `relatos`, `confianca: "comunidade"`), com o Brasil primeiro em `regulacao`.
+- Pode atualizar **só** o campo `situacaoBrasil` de um produto, sempre com fonte https e a data em `AAAA-MM-DD`:
+
+```sql
+UPDATE docs SET data = json_patch(data, ?1), atualizado = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE collection = 'saude-produtos' AND id = ?2
+```
+
+  com `?1 = {"situacaoBrasil": {"texto": "…", "fonte": "https://…", "em": "2026-11-20"}}` e `?2` o id do produto. As duas consultas estão exportadas em `src/saude.js` (`SQL_PRODUTOS_ATIVOS`, `SQL_SITUACAO`, e `patchSituacao`, que monta o `?1` conferido) e testadas no D1 falso. Nenhuma outra gravação em `saude-produtos`.
+- Fora do alcance da curadoria: `favs/`, `listas/`, `prefs/`, `carteira/`, `leitura/`, `lidas/`. Na tela, nada de dose, de como usar, de onde comprar, de preço, nem "melhor", "recomendado", "seguro" ou "confiável" como selo.
+
 ## Curadoria: instruções, pedidos e plantão
 
-Pedido de 17/11. Cada seção (`tech`, `negocios`, `investimentos`, `politica`, `esportes` e, desde 19/11, `oficina`) é escrita por uma tarefa agendada do Claude, três vezes ao dia, que grava direto no D1 pelo conector da Cloudflare. As instruções longas de cada tarefa passam a morar no Lookout, editáveis no Admin; a tarefa fica com um texto curto que manda ler as instruções no banco. O Admin também deixa pedidos para a curadoria e pode pedir uma rodada fora de hora, que uma tarefa de plantão atende. Código em `src/curadoria.js`; tela no `/admin` (cards Curadoria, Instruções e Pedidos à curadoria); testes em `test/instrucoes.test.mjs`.
+Pedido de 17/11. Cada seção (`tech`, `negocios`, `investimentos`, `politica`, `esportes`, desde 19/11 `oficina` e, desde 20/11, `saude`) é escrita por uma tarefa agendada do Claude, três vezes ao dia, que grava direto no D1 pelo conector da Cloudflare. As instruções longas de cada tarefa passam a morar no Lookout, editáveis no Admin; a tarefa fica com um texto curto que manda ler as instruções no banco. O Admin também deixa pedidos para a curadoria e pode pedir uma rodada fora de hora, que uma tarefa de plantão atende. Código em `src/curadoria.js`; tela no `/admin` (cards Curadoria, Instruções e Pedidos à curadoria); testes em `test/instrucoes.test.mjs`.
 
 ### Contrato com as tarefas (fixo)
 

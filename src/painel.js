@@ -16,10 +16,12 @@ import "../public/inicio-grade.js";
 const ESP = globalThis.Esportes;
 const G = globalThis.InicioGrade;
 
-const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina"];
-const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes", oficina: "Oficina" };
+const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina", "saude"];
+const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes", oficina: "Oficina", saude: "Saúde" };
 // Título próprio de alguns widgets (Oficina, pedido de 19/11: "Oficina: destaques do dia")
-const TITULO_PROPRIO = { "destaques-oficina": "Oficina: destaques do dia", "ultimas-oficina": "Oficina: últimos conteúdos" };
+// e de Saúde, pedido de 20/11: "Saúde: destaques do dia")
+const TITULO_PROPRIO = { "destaques-oficina": "Oficina: destaques do dia", "ultimas-oficina": "Oficina: últimos conteúdos",
+  "destaques-saude": "Saúde: destaques do dia", "ultimas-saude": "Saúde: últimas notícias" };
 const liberada = (secoes, s) => !s || secoes == null || secoes.includes(s);
 
 export const FORMATOS = G.FORMATOS;

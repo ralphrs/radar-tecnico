@@ -23,6 +23,26 @@ export const OFICINA_PARA_SONDAR = [
   // Brasil: canais e sites de marcenaria e serralheria a levantar (quem revisa completa esta linha com os nomes)
 ];
 
+// Saúde (pedido de 20/11): o mesmo jeito da Oficina. FEEDS_SAUDE nasce vazia e só recebe feed sondado em produção, como
+// ["saude", fonte, país, url] ou, para subreddit, ["saude", fonte, país, url, "reddit"]. O sexto campo, opcional, é o id
+// do produto (saude-produtos) quando o feed inteiro é do próprio assunto: só aí apelido com menos de 4 letras vale na
+// coleta (src/saude.js, citaProduto). Na Saúde o post de subreddit vira candidato (a curadoria escolhe e classifica como
+// relato), e não vai para "Nos fóruns". Nenhum endereço de feed nem nome de subreddit foi inventado:
+// SAUDE_PARA_SONDAR traz só os nomes das fontes candidatas, para quem revisa achar o feed de cada uma.
+export const FEEDS_SAUDE = [];
+export const SAUDE_PARA_SONDAR = [
+  // agências e registros
+  "Anvisa (notícias e alertas)", "FDA (comunicados e alertas de falsificação)", "EMA", "ClinicalTrials.gov",
+  // fabricante
+  "Eli Lilly (comunicados)",
+  // periódicos
+  "NEJM", "The Lancet",
+  // imprensa de saúde e indústria
+  "STAT News", "Fierce Pharma", "Endpoints News", "Reuters Health",
+  // comunidade
+  "subreddits sobre retatrutida e peptídeos, a levantar",
+];
+
 export const FEEDS = [
   // Tech: engenharia e arquitetura
   ["tech", "InfoQ", "CA", "https://feed.infoq.com/"],
@@ -276,6 +296,8 @@ export const FEEDS = [
   ["esportes", "r/SCInternacional", "BR", "https://www.reddit.com/r/SCInternacional/top/.rss?t=day", "reddit"],
   // Oficina (marcenaria, carpintaria e serralheria, pedido de 19/11): FEEDS_OFICINA, logo abaixo, ainda vazia.
   ...FEEDS_OFICINA,
+  // Saúde (pedido de 20/11): FEEDS_SAUDE, logo acima, ainda vazia.
+  ...FEEDS_SAUDE,
 ];
 
 // Feeds de cripto que não deram para ler daqui (o proxy recusa o site): colar em admin › Sondar feeds e, os que
@@ -299,4 +321,6 @@ export const CRIPTO_PARA_SONDAR = [
 ];
 
 // Seções com pelo menos um subreddit: são as que têm o bloco "Nos fóruns" e o widget foruns-<secao> no Início.
-export const SECOES_COM_FORUM = [...new Set(FEEDS.filter((f) => f[4] === "reddit").map((f) => f[0]))];
+// Saúde fica de fora: lá o post de subreddit vai para a curadoria (candidatos), não para foruns-saude.
+export const SEM_FORUM = ["saude"];
+export const SECOES_COM_FORUM = [...new Set(FEEDS.filter((f) => f[4] === "reddit" && !SEM_FORUM.includes(f[0])).map((f) => f[0]))];

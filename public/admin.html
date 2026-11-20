@@ -346,15 +346,15 @@ function aviso(texto, tipo) { const m = $("msg"); m.textContent = texto; m.class
 
 
 /* Grupos: grade de seções por grupo e seletor de grupos por convidado */
-const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes", oficina: "Oficina" };
+const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes", oficina: "Oficina", saude: "Saúde" };
 let G = { secoes: [], grupos: [], membros: [] };
 function avisoG(t, tipo) { const m = $("msg-grupos"); m.textContent = t; m.className = "msg " + (tipo || ""); }
 const gruposDe = (email) => G.membros.filter((m) => m.email === email).map((m) => m.grupo);
 function vêDe(email) {
-  /* Oficina (pedido de 19/11) é fechada por padrão: só entra para quem está num grupo que a marca */
-  const FECHADAS = ["oficina"];
+  /* Oficina (pedido de 19/11) e Saúde (20/11) são fechadas por padrão: só entram para quem está num grupo que as marca */
+  const FECHADAS = ["oficina", "saude"];
   const abertas = () => G.secoes.filter((x) => !FECHADAS.includes(x)).map((x) => NOME_SECAO[x]).join(", ");
-  if (!G.grupos.length) return "vê " + abertas() + " (nenhum grupo criado; Oficina só por grupo)";
+  if (!G.grupos.length) return "vê " + abertas() + " (nenhum grupo criado; Oficina e Saúde só por grupo)";
   let gs = G.grupos.filter((g) => gruposDe(email).includes(g.id));
   let pre = "";
   if (!gs.length) { gs = G.grupos.filter((g) => g.padrao); pre = gs.length ? "padrão: " : ""; }
@@ -469,7 +469,7 @@ async function carregarFontes() {
   const box = $("fontes");
   try {
     const { fontes, falhas, semCandidatos = [], bloqueio403 = 3, diasForum = 3, traducao = null } = await api("/api/admin/fontes");
-    const NOME = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes", oficina: "Oficina" };
+    const NOME = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes", oficina: "Oficina", saude: "Saúde" };
     const pct = (a, b) => (b ? Math.round((100 * a) / b) + "%" : "–");
     // Status pelo feeds_estado: bloqueado (403 seguidos), esperando (429), falhando, ok ou ainda não lido
     const status = (f) => {
@@ -570,7 +570,7 @@ async function carregarCustos() {
     const L = c.local;
     const totDocs = L.colecoes.reduce((s, x) => s + (x.bytes || 0), 0) + (L.candidatos.bytes || 0);
     const rodadas = L.rodadasMes.reduce((s, x) => s + x.rodadas, 0);
-    const NOMEC = { items: "Tech", "sombra-items": "Tech (teste)", "items-negocios": "Negócios", "items-investimentos": "Investimentos", "items-politica": "Notícias", "items-esportes": "Esportes", "items-oficina": "Oficina" };
+    const NOMEC = { items: "Tech", "sombra-items": "Tech (teste)", "items-negocios": "Negócios", "items-investimentos": "Investimentos", "items-politica": "Notícias", "items-esportes": "Esportes", "items-oficina": "Oficina", "items-saude": "Saúde" };
     h += '<div class="custo-topo">'
       + kpi("Dados guardados", fmtBytes(totDocs), fmt(L.colecoes.reduce((s, x) => s + x.n, 0) + L.candidatos.n) + " registros, sem índices")
       + kpi("Rodadas de curadoria no mês", fmt(rodadas), "rodam na sua assinatura do Claude, sem cobrança à parte")
@@ -863,7 +863,7 @@ montarMenuConta($("conta"), $("conta-menu"));
 
 /* Curadoria (src/curadoria.js): uma linha por seção, o editor de instruções (#instrucoes/<secao>), os pedidos e o
    "Ler os feeds agora" do card Rendimento das fontes (src/coleta.js). Tudo só do Admin; o resto do Lookout não vê. */
-const SECOES_CUR = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina"];
+const SECOES_CUR = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina", "saude"];
 const CUR = { secoes: [], pedidos: [], limites: { min: 500, max: 60000, historico: 30 }, limPed: { texto: 500 } };
 const JSON_H = { "content-type": "application/json" };
 const hm = (iso) => new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });

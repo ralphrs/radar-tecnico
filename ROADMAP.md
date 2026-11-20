@@ -229,6 +229,13 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 6. Aviso quando cair a faixa de preço de um item da lista de compras.
 7. Projetos salvos, com lista de materiais ligada a Insumos e Madeiras.
 
+## Pedidos de 20/11
+- [x] Radar de Saúde (20/11, 14h23): seção `saude` (fechada por padrão, só o Admin; libera por grupo) de acompanhamento por produto, com a máquina dos outros radares (`items-saude`, `destaques-saude`, `meta/status-saude`, candidatos, tradução, lidas, favoritos, busca, limpeza por idade, espelho, instruções, pedidos, "Rodar agora", rotinas e o widget "Saúde: destaques do dia"); produtos em `saude-produtos` com semente da Retatrutida (ZPHC Store e Synedica, sem fato de saúde), Admin na própria seção (`#saude/produtos`), chips dos produtos, faixa com "Situação no Brasil", filtros de tema, marca, tipo, fonte e país, selo de confiança com "relato de usuário, não verificado", destaque de golpe e alerta, coleta que só aceita candidato que cita produto ativo e Reddit da Saúde indo para a curadoria (docs/LOOKOUT.md, "Radar de Saúde")
+- [ ] Saúde: rodar a sonda das fontes de `SAUDE_PARA_SONDAR` (`src/feeds.js`) em produção e passar para `FEEDS_SAUDE` as que responderem; levantar os subreddits sobre retatrutida e peptídeos (com o sexto campo, o id do produto, quando o subreddit for só do assunto)
+- [ ] Saúde: escrever as instruções da curadoria (`instrucoes/saude`) no Admin e o texto da tarefa agendada, seguindo o contrato (produtos ativos, reclassificar o produto de cada candidato, `situacaoBrasil` só com fonte)
+- [ ] Saúde: depois das primeiras rodadas, conferir se "reta" (apelido de 4 letras) traz falso positivo nos feeds gerais e, se trouxer, tirar o apelido ou passar a exigir feed do assunto para ele
+- [ ] Saúde: o candidato não guarda o produto achado (a tabela não tem coluna e o schema não mudou); se a reclassificação da curadoria errar, avaliar a coluna nova por `garantirColunas`
+
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.
 - [x] 0. Campos com formato pelo tipo (moeda, percentual, número, data, mês/ano, papel), um helper para toda a página; valor cru por baixo, formata ao sair do campo (`public/campo.js`, docs/LOOKOUT.md, Campos) (04/11)

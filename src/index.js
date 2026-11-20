@@ -26,6 +26,7 @@ import { rotaCloud, rotaAdminCloud } from "./cloud.js";
 import { rotaDossies } from "./arch.js";
 import { rotaIcone } from "./icone.js";
 import { rotaOficina, rotaAdminOficina, semearOficina } from "./oficina.js";
+import { rotaSaude, rotaAdminSaude, semearSaude } from "./saude.js";
 import { cronTraducao, estadoAdmin as estadoTraducao, envContado, contarFetch, contagens } from "./traducao.js";
 import { novoBatimento, etapa, gravarBatimento, LER, CONSULTAS_BATIMENTO, rotaRotinas } from "./rotinas.js";
 // Tradução das notícias: a preferência "Mostrar notícias traduzidas" (validação e padrão) mora em public/traducao.js
@@ -39,7 +40,7 @@ export { Espelho } from "./espelho.js";
 // Collections que a página pode ler. Tudo o mais é negado.
 // foruns-<radar>: posts de subreddit do bloco "Nos fóruns" (src/coleta.js), sem curadoria.
 const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos",
-  "items-oficina", "destaques-oficina",
+  "items-oficina", "destaques-oficina", "items-saude", "destaques-saude",
   "foruns-tech", "foruns-negocios", "foruns-investimentos", "foruns-politica", "foruns-esportes"]);
 // hist: fichas de papel (src/papel.js), um doc por papel ("US:NVDA", "BR:PETR4"); a página lê pela /api/papel.
 const DOCS = new Set([...LISTAS, "meta", "hist"]);
@@ -718,6 +719,21 @@ async function atender(request, env, ctx) {
       if (resto === null) return json({ erro: "id" }, 400);
       return rotaAdminOficina(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
     }
+    // Radar de Saúde (src/saude.js): produtos acompanhados para quem tem a seção saude (fechada por padrão, como a
+    // Oficina); as rotas de escrita são só do Admin e dão 404 para os outros.
+    if (p === "/api/saude" || p.startsWith("/api/saude/")) {
+      if (!libera(quem.secoes, "saude")) return json({ erro: "secao" }, 403);
+      const resto = p.length > 11 ? decodificar(p.slice(11)) : "";
+      if (resto === null) return json({ erro: "id" }, 400);
+      return rotaSaude(request, env, quem, resto, { lerLinhas, lerLinha });
+    }
+    if (p === "/api/admin/saude" || p.startsWith("/api/admin/saude/")) {
+      if (!quem.admin) return json({ erro: "rota" }, 404);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      const resto = p.length > 17 ? decodificar(p.slice(17)) : "";
+      if (resto === null) return json({ erro: "id" }, 400);
+      return rotaAdminSaude(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
+    }
     // Ícone do site oficial (src/icone.js): só para domínio que já está no banco; mesma origem, então a CSP não muda
     if (p.startsWith("/icone/")) return rotaIcone(request, env, decodificar(p.slice(7)), { lerLinhas, ctx });
 
@@ -796,6 +812,8 @@ async function etapas(evento, env, conta, relogio = () => Date.now()) {
     try { const r = await etapa(bat, "landscape", () => cronLandscape(env, quando), LER.landscape); if (r && (r.pedidos || r.semente || r.erro || r.parou)) console.log("landscape", JSON.stringify(r)); } catch (e) { console.error("landscape", String((e && e.message) || e).slice(0, 120)); }
     // Oficina (src/oficina.js): a semente entra uma vez (uma leitura da marca por minuto depois disso)
     try { const n = await semearOficina(env, quando); if (n) console.log("oficina-semente", n); } catch (e) { console.error("oficina", String((e && e.message) || e).slice(0, 120)); }
+    // Saúde (src/saude.js): a semente (a Retatrutida) entra uma vez; depois, uma leitura da marca por minuto
+    try { const n = await semearSaude(env, quando); if (n) console.log("saude-semente", n); } catch (e) { console.error("saude", String((e && e.message) || e).slice(0, 120)); }
     // Reddit: uma URL por minuto somando coleta e sonda; se a coleta falhou antes de saber, a sonda não arrisca
     try { await etapa(bat, "sonda", () => cronSonda(env, { redditLivre: !!coleta && !coleta.reddit }), LER.sonda); } catch (e) { console.error("sonda", e); }
     try { const r = await etapa(bat, "papel", () => cronPapel(env, quando), LER.papel); if (r && r.candidatos) console.log("papel", JSON.stringify(r)); } catch (e) { console.error("papel", e); }

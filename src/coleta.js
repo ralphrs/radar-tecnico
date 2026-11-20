@@ -1,10 +1,15 @@
 // Coleta sem IA: o cron lê os feeds de src/feeds.js, descarta o que já existe e guarda o resto em "candidatos".
 // Subreddits (tipo "reddit" em src/feeds.js) têm fila e ritmo próprios: veja REDDIT abaixo e docs/coleta.md.
 // Post de subreddit não vira candidato: vai só para foruns-<radar> (bloco "Nos fóruns" da página), sem curadoria.
+// A exceção é a Saúde (pedido de 20/11, SEM_FORUM em src/feeds.js): lá o post vira candidato, para a curadoria escolher e
+// classificar como relato. E todo candidato do radar saude, de feed ou de subreddit, só entra se citar um produto ativo
+// (Saude.citaProduto, pelo nome e pelos apelidos, palavra inteira, sem acento e sem caixa).
 // A tarefa de curadoria (Claude) só lê os candidatos novos, escolhe, resume e grava os itens.
 // Aqui também fica a limpeza por idade, que antes era feita pelas tarefas.
 import { limparDossies } from "./arch.js";
-import { FEEDS } from "./feeds.js";
+import { FEEDS, SEM_FORUM } from "./feeds.js";
+import { produtosAtivos } from "./saude.js";
+import "../public/saude.js";
 import { histParaApagar } from "./papel.js";
 import { leiturasParaApagar } from "./leitura.js";
 import { limparLidas } from "./lidas.js";
@@ -13,7 +18,7 @@ import { limparPedidos } from "./curadoria.js";
 const INTERVALO_MIN = 90;      // cada feed é lido no máximo a cada 90 minutos
 const FEEDS_POR_MINUTO = 6;    // o cron roda de minuto em minuto
 const ITENS_POR_FEED = 20;
-const JANELA_DIAS = { tech: 21, politica: 3, esportes: 3, negocios: 7, investimentos: 7, oficina: 30 };
+export const JANELA_DIAS = { tech: 21, politica: 3, esportes: 3, negocios: 7, investimentos: 7, oficina: 30, saude: 14 };
 const UA = "Mozilla/5.0 (compatible; LookoutBot/1.0; +https://lookout.ralph-renato.workers.dev)";
 // Reddit: ritmo próprio, porque 4 pedidos no mesmo minuto já deram 429 (sonda de 03/11/2026).
 export const REDDIT = {
@@ -26,7 +31,7 @@ export const REDDIT = {
   DIAS_FORUM: 3,          // foruns-* com mais de 3 dias saem na limpeza
   UA: "Lookout/1.0 (agregador pessoal de noticias; +https://lookout.ralph-renato.workers.dev)",
 };
-const COLECOES_ITENS = ["items", "items-politica", "items-esportes", "items-negocios", "items-investimentos", "items-oficina", "sombra-items"];
+const COLECOES_ITENS = ["items", "items-politica", "items-esportes", "items-negocios", "items-investimentos", "items-oficina", "items-saude", "sombra-items"];
 
 const agora = () => new Date();
 const iso = (d) => d.toISOString();
@@ -237,7 +242,8 @@ async function feedsDaVez(env) {
   const { results } = await env.DB.prepare("SELECT url, ultima_checagem, erros_seguidos, seguidos_403 FROM feeds_estado").all();
   const est = new Map(results.map((r) => [r.url, r]));
   const t = Date.now();
-  const todos = FEEDS.map(([radar, fonte, pais, url, tipo]) => ({ radar, fonte, pais, url, tipo: tipo || "rss" }));
+  // assunto (sexto campo, só na Saúde): o id do produto quando o feed inteiro é do próprio assunto
+  const todos = FEEDS.map(([radar, fonte, pais, url, tipo, assunto]) => ({ radar, fonte, pais, url, tipo: tipo || "rss", ...(assunto ? { assunto } : {}) }));
   const reddit = filaReddit(todos.filter((f) => f.tipo === "reddit"), est, t);
   // Leitura forçada: os feeds comuns que ainda não foram lidos desde o pedido, do que está há mais tempo sem leitura
   const forcada = await lerForcada(env);
@@ -286,8 +292,23 @@ export function pegar(url) {
   return fetch(url, { headers: { "user-agent": ua, accept: "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.9, */*;q=0.5" }, signal: AbortSignal.timeout(10_000), redirect: "follow" });
 }
 
+// Saúde: só passa o que cita um produto ativo. produtos: os ativos de saude-produtos (lidos uma vez por minuto de cron,
+// e só quando algum feed da Saúde está na vez). Devolve os itens com o produto achado em `produto` (a tabela de
+// candidatos não tem coluna para ele: a curadoria reclassifica, veja docs/LOOKOUT.md, "Radar de Saúde").
+export function filtrarPorProduto(itens, produtos, f) {
+  const S = globalThis.Saude;
+  const out = [];
+  for (const i of itens) {
+    const produto = S.citaProduto([i.titulo, i.trecho].filter(Boolean).join(" "), produtos, { assunto: f && f.assunto });
+    if (produto) out.push({ ...i, produto });
+  }
+  return out;
+}
+const naCuradoria = (f) => f.tipo !== "reddit" || SEM_FORUM.includes(f.radar);
+
 // Devolve o status HTTP da resposta (0 quando não houve resposta), para a coleta do Reddit parar no 429.
-async function lerUm(env, f, falhas = null) {
+// ctx.produtosSaude(): os produtos ativos da Saúde, lidos uma vez só por minuto de cron (coletar).
+async function lerUm(env, f, falhas = null, ctx = {}) {
   // falhas: lista da coleta (src/rotinas.js, linha "Leitura dos feeds" do Admin); cada falha vira "Fonte: motivo"
   const reg = (ok, erro, ...resto) => { if (!ok && falhas) falhas.push(f.fonte + ": " + String(erro).slice(0, 80)); return registrar(env, f, ok, erro, ...resto); };
   let r;
@@ -309,14 +330,17 @@ async function lerUm(env, f, falhas = null) {
   }
 
   const limite = Date.now() - JANELA_DIAS[f.radar] * 86_400_000;
-  const recentes = lidos.slice(0, ITENS_POR_FEED).filter((i) => !i.publicado || Date.parse(i.publicado) >= limite);
+  let recentes = lidos.slice(0, ITENS_POR_FEED).filter((i) => !i.publicado || Date.parse(i.publicado) >= limite);
   // Reddit: o post vai só para foruns-<radar> (dedupe pelo id do post), nunca para candidatos: a curadoria descartava
   // todos (141 de 141 em 04/11/2026) e isso custava token. novos_total do feeds_estado conta os posts novos no fórum.
-  if (reddit) {
+  // Na Saúde o post segue para candidatos, com tipo "reddit" e o link externo, como antes de 04/11.
+  if (reddit && !naCuradoria(f)) {
     const novosForum = await gravarForuns(env, f, recentes);
     await reg(true, "", lidos.length, novosForum, r.status);
     return r.status;
   }
+  // Saúde: só o que cita um produto ativo; sem produto ativo, nada entra
+  if (f.radar === "saude") recentes = filtrarPorProduto(recentes, ctx.produtosSaude ? await ctx.produtosSaude() : [], f);
   const itens = [];
   for (const i of recentes) {
     const url = urlCanonica(i.url);
@@ -342,8 +366,9 @@ async function lerUm(env, f, falhas = null) {
     const ins = env.DB.prepare(
       "INSERT OR IGNORE INTO candidatos (id, radar, url, titulo, fonte, pais, publicado, trecho, feed, visto, tipo, link_externo) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)"
     );
-    // tipo e link_externo ficam vazios: desde 04/11/2026 só feeds comuns chegam aqui (candidatos reddit antigos saem em 10 dias)
-    await env.DB.batch(novos.map((i) => ins.bind(i.id, f.radar, i.url, i.titulo, f.fonte, f.pais, i.publicado, i.trecho, f.url, t, "", "")));
+    // tipo e link_externo ficam vazios: desde 04/11/2026 só feeds comuns chegam aqui (candidatos reddit antigos saem em 10 dias),
+    // menos na Saúde, onde o post de subreddit é candidato com tipo "reddit" e o link externo
+    await env.DB.batch(novos.map((i) => ins.bind(i.id, f.radar, i.url, i.titulo, f.fonte, f.pais, i.publicado, i.trecho, f.url, t, reddit ? "reddit" : "", reddit ? String(i.linkExterno || "") : "")));
   }
   await reg(true, "", lidos.length, novos.length, r.status);
   return r.status;
@@ -385,18 +410,21 @@ export async function gravarForuns(env, f, posts) {
 export async function coletar(env) {
   await garantirColunas(env);
   const { normais, reddit, forcada } = await feedsDaVez(env);
+  // Saúde: os produtos ativos, lidos uma vez só neste minuto e só se algum feed da Saúde estiver na vez
+  let pSaude = null;
+  const ctx = { produtosSaude: () => (pSaude = pSaude || produtosAtivos(env).catch(() => [])) };
   // falhas e falhasReddit: "Fonte: motivo" de cada feed que falhou neste minuto, para o relatório das rotinas
   const falhas = [], falhasReddit = [];
   const falha = (f, l) => (e) => { const m = "falha: " + String(e && e.message || e).slice(0, 180); l.push(f.fonte + ": " + m.slice(0, 80)); return registrar(env, f, false, m, 0, 0).then(() => 0); };
   // Leitura forçada: até 30 feeds, 5 abertos de cada vez; fora dela, os 6 da vez juntos, como sempre
   const normal = forcada
-    ? emPool(normais, FORCADA.SIMULTANEAS, FORCADA.ORCAMENTO_MS, (f) => lerUm(env, f, falhas).catch(falha(f, falhas)))
-    : Promise.all(normais.map((f) => lerUm(env, f, falhas).catch(falha(f, falhas)))).then(() => normais.length);
+    ? emPool(normais, FORCADA.SIMULTANEAS, FORCADA.ORCAMENTO_MS, (f) => lerUm(env, f, falhas, ctx).catch(falha(f, falhas)))
+    : Promise.all(normais.map((f) => lerUm(env, f, falhas, ctx).catch(falha(f, falhas)))).then(() => normais.length);
   // Reddit em fila, um de cada vez: 429 encerra a vez do Reddit neste minuto
   let lidosReddit = 0;
   for (const f of reddit.slice(0, REDDIT.POR_MINUTO)) {
     lidosReddit++;
-    const status = await lerUm(env, f, falhasReddit).catch(falha(f, falhasReddit));
+    const status = await lerUm(env, f, falhasReddit, ctx).catch(falha(f, falhasReddit));
     if (status === 429) break;
   }
   const lidos = await normal;
@@ -417,15 +445,16 @@ export async function coletar(env) {
 // (de antes de 04/11/2026, apagados em 10 dias) ficam de fora.
 export function juntarFontes(results, feeds, estados, forum) {
   const porUrl = new Map(estados.map((e) => [e.feed, e]));
-  const fontes = results.filter((r) => !ehReddit(r.feed)).map((r) => ({ ...r, tipo: "rss" }));
+  // Saúde: subreddit que passa pela curadoria conta como feed comum (lidos, publicados, descartados)
+  const fontes = results.filter((r) => !ehReddit(r.feed) || SEM_FORUM.includes(r.radar)).map((r) => ({ ...r, tipo: "rss" }));
   const comCandidatos = new Set(fontes.map((r) => r.feed));
   const estadoDe = (url) => {
     const e = porUrl.get(url) || {};
     return { erro: e.erro || "", erros_seguidos: e.erros_seguidos || 0, seguidos_403: e.seguidos_403 || 0, ultima_checagem: e.ultima_checagem || "", ultimo_ok: e.ultimo_ok || "" };
   };
-  for (const [radar, fonte, , url, tipo] of feeds) if (tipo === "reddit") fontes.push({ radar, fonte, feed: url, tipo: "reddit", forum: forum.get(radar + "|" + fonte) || 0, ...estadoDe(url) });
-  const semCandidatos = feeds.filter(([, , , url, tipo]) => tipo !== "reddit" && !comCandidatos.has(url))
-    .map(([radar, fonte, , url, tipo]) => ({ radar, fonte, feed: url, tipo: tipo || "rss", ...estadoDe(url) }));
+  for (const [radar, fonte, , url, tipo] of feeds) if (tipo === "reddit" && !SEM_FORUM.includes(radar)) fontes.push({ radar, fonte, feed: url, tipo: "reddit", forum: forum.get(radar + "|" + fonte) || 0, ...estadoDe(url) });
+  const semCandidatos = feeds.filter(([radar, , , url, tipo]) => (tipo !== "reddit" || SEM_FORUM.includes(radar)) && !comCandidatos.has(url))
+    .map(([radar, fonte, , url, tipo]) => ({ radar, fonte, feed: url, tipo: tipo === "reddit" ? "rss" : tipo || "rss", ...estadoDe(url) }));
   // por aba; dentro dela, feeds comuns pelos publicados e subreddits no fim
   fontes.sort((a, b) => a.radar.localeCompare(b.radar) || (a.tipo === "reddit") - (b.tipo === "reddit") || (b.publicados || 0) - (a.publicados || 0) || (b.forum || 0) - (a.forum || 0));
   return { fontes, semCandidatos };
@@ -435,7 +464,7 @@ export function juntarFontes(results, feeds, estados, forum) {
 
 const DIA = 86_400_000;
 const ACUMULATIVOS = new Set(["arquitetura", "dados", "eip", "legado", "programacao", "infra", "carreira", "docs", "diagramas", "cursos"]);
-const PRAZOS = {
+export const PRAZOS = {
   tech: { noticia: 30, release: 90, video: 90, youtube: 90, podcast: 90, review: 90, whitepaper: 365, artigo: 730 },
   politica: { noticia: 30, analise: 90, video: 90, podcast: 90, oficial: 365 },
   esportes: { noticia: 30, resultado: 30, analise: 90, video: 90, podcast: 90 },
@@ -443,6 +472,8 @@ const PRAZOS = {
   investimentos: { noticia: 30, analise: 90, relatorio: 180, video: 90, podcast: 90 },
   // Oficina: conteúdo de ofício envelhece devagar. Projeto (plano com medidas) e curso não saem por idade.
   oficina: { video: 730, artigo: 730, review: 365, podcast: 365 },
+  // Saúde (20/11): notícia, relato e vídeo ficam 1 ano; estudo, alerta, comunicado e análise não saem por idade
+  saude: { noticia: 365, relato: 365, video: 365 },
 };
 const COLECOES = [
   { c: "items", radar: "tech" }, { c: "sombra-items", radar: "tech" },
@@ -450,12 +481,13 @@ const COLECOES = [
   { c: "items-negocios", radar: "negocios" },
   { c: "items-investimentos", radar: "investimentos" },
   { c: "items-oficina", radar: "oficina" },
+  { c: "items-saude", radar: "saude" },
 ];
 const FORUNS = ["tech", "negocios", "investimentos", "politica", "esportes"].map(colecaoForum);
-const DESTAQUES = ["destaques", "destaques-politica", "destaques-esportes", "destaques-negocios", "destaques-investimentos", "destaques-oficina", "sombra-destaques"];
+const DESTAQUES = ["destaques", "destaques-politica", "destaques-esportes", "destaques-negocios", "destaques-investimentos", "destaques-oficina", "destaques-saude", "sombra-destaques"];
 const LIMITE_EXCLUSOES = 60;
 
-function vencido(radar, item, coletado, t) {
+export function vencido(radar, item, coletado, t) {
   if (radar === "tech" && ACUMULATIVOS.has(item.tema)) return false;
   const dias = PRAZOS[radar][item.tipo];
   if (!dias) return false;

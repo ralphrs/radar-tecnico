@@ -36,6 +36,8 @@ export const COLECOES_ESPELHO = [
   "cloud",
   // Oficina (src/oficina.js): conteúdos e destaques, e os catálogos de ferramentas, insumos e madeiras
   "items-oficina", "destaques-oficina", "oficina-ferramentas", "oficina-insumos", "oficina-madeiras",
+  // Saúde (src/saude.js): notícias, destaques e os produtos acompanhados
+  "items-saude", "destaques-saude", "saude-produtos",
 ];
 
 const LOTE = 90;              // ids por consulta ao D1, como na limpeza (coleta.js)

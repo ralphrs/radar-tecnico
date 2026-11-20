@@ -31,7 +31,7 @@ async function semeado() { const env = { DB: d1Falso() }; await semearOficina(en
 // ---------- permissão ----------
 test("seção fechada: convidado sem grupo (ou com grupo sem ela) não recebe a Oficina; grupo que a marca libera; Admin vê", () => {
   assert.ok(SECOES.includes("oficina"));
-  assert.deepEqual(FECHADAS, ["oficina"]);
+  assert.ok(FECHADAS.includes("oficina"), "a Oficina é fechada (desde 20/11, junto com a Saúde)");
   assert.ok(!ABERTAS.includes("oficina"));
   assert.deepEqual(paraConvidado(null), ABERTAS, "sem grupo nenhum: só as abertas");
   assert.deepEqual(paraConvidado(calcularSecoes([], [])), ABERTAS);

@@ -325,7 +325,7 @@ export const LER = {
 
 // ---------- relatório (GET /api/admin/rotinas) ----------
 // O terceiro valor, quando existe, é o nome inteiro da linha (Oficina, pedido de 19/11: "Oficina: curadoria")
-export const SECOES_CUR = [["tech", "Tech"], ["negocios", "Negócios"], ["investimentos", "Investimentos"], ["politica", "Notícias e Política"], ["esportes", "Esportes"], ["oficina", "Oficina", "Oficina: curadoria"]];
+export const SECOES_CUR = [["tech", "Tech"], ["negocios", "Negócios"], ["investimentos", "Investimentos"], ["politica", "Notícias e Política"], ["esportes", "Esportes"], ["oficina", "Oficina", "Oficina: curadoria"], ["saude", "Saúde", "Saúde: curadoria"]];
 const STATUS_DA_SECAO = (s) => (s === "tech" ? "status" : "status-" + s);
 const ITENS_DA_SECAO = (s) => (s === "tech" ? "items" : "items-" + s);
 

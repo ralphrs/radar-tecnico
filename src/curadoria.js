@@ -10,7 +10,7 @@
 // COLECOES_ESPELHO (src/espelho.js) nem nas listas que /api/q e /api/doc aceitam (src/index.js).
 // As cinco seções, as mesmas de src/grupos.js (repetidas aqui porque grupos.js puxa o espelho e o "cloudflare:workers",
 // e este arquivo é importado pela coleta; test/instrucoes.test.mjs confere que as duas listas são iguais).
-export const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina"];
+export const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina", "saude"];
 
 export const COL_INSTRUCOES = "instrucoes";
 export const COL_HISTORICO = "instrucoes-hist";

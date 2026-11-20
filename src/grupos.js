@@ -9,10 +9,11 @@ import { convidadoNoEspelho } from "./espelho.js";
 // - O admin vê tudo, sempre.
 // - O bloqueio vale no servidor: a API recusa listas e documentos de seção não liberada.
 
-export const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina"];
+export const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina", "saude"];
 // Seções fechadas por padrão (Oficina, pedido de 19/11): só o Admin vê, e o convidado só recebe a seção quando um grupo
 // dele a marca. Sem grupo nenhum (ou com o grupo padrão sem ela), o convidado vê as abertas, nunca as fechadas.
-export const FECHADAS = ["oficina"];
+// Saúde (pedido de 20/11) entra do mesmo jeito.
+export const FECHADAS = ["oficina", "saude"];
 export const ABERTAS = SECOES.filter((s) => !FECHADAS.includes(s));
 // O que vale para o convidado: null (veria tudo) vira a lista das abertas. O Admin não passa por aqui.
 export const paraConvidado = (s) => (s === null || s === undefined ? ABERTAS.slice() : s);
@@ -29,9 +30,11 @@ const SECAO_DA_COLECAO = {
   "foruns-tech": "tech", "foruns-negocios": "negocios", "foruns-investimentos": "investimentos", "foruns-politica": "politica", "foruns-esportes": "esportes",
   // Oficina (pedido de 19/11): conteúdos e destaques; ferramentas, insumos e madeiras têm rotas próprias (src/oficina.js)
   "items-oficina": "oficina", "destaques-oficina": "oficina",
+  // Saúde (pedido de 20/11): notícias e destaques; os produtos acompanhados têm rota própria (src/saude.js)
+  "items-saude": "saude", "destaques-saude": "saude",
 };
 const SECAO_DO_META = {
-  status: "tech", "status-negocios": "negocios", "status-investimentos": "investimentos", "status-politica": "politica", "status-esportes": "esportes", "status-oficina": "oficina",
+  status: "tech", "status-negocios": "negocios", "status-investimentos": "investimentos", "status-politica": "politica", "status-esportes": "esportes", "status-oficina": "oficina", "status-saude": "saude",
   mercado: "investimentos", b3: "investimentos", fii: "investimentos", "fii-resumo": "investimentos", eua: "investimentos",
 };
 // meta/esportes-<liga> (src/esportes.js): rodada, próximos e tabela de cada competição, todos da seção Esportes
