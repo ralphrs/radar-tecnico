@@ -175,7 +175,8 @@ form.ped-form{display:block}
 .rot-abs{display:none;color:var(--mut)}
 .rot-rel{white-space:normal}
 .selo{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px 1px 7px;white-space:nowrap;line-height:20px}
-.selo::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.selo svg{width:13px;height:13px;flex:none}
+.selo-sem-dados{background:color-mix(in srgb,var(--fg) 8%,transparent);color:var(--mut)}
 .selo-em-dia{background:color-mix(in srgb,var(--ok) 13%,transparent);color:var(--ok)}
 .selo-com-erro{background:color-mix(in srgb,#c2410c 13%,transparent);color:#c2410c}
 .selo-atrasada{background:color-mix(in srgb,var(--av-warn) 16%,transparent);color:var(--av-warn)}
@@ -200,6 +201,73 @@ form.ped-form{display:block}
   .rot-abs{display:inline}
   .rot-abs::before{content:", "}
 }
+/* Menu com submenus (pedido de 20/11, 14h29): lateral em tela larga; abaixo de 860 px, uma faixa de menus que rola de
+   lado e, embaixo, a faixa dos submenus do menu aberto. A página nunca alarga: tabelas rolam dentro do bloco. */
+.wrap{max-width:1200px}
+.adm{display:grid;grid-template-columns:232px minmax(0,1fr);gap:28px;align-items:start}
+.adm-telas{min-width:0}
+.adm-nav{position:sticky;top:12px;min-width:0}
+.nav-menus,.nav-subs,.nav-subfaixa{list-style:none;margin:0;padding:0}
+.nav-menus>li,.nav-subs>li,.nav-subfaixa>li{display:block;padding:0;border:0}
+.nav-mlink{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;padding:8px 10px;border-radius:10px;color:var(--fg);font-weight:700;font-size:14px;text-decoration:none}
+.nav-geral{font-weight:500;font-size:12.5px;color:var(--mut)}
+.nav-subs{margin:0 0 8px 10px;padding-left:8px;border-left:1px solid var(--line)}
+.nav-subs a,.nav-subfaixa a{display:flex;align-items:center;gap:6px;min-height:36px;padding:6px 10px;border-radius:8px;color:var(--fg);text-decoration:none;font-size:14px}
+.nav-mlink:hover,.nav-subs a:hover,.nav-subfaixa a:hover{background:color-mix(in srgb,var(--fg) 6%,transparent)}
+.nav-subs a[aria-current="page"],.nav-subfaixa a[aria-current="page"]{background:var(--chip);color:var(--pri);font-weight:600}
+.adm-nav a:focus-visible{outline:2px solid var(--pri);outline-offset:1px}
+.nav-subfaixa{display:none}
+.ponto{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--err);flex:none;margin-left:auto}
+.ponto-atrasada{background:var(--av-warn)}.ponto-com-erro{background:#c2410c}.ponto-sem-dados{background:var(--mut)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .ponto-com-erro{background:#fb923c}}
+:root[data-theme=dark] .ponto-com-erro{background:#fb923c}
+@media (max-width:860px){
+  .adm{grid-template-columns:minmax(0,1fr);gap:14px}
+  .adm-nav{position:static}
+  .nav-menus,.nav-subfaixa{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:2px 2px 6px;margin:0 -2px}
+  .nav-menus>li,.nav-subfaixa>li{flex:none}
+  .nav-subs{display:none}
+  .nav-mlink{white-space:nowrap;border:1px solid var(--line);background:var(--card);padding:7px 12px;min-height:40px;align-items:center}
+  .nav-m.aberto .nav-mlink{border-color:var(--pri);color:var(--pri);background:var(--chip)}
+  .nav-subfaixa{margin-top:4px}
+  .nav-subfaixa a{white-space:nowrap;border-bottom:2px solid transparent;border-radius:6px 6px 0 0}
+  .nav-subfaixa a[aria-current="page"]{border-bottom-color:var(--pri)}
+  .ponto{margin-left:2px}
+}
+.tela-topo{margin:0 0 14px}
+.tela-topo h2{font-size:20px;margin:2px 0 4px}
+.tela-topo h2:focus{outline:none}
+.tela-topo h2:focus-visible{outline:2px solid var(--pri);outline-offset:3px;border-radius:4px}
+.tela-topo .dica{margin:0}
+.trilha{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;font-size:13px;color:var(--mut)}
+.trilha a{color:var(--pri);text-decoration:none;border-radius:4px}
+.trilha a:hover{text-decoration:underline}
+.trilha a:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.trilha .sep{color:var(--mut)}
+.h-barra{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px}
+.card h3.h-sub,.card h3.instr-h{font-size:15px;margin:0 0 8px}
+.atalhos li .quem{flex:1 1 220px;min-width:0}
+.atalhos li .quem small{display:block}
+.btn.atual{border-color:var(--pri);color:var(--pri)}
+/* Health Checks */
+.h-tab-caixa{overflow-x:auto;max-width:100%}
+.h-resumo li{padding:0;border-top:1px solid var(--line)}
+.h-resumo li:first-child{border-top:0}
+.h-resumo a{display:grid;grid-template-columns:minmax(0,1fr) auto auto 14px;align-items:center;gap:4px 12px;width:100%;padding:12px 4px;color:var(--fg);text-decoration:none;border-radius:8px}
+.h-resumo a:hover{background:color-mix(in srgb,var(--fg) 5%,transparent)}
+.h-resumo a:focus-visible{outline:2px solid var(--pri);outline-offset:1px}
+.h-r-nome{font-weight:600}
+.h-r-conta{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+.h-r-erro{grid-column:1 / -1;color:var(--err);font-size:13px;overflow-wrap:anywhere}
+.h-r-seta{color:var(--mut);font-size:18px;line-height:1}
+@media (max-width:520px){.h-resumo a{grid-template-columns:minmax(0,1fr) auto 14px}.h-r-conta{grid-column:1;grid-row:2}}
+.rot-resumo .selo{font-size:12.5px}
+.rot-destaque .selo,.rot-ok .selo{vertical-align:-1px;margin-right:4px}
+.h-links{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.h-sondar li .quem{flex:1 1 260px;min-width:0}
+.h-sondar li .quem small{display:block;overflow-wrap:anywhere}
+.h-ids code{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--fg) 7%,transparent);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere;display:inline-block;margin:0 2px 2px 0}
+table.h-janelas td{text-align:left;white-space:normal}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -213,101 +281,201 @@ form.ped-form{display:block}
     <button class="conta-btn" type="button" id="conta" aria-haspopup="menu" aria-expanded="false" aria-controls="conta-menu" aria-label="Conta" title="Conta"><span class="conta-av" id="conta-av" aria-hidden="true"></span></button>
   </header>
 
-  <section class="card" id="rotinas-card" aria-labelledby="rotinas-titulo">
-    <div class="rot-topo">
-      <div><h2 id="rotinas-titulo">Rotinas</h2><span class="conta-txt" id="rotinas-quando" aria-live="polite"></span></div>
-      <button type="button" id="rotinas-atualizar">Atualizar</button>
-    </div>
-    <div id="rotinas" aria-live="polite"><p class="vazio">Carregando…</p></div>
-  </section>
+  <div class="adm">
+    <nav class="adm-nav" id="adm-nav" aria-label="Menu da administração"></nav>
 
-  <section class="card" id="custos-card">
-    <h2>Custos e consumo</h2>
-    <div id="custos"><p class="vazio">Carregando…</p></div>
-  </section>
-
-  <section class="card" id="espelho-card">
-    <h2>Espelho em São Paulo</h2>
-    <p class="dica" style="margin-top:0">Cópia do que a página lê, num Durable Object em São Paulo. O D1 continua sendo a fonte; o cron copia o que mudou a cada minuto. Se o espelho falhar ou demorar mais de 2 s, a leitura vai direto ao D1. Favoritos, listas e o painel do Início também vêm daqui; quando alguém grava, a mudança chega ao espelho logo depois do D1.</p>
-    <div id="espelho"><p class="vazio">Carregando…</p></div>
-    <div class="sonda-acoes"><button class="pri" type="button" id="espelho-sync">Sincronizar agora</button><button type="button" class="perigo" id="espelho-zerar">Zerar e recarregar</button></div>
-    <p class="msg" id="msg-espelho" role="status"></p>
-  </section>
-
-  <section class="card">
-    <h2>Convidar alguém</h2>
-    <form id="form">
-      <input id="email" type="email" placeholder="email@exemplo.com" required autocomplete="off" aria-label="E-mail">
-      <input id="nome" type="text" placeholder="Nome (opcional)" autocomplete="off" aria-label="Nome">
-      <button class="pri" type="submit">Adicionar</button>
-    </form>
-    <div class="gsel" id="convite-grupos" aria-label="Grupos do novo convidado"></div>
-    <p class="msg" id="msg" role="status"></p>
-    <p class="dica">Quem estiver na lista entra com o Google ou com um código enviado para o e-mail. Quem não estiver vê a tela de "só para convidados".</p>
-  </section>
-
-  <section class="card">
-    <h2>Grupos e seções</h2>
-    <p class="dica" style="margin-top:0">Cada grupo libera algumas seções. O convidado vê a soma das seções dos seus grupos; quem não tem grupo cai nos grupos marcados como padrão. Sem nenhum grupo criado, todo mundo vê tudo. Você sempre vê tudo.</p>
-    <div class="grade" id="grupos"><p class="vazio">Carregando…</p></div>
-    <p class="msg" id="msg-grupos" role="status"></p>
-  </section>
-
-  <section class="card">
-    <h2 id="titulo-lista">Na lista</h2>
-    <ul id="lista"><li class="vazio">Carregando…</li></ul>
-  </section>
-
-  <section class="card cur" id="curadoria-card">
-    <h2>Curadoria</h2>
-    <p class="dica" style="margin-top:0">Cada seção é escrita por uma tarefa agendada, três vezes ao dia. As instruções que ela segue e os pedidos ficam aqui. "Rodar agora" pede uma rodada fora de hora.</p>
-    <ul id="curadoria"><li class="vazio">Carregando…</li></ul>
-    <p class="msg" id="msg-curadoria" role="status"></p>
-  </section>
-
-  <section class="card hist" id="instr-card" hidden aria-labelledby="instr-titulo">
-    <div class="instr-topo"><h2 id="instr-titulo">Instruções</h2><button type="button" id="instr-fechar">Fechar</button></div>
-    <p class="aviso-fixo">As regras de segurança ficam na própria tarefa e não são editadas aqui: em qual seção ela grava e o que nunca toca.</p>
-    <p class="dica" id="instr-estado" style="margin:0 0 8px"></p>
-    <textarea id="instr-texto" class="instr-area" spellcheck="false" aria-label="Instruções da seção" aria-describedby="instr-conta"></textarea>
-    <div class="instr-rodape"><span class="conta-txt" id="instr-conta" aria-live="polite"></span><div class="sonda-acoes"><button type="button" id="instr-desfazer" hidden>Descartar mudanças</button><button class="pri" type="button" id="instr-salvar" disabled>Salvar</button></div></div>
-    <p class="msg" id="msg-instr" role="status"></p>
-    <h3>Versões anteriores</h3>
-    <p class="dica" style="margin:0 0 4px">Restaurar só traz o texto para a área acima. Quem grava é o Salvar, como versão nova.</p>
-    <ul id="instr-hist"></ul>
-  </section>
-
-  <section class="card ped" id="pedidos-card">
-    <h2>Pedidos à curadoria</h2>
-    <form id="ped-form" class="ped-form">
-      <textarea id="ped-texto" maxlength="500" placeholder="Procure sobre…, inclua este link…, olhe esta fonte…" aria-label="O que pedir à curadoria" aria-describedby="ped-conta"></textarea>
-      <div class="ped-linha">
-        <select id="ped-secao" aria-label="Seção"></select>
-        <label class="interruptor"><input type="checkbox" role="switch" id="ped-fixo">Vale em toda rodada</label>
-        <span class="conta-txt" id="ped-conta">0 de 500</span>
-        <button class="pri" type="submit">Adicionar</button>
+    <main class="adm-telas" id="adm-telas">
+      <div class="tela-topo">
+        <nav class="trilha" id="trilha" aria-label="Caminho"></nav>
+        <h2 id="tela-titulo" tabindex="-1">Administração</h2>
+        <p class="dica" id="tela-frase"></p>
       </div>
-    </form>
-    <p class="msg" id="msg-ped" role="status"></p>
-    <ul id="pedidos"><li class="vazio">Carregando…</li></ul>
-  </section>
 
-  <section class="card" id="fontes-card">
-    <h2>Rendimento das fontes</h2>
-    <p class="dica">Dos links que o robô trouxe nos últimos 10 dias, quantos a curadoria publicou e quantos descartou, por quê. Fonte que nunca emplaca nada é candidata a sair da lista. Subreddits aparecem só com os posts em Nos fóruns.</p>
-    <div class="coleta"><button type="button" id="coleta-agora">Ler os feeds agora</button><div class="conta-txt" id="coleta-andamento" aria-live="polite"></div></div>
-    <p class="msg" id="msg-coleta" role="status"></p>
-    <div id="fontes" class="fontes"><p class="vazio">Carregando…</p></div>
-  </section>
+      <!-- Pessoas -->
+      <section class="tela" data-tela="pessoas/convidar" hidden>
+        <div class="card">
+          <form id="form">
+            <input id="email" type="email" placeholder="email@exemplo.com" required autocomplete="off" aria-label="E-mail">
+            <input id="nome" type="text" placeholder="Nome (opcional)" autocomplete="off" aria-label="Nome">
+            <button class="pri" type="submit">Adicionar</button>
+          </form>
+          <div class="gsel" id="convite-grupos" aria-label="Grupos do novo convidado"></div>
+          <p class="msg" id="msg" role="status"></p>
+          <p class="dica">Quem estiver na lista entra com o Google ou com um código enviado para o e-mail. Quem não estiver vê a tela de "só para convidados". Depois de adicionar, o convite sai em <a href="#pessoas/lista">Na lista</a>, por WhatsApp ou e-mail.</p>
+        </div>
+      </section>
 
-  <section class="card">
-    <h2>Sondar feeds</h2>
-    <p class="dica" style="margin-top:0">Uma URL por linha, até 30 por vez. O próprio Worker testa até 4 por minuto, com o mesmo leitor da coleta, e o resultado aparece abaixo. URL do Reddit vai uma por minuto, nos minutos em que a coleta não leu subreddit.</p>
-    <textarea id="sonda-urls" placeholder="https://exemplo.com/feed" aria-label="URLs para sondar, uma por linha" spellcheck="false"></textarea>
-    <div class="sonda-acoes"><button class="pri" type="button" id="sonda-ir">Sondar</button><button type="button" id="sonda-atualizar">Atualizar</button></div>
-    <p class="msg" id="msg-sonda" role="status"></p>
-    <div id="sonda" class="fontes sonda"></div>
-  </section>
+      <section class="tela" data-tela="pessoas/grupos" hidden>
+        <div class="card">
+          <p class="dica" style="margin-top:0">O convidado vê a soma das seções dos seus grupos; quem não tem grupo cai nos grupos marcados como padrão. Sem nenhum grupo criado, todo mundo vê tudo. Você sempre vê tudo.</p>
+          <div class="grade" id="grupos"><p class="vazio">Carregando…</p></div>
+          <p class="msg" id="msg-grupos" role="status"></p>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="pessoas/lista" hidden>
+        <div class="card">
+          <p class="conta-txt" id="titulo-lista" style="margin:0 0 6px"></p>
+          <ul id="lista"><li class="vazio">Carregando…</li></ul>
+        </div>
+      </section>
+
+      <!-- Curadoria -->
+      <section class="tela" data-tela="curadoria/rodadas" hidden>
+        <div class="card cur" id="curadoria-card">
+          <ul id="curadoria"><li class="vazio">Carregando…</li></ul>
+          <p class="msg" id="msg-curadoria" role="status"></p>
+          <p class="dica">As instruções de cada seção ficam em <a href="#curadoria/instrucoes">Curadoria › Instruções</a>, e o rastro das rodadas em <a href="#health/tarefas">Health Checks › Tarefas agendadas</a>.</p>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="curadoria/instrucoes" hidden>
+        <div class="card cur" id="instr-lista-card">
+          <ul id="instr-secoes"><li class="vazio">Carregando…</li></ul>
+        </div>
+        <section class="card hist" id="instr-card" hidden aria-labelledby="instr-titulo">
+          <div class="instr-topo"><h3 id="instr-titulo" class="instr-h">Instruções</h3><button type="button" id="instr-fechar">Fechar</button></div>
+          <p class="aviso-fixo">As regras de segurança ficam na própria tarefa e não são editadas aqui: em qual seção ela grava e o que nunca toca.</p>
+          <p class="dica" id="instr-estado" style="margin:0 0 8px"></p>
+          <textarea id="instr-texto" class="instr-area" spellcheck="false" aria-label="Instruções da seção" aria-describedby="instr-conta"></textarea>
+          <div class="instr-rodape"><span class="conta-txt" id="instr-conta" aria-live="polite"></span><div class="sonda-acoes"><button type="button" id="instr-desfazer" hidden>Descartar mudanças</button><button class="pri" type="button" id="instr-salvar" disabled>Salvar</button></div></div>
+          <p class="msg" id="msg-instr" role="status"></p>
+          <h3>Versões anteriores</h3>
+          <p class="dica" style="margin:0 0 4px">Restaurar só traz o texto para a área acima. Quem grava é o Salvar, como versão nova.</p>
+          <ul id="instr-hist"></ul>
+        </section>
+      </section>
+
+      <section class="tela" data-tela="curadoria/pedidos" hidden>
+        <div class="card ped" id="pedidos-card">
+          <form id="ped-form" class="ped-form">
+            <textarea id="ped-texto" maxlength="500" placeholder="Procure sobre…, inclua este link…, olhe esta fonte…" aria-label="O que pedir à curadoria" aria-describedby="ped-conta"></textarea>
+            <div class="ped-linha">
+              <select id="ped-secao" aria-label="Seção"></select>
+              <label class="interruptor"><input type="checkbox" role="switch" id="ped-fixo">Vale em toda rodada</label>
+              <span class="conta-txt" id="ped-conta">0 de 500</span>
+              <button class="pri" type="submit">Adicionar</button>
+            </div>
+          </form>
+          <p class="msg" id="msg-ped" role="status"></p>
+          <ul id="pedidos"><li class="vazio">Carregando…</li></ul>
+        </div>
+      </section>
+
+      <!-- Conteúdo: atalhos para as telas de edição que moram nas seções -->
+      <section class="tela" data-tela="conteudo/arch" hidden>
+        <div class="card"><ul class="atalhos">
+          <li><div class="quem"><strong>Categorias das tecnologias</strong><small>Na aba Tools do ArchLandscape, botão "Organizar categorias".</small></div><a class="btn" href="/#arch/tools">Abrir Tools</a></li>
+          <li><div class="quem"><strong>Provedores e categorias da nuvem</strong><small>Na aba Cloud, botão "Provedores e categorias".</small></div><a class="btn" href="/#arch/cloud">Abrir Cloud</a></li>
+          <li><div class="quem"><strong>Comparações profundas</strong><small>As pedidas e as prontas, por aba.</small></div><a class="btn" href="/#arch/tools/profundas">Abrir comparações</a></li>
+        </ul></div>
+      </section>
+      <section class="tela" data-tela="conteudo/oficina" hidden>
+        <div class="card"><ul class="atalhos">
+          <li><div class="quem"><strong>Categorias de ferramentas</strong><small>Na aba Ferramentas, botão "Organizar categorias".</small></div><a class="btn" href="/#oficina/ferramentas">Abrir Ferramentas</a></li>
+          <li><div class="quem"><strong>Categorias de insumos</strong><small>Na aba Insumos, o mesmo botão.</small></div><a class="btn" href="/#oficina/insumos">Abrir Insumos</a></li>
+          <li><div class="quem"><strong>Madeiras</strong><small>Adicionar e editar madeiras.</small></div><a class="btn" href="/#oficina/madeiras">Abrir Madeiras</a></li>
+        </ul></div>
+      </section>
+      <section class="tela" data-tela="conteudo/saude" hidden>
+        <div class="card"><ul class="atalhos">
+          <li><div class="quem"><strong>Produtos acompanhados</strong><small>Nome, apelidos, marcas e lojas de cada produto.</small></div><a class="btn" href="/#saude/produtos">Abrir produtos</a></li>
+        </ul></div>
+      </section>
+
+      <!-- Custos -->
+      <section class="tela" data-tela="custos/consumo" hidden>
+        <div class="card" id="custos-card">
+          <div id="custos"><p class="vazio">Carregando…</p></div>
+        </div>
+      </section>
+
+      <!-- Health Checks -->
+      <section class="tela" data-tela="health/resumo" hidden>
+        <div class="card">
+          <div class="h-barra"><span class="conta-txt" id="h-resumo-lido" aria-live="polite"></span><button type="button" id="h-resumo-reler">Conferir de novo</button></div>
+          <div id="h-resumo" aria-live="polite"><p class="vazio">Carregando…</p></div>
+          <p class="dica">Custos e consumo ficam em <a href="#custos/consumo">Custos</a>.</p>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="health/tarefas" hidden>
+        <div class="card">
+          <div class="h-barra"><span class="conta-txt" data-h-lido="tarefas" aria-live="polite"></span><button type="button" data-h-reler="tarefas">Conferir de novo</button></div>
+          <div data-h="tarefas" aria-live="polite"><p class="vazio">Carregando…</p></div>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="health/worker" hidden>
+        <div class="card">
+          <div class="h-barra"><span class="conta-txt" data-h-lido="worker" aria-live="polite"></span><button type="button" data-h-reler="worker">Conferir de novo</button></div>
+          <div data-h="worker" aria-live="polite"><p class="vazio">Carregando…</p></div>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="health/fontes" hidden>
+        <div class="card">
+          <div class="h-barra"><span class="conta-txt" data-h-lido="fontes" aria-live="polite"></span><button type="button" data-h-reler="fontes">Conferir de novo</button></div>
+          <div data-h="fontes" aria-live="polite"><p class="vazio">Carregando…</p></div>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="health/externos" hidden>
+        <div class="card">
+          <div class="h-barra"><span class="conta-txt" data-h-lido="externos" aria-live="polite"></span><button type="button" data-h-reler="externos">Conferir de novo</button></div>
+          <div data-h="externos" aria-live="polite"><p class="vazio">Carregando…</p></div>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="health/config" hidden>
+        <div class="card">
+          <div class="h-barra"><span class="conta-txt" data-h-lido="config" aria-live="polite"></span><button type="button" data-h-reler="config">Conferir de novo</button></div>
+          <div data-h="config" aria-live="polite"><p class="vazio">Carregando…</p></div>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="health/integridade" hidden>
+        <div class="card">
+          <div class="h-barra"><span class="conta-txt" data-h-lido="integridade" aria-live="polite"></span><button type="button" data-h-reler="integridade">Conferir de novo</button></div>
+          <div data-h="integridade" aria-live="polite"><p class="vazio">Carregando…</p></div>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="health/fontes/rendimento" hidden>
+        <div class="card" id="fontes-card">
+          <div class="coleta"><button type="button" id="coleta-agora">Ler os feeds agora</button><div class="conta-txt" id="coleta-andamento" aria-live="polite"></div></div>
+          <p class="msg" id="msg-coleta" role="status"></p>
+          <div id="fontes" class="fontes"><p class="vazio">Carregando…</p></div>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="health/fontes/sondar" hidden>
+        <div class="card">
+          <p class="dica" style="margin-top:0">Uma URL por linha, até 30 por vez. O próprio Worker testa até 4 por minuto, com o mesmo leitor da coleta, e o resultado aparece abaixo. URL do Reddit vai uma por minuto, nos minutos em que a coleta não leu subreddit.</p>
+          <textarea id="sonda-urls" placeholder="https://exemplo.com/feed" aria-label="URLs para sondar, uma por linha" spellcheck="false"></textarea>
+          <div class="sonda-acoes"><button class="pri" type="button" id="sonda-ir">Sondar</button><button type="button" id="sonda-atualizar">Atualizar</button></div>
+          <p class="msg" id="msg-sonda" role="status"></p>
+          <div id="sonda" class="fontes sonda"></div>
+        </div>
+      </section>
+
+      <section class="tela" data-tela="health/banco" hidden>
+        <div class="card">
+          <div class="h-barra"><span class="conta-txt" data-h-lido="banco" aria-live="polite"></span><button type="button" data-h-reler="banco">Conferir de novo</button></div>
+          <div data-h="banco" aria-live="polite"><p class="vazio">Carregando…</p></div>
+        </div>
+        <div class="card" id="espelho-card">
+          <h3 class="h-sub">Espelho em São Paulo</h3>
+          <p class="dica" style="margin-top:0">Cópia do que a página lê, num Durable Object em São Paulo. O D1 continua sendo a fonte; o cron copia o que mudou a cada minuto. Se o espelho falhar ou demorar mais de 2 s, a leitura vai direto ao D1. Favoritos, listas e o painel do Início também vêm daqui; quando alguém grava, a mudança chega ao espelho logo depois do D1.</p>
+          <div id="espelho"><p class="vazio">Carregando…</p></div>
+          <div class="sonda-acoes"><button class="pri" type="button" id="espelho-sync">Sincronizar agora</button><button type="button" class="perigo" id="espelho-zerar">Zerar e recarregar</button></div>
+          <p class="msg" id="msg-espelho" role="status"></p>
+        </div>
+      </section>
+
+      <p class="vazio" id="tela-vazia" hidden>Esta tela ainda não tem conteúdo.</p>
+    </main>
+  </div>
 </div>
 
 <div class="conta-menu" id="conta-menu" role="menu" aria-labelledby="conta">
@@ -319,6 +487,7 @@ form.ped-form{display:block}
   <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sair</a>
 </div>
 
+<script src="/admin-menu.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -421,7 +590,7 @@ async function salvarMembro(email, grupos) {
 async function carregar() {
   const { usuarios, admin } = await api("/api/admin/usuarios");
   const ul = $("lista");
-  $("titulo-lista").textContent = usuarios.length ? `Na lista (${usuarios.length})` : "Na lista";
+  $("titulo-lista").textContent = usuarios.length ? (usuarios.length === 1 ? "1 pessoa na lista" : usuarios.length + " pessoas na lista") : "";
   if (!usuarios.length) { ul.innerHTML = '<li class="vazio">Ninguém convidado ainda. Você entra sempre, como administrador' + (admin ? " (" + esc(admin) + ")" : "") + ".</li>"; return; }
   ul.innerHTML = "";
   for (const u of usuarios) {
@@ -502,7 +671,6 @@ async function carregarFontes() {
     box.innerHTML = h;
   } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
 }
-carregarFontes();
 
 const fmt = (v, c = 0) => Number(v || 0).toLocaleString("pt-BR", { maximumFractionDigits: c, minimumFractionDigits: c });
 const f1 = (v) => Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
@@ -588,7 +756,6 @@ async function carregarCustos() {
     box.innerHTML = h;
   } catch (err) { box.innerHTML = '<p class="vazio">' + esc(err.message) + "</p>"; }
 }
-carregarCustos();
 
 /* Espelho em São Paulo */
 function avisoE(t, tipo) { const m = $("msg-espelho"); m.textContent = t; m.className = "msg " + (tipo || ""); }
@@ -659,7 +826,6 @@ $("espelho-zerar").addEventListener("click", (ev) => {
   bt.dataset.conf = ""; bt.textContent = "Zerar e recarregar";
   sincronizarEspelho(true);
 });
-carregarEspelho();
 
 function avisoS(t, tipo) { const m = $("msg-sonda"); m.textContent = t; m.className = "msg " + (tipo || ""); }
 function dataCurta(iso) {
@@ -695,7 +861,6 @@ $("sonda-ir").addEventListener("click", async () => {
   } catch (err) { avisoS(err.message, "err"); }
 });
 $("sonda-atualizar").addEventListener("click", () => { avisoS(""); carregarSonda(); });
-carregarSonda();
 
 $("form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -881,10 +1046,11 @@ async function carregarCuradoria() {
   try {
     const [a, b] = await Promise.all([api("/api/admin/instrucoes"), api("/api/admin/pedidos")]);
     CUR.secoes = a.secoes; CUR.limites = a.limites || CUR.limites; CUR.pedidos = b.pedidos; CUR.limPed = b.limites || CUR.limPed;
-    pintarCuradoria(); pintarPedidos();
+    pintarCuradoria(); pintarPedidos(); pintarInstrSecoes();
   } catch (e) {
     $("curadoria").innerHTML = '<li class="vazio">' + esc(e.message) + "</li>";
     $("pedidos").innerHTML = '<li class="vazio">' + esc(e.message) + "</li>";
+    $("instr-secoes").innerHTML = '<li class="vazio">' + esc(e.message) + "</li>";
   }
 }
 function pintarCuradoria() {
@@ -900,7 +1066,7 @@ function pintarCuradoria() {
   }).join("");
   $("curadoria").querySelectorAll("li[data-secao]").forEach((li) => {
     const secao = li.dataset.secao, nome = NOME_SECAO[secao];
-    li.querySelector("[data-instr]").addEventListener("click", () => { ED.abriuAqui = true; location.hash = "#instrucoes/" + secao; });
+    li.querySelector("[data-instr]").addEventListener("click", () => { ED.abriuAqui = true; location.hash = "#curadoria/instrucoes/" + secao; });
     const bt = li.querySelector("[data-rodar]");
     bt.addEventListener("click", async () => {
       bt.disabled = true;
@@ -968,22 +1134,31 @@ async function abrirInstrucoes(secao, rolar = true) {
     $("instr-estado").textContent = r.doc ? `Versão ${r.doc.versao}, salva ${diaHora(r.doc.atualizado)}. A tarefa lê este texto no começo de cada rodada.` : "Ainda não há instruções desta seção no Lookout. Enquanto isso, a tarefa segue o texto que está nela.";
     pintarHist(r.historico || []);
   } catch (e) { $("instr-estado").textContent = ""; avisoI(e.message, "err"); }
-  ta.disabled = false; contarInstr();
+  ta.disabled = false; contarInstr(); pintarInstrSecoes();
 }
-function fecharEditor() { ED.secao = null; ED.abriuAqui = false; $("instr-card").hidden = true; }
-function rotaHash() {
-  const m = /^#instrucoes\/([a-z]+)$/.exec(location.hash);
-  const alvo = m && SECOES_CUR.includes(m[1]) ? m[1] : null;
-  if (alvo === ED.secao) return;
-  if (sujo() && !confirm(`As instruções de ${NOME_SECAO[ED.secao]} têm mudança não salva. Sair sem salvar?`)) { history.pushState(null, "", "#instrucoes/" + ED.secao); return; }
-  if (alvo) abrirInstrucoes(alvo); else fecharEditor();
+function fecharEditor() { ED.secao = null; ED.abriuAqui = false; $("instr-card").hidden = true; pintarInstrSecoes(); }
+/* Instruções: #curadoria/instrucoes/<secao> abre o editor; #curadoria/instrucoes, a lista das seções. Mudança não salva
+   pergunta antes de sair (outra seção, outra tela, Voltar). Devolve false quando a pessoa preferiu ficar. */
+function rotaInstrucoes(alvo) {
+  if (alvo === ED.secao) return true;
+  if (sujo() && !confirm(`As instruções de ${NOME_SECAO[ED.secao]} têm mudança não salva. Sair sem salvar?`)) { history.pushState(null, "", "#curadoria/instrucoes/" + ED.secao); return false; }
+  if (alvo) abrirInstrucoes(alvo, false); else fecharEditor();
+  return true;
 }
-window.addEventListener("hashchange", rotaHash);
-window.addEventListener("beforeunload", (e) => { if (sujo()) { e.preventDefault(); e.returnValue = ""; } });
+function pintarInstrSecoes() {
+  const ul = $("instr-secoes");
+  if (!CUR.secoes.length) return;
+  ul.innerHTML = CUR.secoes.map((s) => {
+    const instr = s.vazia ? '<span class="chip alerta">sem instruções no Lookout</span>' : "versão " + s.versao + " · " + fmt(s.tamanho) + " caracteres";
+    const aberta = ED.secao === s.secao;
+    return `<li data-secao="${s.secao}"><div class="quem"><strong>${esc(NOME_SECAO[s.secao] || s.secao)}</strong><small>${instr}</small></div>`
+      + `<div class="acoes"><a class="btn${aberta ? " atual" : ""}" href="#curadoria/instrucoes/${s.secao}"${aberta ? ' aria-current="page"' : ""}>${aberta ? "Aberta" : "Abrir"}</a></div></li>`;
+  }).join("");
+}
 $("instr-texto").addEventListener("input", contarInstr);
 $("instr-fechar").addEventListener("click", () => {
-  if (ED.abriuAqui) history.back();
-  else { location.hash = ""; }
+  if (ED.abriuAqui && history.length > 1) history.back();
+  else location.hash = "#curadoria/instrucoes";
 });
 $("instr-desfazer").addEventListener("click", () => { $("instr-texto").value = ED.original; avisoI(""); contarInstr(); });
 $("instr-salvar").addEventListener("click", async () => {
@@ -1075,117 +1250,268 @@ $("coleta-agora").addEventListener("click", async () => {
   try { const a = await api("/api/admin/coleta-agora", { method: "POST", headers: JSON_H, body: "{}" }); avisoCol("Pedido feito. O robô começa no próximo minuto.", "ok"); pintarColeta(a); }
   catch (e) { avisoCol(e.message, e.status === 409 ? "" : "err"); if (e.dados && e.dados.total) pintarColeta(e.dados); else bt.disabled = false; }
 });
-carregarColeta();
-carregarCuradoria().then(() => rotaHash());
 
-/* Rotinas (GET /api/admin/rotinas, src/rotinas.js): o que está em dia, o que atrasou e o que parou, com o tempo desde a
-   última vez que funcionou. Relê ao abrir e a cada 60 s enquanto a aba está visível; o botão Atualizar relê na hora. */
-const ROT = { ultimo: 0, timer: null, carregando: false };
-const SELO = { "em dia": "em-dia", "com erro": "com-erro", atrasada: "atrasada", parada: "parada" };
+/* ---------- Health Checks (GET /api/admin/health, src/health.js) ----------
+   Estado sempre com texto e ícone, nunca só cor. Cada tela lê só o bloco dela (?grupo=<id>); o Resumo e o menu leem
+   ?resumo=1. "Conferir de novo" relê na hora. */
+const SELO = { "em dia": "em-dia", "com erro": "com-erro", atrasada: "atrasada", parada: "parada", "sem dados": "sem-dados" };
+const IC = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICONE = {
+  "em dia": IC('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  "com erro": IC('<path d="M12 6v8"/><path d="M12 18.5v.01"/>'),
+  atrasada: IC('<circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 2"/>'),
+  parada: IC('<rect x="7" y="7" width="10" height="10" rx="1.5"/>'),
+  "sem dados": IC('<path d="M7 12h10"/>'),
+};
+const selo = (est) => `<span class="selo selo-${SELO[est] || "parada"}">${ICONE[est] || ICONE.parada}${esc(est)}</span>`;
 function haTempo(min) {
   if (min == null) return "nunca";
   if (min < 1) return "agora há pouco";
   if (min < 60) return "há " + min + " min";
   const h = Math.floor(min / 60);
-  if (h < 24) return "há " + h + " h";
-  const d = Math.floor(h / 24);
-  return d === 1 ? "há 1 dia" : "há " + d + " dias";
+  if (h < 48) return "há " + h + " h";
+  return "há " + Math.floor(h / 24) + " dias";
 }
 const dataHora = (iso) => { const d = new Date(iso); return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) + " às " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); };
 const porExtenso = (iso) => { const d = new Date(iso); return d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }) + ", " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); };
-const curtaData = (iso) => diaHora(iso);
 const duracao = (v) => (v == null ? "" : v < 1000 ? fmt(v) + " ms" : f1(v / 1000) + " s");
-function celulaUltima(l) {
-  const iso = l.ultimaVez || l.ultimaOk;
-  if (!iso) return '<td class="rot-ult" data-r="Última vez que funcionou"><span class="rot-rel">nunca</span></td>';
-  return `<td class="rot-ult" data-r="Última vez que funcionou"><span class="rot-rel" title="${esc(dataHora(iso))}">${esc(haTempo(l.idadeMin))}</span><span class="rot-abs">${esc(porExtenso(iso))}</span></td>`;
-}
-function obsWorker(l) {
-  const p = [];
-  const ruim = l.estado !== "em dia";
-  // a mensagem vale enquanto a falha for a última coisa registrada (um sucesso depois apaga o aviso)
-  if (l.msg && l.ultimoErro && (!l.ultimaOk || l.ultimoErro >= l.ultimaOk)) p.push(l.msg);
-  else if (l.msg && ruim && !l.ultimoErro) p.push(l.msg);
-  if (l.nunca) p.push(l.aguardando ? `ainda não chegou a hora desde que o registro começou (${curtaData(l.desde)})` : l.desde ? `nunca rodou desde ${curtaData(l.desde)}, quando o registro começou` : "nada registrado ainda");
-  else if (l.perdida && (l.estado === "atrasada" || l.estado === "parada")) p.push(l.janela ? `a janela de ${curtaData(l.perdida)} passou sem rodar` : `devia ter rodado ${curtaData(l.perdida)}`);
-  if (l.semTrabalhoDesde && !ruim) p.push("sem trabalho desde " + curtaData(l.semTrabalhoDesde));
-  else if (l.semTrabalhoDesde === null && !ruim && !l.ultimaOk) p.push("sem trabalho desde que o registro começou");
-  if (l.nota) p.push(l.nota);
-  return p;
-}
-function obsCuradoria(l) {
-  const p = [];
-  if (l.msg) p.push(l.msg);
-  /* Oficina: levantamento das ferramentas (insumos e madeiras na mesma tarefa); a mensagem já traz as contas */
-  if (l.id === "oficina-levantamento") { if (l.nunca) p.push("nenhum levantamento gravado ainda"); return p; }
-  if (l.id === "plantao") {
-    p.push(l.pendentes ? `${l.pendentes} ${l.pendentes === 1 ? "pedido esperando" : "pedidos esperando"}, o mais antigo ${haTempo(l.esperaMin)}` : "nenhum pedido esperando");
-    return p;
-  }
-  if (l.nunca) p.push("nenhuma rodada registrada");
-  p.push(`24 h: ${l.itens24h} ${l.itens24h === 1 ? "item" : "itens"} · 7 dias: ${l.itens7d}`);
-  if (l.novosNaUltima != null) p.push(`${l.novosNaUltima} ${l.novosNaUltima === 1 ? "novo" : "novos"} na última`);
-  return p;
-}
-function linhaRotina(l, obs) {
-  const sub = [l.detalhe, l.ms != null ? "levou " + duracao(l.ms) : ""].filter(Boolean).join(" · ");
-  const o = obs(l);
-  const ruim = l.estado !== "em dia";
-  return `<tr data-id="${esc(l.id)}" data-estado="${esc(l.estado)}"><td class="rot-nome"><b>${esc(l.nome)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</td>`
-    + `<td class="rot-est"><span class="selo selo-${SELO[l.estado] || "parada"}">${esc(l.estado)}</span></td>`
-    + celulaUltima(l)
-    + `<td class="rot-esp" data-r="Esperado">${esc(l.esperado)}</td>`
-    + `<td class="rot-obs${ruim ? " ruim" : ""}">${o.map(esc).join(" · ")}</td></tr>`;
-}
-function tabelaRotinas(linhas, obs, rotulo) {
-  return `<table class="rot-tab" aria-label="${esc(rotulo)}"><colgroup><col class="c-nome"><col class="c-est"><col class="c-ult"><col class="c-esp"><col></colgroup>`
-    + "<thead><tr><th>Rotina</th><th>Estado</th><th>Última vez que funcionou</th><th>Esperado</th><th>Observação</th></tr></thead><tbody>"
-    + linhas.map((l) => linhaRotina(l, obs)).join("") + "</tbody></table>";
-}
-const nPlural = (n, um, varios) => `<b>${n}</b> ${n === 1 ? um : varios}`;
-function pintarRotinas(r) {
-  const s = r.resumo;
-  let h = `<p class="rot-resumo">${nPlural(s.emDia, "em dia", "em dia")}<span class="sep">·</span>${nPlural(s.comErro, "com erro", "com erro")}<span class="sep">·</span>${nPlural(s.atrasadas, "atrasada", "atrasadas")}<span class="sep">·</span>${nPlural(s.paradas, "parada", "paradas")}</p>`;
-  if (s.destaque) {
-    const d = s.destaque;
-    h += `<p class="rot-destaque" id="rotinas-destaque"><strong>Parada há mais tempo: ${esc(d.nome)}.</strong> ${d.id === "plantao" ? (d.pendentes === 1 ? "Um pedido de rodar agora" : d.pendentes + " pedidos de rodar agora") + " esperando, o mais antigo " + esc(haTempo(d.esperaMin)) + "." : d.nunca ? (d.idadeMin != null ? "Nunca rodou desde que o registro começou, " + esc(haTempo(d.idadeMin)) + "." : "Nunca rodou.") : "Funcionou pela última vez " + esc(haTempo(d.idadeMin)) + (d.ultimaVez ? ", " + esc(dataHora(d.ultimaVez)) : "") + "."}</p>`;
-  } else if (!s.atrasadas && !s.comErro) h += '<p class="rot-ok">Tudo rodando no horário.</p>';
-  h += '<h3 class="rot-h">Curadorias</h3><p class="dica" style="margin:0 0 4px">Tarefas agendadas fora do Worker: aqui entra só o rastro delas no banco. Em dia até 13 h desde a última rodada, atrasada até 26 h.</p>';
-  h += tabelaRotinas(r.curadorias, obsCuradoria, "Curadorias");
-  h += '<h3 class="rot-h">Worker</h3><p class="dica" style="margin:0 0 4px">Etapas do cron de minuto em minuto. Atrasada passando de 2 vezes o intervalo; parada passando de 6. As de uma vez por dia ou por mês contam da janela perdida.</p>';
-  h += tabelaRotinas(r.worker, obsWorker, "Rotinas do Worker");
-  const feeds = r.worker.find((l) => l.id === "feeds");
-  if (feeds && feeds.feedsComFalha != null) h += `<p class="rot-feeds" id="rotinas-feeds">${feeds.feedsComFalha ? `<b>${feeds.feedsComFalha}</b> ${feeds.feedsComFalha === 1 ? "feed com falha" : "feeds com falha"} agora.` : "Nenhum feed com falha agora."} <a href="#fontes-card" data-rolar="fontes-card">Ver no Rendimento das fontes</a></p>`;
-  $("rotinas").innerHTML = h;
-  $("rotinas-quando").textContent = "Lido às " + new Date(r.agora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-}
-async function carregarRotinas() {
-  if (ROT.carregando) return;
-  ROT.carregando = true;
-  const bt = $("rotinas-atualizar"); bt.disabled = true;
-  try { pintarRotinas(await api("/api/admin/rotinas")); ROT.ultimo = Date.now(); }
-  catch (e) { $("rotinas").innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
-  finally { ROT.carregando = false; bt.disabled = false; }
-}
-function agendarRotinas() {
-  clearInterval(ROT.timer); ROT.timer = null;
-  if (document.visibilityState !== "visible") return;
-  if (Date.now() - ROT.ultimo >= 60000) carregarRotinas();
-  ROT.timer = setInterval(() => { if (document.visibilityState === "visible") carregarRotinas(); }, 60000);
-}
-$("rotinas-atualizar").addEventListener("click", carregarRotinas);
-document.addEventListener("visibilitychange", agendarRotinas);
-// o link para o card de fontes rola até ele sem mexer no endereço (o #instrucoes/<secao> do editor usa o hash)
-$("rotinas").addEventListener("click", (e) => {
-  const a = e.target.closest("[data-rolar]");
-  if (!a) return;
-  e.preventDefault();
-  const alvo = $(a.dataset.rolar);
-  if (alvo) { alvo.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); alvo.setAttribute("tabindex", "-1"); alvo.focus({ preventScroll: true }); }
-});
-agendarRotinas();
+const lidoAs = (iso) => "Lido às " + new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+const contaGrupo = (g) => `${g.emDia} de ${g.total} em dia`;
 
-carregarGrupos().then(() => carregar()).catch((err) => { $("lista").innerHTML = '<li class="vazio">' + esc(err.message) + "</li>"; });
+function celulaQuando(l, rotulo) {
+  if (!l.quando) return `<td class="rot-ult" data-r="${esc(rotulo)}"><span class="rot-rel">nunca</span></td>`;
+  return `<td class="rot-ult" data-r="${esc(rotulo)}"><span class="rot-rel" title="${esc(dataHora(l.quando))}">${esc(haTempo(l.idadeMin))}</span><span class="rot-abs">${esc(porExtenso(l.quando))}</span></td>`;
+}
+/* Tabela de linhas de um bloco. cols: rótulos das colunas 1, 3, 4 e 5; terceira(l) e quarta(l) dão o HTML das do meio. */
+function tabelaHealth(linhas, { rotulo, nome = "Item", quando = "Último rastro", quarta = "Esperado", obs = "Observação", celula3, celula4 }) {
+  const c3 = celula3 || ((l) => celulaQuando(l, quando));
+  const c4 = celula4 || ((l) => `<td class="rot-esp" data-r="${esc(quarta)}">${esc(l.esperado || "")}</td>`);
+  return `<div class="h-tab-caixa"><table class="rot-tab" aria-label="${esc(rotulo)}"><colgroup><col class="c-nome"><col class="c-est"><col class="c-ult"><col class="c-esp"><col></colgroup>`
+    + `<thead><tr><th>${esc(nome)}</th><th>Estado</th><th>${esc(quando)}</th><th>${esc(quarta)}</th><th>${esc(obs)}</th></tr></thead><tbody>`
+    + linhas.map((l) => {
+      const sub = [l.detalhe, l.secao, l.ms != null ? "levou " + duracao(l.ms) : ""].filter(Boolean).join(" · ");
+      return `<tr data-id="${esc(l.id)}" data-estado="${esc(l.estado)}"><td class="rot-nome"><b>${esc(l.nome)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</td>`
+        + `<td class="rot-est">${selo(l.estado)}</td>` + c3(l) + c4(l)
+        + `<td class="rot-obs${l.estado !== "em dia" ? " ruim" : ""}">${(l.obs || []).map(esc).join(" · ")}</td></tr>`;
+    }).join("") + "</tbody></table></div>";
+}
+const ordemEstado = (a, b) => ["parada", "atrasada", "com erro", "sem dados", "em dia"].indexOf(a.estado) - ["parada", "atrasada", "com erro", "sem dados", "em dia"].indexOf(b.estado);
+const piores = (ls) => ls.slice().sort((a, b) => ordemEstado(a, b));
+function topoGrupo(g) {
+  let h = `<p class="rot-resumo">${selo(g.estado)} <span>${esc(contaGrupo(g))}</span></p>`;
+  if (g.erro) h += `<p class="rot-destaque">${esc(g.erro)}</p>`;
+  return h;
+}
+
+const PINTAR = {
+  tarefas(g) {
+    let h = topoGrupo(g) + `<p class="dica" style="margin:6px 0 4px">${esc(g.nota || "")} Cada uma é julgada pela janela esperada; a tabela das janelas fica no fim.</p>`;
+    h += tabelaHealth(piores(g.linhas), { rotulo: "Tarefas agendadas", nome: "Tarefa" });
+    if (g.tabela) h += '<details><summary>Janela esperada de cada tarefa</summary><div class="h-tab-caixa"><table class="custo-tab h-janelas"><thead><tr><th>Tarefa</th><th>Lê de</th><th>Esperado</th><th>Atrasada depois de</th><th>Parada depois de</th></tr></thead><tbody>'
+      + g.tabela.map((t) => `<tr><td>${esc(t.nome)}</td><td>${esc(t.le)}</td><td>${esc(t.esperado)}</td><td>${esc(horas(t.atrasadaH))}</td><td>${esc(horas(t.paradaH))}</td></tr>`).join("")
+      + '</tbody></table></div><p class="dica">Nas filas (plantão, comparações, Saúde) conta a espera do pedido mais antigo; sem nada pendente, a tarefa está em dia.</p></details>';
+    return h;
+  },
+  worker(g) {
+    let h = topoGrupo(g) + '<p class="dica" style="margin:6px 0 4px">Etapas do cron de minuto em minuto. Atrasada passando de 2 vezes o intervalo; parada passando de 6. As de uma vez por dia ou por mês contam da janela perdida.</p>';
+    h += tabelaHealth(piores(g.linhas), { rotulo: "Worker e cron", nome: "Etapa", quando: "Última execução" });
+    h += '<p class="rot-feeds">Os feeds com falha estão em <a href="#health/fontes">Health Checks › Fontes</a>.</p>';
+    return h;
+  },
+  fontes(g) {
+    let h = topoGrupo(g);
+    h += '<p class="h-links"><a class="btn" href="#health/fontes/rendimento">Rendimento das fontes</a><a class="btn" href="#health/fontes/sondar">Sondar feeds</a></p>';
+    h += '<h3 class="h-sub">Feeds com erros seguidos</h3>';
+    h += g.linhas.length ? tabelaHealth(g.linhas, { rotulo: "Feeds com erros seguidos", nome: "Feed", quando: "Última leitura boa", quarta: "Erros seguidos", celula4: (l) => `<td class="rot-esp" data-r="Erros seguidos">${esc(l.seguidos)}</td>` })
+      : '<p class="rot-ok">Nenhum feed com erro agora.</p>';
+    h += '<h3 class="h-sub" style="margin-top:18px">Para sondar</h3><p class="dica" style="margin-top:0">Fontes candidatas de cada radar (src/feeds.js). Cripto já tem as URLs; Oficina e Saúde só têm os nomes, para achar o feed de cada uma e trocar o nome pela URL antes de sondar.</p>';
+    h += '<ul class="h-sondar">' + (g.paraSondar || []).map((p, i) => `<li><div class="quem"><strong>${esc(p.nome)}</strong><small>${esc(p.itens.map((x) => x.nome).join(", "))}</small></div>`
+      + `<div class="acoes"><button type="button" data-sondar="${i}">${p.itens.some((x) => x.url) ? "Jogar as URLs na sonda" : "Jogar os nomes na sonda"}</button></div></li>`).join("") + "</ul>";
+    return h;
+  },
+  externos(g) { return topoGrupo(g) + tabelaHealth(piores(g.linhas), { rotulo: "Dados externos", nome: "Fonte", quando: "Última resposta boa", quarta: "Último erro", celula4: (l) => `<td class="rot-esp" data-r="Último erro">${l.erroEm ? esc(haTempo(Math.floor((Date.now() - Date.parse(l.erroEm)) / 60000))) : "–"}</td>` }); },
+  banco(g) {
+    let h = topoGrupo(g) + tabelaHealth(g.linhas, { rotulo: "Banco e espelho", quando: "Última sincronia", quarta: "Tamanho", celula4: (l) => `<td class="rot-esp" data-r="Tamanho">${l.bytes ? esc(fmtBytes(l.bytes)) : l.dados ? esc(fmtBytes(l.dados)) : l.docs ? esc(fmt(l.docs) + " docs") : "–"}</td>` });
+    if (g.colecoes && g.colecoes.length) h += `<h3 class="h-sub" style="margin-top:16px">As ${g.colecoes.length} maiores collections</h3><div class="h-tab-caixa"><table class="custo-tab"><thead><tr><th>Collection</th><th>Docs</th><th>Tamanho</th></tr></thead><tbody>`
+      + g.colecoes.map((c) => `<tr><td>${esc(c.collection)}</td><td>${fmt(c.n)}</td><td>${fmtBytes(c.bytes)}</td></tr>`).join("") + `</tbody></table></div><p class="dica">De ${fmt(g.totalColecoes || g.colecoes.length)} collections. As de cada pessoa aparecem somadas (favs/*, carteira/*), sem o e-mail de ninguém.</p>`;
+    return h;
+  },
+  config(g) {
+    return topoGrupo(g) + '<p class="dica" style="margin:6px 0 4px">Daqui só dá para saber se cada uma existe. O valor fica no painel da Cloudflare (Workers & Pages › lookout › Variables and Secrets) e nunca aparece aqui.</p>'
+      + tabelaHealth(piores(g.linhas), { rotulo: "Configuração", nome: "Nome", quando: "Tipo", quarta: "Existe", obs: "Sem ela",
+        celula3: (l) => `<td class="rot-ult" data-r="Tipo">${esc(l.tipo)}${l.obrigatoria ? " · obrigatória" : ""}</td>`, celula4: (l) => `<td class="rot-esp" data-r="Existe">${l.presente ? "sim" : "não"}</td>` });
+  },
+  integridade(g) {
+    return topoGrupo(g) + tabelaHealth(piores(g.linhas), { rotulo: "Integridade dos dados", nome: "Conferência", quando: "Quantos", quarta: "Exemplos",
+      celula3: (l) => `<td class="rot-ult" data-r="Quantos">${l.n == null ? "–" : fmt(l.n)}</td>`,
+      celula4: (l) => `<td class="rot-esp h-ids" data-r="Exemplos">${l.exemplos && l.exemplos.length ? l.exemplos.map((x) => `<code>${esc(x)}</code>`).join(" ") : "–"}</td>` });
+  },
+};
+const horas = (h) => (h >= 48 && h % 24 === 0 ? h / 24 + " dias" : h + " h");
+
+const HG = { dados: {}, carregando: {} };
+async function carregarGrupo(id) {
+  if (HG.carregando[id]) return;
+  HG.carregando[id] = true;
+  const box = document.querySelector(`[data-h="${id}"]`), lido = document.querySelector(`[data-h-lido="${id}"]`), bt = document.querySelector(`[data-h-reler="${id}"]`);
+  if (bt) bt.disabled = true;
+  try {
+    const r = await api("/api/admin/health?grupo=" + encodeURIComponent(id));
+    const g = r.grupos[0];
+    HG.dados[id] = g;
+    box.innerHTML = PINTAR[id](g);
+    if (lido) lido.textContent = lidoAs(r.lidoEm);
+    // o menu acompanha o que esta tela acabou de ler
+    if (NAV.resumo) {
+      const x = NAV.resumo.grupos.find((y) => y.id === id);
+      if (x) { Object.assign(x, { estado: g.estado, emDia: g.emDia, total: g.total }); NAV.resumo.problemas = NAV.resumo.grupos.filter((y) => y.estado !== "em dia").length; }
+      pintarNav(NAV.rota);
+    }
+  } catch (e) { box.innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
+  finally { HG.carregando[id] = false; if (bt) bt.disabled = false; }
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-h-reler]");
+  if (b) { carregarGrupo(b.dataset.hReler); return; }
+  const s = e.target.closest("[data-sondar]");
+  if (s) {
+    const p = HG.dados.fontes && HG.dados.fontes.paraSondar[Number(s.dataset.sondar)];
+    if (!p) return;
+    $("sonda-urls").value = p.itens.map((x) => x.url || x.nome).join("\n");
+    avisoS(p.itens.some((x) => x.url) ? `${p.itens.length} URLs de ${p.nome} na área. Confira e clique em Sondar.` : `Os nomes de ${p.nome} estão na área: troque cada um pela URL do feed antes de sondar.`, "");
+    location.hash = "#health/fontes/sondar";
+  }
+});
+
+async function lerResumo() {
+  const r = await api("/api/admin/health?resumo=1");
+  NAV.resumo = r;
+  return r;
+}
+async function carregarResumo() {
+  const bt = $("h-resumo-reler"); bt.disabled = true;
+  try {
+    const r = await lerResumo();
+    const prob = r.problemas;
+    let h = prob ? `<p class="rot-destaque">${selo(r.estado)} <strong>${prob === 1 ? "1 grupo com problema" : prob + " grupos com problema"}.</strong> O pior estado de cada um vem primeiro na tela dele.</p>`
+      : `<p class="rot-ok">${selo("em dia")} <strong>Tudo em dia.</strong></p>`;
+    h += '<ul class="h-resumo">' + r.grupos.map((g) => `<li><a href="#health/${esc(g.id)}"><span class="h-r-nome">${esc(g.titulo)}</span>${selo(g.estado)}<span class="h-r-conta">${esc(contaGrupo(g))}</span>`
+      + (g.erro ? `<small class="h-r-erro">${esc(g.erro)}</small>` : "") + '<span class="h-r-seta" aria-hidden="true">›</span></a></li>').join("") + "</ul>";
+    $("h-resumo").innerHTML = h;
+    $("h-resumo-lido").textContent = lidoAs(r.lidoEm);
+  } catch (e) { $("h-resumo").innerHTML = '<p class="vazio">' + esc(e.message) + "</p>"; }
+  bt.disabled = false;
+  pintarNav(NAV.rota);
+}
+$("h-resumo-reler").addEventListener("click", () => carregarResumo());
+
+/* ---------- Menu com submenus (public/admin-menu.js): cada submenu é uma tela com endereço próprio ----------
+   Só a tela aberta carrega os dados dela (ABRIR), e cada uma relê no máximo a cada 30 s quando volta a abrir. */
+const NAV = { rota: null, ultima: new Map(), resumo: null, iniciou: false };
+const chaveTela = (r) => r.menu + "/" + r.submenu + (r.tela ? "/" + r.tela : "");
+const ABRIR = {
+  "pessoas/convidar": () => carregarGrupos(),
+  "pessoas/grupos": () => carregarGrupos(),
+  "pessoas/lista": () => carregarGrupos().then(() => carregar()).catch((err) => { $("lista").innerHTML = '<li class="vazio">' + esc(err.message) + "</li>"; }),
+  "curadoria/rodadas": () => carregarCuradoria(),
+  "curadoria/instrucoes": () => carregarCuradoria(),
+  "curadoria/pedidos": () => carregarCuradoria(),
+  "custos/consumo": () => carregarCustos(),
+  "health/resumo": () => carregarResumo(),
+  "health/tarefas": () => carregarGrupo("tarefas"),
+  "health/worker": () => carregarGrupo("worker"),
+  "health/fontes": () => carregarGrupo("fontes"),
+  "health/externos": () => carregarGrupo("externos"),
+  "health/config": () => carregarGrupo("config"),
+  "health/integridade": () => carregarGrupo("integridade"),
+  "health/fontes/rendimento": () => { carregarFontes(); carregarColeta(); },
+  "health/fontes/sondar": () => carregarSonda(),
+  "health/banco": () => { carregarGrupo("banco"); carregarEspelho(); },
+};
+// os blocos do Health Checks relêem a cada abertura; o resto, no máximo a cada 30 s
+const SEMPRE = new Set(["health/resumo", "health/tarefas", "health/worker", "health/fontes", "health/externos", "health/banco", "health/config", "health/integridade"]);
+
+function pintarNav(r) {
+  const nav = $("adm-nav"), res = NAV.resumo;
+  const probGrupo = (g) => { const x = res && res.grupos ? res.grupos.find((y) => y.id === g) : null; return x && x.estado !== "em dia" ? x.estado : ""; };
+  const ponto = (est) => (est ? ` <span class="ponto ponto-${SELO[est] || "parada"}" role="img" aria-label="com problema: ${esc(est)}"></span>` : "");
+  const extraMenu = (m) => {
+    if (m.id !== "health" || !res) return "";
+    return `<small class="nav-geral">· ${res.problemas ? esc(res.problemas + " com problema") : "em dia"}</small>`;
+  };
+  const subLink = (m, s) => {
+    const atual = r && r.menu === m.id && r.submenu === s.id;
+    return `<li><a href="#${m.id}/${s.id}"${atual ? ' aria-current="page"' : ""}>${esc(s.nome)}${ponto(s.grupo ? probGrupo(s.grupo) : "")}</a></li>`;
+  };
+  let h = '<ul class="nav-menus">';
+  for (const m of Admin.MENU) {
+    const atual = r && r.menu === m.id;
+    h += `<li class="nav-m${atual ? " aberto" : ""}"><a class="nav-mlink" href="#${m.id}"${atual ? ' aria-current="true"' : ""}>${esc(m.nome)}${extraMenu(m)}</a>`
+      + `<ul class="nav-subs">${m.subs.map((s) => subLink(m, s)).join("")}</ul></li>`;
+  }
+  h += "</ul>";
+  const mAtual = r ? Admin.menuDe(r.menu) : null;
+  if (mAtual) h += `<ul class="nav-subfaixa" aria-label="${esc(mAtual.nome)}">${mAtual.subs.map((s) => subLink(mAtual, s)).join("")}</ul>`;
+  nav.innerHTML = h;
+  // nas faixas que rolam de lado (celular), o item aberto fica à vista sem rolar a página
+  for (const faixa of nav.querySelectorAll(".nav-menus, .nav-subfaixa")) {
+    if (faixa.scrollWidth <= faixa.clientWidth) continue;
+    const a = faixa.querySelector('[aria-current="page"], [aria-current="true"]');
+    if (!a) continue;
+    const ini = a.offsetLeft - faixa.offsetLeft, fim = ini + a.offsetWidth;
+    if (ini < faixa.scrollLeft || fim > faixa.scrollLeft + faixa.clientWidth) faixa.scrollLeft = Math.max(0, ini - 16);
+  }
+}
+
+function pintarTopo(r) {
+  const t = Admin.tela(r) || { titulo: "Administração", frase: "" };
+  const cam = Admin.caminho(r);
+  $("trilha").innerHTML = cam.map((c, i) => (i === cam.length - 1 ? `<span aria-current="page">${esc(c.nome)}</span>` : `<a href="${esc(c.hash)}">${esc(c.nome)}</a>`)).join('<span class="sep" aria-hidden="true">›</span>');
+  $("tela-titulo").textContent = t.titulo;
+  $("tela-frase").textContent = t.frase || "";
+  document.title = t.titulo + " · Admin · Lookout";
+}
+
+function aplicarRota(r, { foco = false } = {}) {
+  const ant = NAV.rota;
+  const ehInstr = (x) => x && x.menu === "curadoria" && x.submenu === "instrucoes";
+  if (ehInstr(r)) { if (!rotaInstrucoes(r.param || null)) return; }
+  else if (ehInstr(ant) && ED.secao) { if (!rotaInstrucoes(null)) return; }
+  if (r.hash !== location.hash) history.replaceState(null, "", r.hash);
+  NAV.rota = r;
+  const k = chaveTela(r);
+  let achou = false;
+  for (const t of document.querySelectorAll(".tela")) { const v = t.dataset.tela === k; t.hidden = !v; if (v) achou = true; }
+  $("tela-vazia").hidden = achou;
+  pintarTopo(r); pintarNav(r);
+  const abrir = ABRIR[k];
+  if (abrir && (SEMPRE.has(k) || !NAV.ultima.has(k) || Date.now() - NAV.ultima.get(k) > 30000)) { NAV.ultima.set(k, Date.now()); try { abrir(); } catch (e) { console.error(e); } }
+  if (foco) {
+    $("tela-titulo").focus({ preventScroll: true });
+    const topo = $("adm-telas").getBoundingClientRect().top;
+    if (topo < 0 || topo > innerHeight) $("adm-telas").scrollIntoView({ block: "start" });
+  }
+}
+
+window.addEventListener("hashchange", () => aplicarRota(Admin.rota(location.hash), { foco: NAV.iniciou }));
+window.addEventListener("beforeunload", (e) => { if (sujo()) { e.preventDefault(); e.returnValue = ""; } });
+
+/* Começo: com endereço, abre a tela dele. Sem endereço, o resumo do Health Checks decide: com problema, Health Checks ›
+   Resumo; tudo em dia, Pessoas › Convidar. O resumo também pinta o estado ao lado do nome no menu. */
+(async () => {
+  const r = Admin.rota(location.hash);
+  pintarNav(r.vazio ? null : r);
+  const pResumo = lerResumo().catch(() => null);
+  if (!r.vazio) aplicarRota(r);
+  else {
+    $("tela-titulo").textContent = "Carregando…";
+    const res = await pResumo;
+    aplicarRota(Admin.inicial(res ? res.problemas : 0));
+  }
+  NAV.iniciou = true;
+  await pResumo;
+  pintarNav(NAV.rota);
+})();
 </script>
 </body>
 </html>

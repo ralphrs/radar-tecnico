@@ -235,6 +235,9 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [ ] Saúde: escrever as instruções da curadoria (`instrucoes/saude`) no Admin e o texto da tarefa agendada, seguindo o contrato (produtos ativos, reclassificar o produto de cada candidato, `situacaoBrasil` só com fonte)
 - [ ] Saúde: depois das primeiras rodadas, conferir se "reta" (apelido de 4 letras) traz falso positivo nos feeds gerais e, se trouxer, tirar o apelido ou passar a exigir feed do assunto para ele
 - [ ] Saúde: o candidato não guarda o produto achado (a tabela não tem coluna e o schema não mudou); se a reclassificação da curadoria errar, avaliar a coluna nova por `garantirColunas`
+- [x] Health Checks no Admin (20/11, 14h27): toda validação da plataforma num lugar só, `GET /api/admin/health` em blocos (tarefas agendadas julgadas pelo rastro com a tabela `Health.TAREFAS`, Worker e cron, fontes, dados externos, banco e espelho, configuração sem valor de segredo e seis validações de integridade), tolerante a falha por bloco; ponto no avatar do Admin no site (docs/LOOKOUT.md, "Health Checks")
+- [x] Admin em menu com submenus (20/11, 14h29): Pessoas, Curadoria, Conteúdo, Custos e Health Checks, cada submenu uma tela com endereço próprio que só carrega os dados dela; lateral em tela larga e faixas que rolam de lado no celular (docs/LOOKOUT.md, "Admin em menu com submenus")
+- [ ] Health Checks: conferir em produção o `lote` dos candidatos (a validação compara como horário ISO da rodada) e o `meta.size_after` do D1 no tamanho do banco
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

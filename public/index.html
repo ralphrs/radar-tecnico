@@ -75,6 +75,9 @@ h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: 
 /* Conta: avatar redondo no cabeçalho e menu flutuante. O menu fica fora do header (que tem clip-path) e é posicionado em JS. */
 .conta-btn { flex: none; margin-left: auto; margin-right: max(0px, calc(env(safe-area-inset-right, 0px) - 16px)); width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; display: inline-grid; place-items: center; }
 .conta-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+/* Health Checks (20/11): ponto no avatar do Admin quando o estado geral não está em dia; o texto vai no aria-label do botão */
+.conta-btn { position: relative; }
+.conta-ponto { position: absolute; top: -2px; right: -2px; width: 11px; height: 11px; border-radius: 50%; background: var(--err); box-shadow: 0 0 0 2px var(--background); pointer-events: none; }
 .conta-btn .conta-av { transition: box-shadow 120ms; }
 .conta-btn:hover .conta-av, .conta-btn[aria-expanded="true"] .conta-av { box-shadow: 0 0 0 2px var(--background), 0 0 0 4px color-mix(in srgb, var(--foreground) 18%, transparent); }
 .conta-av { --av: var(--primary); width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; background: var(--av); color: #fff; font: 600 12.5px/1 var(--font-sans); letter-spacing: .02em; user-select: none; }
@@ -2938,6 +2941,7 @@ fieldset.ofi-grupo { border: 1px solid var(--border); border-radius: var(--radiu
   <button class="conta-item" type="button" role="menuitem" tabindex="-1" id="aparencia" data-fica></button>
   <button class="conta-item" type="button" role="menuitemcheckbox" tabindex="-1" id="conta-traducao" aria-checked="true" data-fica></button>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/admin" id="conta-admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Administração</a>
+  <a class="conta-item" role="menuitem" tabindex="-1" href="/admin#health" id="conta-health" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>Health Checks<small id="conta-health-txt"></small></a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout" id="conta-trocar" title="Sai e abre o login para escolher outra conta do Google" aria-description="Sai e abre o login para escolher outra conta do Google" onclick="try{sessionStorage.setItem('radar-trocar','1')}catch(e){}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>Trocar de conta</a>
   <a class="conta-item" role="menuitem" tabindex="-1" href="/cdn-cgi/access/logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sair</a>
 </div>
@@ -6531,13 +6535,52 @@ montarMenuConta($("conta"), $("conta-menu"));
     $("conta-email").textContent = email && email !== nome ? email : "";
     $("conta-admin-marca").hidden = !me.admin;
     $("conta-admin").hidden = !me.admin;
-    const rot = nome ? "Conta de " + nome + (email && email !== nome ? " (" + email + ")" : "") : "Conta";
-    $("conta").setAttribute("aria-label", rot); $("conta").title = rot;
+    contaRotulo = nome ? "Conta de " + nome + (email && email !== nome ? " (" + email + ")" : "") : "Conta";
+    rotularConta();
   };
   pintar(null);
+  if (me.admin) vigiarHealth();
   const id = await pIdent;
   if (id) pintar(id);
 })();
+
+/* Health Checks no avatar (só o Admin): GET /api/admin/health?resumo=1 no máximo uma vez a cada 10 minutos por aba
+   (a última leitura fica no sessionStorage da aba). Estado geral fora de "em dia": ponto no avatar, o texto
+   "Health Checks: N com problema" no rótulo do botão e o item no menu da conta, que leva a /admin#health. */
+let contaRotulo = "Conta", healthTxt = "";
+function rotularConta() {
+  const rot = contaRotulo + (healthTxt ? ". " + healthTxt : "");
+  $("conta").setAttribute("aria-label", rot); $("conta").title = rot;
+}
+const HEALTH_CHAVE = "lookout-health", HEALTH_CADA = 10 * 60 * 1000;
+function pintarHealth(r) {
+  const prob = r && r.estado && r.estado !== "em dia" ? Math.max(1, Number(r.problemas) || 0) : 0;
+  healthTxt = prob ? `Health Checks: ${prob} com problema` : "";
+  let p = $("conta").querySelector(".conta-ponto");
+  if (prob && !p) { p = document.createElement("span"); p.className = "conta-ponto"; p.setAttribute("aria-hidden", "true"); $("conta").append(p); }
+  if (!prob && p) p.remove();
+  $("conta-health").hidden = !prob;
+  $("conta-health-txt").textContent = prob ? prob + " com problema" : "";
+  rotularConta();
+}
+async function lerHealth() {
+  let cache = null;
+  try { cache = JSON.parse(sessionStorage.getItem(HEALTH_CHAVE) || "null"); } catch (e) {}
+  if (cache && Date.now() - cache.t < HEALTH_CADA) { pintarHealth(cache); return; }
+  try {
+    const r = await fetch("/api/admin/health?resumo=1", { credentials: "same-origin", cache: "no-store" });
+    if (!r.ok) return;
+    const j = await r.json();
+    const leve = { t: Date.now(), estado: j.estado, problemas: j.problemas };
+    try { sessionStorage.setItem(HEALTH_CHAVE, JSON.stringify(leve)); } catch (e) {}
+    pintarHealth(leve);
+  } catch (e) {}
+}
+function vigiarHealth() {
+  lerHealth();
+  setInterval(() => { if (document.visibilityState === "visible") lerHealth(); }, HEALTH_CADA);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") lerHealth(); });
+}
 
 /* Busca: espera 150 ms sem tecla e redesenha só o que depende dela (feed, contagens de tipo, tema, subtema e
    abrangência, contador de filtros). Os campos não são recriados, então o foco e o cursor ficam onde estão. */

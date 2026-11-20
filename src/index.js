@@ -8,7 +8,7 @@ import { cronCvm, etapaAnoAnterior, etapaAnoCorrente } from "./cvm.js";
 import { adminCustos } from "./custos.js";
 import { secoesDe, secaoDe, libera, adminGrupos, adminMembro, guardarSecoes, SECOES } from "./grupos.js";
 import { cronSonda, adminSonda } from "./sonda.js";
-import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1, gravarNoEspelho, removerDoEspelho, PREFIXOS_PESSOAIS, stubEspelho } from "./espelho.js";
+import { doEspelho, convidadoNoEspelho, sincronizarEspelho, adminEspelho, logD1, gravarNoEspelho, removerDoEspelho, PREFIXOS_PESSOAIS, stubEspelho, espelhoLigado } from "./espelho.js";
 import { rotaLidas } from "./lidas.js";
 import { catalogoDe, validarPainel, respostaPainel } from "./painel.js";
 import { rotaPapel, cronPapel, ID_OK as PAPEL_ID_OK } from "./papel.js";
@@ -29,6 +29,7 @@ import { rotaOficina, rotaAdminOficina, semearOficina } from "./oficina.js";
 import { rotaSaude, rotaAdminSaude, semearSaude } from "./saude.js";
 import { cronTraducao, estadoAdmin as estadoTraducao, envContado, contarFetch, contagens } from "./traducao.js";
 import { novoBatimento, etapa, gravarBatimento, LER, CONSULTAS_BATIMENTO, rotaRotinas } from "./rotinas.js";
+import { rotaHealth } from "./health.js";
 // Tradução das notícias: a preferência "Mostrar notícias traduzidas" (validação e padrão) mora em public/traducao.js
 import "../public/traducao.js";
 const RF = globalThis.RadarFiltro;
@@ -742,6 +743,12 @@ async function atender(request, env, ctx) {
     if (p === "/api/admin/rotinas") {
       if (!quem.admin) return json({ erro: "rota" }, 404);
       return rotaRotinas(request, env, quem, { estadoEspelho: env.ESPELHO ? () => stubEspelho(env).estado() : null });
+    }
+    // Health Checks (src/health.js): tudo o que confere se a plataforma está funcionando, em blocos. Só o Admin; os outros
+    // recebem o mesmo 404. ?resumo=1 só o resumo (menu do /admin e ponto no avatar), ?grupo=<id> um bloco só.
+    if (p === "/api/admin/health") {
+      if (!quem.admin) return json({ erro: "rota" }, 404);
+      return rotaHealth(request, env, quem, { estadoEspelho: env.ESPELHO ? () => stubEspelho(env).estado() : null, espelhoLigado: espelhoLigado(env) });
     }
 
     // Curadoria (src/curadoria.js): instruções de cada seção, pedidos e "rodar agora"; e a leitura forçada dos feeds

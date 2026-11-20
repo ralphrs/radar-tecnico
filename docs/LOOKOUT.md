@@ -1265,12 +1265,12 @@ Botão no card Rendimento das fontes. O `POST` não lê nada na hora: grava `_si
 ### Tela
 
 - **Curadoria:** uma linha por seção com a última rodada e quantos novos, a versão das instruções (ou "sem instruções no Lookout"), os pedidos pendentes, o botão Instruções e "Rodar agora". Ao apertar: "Pedido gravado. O plantão confere de hora em hora, das 7h às 23h." e a linha mostra "rodada pedida às HH:MM" (o botão vira "Rodada pedida" enquanto o pedido estiver pendente). Sem promessa de horário exato.
-- **Instruções** (`/admin#instrucoes/<secao>`, abre pela linha da seção; Voltar do navegador fecha): aviso fixo "As regras de segurança ficam na própria tarefa e não são editadas aqui: em qual seção ela grava e o que nunca toca.", área de texto grande em fonte monoespaçada, contagem de caracteres, Salvar desligado sem mudança, "Descartar mudanças", aviso de mudança não salva ao sair (Voltar, Fechar, outra seção ou fechar a aba), versões anteriores com Ver e Restaurar (Restaurar só traz o texto para a área; quem grava é o Salvar). No 409, o botão "Trazer a versão do banco".
+- **Instruções** (`/admin#curadoria/instrucoes/<secao>` desde 20/11, abre pela linha da seção ou pela tela Curadoria › Instruções; Voltar do navegador fecha): aviso fixo "As regras de segurança ficam na própria tarefa e não são editadas aqui: em qual seção ela grava e o que nunca toca.", área de texto grande em fonte monoespaçada, contagem de caracteres, Salvar desligado sem mudança, "Descartar mudanças", aviso de mudança não salva ao sair (Voltar, Fechar, outra seção ou fechar a aba), versões anteriores com Ver e Restaurar (Restaurar só traz o texto para a área; quem grava é o Salvar). No 409, o botão "Trazer a versão do banco".
 - **Pedidos à curadoria:** campo de texto (contagem até 500), seção, interruptor "Vale em toda rodada", Adicionar. Lista com estado, quando foi atendido, a resposta da curadoria e quantos itens entraram; Cancelar (pendente), Reabrir (fechado) e Excluir (com confirmação). Vazio: "Nenhum pedido por enquanto. Dá para pedir um link para incluir, um assunto para a curadoria procurar ou uma fonte para olhar com mais atenção."
 
 ## Rotinas: o relatório do Admin
 
-Pedido de 19/11, depois que a aba Tech ficou 10 dias sem notícia nova e a tradução 3 dias sem rodar sem que nada na tela dissesse. É o primeiro card do `/admin`: o que está em dia, o que atrasou e o que parou, com o tempo desde a última vez que funcionou. Código em `src/rotinas.js`; testes em `test/rotinas.test.mjs`.
+Pedido de 19/11, depois que a aba Tech ficou 10 dias sem notícia nova e a tradução 3 dias sem rodar sem que nada na tela dissesse. Desde 20/11 o card não existe mais: as curadorias foram para Health Checks › Tarefas agendadas e o Worker para Health Checks › Worker e cron (veja "Health Checks"), que leem estas mesmas regras. A rota `GET /api/admin/rotinas` continua respondendo. O relatório: o que está em dia, o que atrasou e o que parou, com o tempo desde a última vez que funcionou. Código em `src/rotinas.js`; testes em `test/rotinas.test.mjs`.
 
 ### Estados
 
@@ -1324,6 +1324,71 @@ Tabela `ROTINAS` em `src/rotinas.js`, num lugar só; o texto da coluna "Esperado
 - Lê do D1 direto, em **duas consultas**: os cinco `meta/status*` mais `_sistema/rotinas` num SELECT só; e um UNION ALL de três termos com os itens por seção (24 h e 7 dias), o plantão e os feeds com falha (contados como no card Rendimento das fontes). Mais uma chamada ao Durable Object do espelho.
 - Card **Rotinas**, o primeiro do Admin: resumo, destaque, a tabela das curadorias e a do Worker (Rotina, Estado com selo de cor e texto, Última vez que funcionou com "há 3 h" e a data no title, Esperado, Observação), parada e atrasada em cima. No celular a tabela vira lista empilhada, com a data por extenso. Embaixo, quantos feeds estão com falha e o link para o card Rendimento das fontes. Botão Atualizar; relê ao abrir e a cada 60 s enquanto a aba está visível.
 
+## Admin em menu com submenus
+
+Pedido de 20/11, 14h29: "Quebre o que puder de adm em submenus de adm." O `/admin` deixou de ser uma página comprida. Cada submenu é uma tela com endereço próprio (`/admin#<menu>/<submenu>`), e só a tela aberta carrega os dados dela (cada uma relê no máximo a cada 30 s ao voltar; as do Health Checks relêem sempre e têm "Conferir de novo"). Menu e regras de endereço em `public/admin-menu.js` (`window.Admin`), testes em `test/admin-menu.test.mjs`.
+
+| Menu | Submenus (endereço) |
+|---|---|
+| Pessoas | Convidar (`#pessoas/convidar`), Grupos e seções (`#pessoas/grupos`), Na lista (`#pessoas/lista`) |
+| Curadoria | Rodadas (`#curadoria/rodadas`, com "Rodar agora"), Instruções (`#curadoria/instrucoes[/<secao>]`, com as versões anteriores), Pedidos (`#curadoria/pedidos`) |
+| Conteúdo | ArchLandscape, Oficina e Saúde: atalhos para as telas de edição que moram nas seções (`/#arch/tools`, `/#arch/cloud`, `/#arch/tools/profundas`, `/#oficina/ferramentas`, `/#oficina/insumos`, `/#oficina/madeiras`, `/#saude/produtos`) |
+| Custos | Custos e consumo (`#custos/consumo`) |
+| Health Checks | Resumo, Tarefas agendadas, Worker e cron, Fontes (com `#health/fontes/rendimento` e `#health/fontes/sondar` como telas próprias), Dados externos, Banco e espelho, Configuração, Integridade |
+
+- **Tela larga**: menu na lateral, fixo ao rolar, com os submenus de todos os menus à vista. **Até 860 px** (conferido em 384 e 360): uma faixa de menus que rola de lado e, embaixo, a faixa dos submenus do menu aberto; o item aberto rola para a vista sozinho. A página nunca alarga: tabelas rolam dentro do bloco.
+- Cada tela tem o caminho clicável ("Health Checks › Fontes › Sondar feeds"), título e uma frase do que é. Logotipo leva ao Início e o menu fica sempre à vista: nenhuma tela é beco sem saída.
+- `Admin.rota(hash)` devolve `{ menu, submenu, tela, param, valido, vazio, hash }`. Só o menu (`#health`) abre o primeiro submenu dele. Hash antigo ou desconhecido (`#instrucoes/tech`, `#fontes-card`) cai na primeira tela, Pessoas › Convidar, sem erro; menu conhecido com submenu desconhecido cai no primeiro submenu daquele menu. O endereço é corrigido com `replaceState`, sem entrada nova no histórico. Recarregar mantém a tela.
+- `/admin` sem hash: lê `GET /api/admin/health?resumo=1` e abre Health Checks › Resumo quando há problema, ou Pessoas › Convidar quando está tudo em dia (`Admin.inicial`).
+- No menu, "Health Checks · N com problema" (ou "· em dia") e um ponto ao lado de cada submenu com problema, com texto alternativo ("com problema: parada").
+- Mudança não salva nas instruções pergunta antes de sair para outra tela, como antes.
+
+## Health Checks
+
+Pedido de 20/11, 14h27: "Sobre o funcionamento das tarefas, coloque em Health Checks dentro de admin... mova todo e qualquer tipo de validação da plataforma lá para dentro." O nome da área fica em inglês, como o dono escreveu; os textos de dentro em português. Código em `src/health.js` (objeto `Health`), testes em `test/health.test.mjs`.
+
+### Estados
+
+`parada`, `atrasada`, `com erro`, `sem dados` (nada gravado ainda, ou o bloco não conseguiu ler) e `em dia`, do pior para o melhor (a mesma ordem do relatório das rotinas, com "sem dados" antes de "em dia"). Na tela, sempre com texto e ícone (quadrado, relógio, exclamação, traço, visto), nunca só cor. `Health.resumo(grupos)` dá o pior estado de cada grupo, a contagem ("12 de 14 em dia") e o geral; `problemas` é quantos grupos não estão em dia.
+
+### Rota
+
+`GET /api/admin/health`, só o Admin (convidado recebe 404, quem não foi convidado 403, como as outras rotas de Admin): `{ lidoEm, estado, problemas, grupos: [{ id, titulo, estado, emDia, total, linhas: [{ id, nome, estado, quando, idadeMin, obs: [...], ... }], erro? }] }`. `?resumo=1` devolve só `{ lidoEm, estado, problemas, grupos: [{ id, titulo, estado, emDia, total }] }`; `?grupo=<id>` monta um bloco só (400 para id desconhecido). Cada bloco roda no seu `try`: o que der erro volta com `estado: "sem dados"` e a frase do erro em `erro`, e os outros seguem. Health Checks só lê; as únicas escritas são as das ferramentas que vieram para cá (sonda, "Ler os feeds agora", sincronia do espelho).
+
+### Blocos e o que cada um lê
+
+| Bloco | Lê | Consultas |
+|---|---|---|
+| Tarefas agendadas (`tarefas`) | o relatório das rotinas (`meta/status*`, itens por seção, plantão, `arch-dossies`, `oficina-*`) e os extras: versão das instruções, as 3 últimas falhas das comparações profundas com a frase gravada (sem o campo `por`), a situação no Brasil dos produtos de Saúde ativos | 2 do relatório + 1 (4 termos) |
+| Worker e cron (`worker`) | as linhas do Worker do mesmo relatório (`_sistema/rotinas`): última execução, duração, o que fez e o último erro | as mesmas 2 |
+| Fontes (`fontes`) | `feeds_estado` com erros seguidos (erro, quantas vezes, última leitura boa; o subreddit antigo não conta) e as listas para sondar de Cripto, Oficina e Saúde (`src/feeds.js`), com o botão que joga as URLs (ou os nomes) na sonda. Rendimento e Sondar feeds são telas próprias, com as rotas de sempre | 1 (2 termos) |
+| Dados externos (`externos`) | brapi e B3 (`meta/b3`, `_sistema/b3-erro`), cripto (`meta/mercado`: fontes usadas e `erros.cripto`; reserva é qualquer fonte que não a principal, Finnhub com `FINNHUB_TOKEN` e CoinGecko sem), GitHub e Hacker News (`_sistema/landscape-estado`: marcas e tentativas por parte, pausa e o último limite de taxa visto), ESPN (`meta/esportes-*`: rodada e tabela; `_sistema/esportes-erro`; reserva pelo Globo Esporte) e os escudos (`meta/esportes-escudos`). Em dia; com erro quando o último erro é depois da última resposta boa (ou junto: falha parcial); atrasada quando a resposta boa passou do prazo (cripto 2 h, GitHub, HN e ESPN 24 h, B3 4 dias, escudos 8 dias) | 1 (2 termos) |
+| Banco e espelho (`banco`) | tamanho do banco (`meta.size_after` do D1 e a soma dos docs; com erro acima de 9 GB, perto do limite de 10 GB), as 15 maiores collections (as de cada pessoa somadas como `favs/*`, `carteira/*`, sem e-mail) e o espelho: defasagem desde a última sincronia, fila e último erro, julgados pela regra da linha "Sincronia do espelho" das rotinas. O card Espelho em São Paulo (sincronizar, zerar) fica na mesma tela | 1 + 1 chamada ao Durable Object, dividida com o relatório |
+| Configuração (`config`) | presença (sim ou não, nunca o valor) de `ADMIN_EMAIL`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `CARTEIRA_KEY`, `GITHUB_TOKEN`, `BRAPI_TOKEN`, `FINNHUB_TOKEN`, `CF_API_TOKEN`, `CF_ACCOUNT_ID`, `WORKER_NOME`, `ESPELHO_ATIVO`, `DEV_EMAIL`, `DEV_FETCH_FALSO` e dos bindings `DB`, `ASSETS`, `ESPELHO`, `AI`, com o que para sem cada um. Obrigatória ausente: com erro. `DEV_EMAIL` ou `DEV_FETCH_FALSO` ligados fora de `localhost`: com erro (desligam o login ou trocam as fontes por dados falsos) | nenhuma |
+| Integridade (`integridade`) | seis validações, uma consulta cada, cada uma com quantos e até 5 ids: itens sem `tema` ou com tema fora da lista da seção (uma linha por seção; a lista em `Health.TEMAS_VALIDOS`, conferida no teste contra `TEMAS_*` de `public/index.html` e `Saude.TEMAS`); itens de Saúde com `produto` que não existe em `saude-produtos`; ferramentas, insumos e tecnologias em categoria que não existe (3 termos); instruções ausentes ou com menos de 500 caracteres; destaques do dia (`d<AAAA-MM-DD>`, dia de São Paulo; antes das 9h vale o de ontem) ausentes por seção; candidatos `novo` reservados em lote (`lote` é o horário da rodada) há mais de 6 h | 6 |
+
+Nenhuma consulta tem SELECT composto com mais de 5 termos (o D1 falso dos testes recusa como o D1).
+
+### Tarefas agendadas: a tabela das janelas (`Health.TAREFAS`)
+
+O Lookout vê o que cada tarefa gravou, não a agenda dela. Cada tarefa é julgada pelo rastro, com os limites importados de `src/rotinas.js`. Modos: **rastro** (idade da última gravação), **fila** (espera do pedido mais antigo; sem pendente, em dia) e **pendência** (sem pendência, em dia; com pendência, idade da última gravação). Nada gravado: sem dados.
+
+| Tarefa | Lê de | Esperado | Modo | Atrasada depois de | Parada depois de |
+|---|---|---|---|---|---|
+| Curadoria Tech, Negócios, Investimentos, Notícias e Política, Esportes; Oficina: curadoria; Saúde: curadoria | `meta/status*` e a collection de itens da seção | três rodadas por dia | rastro (em dia sem item novo em 24 h: com erro) | 13 h | 26 h |
+| Plantão | `pedidos-curadoria` (rodar agora) | atende em até 2 h, das 7h às 23h | fila | 2 h | 6 h |
+| Comparações profundas | `arch-dossies` | atende em até 2 h | fila | 2 h | 6 h |
+| Oficina: levantamento | `oficina-ferramentas`, `oficina-insumos`, `oficina-madeiras` | uma vez por semana, quando há pendência | pendência | 8 dias | 15 dias |
+| Saúde: situação no Brasil | `saude-produtos` (`situacaoBrasil` dos ativos) | levantada pela curadoria de Saúde em até um dia | fila (desde o `adicionado` do produto mais antigo sem levantar) | 26 h | 72 h |
+
+Diferença para o relatório das rotinas: lá a tarefa que nunca gravou é "parada"; aqui é "sem dados".
+
+### Tela
+
+- **Resumo**: uma linha por grupo com selo, título e "N de M em dia", cada uma levando ao submenu dela; em cima, "N grupos com problema" ou "Tudo em dia", a hora da leitura e "Conferir de novo". Atalho para Custos (que é conta, não conferência, e fica em Custos).
+- Cada bloco: selo e contagem, a tabela (nome, estado, último rastro com "há 3 h" e a data no title, uma coluna própria do bloco e a observação), pior estado em cima. No celular a tabela vira lista empilhada.
+- **Ponto no avatar do site** (só o Admin, `public/index.html`): `GET /api/admin/health?resumo=1` no máximo uma vez a cada 10 minutos por aba (a última leitura fica no `sessionStorage`, chave `lookout-health`). Fora de "em dia": ponto vermelho no avatar, "Health Checks: N com problema" no rótulo do botão e o item "Health Checks · N com problema" no menu da conta, que leva a `/admin#health`.
+
 ## Menu da conta
 
 Avatar no cabeçalho (página e `/admin`): nome e e-mail, Minha carteira, Minha meta, Importar extratos e Minhas listas (com Investimentos), Meus esportes (com Esportes), Aparência, Notícias traduzidas (só na página; veja "Tradução"), Administração (só o Admin), **Trocar de conta** e Sair. "Trocar de conta" (ajuda: "Sai e abre o login para escolher outra conta do Google") vai para `/cdn-cgi/access/logout` e antes grava `radar-trocar=1` no `sessionStorage`. O Access não volta sozinho para o login depois do logout; ao abrir o site de novo ele pede o login e aí dá para escolher a outra conta. O `radar-trocar` fica só como marca, sem uso por enquanto.
@@ -1336,7 +1401,7 @@ A partir de 900 px, a coluna esquerda e a direita têm um botão no topo (chevro
 
 `/api/me` (com `widgets`, os ids que a pessoa pode pôr no Início), `/api/q` (lista de uma collection), `/api/doc` (um documento), `/api/favs`, `/api/lidas` com `/api/lidas/<id>` (veja "Lidas"), `/api/listas` com `/api/listas/<id>`, `/recalcular`, `/ordem` e `/mover` (veja "Minhas listas"), `/api/prefs/painel`, `/api/prefs/tabelas` e `/api/prefs/layout` (veja "Tabelas" e "Colunas recolhíveis"), `/api/painel/hoje`, `/api/papel`, `/api/carteira` (veja "Minha carteira"), `/api/prefs/radar`, `/api/prefs/esportes` (veja "Esportes"), `/api/prefs/traducao` (veja "Tradução"), `/api/landscape` com `/api/landscape/<id>` e `/notas` (veja "Landscape"), `/api/radar/fundamentos`, `/api/leitura` e `POST /api/leitura/gerar` (veja "Radar de dividendos" e "Leitura do dia"), `POST /api/mercado/atualizar`. `/api/me` traz também `foruns`, as seções liberadas que têm subreddit. A página só lê as collections de itens, destaques, `foruns-*` e `meta` (com `meta/esportes-*`), e a API confere a seção de cada pessoa antes de responder. As leituras de lista ficam 30 s na memória e 3 min no cache de borda.
 
-Admin (só `ADMIN_EMAIL`), na página `/admin`: convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`), curadoria (`/api/admin/instrucoes`, `/api/admin/pedidos`, `/api/admin/coleta-agora`, que respondem 404 para quem não é Admin; veja "Curadoria: instruções, pedidos e plantão"), recarga manual da CVM (`POST /api/admin/cvm`) e o Landscape (`/api/admin/landscape`, `/api/admin/landscape/<id>`, `/api/admin/landscape-categorias`, que respondem 404 para quem não é Admin). Sem grupos criados, todo convidado vê tudo.
+Admin (só `ADMIN_EMAIL`), na página `/admin` (menu com submenus, veja "Admin em menu com submenus"): Health Checks (`/api/admin/health`, 404 para quem não é Admin; veja "Health Checks"), convidados (`/api/admin/usuarios`), grupos e seções (`/api/admin/grupos`, `/api/admin/membros/<email>`), rendimento das fontes nos últimos 10 dias (`/api/admin/fontes`), custos (`/api/admin/custos`), sonda de feeds (`/api/admin/sonda`), espelho em São Paulo (`/api/admin/espelho`), curadoria (`/api/admin/instrucoes`, `/api/admin/pedidos`, `/api/admin/coleta-agora`, que respondem 404 para quem não é Admin; veja "Curadoria: instruções, pedidos e plantão"), recarga manual da CVM (`POST /api/admin/cvm`) e o Landscape (`/api/admin/landscape`, `/api/admin/landscape/<id>`, `/api/admin/landscape-categorias`, que respondem 404 para quem não é Admin). Sem grupos criados, todo convidado vê tudo.
 
 ## Segredos
 
