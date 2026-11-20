@@ -25,6 +25,8 @@ export const FOLGA_MIN = 2;         // minutos depois da janela antes de contar 
 export const ESTADOS = ["parada", "atrasada", "com erro", "em dia"]; // ordem da tela: o pior em cima
 export const CURADORIA = { EM_DIA_H: 13, ATRASADA_H: 26 };
 export const PLANTAO = { ATRASADO_H: 2, PARADO_H: 6 };
+// Levantamento da Oficina (tarefa semanal): com pendência, em dia até 8 dias da última gravação, atrasado até 15, parado depois
+export const OFICINA = { PRECO_VENCE_DIAS: 7, EM_DIA_D: 8, ATRASADO_D: 15 };
 // Periódicas: atrasada passando de 2 janelas perdidas (2 vezes o intervalo), parada passando de 6.
 // De janela (uma vez por dia, uma vez por mês): a conta começa na janela perdida. Uma perdida, atrasada; duas, parada.
 export const LIMIARES = { periodica: [2, 6], janela: [1, 2] };
@@ -145,6 +147,24 @@ export function estadoPlantao({ pendentes = 0, maisAntigo = null, ultimoAtendido
 // com a última pronta como "última vez que funcionou".
 export function estadoDossies(d, agora) {
   return { ...estadoPlantao(d, agora), id: "dossies", nome: "Dossiês de ArchLandscape", detalhe: "comparações profundas pedidas", esperado: "atende em até 2 h" };
+}
+
+// Oficina: "Oficina: levantamento das ferramentas" (a tarefa também atende insumos e madeiras; os números vêm por collection).
+// Sem nada pendente, em dia. Com pendência, conta da última vez que a tarefa gravou alguma coisa.
+export function estadoLevantamentoOficina(porCol, agora) {
+  const g = (c) => porCol[c] || { faltam: 0, vencidos: 0, ultima: null };
+  const f = g("oficina-ferramentas"), i = g("oficina-insumos"), m = g("oficina-madeiras");
+  const ultima = maior(f.ultima, i.ultima, m.ultima);
+  const t = ms(ultima);
+  const idadeMin = isNaN(t) ? null : Math.max(0, Math.floor((agora - t) / MIN));
+  const pend = f.faltam + f.vencidos + i.faltam + i.vencidos + m.faltam;
+  const base = { id: "oficina-levantamento", nome: "Oficina: levantamento das ferramentas", detalhe: "detalhes e preços por loja; insumos e madeiras na mesma tarefa", esperado: "uma vez por semana",
+    ultimaOk: ultima, ultimaVez: ultima, ultimoErro: null, idadeMin, faltam: f.faltam, precoVencido: f.vencidos, insumos: { faltam: i.faltam, precoVencido: i.vencidos }, madeiras: { faltam: m.faltam },
+    msg: `ferramentas: ${f.faltam} sem detalhes, ${f.vencidos} com preço vencido · insumos: ${i.faltam} e ${i.vencidos} · madeiras: ${m.faltam} sem detalhes` };
+  if (!pend) return { ...base, msg: "nada pendente", estado: "em dia" };
+  if (idadeMin === null) return { ...base, estado: "parada", nunca: true };
+  const d = idadeMin / (24 * 60);
+  return { ...base, estado: d > OFICINA.ATRASADO_D ? "parada" : d > OFICINA.EM_DIA_D ? "atrasada" : "em dia" };
 }
 
 const peso = (e) => ESTADOS.indexOf(e);
@@ -304,7 +324,8 @@ export const LER = {
 };
 
 // ---------- relatório (GET /api/admin/rotinas) ----------
-export const SECOES_CUR = [["tech", "Tech"], ["negocios", "Negócios"], ["investimentos", "Investimentos"], ["politica", "Notícias e Política"], ["esportes", "Esportes"]];
+// O terceiro valor, quando existe, é o nome inteiro da linha (Oficina, pedido de 19/11: "Oficina: curadoria")
+export const SECOES_CUR = [["tech", "Tech"], ["negocios", "Negócios"], ["investimentos", "Investimentos"], ["politica", "Notícias e Política"], ["esportes", "Esportes"], ["oficina", "Oficina", "Oficina: curadoria"]];
 const STATUS_DA_SECAO = (s) => (s === "tech" ? "status" : "status-" + s);
 const ITENS_DA_SECAO = (s) => (s === "tech" ? "items" : "items-" + s);
 
@@ -313,8 +334,9 @@ export function sqlDocs() {
   const ids = SECOES_CUR.map(([s]) => STATUS_DA_SECAO(s));
   return { sql: `SELECT collection, id, data FROM docs WHERE (collection = 'meta' AND id IN (${ids.map((_, k) => "?" + (k + 1)).join(",")})) OR (collection = '_sistema' AND id = ?${ids.length + 1})`, args: [...ids, DOC_ID] };
 }
-// Consulta 2: itens por seção (24 h e 7 dias, pela coluna coletado), o plantão, os feeds com falha e as comparações
-// profundas do ArchLandscape. Quatro termos no UNION ALL (o D1 aceita até cinco), as mesmas quatro colunas em todos.
+// Consulta 2: itens por seção (24 h e 7 dias, pela coluna coletado), o plantão, os feeds com falha, as comparações
+// profundas do ArchLandscape e o levantamento da Oficina. Cinco termos no UNION ALL (o limite do D1), as mesmas quatro
+// colunas em todos.
 export function sqlContagens(agora) {
   const cols = SECOES_CUR.map(([s]) => ITENS_DA_SECAO(s));
   const n = cols.length;
@@ -322,8 +344,11 @@ export function sqlContagens(agora) {
     + ` UNION ALL SELECT 'plantao' AS k, sum(json_extract(data, '$.estado') = 'pendente') AS a, min(CASE WHEN json_extract(data, '$.estado') = 'pendente' THEN json_extract(data, '$.criado') END) AS b, max(json_extract(data, '$.atendidoEm')) AS c FROM docs WHERE collection = 'pedidos-curadoria' AND json_extract(data, '$.agora') = 1`
     + ` UNION ALL SELECT 'feed' AS k, url AS a, erros_seguidos AS b, '' AS c FROM feeds_estado WHERE erros_seguidos > ?${n + 3}`
     // comparações profundas do ArchLandscape (src/arch.js): pendentes, o pedido mais antigo e a última pronta
-    + ` UNION ALL SELECT 'dossies' AS k, sum(json_extract(data, '$.estado') = 'pendente') AS a, min(CASE WHEN json_extract(data, '$.estado') = 'pendente' THEN coalesce(json_extract(data, '$.pedidoEm'), json_extract(data, '$.criado')) END) AS b, max(json_extract(data, '$.prontoEm')) AS c FROM docs WHERE collection = 'arch-dossies'`;
-  return { sql, args: [iso(agora - 24 * HORA), iso(agora - 7 * 24 * HORA), ...cols, 0] };
+    + ` UNION ALL SELECT 'dossies' AS k, sum(json_extract(data, '$.estado') = 'pendente') AS a, min(CASE WHEN json_extract(data, '$.estado') = 'pendente' THEN coalesce(json_extract(data, '$.pedidoEm'), json_extract(data, '$.criado')) END) AS b, max(json_extract(data, '$.prontoEm')) AS c FROM docs WHERE collection = 'arch-dossies'`
+    // Oficina (src/oficina.js): por collection, quantos faltam levantar (a), quantos com preço vencido ou nunca pesquisado
+    // (b; madeiras não têm preço por loja e contam 0) e a última data que a tarefa gravou (c)
+    + ` UNION ALL SELECT collection AS k, sum(json_extract(data, '$.detalhesEm') IS NULL) AS a, sum(collection <> 'oficina-madeiras' AND (json_extract(data, '$.precosEm') IS NULL OR json_extract(data, '$.precosEm') < ?${n + 4})) AS b, max(max(coalesce(json_extract(data, '$.detalhesEm'), ''), coalesce(json_extract(data, '$.precosEm'), ''))) AS c FROM docs WHERE collection IN ('oficina-ferramentas', 'oficina-insumos', 'oficina-madeiras') GROUP BY collection`;
+  return { sql, args: [iso(agora - 24 * HORA), iso(agora - 7 * 24 * HORA), ...cols, 0, iso(agora - OFICINA.PRECO_VENCE_DIAS * 24 * HORA)] };
 }
 
 // Feeds com falha, contados como no card Rendimento das fontes: URL antiga de subreddit (fora de src/feeds.js) não entra.
@@ -348,15 +373,18 @@ export async function relatorio(env, { agora = Date.now(), estadoEspelho = null 
   let bat = null;
   for (const r of docs || []) { if (r.collection === "_sistema") bat = json(r.data); else meta.set(r.id, json(r.data) || {}); }
   let plantao = { pendentes: 0 }, feedsFalha = 0, dossies = { pendentes: 0 };
+  const oficina = {};
   for (const r of conta || []) {
     if (r.k === "dossies") dossies = { pendentes: Number(r.a) || 0, maisAntigo: r.b || null, ultimoAtendido: r.c || null };
     else if (r.k === "plantao") plantao = { pendentes: Number(r.a) || 0, maisAntigo: r.b || null, ultimoAtendido: r.c || null };
     else if (r.k === "feed") { if (feedConta(String(r.a))) feedsFalha++; }
+    else if (String(r.k).startsWith("oficina-")) oficina[r.k] = { faltam: Number(r.a) || 0, vencidos: Number(r.b) || 0, ultima: r.c || null };
     else por.set(r.k, { d1: Number(r.a) || 0, d7: Number(r.b) || 0 });
   }
-  const curadorias = SECOES_CUR.map(([s, nome]) => estadoCuradoria({ secao: s, nome: "Curadoria " + nome, status: meta.get(STATUS_DA_SECAO(s)), itens24h: por.get(ITENS_DA_SECAO(s))?.d1, itens7d: por.get(ITENS_DA_SECAO(s))?.d7 }, agora));
+  const curadorias = SECOES_CUR.map(([s, nome, inteiro]) => estadoCuradoria({ secao: s, nome: inteiro || "Curadoria " + nome, status: meta.get(STATUS_DA_SECAO(s)), itens24h: por.get(ITENS_DA_SECAO(s))?.d1, itens7d: por.get(ITENS_DA_SECAO(s))?.d7 }, agora));
   curadorias.push(estadoPlantao(plantao, agora));
   curadorias.push(estadoDossies(dossies, agora));
+  curadorias.push(estadoLevantamentoOficina(oficina, agora));
 
   const criado = bat && bat.criado ? bat.criado : null;
   const porId = (bat && bat.porId) || {};

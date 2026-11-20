@@ -25,6 +25,7 @@ import { cronLandscape, rotaLandscape, rotaAdminLandscape } from "./landscape.js
 import { rotaCloud, rotaAdminCloud } from "./cloud.js";
 import { rotaDossies } from "./arch.js";
 import { rotaIcone } from "./icone.js";
+import { rotaOficina, rotaAdminOficina, semearOficina } from "./oficina.js";
 import { cronTraducao, estadoAdmin as estadoTraducao, envContado, contarFetch, contagens } from "./traducao.js";
 import { novoBatimento, etapa, gravarBatimento, LER, CONSULTAS_BATIMENTO, rotaRotinas } from "./rotinas.js";
 // Tradução das notícias: a preferência "Mostrar notícias traduzidas" (validação e padrão) mora em public/traducao.js
@@ -38,6 +39,7 @@ export { Espelho } from "./espelho.js";
 // Collections que a página pode ler. Tudo o mais é negado.
 // foruns-<radar>: posts de subreddit do bloco "Nos fóruns" (src/coleta.js), sem curadoria.
 const LISTAS = new Set(["items", "destaques", "items-politica", "destaques-politica", "items-esportes", "destaques-esportes", "items-negocios", "destaques-negocios", "items-investimentos", "destaques-investimentos",
+  "items-oficina", "destaques-oficina",
   "foruns-tech", "foruns-negocios", "foruns-investimentos", "foruns-politica", "foruns-esportes"]);
 // hist: fichas de papel (src/papel.js), um doc por papel ("US:NVDA", "BR:PETR4"); a página lê pela /api/papel.
 const DOCS = new Set([...LISTAS, "meta", "hist"]);
@@ -701,6 +703,21 @@ async function atender(request, env, ctx) {
       if (id === null) return json({ erro: "id" }, 400);
       return rotaDossies(request, env, quem, id, { lerLinhas, lerLinha });
     }
+    // Radar de Oficina (src/oficina.js): Ferramentas, Insumos e Madeiras para quem tem a seção oficina (fechada por
+    // padrão: só o Admin, até ele liberar num grupo); as rotas de escrita são só do Admin e dão 404 para os outros.
+    if (p === "/api/oficina" || p.startsWith("/api/oficina/")) {
+      if (!libera(quem.secoes, "oficina")) return json({ erro: "secao" }, 403);
+      const resto = p.length > 13 ? decodificar(p.slice(13)) : "";
+      if (resto === null) return json({ erro: "id" }, 400);
+      return rotaOficina(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
+    }
+    if (p === "/api/admin/oficina" || p.startsWith("/api/admin/oficina/")) {
+      if (!quem.admin) return json({ erro: "rota" }, 404);
+      if (!corpoJson(request)) return json({ erro: "json" }, 415);
+      const resto = p.length > 19 ? decodificar(p.slice(19)) : "";
+      if (resto === null) return json({ erro: "id" }, 400);
+      return rotaAdminOficina(request, env, quem, resto, { lerLinhas, lerLinha, gravarNoEspelho, removerDoEspelho });
+    }
     // Ícone do site oficial (src/icone.js): só para domínio que já está no banco; mesma origem, então a CSP não muda
     if (p.startsWith("/icone/")) return rotaIcone(request, env, decodificar(p.slice(7)), { lerLinhas, ctx });
 
@@ -777,6 +794,8 @@ async function etapas(evento, env, conta, relogio = () => Date.now()) {
     try { const r = await etapa(bat, "esportes", () => cronEsportes(env, quando), LER.esportes); if (r && (r.ligas.length || r.erros)) console.log("esportes", JSON.stringify(r)); } catch (e) { console.error("esportes", String((e && e.message) || e).slice(0, 120)); }
     // Landscape (src/landscape.js): semente (uma vez), sonda e coleta do GitHub e do HN, no máximo 6 pedidos por minuto
     try { const r = await etapa(bat, "landscape", () => cronLandscape(env, quando), LER.landscape); if (r && (r.pedidos || r.semente || r.erro || r.parou)) console.log("landscape", JSON.stringify(r)); } catch (e) { console.error("landscape", String((e && e.message) || e).slice(0, 120)); }
+    // Oficina (src/oficina.js): a semente entra uma vez (uma leitura da marca por minuto depois disso)
+    try { const n = await semearOficina(env, quando); if (n) console.log("oficina-semente", n); } catch (e) { console.error("oficina", String((e && e.message) || e).slice(0, 120)); }
     // Reddit: uma URL por minuto somando coleta e sonda; se a coleta falhou antes de saber, a sonda não arrisca
     try { await etapa(bat, "sonda", () => cronSonda(env, { redditLivre: !!coleta && !coleta.reddit }), LER.sonda); } catch (e) { console.error("sonda", e); }
     try { const r = await etapa(bat, "papel", () => cronPapel(env, quando), LER.papel); if (r && r.candidatos) console.log("papel", JSON.stringify(r)); } catch (e) { console.error("papel", e); }

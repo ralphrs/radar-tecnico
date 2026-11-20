@@ -28,7 +28,7 @@ export const POR_MINUTO = 8;           // chamadas ao AI por minuto, no máximo
 export const FRACAO_LONGOS = 0.75;     // resumo, notas e trechos só enquanto o gasto do dia está abaixo de 75% do teto
 export const LIMITE_SUBREQ = 1000;     // subrequests por invocação que a conta aceita sem susto (Free: 1.000 internos; Paid: 10.000)
 export const RESERVA_SUBREQ = 150;     // o que fica guardado para o espelho e o histórico, que rodam depois
-const CUSTO_FIXO = 7;                  // estado (ler e gravar), as quatro consultas da fila (três de itens, uma do Landscape) e o batch das gravações
+const CUSTO_FIXO = 8;                  // estado (ler e gravar), as cinco consultas da fila (quatro de itens, com a Oficina, uma do Landscape) e o batch das gravações
 export const MAX_COMPOSTO = 5;         // termos por SELECT composto que o D1 aceita
 const MIN = 60_000, DIA = 86_400_000;
 const PAUSA_CURTA = 10 * MIN;
@@ -39,8 +39,8 @@ const VAZIO_ESPERA = 5 * MIN;          // fila vazia: olha de novo em 5 minutos
 const TENTATIVAS = 3;                  // falhou três vezes: fica o original
 const DESISTIDOS_MAX = 400;
 
-export const COLECOES_ITENS = ["items", "items-negocios", "items-investimentos", "items-politica", "items-esportes"];
-export const COLECOES_DESTAQUES = ["destaques", "destaques-negocios", "destaques-investimentos", "destaques-politica", "destaques-esportes"];
+export const COLECOES_ITENS = ["items", "items-negocios", "items-investimentos", "items-politica", "items-esportes", "items-oficina"];
+export const COLECOES_DESTAQUES = ["destaques", "destaques-negocios", "destaques-investimentos", "destaques-politica", "destaques-esportes", "destaques-oficina"];
 export const COLECOES_FORUM = ["foruns-tech", "foruns-negocios", "foruns-investimentos", "foruns-politica", "foruns-esportes"];
 const CAMPOS_DOC = ["titulo", "resumo"];
 

@@ -13,7 +13,7 @@ import { limparPedidos } from "./curadoria.js";
 const INTERVALO_MIN = 90;      // cada feed é lido no máximo a cada 90 minutos
 const FEEDS_POR_MINUTO = 6;    // o cron roda de minuto em minuto
 const ITENS_POR_FEED = 20;
-const JANELA_DIAS = { tech: 21, politica: 3, esportes: 3, negocios: 7, investimentos: 7 };
+const JANELA_DIAS = { tech: 21, politica: 3, esportes: 3, negocios: 7, investimentos: 7, oficina: 30 };
 const UA = "Mozilla/5.0 (compatible; LookoutBot/1.0; +https://lookout.ralph-renato.workers.dev)";
 // Reddit: ritmo próprio, porque 4 pedidos no mesmo minuto já deram 429 (sonda de 03/11/2026).
 export const REDDIT = {
@@ -26,7 +26,7 @@ export const REDDIT = {
   DIAS_FORUM: 3,          // foruns-* com mais de 3 dias saem na limpeza
   UA: "Lookout/1.0 (agregador pessoal de noticias; +https://lookout.ralph-renato.workers.dev)",
 };
-const COLECOES_ITENS = ["items", "items-politica", "items-esportes", "items-negocios", "items-investimentos", "sombra-items"];
+const COLECOES_ITENS = ["items", "items-politica", "items-esportes", "items-negocios", "items-investimentos", "items-oficina", "sombra-items"];
 
 const agora = () => new Date();
 const iso = (d) => d.toISOString();
@@ -441,15 +441,18 @@ const PRAZOS = {
   esportes: { noticia: 30, resultado: 30, analise: 90, video: 90, podcast: 90 },
   negocios: { noticia: 30, balanco: 90, analise: 90, video: 90, podcast: 90, relatorio: 365 },
   investimentos: { noticia: 30, analise: 90, relatorio: 180, video: 90, podcast: 90 },
+  // Oficina: conteúdo de ofício envelhece devagar. Projeto (plano com medidas) e curso não saem por idade.
+  oficina: { video: 730, artigo: 730, review: 365, podcast: 365 },
 };
 const COLECOES = [
   { c: "items", radar: "tech" }, { c: "sombra-items", radar: "tech" },
   { c: "items-politica", radar: "politica" }, { c: "items-esportes", radar: "esportes" },
   { c: "items-negocios", radar: "negocios" },
   { c: "items-investimentos", radar: "investimentos" },
+  { c: "items-oficina", radar: "oficina" },
 ];
 const FORUNS = ["tech", "negocios", "investimentos", "politica", "esportes"].map(colecaoForum);
-const DESTAQUES = ["destaques", "destaques-politica", "destaques-esportes", "destaques-negocios", "destaques-investimentos", "sombra-destaques"];
+const DESTAQUES = ["destaques", "destaques-politica", "destaques-esportes", "destaques-negocios", "destaques-investimentos", "destaques-oficina", "sombra-destaques"];
 const LIMITE_EXCLUSOES = 60;
 
 function vencido(radar, item, coletado, t) {

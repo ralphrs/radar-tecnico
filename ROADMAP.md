@@ -215,6 +215,19 @@ Listas e Personalizar (pacote 2, feito em 03/11):
 - [x] Para reavaliar (19/11, 23h46): campo `reavaliar: { motivo, em, por }` gravado por quem revisa direto no banco; `Landscape.reavaliarDe`, lista leve e detalhe devolvendo o campo, bandeira vermelha no cartão compacto, no de destaque, na tabela e na comparação, chip "Para reavaliar (N)", aviso no detalhe com "Manter no radar" e "Remover do Landscape" para o Admin, campo no Editar e `PUT` com `reavaliar: { motivo }` ou `null`; o cron não mexe (docs/LOOKOUT.md, "Para reavaliar")
 - [x] Abas em português (19/11, 23h47): Ferramentas, Cloud, Linguagens e Outras ferramentas na tela; ids, hashes e o campo `aba` sem mudança
 - [ ] Cadastrar o OpenStock em Outras ferramentas e as primeiras categorias de Linguagens (back-end, front-end, mobile, dados e IA, sistemas, cada uma com Linguagens e Frameworks) depois do deploy
+- [x] Radar de Oficina (19/11, 23h52, 23h56 e 23h57): seção `oficina` (fechada por padrão, só o Admin; libera por grupo), abas Conteúdos · Ferramentas · Insumos · Madeiras, semente com 257 ferramentas, 126 insumos e 82 madeiras e painéis, 70 ícones desenhados, preços por loja com data e "desatualizado" depois de 21 dias, madeiras com bandeiras e quatro notas, "Geralmente indicada para" por subcategoria, Admin na própria página, relatório das rotinas e contrato da tarefa (docs/LOOKOUT.md, "Radar de Oficina")
+- [ ] Oficina: rodar a sonda dos feeds (`OFICINA_PARA_SONDAR` em `src/feeds.js`) em produção e passar para `FEEDS_OFICINA` os que responderem; levantar os canais e sites brasileiros de marcenaria e serralheria
+- [ ] Oficina: escrever as instruções da curadoria (`instrucoes/oficina`) no Admin e o texto das duas tarefas agendadas (curadoria e levantamento semanal), seguindo o contrato
+- [ ] Oficina: depois do primeiro levantamento, conferir a ordem da fila, os preços por loja (busca sem afiliado) e as notas das madeiras com fonte
+
+## Oficina: próximos passos (aprovados pelo dono em 20/11)
+1. Plano de corte de chapas: a pessoa informa as peças e o site encaixa nas chapas com o menor desperdício.
+2. Calculadora de madeira: volume em m³ e perdas.
+3. Guia de encaixes, com quando usar cada um.
+4. Guia de acabamento por madeira e por uso (interno, externo, contato com alimento).
+5. "Minha oficina": o que a pessoa tem e o que quer comprar, com a soma das faixas de preço.
+6. Aviso quando cair a faixa de preço de um item da lista de compras.
+7. Projetos salvos, com lista de materiais ligada a Insumos e Madeiras.
 
 ## Fila em ordem (04/11)
 A grande mudança (SSR com backend) entra no meio da fila, não no fim: as telas novas e grandes (Administração 2.0, sessão responsiva) saem já na stack nova, para não fazer duas vezes. O que é pequeno ou é mais dado do que tela (simulador, renda fixa) sai antes, no HTML de hoje, porque a API continua a mesma.

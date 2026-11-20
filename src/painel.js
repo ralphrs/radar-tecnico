@@ -16,8 +16,10 @@ import "../public/inicio-grade.js";
 const ESP = globalThis.Esportes;
 const G = globalThis.InicioGrade;
 
-const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes"];
-const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
+const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina"];
+const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes", oficina: "Oficina" };
+// Título próprio de alguns widgets (Oficina, pedido de 19/11: "Oficina: destaques do dia")
+const TITULO_PROPRIO = { "destaques-oficina": "Oficina: destaques do dia", "ultimas-oficina": "Oficina: últimos conteúdos" };
 const liberada = (secoes, s) => !s || secoes == null || secoes.includes(s);
 
 export const FORMATOS = G.FORMATOS;
@@ -35,8 +37,8 @@ export const WIDGETS = [
   { id: "eua", titulo: "EUA", tamanho: 1, secao: "investimentos" },
   { id: "listas", titulo: "Minhas listas", tamanho: 1, secao: "investimentos" },
   { id: "favoritos", titulo: "Favoritos", tamanho: 1, secao: null },
-  ...SECOES.map((s) => ({ id: "destaques-" + s, titulo: "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
-  ...SECOES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  ...SECOES.map((s) => ({ id: "destaques-" + s, titulo: TITULO_PROPRIO["destaques-" + s] || "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  ...SECOES.map((s) => ({ id: "ultimas-" + s, titulo: TITULO_PROPRIO["ultimas-" + s] || "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   // Nos fóruns: posts de subreddit das últimas 24 h, só nas seções que têm subreddit em src/feeds.js. Fora do padrão.
   ...SECOES.filter((s) => SECOES_COM_FORUM.includes(s)).map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   // Esportes (src/esportes.js): rodada e tabela de cada competição e o próximo jogo do time que a pessoa acompanha.

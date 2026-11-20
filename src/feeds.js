@@ -10,6 +10,19 @@
 // A lista para a sonda de produção (admin › Sondar feeds) é CRIPTO_PARA_SONDAR, logo abaixo de FEEDS.
 // Fora em 01/11/2026: feeds de FII de InfoMoney, Money Times e Suno (404) e de Seu Dinheiro (sem itens reconhecíveis).
 // Transfermarkt não tem RSS e bloqueia robôs: o mercado vem das buscas da curadoria de Esportes.
+// Oficina: os feeds entram aqui depois de sondados em produção (admin › Sondar feeds), no formato
+// ["oficina", fonte, país, url]. Nenhum endereço foi inventado: a lista nasce vazia e OFICINA_PARA_SONDAR traz só os
+// nomes das fontes candidatas, para quem revisa achar o feed de cada uma e colar na sonda.
+export const FEEDS_OFICINA = [];
+export const OFICINA_PARA_SONDAR = [
+  // marcenaria e carpintaria (o melhor do mundo, sem preferência de país; título e resumo em português pela curadoria)
+  "Paul Sellers", "Woodworking for Mere Mortals", "Stumpy Nubs", "Fine Woodworking", "Popular Woodworking", "The Wood Whisperer",
+  "Matthias Wandel", "Pask Makes", "Ishitani Furniture", "This Old House", "Essential Craftsman",
+  // serralheria, solda e usinagem
+  "Fireball Tool", "Weld.com", "This Old Tony",
+  // Brasil: canais e sites de marcenaria e serralheria a levantar (quem revisa completa esta linha com os nomes)
+];
+
 export const FEEDS = [
   // Tech: engenharia e arquitetura
   ["tech", "InfoQ", "CA", "https://feed.infoq.com/"],
@@ -261,6 +274,8 @@ export const FEEDS = [
   ["esportes", "r/soccer", "", "https://www.reddit.com/r/soccer/top/.rss?t=day", "reddit"],
   ["esportes", "r/brasileirao", "BR", "https://www.reddit.com/r/brasileirao/top/.rss?t=day", "reddit"],
   ["esportes", "r/SCInternacional", "BR", "https://www.reddit.com/r/SCInternacional/top/.rss?t=day", "reddit"],
+  // Oficina (marcenaria, carpintaria e serralheria, pedido de 19/11): FEEDS_OFICINA, logo abaixo, ainda vazia.
+  ...FEEDS_OFICINA,
 ];
 
 // Feeds de cripto que não deram para ler daqui (o proxy recusa o site): colar em admin › Sondar feeds e, os que

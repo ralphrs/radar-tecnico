@@ -193,8 +193,8 @@ test("cron: no máximo 8 chamadas por minuto e dentro dos subrequests que sobram
   assert.equal(ai.chamadas.length, POR_MINUTO);
   // invocação que já gastou quase tudo: cabe menos
   const ai2 = aiFalso();
-  const r = await cronTraducao({ ...env, AI: ai2 }, { agora: AGORA + MIN, gastos: LIMITE_SUBREQ - RESERVA_SUBREQ - 11 });
-  assert.equal(ai2.chamadas.length, 2, "(11 - 7 fixos) / 2 por chamada");
+  const r = await cronTraducao({ ...env, AI: ai2 }, { agora: AGORA + MIN, gastos: LIMITE_SUBREQ - RESERVA_SUBREQ - 12 });
+  assert.equal(ai2.chamadas.length, 2, "(12 - 8 fixos, com a Oficina na fila) / 2 por chamada");
   assert.equal(r.chamadas, 2);
   const ai3 = aiFalso();
   assert.equal((await cronTraducao({ ...env, AI: ai3 }, { agora: AGORA + 2 * MIN, gastos: LIMITE_SUBREQ })).semFolga, true);

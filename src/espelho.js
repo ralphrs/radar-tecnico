@@ -34,6 +34,8 @@ export const COLECOES_ESPELHO = [
   "landscape",
   // ArchLandscape, aba Cloud (src/cloud.js): um doc por serviço, gravado pela semente e pelo Admin
   "cloud",
+  // Oficina (src/oficina.js): conteúdos e destaques, e os catálogos de ferramentas, insumos e madeiras
+  "items-oficina", "destaques-oficina", "oficina-ferramentas", "oficina-insumos", "oficina-madeiras",
 ];
 
 const LOTE = 90;              // ids por consulta ao D1, como na limpeza (coleta.js)

@@ -9,7 +9,13 @@ import { convidadoNoEspelho } from "./espelho.js";
 // - O admin vê tudo, sempre.
 // - O bloqueio vale no servidor: a API recusa listas e documentos de seção não liberada.
 
-export const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes"];
+export const SECOES = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina"];
+// Seções fechadas por padrão (Oficina, pedido de 19/11): só o Admin vê, e o convidado só recebe a seção quando um grupo
+// dele a marca. Sem grupo nenhum (ou com o grupo padrão sem ela), o convidado vê as abertas, nunca as fechadas.
+export const FECHADAS = ["oficina"];
+export const ABERTAS = SECOES.filter((s) => !FECHADAS.includes(s));
+// O que vale para o convidado: null (veria tudo) vira a lista das abertas. O Admin não passa por aqui.
+export const paraConvidado = (s) => (s === null || s === undefined ? ABERTAS.slice() : s);
 
 // Collection ou documento de meta -> seção. O que não estiver aqui não é lido por convidado.
 const SECAO_DA_COLECAO = {
@@ -21,9 +27,11 @@ const SECAO_DA_COLECAO = {
   hist: "investimentos",
   // Nos fóruns (posts de subreddit, src/coleta.js): a seção do radar
   "foruns-tech": "tech", "foruns-negocios": "negocios", "foruns-investimentos": "investimentos", "foruns-politica": "politica", "foruns-esportes": "esportes",
+  // Oficina (pedido de 19/11): conteúdos e destaques; ferramentas, insumos e madeiras têm rotas próprias (src/oficina.js)
+  "items-oficina": "oficina", "destaques-oficina": "oficina",
 };
 const SECAO_DO_META = {
-  status: "tech", "status-negocios": "negocios", "status-investimentos": "investimentos", "status-politica": "politica", "status-esportes": "esportes",
+  status: "tech", "status-negocios": "negocios", "status-investimentos": "investimentos", "status-politica": "politica", "status-esportes": "esportes", "status-oficina": "oficina",
   mercado: "investimentos", b3: "investimentos", fii: "investimentos", "fii-resumo": "investimentos", eua: "investimentos",
 };
 // meta/esportes-<liga> (src/esportes.js): rodada, próximos e tabela de cada competição, todos da seção Esportes
@@ -61,14 +69,15 @@ function guardar(email, s) {
 // O index.js já recebe as seções junto com o convidado quando lê do espelho; guarda aqui para não perguntar de novo.
 export const guardarSecoes = guardar;
 
-// Devolve a lista de seções liberadas, ou null quando a pessoa vê tudo.
+// Devolve a lista de seções liberadas; null só para o Admin (vê tudo). Convidado que veria tudo recebe as abertas
+// (paraConvidado): as fechadas, como a Oficina, só entram quando um grupo dele as marca.
 // Primeiro o espelho; se ele não responder (desligado, vazio, lento), o D1 como antes.
 export async function secoesDe(env, email, admin) {
   if (admin) return null;
   const c = cache.get(email);
-  if (c && Date.now() - c.em < TTL) return c.s;
+  if (c && Date.now() - c.em < TTL) return paraConvidado(c.s);
   const doEspelho = await convidadoNoEspelho(env, email);
-  if (doEspelho) { guardar(email, doEspelho.secoes); return doEspelho.secoes; }
+  if (doEspelho) { guardar(email, doEspelho.secoes); return paraConvidado(doEspelho.secoes); }
   let s = null;
   try {
     const { results: grupos } = await env.DB.prepare("SELECT id, secoes, padrao FROM grupos").all();
@@ -81,7 +90,7 @@ export async function secoesDe(env, email, admin) {
     s = null;
   }
   guardar(email, s);
-  return s;
+  return paraConvidado(s);
 }
 
 export const libera = (secoes, secao) => !!secao && (secoes === null || secoes.includes(secao));

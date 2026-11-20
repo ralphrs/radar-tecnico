@@ -127,6 +127,7 @@ h1 { font: 700 clamp(26px, 6vw, 36px)/1.05 var(--font-display); letter-spacing: 
 .b-podcast { border-color: color-mix(in srgb, var(--info) 50%, transparent); color: var(--info); }
 .b-curso { border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: var(--ok); }
 .b-review { border-color: color-mix(in srgb, var(--warn) 50%, transparent); color: var(--warn); }
+.b-projeto { border-color: color-mix(in srgb, var(--primary) 50%, transparent); color: var(--primary); }
 .b-alta { background: var(--warn); border-color: var(--warn); color: var(--card); }
 .b-novo { background: color-mix(in srgb, var(--primary) 12%, var(--card)); color: var(--primary); }
 /* Tipos e etiquetas dos radares de política e esportes */
@@ -2185,6 +2186,16 @@ a.lst-link:hover { text-decoration: underline; text-underline-offset: 3px; }
    Sem colunas laterais, como o Início: a barra de abas fica no topo, com a chave Notícias | Landscape embaixo. */
 html.tech-ls .nav-temas, html.tech-ls .lateral, html.tech-ls .centro > :not(#barra):not(#visoes-tech):not(#landscape), html.tech-ls header .status { display: none !important; }
 html.tech-ls .barra-linha { display: none; }
+/* Oficina (19/11): Ferramentas, Insumos e Madeiras sem colunas laterais, como o ArchLandscape; Conteúdos é o feed */
+html.ofi-ls .nav-temas, html.ofi-ls .lateral, html.ofi-ls .centro > :not(#barra):not(#visoes-oficina):not(#oficina), html.ofi-ls header .status { display: none !important; }
+html.ofi-ls .barra-linha { display: none; }
+@media (min-width: 900px) {
+  html.ofi-ls .wrap { grid-template-columns: minmax(0, 1fr) !important; grid-template-areas: "topo" "centro" !important; }
+  html.ofi-ls .barra { display: block; position: static; margin: 0; padding: 0; border: 0; background: none; }
+  html.ofi-ls .barra-radares { height: auto; }
+  html.ofi-ls .barra-radares .radares { width: auto; display: inline-flex; max-width: 100%; }
+  html.ofi-ls .barra-radares .radares button { flex: none; padding-inline: 16px; }
+}
 @media (min-width: 900px) {
   html.tech-ls .wrap { grid-template-columns: minmax(0, 1fr) !important; grid-template-areas: "topo" "centro" !important; }
   html.tech-ls .barra { display: block; position: static; margin: 0; padding: 0; border: 0; background: none; }
@@ -2193,6 +2204,97 @@ html.tech-ls .barra-linha { display: none; }
   html.tech-ls .barra-radares .radares button { flex: none; padding-inline: 16px; }
 }
 .ls { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+/* Radar de Oficina (19/11): abas, cartões com ícone desenhado, detalhe em blocos, madeiras com bandeiras e notas */
+.ofi-topo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ofi-sub { margin: 0; color: var(--muted-foreground); font-size: 13.5px; }
+.ofi-ic { display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 8px; background: color-mix(in srgb, var(--primary) 9%, var(--card)); color: var(--primary); }
+.ofi-ic svg { display: block; }
+.ofi-ic-g { width: 64px; height: 64px; border-radius: 14px; }
+.ofi-ic-p { width: 24px; height: 24px; border-radius: 6px; }
+.ac-card.ofi-card { border-left: 1px solid var(--border); padding: 4px 6px; }
+.ac-card.ofi-card::before { display: none; }
+.ofi-ofs { display: inline-flex; gap: 2px; position: relative; z-index: 1; }
+.ofi-of { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--c); color: var(--foreground); font: 600 10px/1 var(--font-mono); }
+.of-marcenaria { --c: var(--warn); } .of-carpintaria { --c: var(--ok); } .of-serralheria { --c: var(--info); }
+.dd-badge.ofi-b-of { border-color: var(--c); color: var(--foreground); }
+.ofi-ind { margin: -2px 0 2px; font-size: 12.5px; line-height: 1.4; color: var(--muted-foreground); overflow-wrap: anywhere; }
+.ofi-ind-cat { margin: 0; padding: 8px 14px 2px; }
+.ofi-chips { align-items: center; }
+.ofi-rot { font-size: 12px; color: var(--muted-foreground); min-width: 52px; }
+.ofi-estado { margin: 0; font-size: 13px; padding: 8px 12px; border: 1px dashed var(--border); border-radius: var(--radius-md); background: var(--card); }
+.ofi-vazio { margin: 0; color: var(--muted-foreground); font-style: italic; font-size: 13.5px; }
+.ofi-lista, .ofi-passos { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.45; }
+.ofi-fonte { font-size: 12px; color: var(--muted-foreground); }
+.ofi-meta { display: block; font-size: 12px; color: var(--muted-foreground); }
+.ofi-ind-det { grid-column: 1 / -1; margin: 0; font-size: 14px; line-height: 1.45; }
+.ofi-levantado { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--muted-foreground); }
+.ofi-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 14px; }
+.ofi-dl dt { color: var(--muted-foreground); } .ofi-dl dd { margin: 0; overflow-wrap: anywhere; }
+.ofi-precos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ofi-preco { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; grid-template-areas: "loja faixa ver" "loja quando ver" "loja obs ver"; gap: 2px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+.ofi-preco:first-child { border-top: 0; }
+.ofi-loja { grid-area: loja; } .ofi-faixa { grid-area: faixa; font-weight: 600; } .ofi-obs { grid-area: obs; font-size: 12.5px; color: var(--muted-foreground); } .ofi-ver { grid-area: ver; }
+.ofi-quando { grid-area: quando; font-size: 12.5px; color: var(--muted-foreground); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ofi-preco.velho .ofi-faixa { color: var(--muted-foreground); }
+@media (max-width: 560px) { .ofi-preco { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "loja ver" "faixa ver" "quando quando" "obs obs"; } }
+.ofi-aviso-preco { margin: 0; font-size: 12px; color: var(--muted-foreground); }
+.b-dur { border-color: var(--border); color: var(--muted-foreground); }
+.item-ic-tipo { color: var(--muted-foreground); display: inline-flex; }
+.item-ic-tipo svg { width: 16px; height: 16px; }
+.ofi-mad-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 10px; }
+.ofi-mad { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; box-shadow: var(--shadow-sm); }
+.ofi-mad.marcado { outline: 2px solid var(--primary); outline-offset: -1px; }
+.ofi-mad-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.ofi-mad-tit { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ofi-mad-nome { font: 600 15px/1.25 var(--font-display); color: var(--foreground); text-decoration: none; }
+.ofi-mad-nome:hover { text-decoration: underline; }
+.ofi-cient { font-size: 12.5px; color: var(--muted-foreground); overflow-wrap: anywhere; }
+.ofi-cient.g { font-size: 15px; display: block; }
+.ofi-bands { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.ofi-band { font-size: 18px; line-height: 1; }
+.ofi-band-mais { font: 500 12px var(--font-mono); color: var(--muted-foreground); }
+.ofi-band-vazio { font-size: 12px; color: var(--muted-foreground); font-style: italic; }
+.ofi-mad-band { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-height: 22px; }
+.ofi-medidores { display: grid; gap: 3px; }
+.ofi-medidor { display: grid; grid-template-columns: 92px auto minmax(0, 1fr); gap: 8px; align-items: center; font-size: 12.5px; }
+.ofi-med-rot { color: var(--muted-foreground); }
+.ofi-pontos { display: inline-flex; gap: 2px; font-size: 11px; line-height: 1; color: color-mix(in srgb, var(--muted-foreground) 40%, transparent); }
+.ofi-pontos .on { color: var(--primary); }
+.ofi-med-val { font: 500 12px var(--font-mono); }
+.ofi-medidor.sem-nota { opacity: .75; } .ofi-medidor.sem-nota .ofi-pontos { opacity: .5; }
+.ofi-medidor.sem-nota .ofi-med-val { font: italic 400 12px var(--font-sans); color: var(--muted-foreground); white-space: nowrap; }
+.ofi-medidor.g { font-size: 14px; grid-template-columns: auto auto minmax(0, 1fr); } .ofi-medidor.g .ofi-pontos { font-size: 16px; } .ofi-medidor.g .ofi-med-rot { color: var(--foreground); font-weight: 600; }
+.ofi-faixas { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.ofi-faixa { display: flex; gap: 6px; align-items: center; }
+.ofi-faixa .rotulo { min-width: 96px; font-size: 12px; color: var(--muted-foreground); }
+.ofi-fx-de { font-size: 12.5px; color: var(--muted-foreground); }
+.ofi-faixa select { height: var(--control-h-sm); width: auto; padding-right: 8px; }
+.ofi-nota-escala { margin: 0; font-size: 12px; color: var(--muted-foreground); }
+.ofi-cmp-barra { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ofi-notas-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.ofi-nota-g { display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); min-width: 0; }
+.ofi-nota-dado { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.ofi-legal { margin: 0; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid color-mix(in srgb, var(--err) 50%, transparent); background: color-mix(in srgb, var(--err) 8%, var(--card)); font-size: 14px; }
+.ofi-origem { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 14px; }
+.ofi-origem .ofi-meta { flex-basis: 100%; margin: 0; }
+.ofi-band-n { display: inline-flex; align-items: center; gap: 2px; margin-right: 8px; }
+.ofi-cmp-rolo { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); max-width: 100%; }
+.ofi-cmp { display: grid; min-width: calc(110px + var(--n) * 160px); }
+.ofi-cmp-l { display: grid; grid-template-columns: 110px repeat(var(--n), minmax(160px, 1fr)); border-top: 1px solid var(--border); }
+.ofi-cmp-l:first-child { border-top: 0; font-weight: 600; }
+.ofi-cmp-l > * { padding: 8px 10px; min-width: 0; overflow-wrap: anywhere; font-size: 13.5px; }
+.ofi-cmp-rot { position: sticky; left: 0; background: var(--card); color: var(--muted-foreground); font-size: 12.5px !important; z-index: 1; }
+.ofi-cmp .ofi-medidor { grid-template-columns: auto minmax(0, 1fr); } .ofi-cmp .ofi-med-rot { display: none; }
+.ofi-confirma { font-size: 13.5px; color: var(--err); align-self: center; }
+.ofi-campo { display: flex; flex-direction: column; gap: 4px; margin: 0 0 10px; border: 0; padding: 0; min-width: 0; }
+fieldset.ofi-grupo { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px; }
+.ofi-obj { display: grid; gap: 6px; padding: 8px 0; border-top: 1px dashed var(--border); }
+.ofi-f-dupla { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.ofi-multi label { margin-right: 12px; font-size: 14px; }
+.ofi-dica { font-size: 12px; color: var(--muted-foreground); }
+.ofi-botoes { display: flex; gap: 4px; flex-wrap: wrap; }
+.ofi-parecidas { --ac-w: 250px; }
+
 .ls-f-mod { display: grid; gap: 10px; }
 @media (min-width: 560px) { .ls-f-mod { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); } }
 .ls-cab { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px var(--space-4); }
@@ -2718,6 +2820,16 @@ html.tech-ls .barra-linha { display: none; }
     <button type="button" id="visao-tech-landscape" aria-pressed="false">ArchLandscape</button>
   </div>
   <section class="ls" id="landscape" aria-label="ArchLandscape" hidden></section>
+  <div class="ofi-topo" id="visoes-oficina" hidden>
+    <p class="ofi-sub">marcenaria, carpintaria e serralheria</p>
+    <div class="seg visoes arch-abas ofi-abas" role="group" aria-label="Abas da Oficina">
+      <button type="button" id="ofi-aba-conteudos" aria-pressed="true">Conteúdos</button>
+      <button type="button" id="ofi-aba-ferramentas" aria-pressed="false">Ferramentas</button>
+      <button type="button" id="ofi-aba-insumos" aria-pressed="false">Insumos</button>
+      <button type="button" id="ofi-aba-madeiras" aria-pressed="false">Madeiras</button>
+    </div>
+  </div>
+  <section class="ls ofi" id="oficina" aria-label="Radar de Oficina" hidden></section>
   <section class="mercado" id="mercado" aria-label="Mercado agora" hidden></section>
   <div class="mercado-pe" id="mercado-pe" hidden></div>
   <section class="rankings" id="rankings" aria-label="Destaques do pregão" hidden></section>
@@ -2839,6 +2951,9 @@ html.tech-ls .barra-linha { display: none; }
 <script src="/landscape.js"></script>
 <script src="/arch.js"></script>
 <script src="/arch-ui.js"></script>
+<script src="/oficina.js"></script>
+<script src="/oficina-icones.js"></script>
+<script src="/oficina-ui.js"></script>
 <script src="/traducao.js"></script>
 <script src="/lidas.js"></script>
 <script>
@@ -3056,6 +3171,22 @@ const TEMAS_ESPORTES = [
   /* Padel (05/11/2026): só notícias por enquanto; a curadoria grava tema "padel" */
   { id: "padel", curto: "Padel", nome: "Padel", cor: G.dev, temas: ["padel"] },
 ];
+/* Oficina (pedido de 19/11): marcenaria, carpintaria e serralheria, mais três temas que atravessam os ofícios.
+   O campo gravado é "tema" (o ofício ou o tema transversal) e "subtema"; os ids são os do contrato da curadoria. */
+const TEMAS_OFICINA = [
+  { id: "marcenaria", curto: "Marcenaria", nome: "Marcenaria", cor: G.pag, temas: ["marcenaria"],
+    subs: [
+      { id: "tecnicas", nome: "Técnicas: encaixes, colagem, lixamento, usinagem" }, { id: "projetos", nome: "Projetos passo a passo" },
+      { id: "acabamento", nome: "Acabamento" }, { id: "madeiras", nome: "Madeiras, chapas, MDF e compensado" }, { id: "oficina", nome: "Bancada, gabaritos e organização" },
+    ] },
+  { id: "carpintaria", curto: "Carpintaria", nome: "Carpintaria", cor: G.ops, temas: ["carpintaria"],
+    subs: [{ id: "estruturas", nome: "Telhado, pergolado, deck e escada" }, { id: "obra", nome: "Formas, portas, pisos e rodapé" }, { id: "tecnicas", nome: "Técnicas" }] },
+  { id: "serralheria", curto: "Serralheria", nome: "Serralheria", cor: G.arq, temas: ["serralheria"],
+    subs: [{ id: "solda", nome: "Solda: MIG, TIG e eletrodo" }, { id: "corte-e-dobra", nome: "Corte e dobra" }, { id: "projetos", nome: "Portões, estruturas e móveis de aço" }, { id: "acabamento", nome: "Pintura e galvanização" }] },
+  { id: "ferramentas", curto: "Ferramentas", nome: "Ferramentas", cor: G.dev, temas: ["ferramentas"] },
+  { id: "seguranca", curto: "Segurança", nome: "Segurança e EPI", cor: G.seg, temas: ["seguranca"] },
+  { id: "negocio", curto: "Negócio", nome: "Preço, orçamento e vida de oficina", cor: G.doc, temas: ["negocio"] },
+];
 /* TEMAS, TIPOS e os mapas abaixo apontam para o radar aberto e são trocados em aplicarRadar() */
 let TEMAS = TEMAS_TECH, GRUPO_DE = {}, TEMA = {};
 const grp = (i) => GRUPO_DE[i.tema];
@@ -3103,8 +3234,20 @@ const TIPOS_ESPORTES = [
   { id: "video", nome: "Vídeos", icone: IC_VIDEO },
   { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
 ];
+const TIPOS_OFICINA = [
+  { id: "todos", nome: "Tudo" },
+  { id: "video", nome: "Vídeos", icone: IC_VIDEO },
+  { id: "artigo", nome: "Artigos", icone: IC_DOC }, { id: "projeto", nome: "Projetos" }, { id: "review", nome: "Reviews" },
+  { id: "curso", nome: "Cursos" }, { id: "podcast", nome: "Podcasts", icone: IC_PODCAST },
+];
 let TIPOS = TIPOS_TECH;
-const NOME_TIPO = { noticia: "Notícia", artigo: "Artigo", release: "Release", youtube: "Vídeo", video: "Vídeo", podcast: "Podcast", review: "Review", curso: "Curso", oficial: "Oficial", analise: "Análise", resultado: "Resultado", whitepaper: "Whitepaper", balanco: "Balanço", relatorio: "Relatório" };
+const NOME_TIPO = { projeto: "Projeto", noticia: "Notícia", artigo: "Artigo", release: "Release", youtube: "Vídeo", video: "Vídeo", podcast: "Podcast", review: "Review", curso: "Curso", oficial: "Oficial", analise: "Análise", resultado: "Resultado", whitepaper: "Whitepaper", balanco: "Balanço", relatorio: "Relatório" };
+/* Ofício de um conteúdo da Oficina: o tema, quando é um dos três ofícios; nos temas que atravessam os ofícios
+   (ferramentas, segurança, negócio), o campo "oficios" quando vier. Sem ofício, o item vale para os três. */
+const OFICIOS_FILTRO = [{ id: "todos", nome: "Todos" }, { id: "marcenaria", nome: "Marcenaria" }, { id: "carpintaria", nome: "Carpintaria" }, { id: "serralheria", nome: "Serralheria" }];
+const OFICIOS_IDS = ["marcenaria", "carpintaria", "serralheria"];
+const oficioDe = (i) => (OFICIOS_IDS.includes(i.tema) ? i.tema : "");
+const oficioBate = (i, id) => { if (OFICIOS_IDS.includes(i.tema)) return i.tema === id; const l = Array.isArray(i.oficios) ? i.oficios.filter((x) => OFICIOS_IDS.includes(x)) : []; return !l.length || l.includes(id); };
 /* Cada radar lê as próprias collections. O tech mantém os nomes e as chaves de localStorage de sempre. */
 const RADARES = {
   tech: { id: "tech", aba: "Tech", titulo: "Radar Técnico", items: "items", destaques: "destaques", status: "meta/status", sufixo: "",
@@ -3128,11 +3271,20 @@ const RADARES = {
     temas: TEMAS_ESPORTES, tipos: TIPOS_ESPORTES,
     rodape: "Atualizado automaticamente várias vezes por dia, com o Inter em primeiro lugar, as competições que ele disputa e o vai e vem do mercado. Notícias e resultados ficam 30 dias; análises, vídeos e podcasts, 3 meses.",
     vazio: "A coleta roda várias vezes por dia e traz Inter, Gauchão, Brasileirão, Libertadores, Copa do Brasil e mercado. Os itens aparecem aqui depois da primeira rodada." },
+  /* Oficina (pedido de 19/11): fechada por padrão, só o Admin vê. Filtro extra no topo, Ofício, no lugar do Onde. */
+  oficina: { id: "oficina", aba: "Oficina", titulo: "Radar de Oficina", subtitulo: "marcenaria, carpintaria e serralheria", items: "items-oficina", destaques: "destaques-oficina", status: "meta/status-oficina", sufixo: "-oficina",
+    temas: TEMAS_OFICINA, tipos: TIPOS_OFICINA, escopo: (i) => oficioDe(i), escopos: OFICIOS_FILTRO, rotuloEscopo: "Ofício", escopoBate: (i, id) => oficioBate(i, id), iconeTipo: true,
+    rodape: "O melhor conteúdo do mundo sobre marcenaria, carpintaria e serralheria, com título e resumo em português. Vídeos, artigos e reviews ficam de 1 a 2 anos; projetos e cursos não saem por idade.",
+    vazio: "A curadoria da Oficina traz vídeos, artigos, projetos com medidas, reviews e cursos. Os itens aparecem aqui depois da primeira rodada." },
 };
-const ORDEM_RADARES = ["tech", "negocios", "investimentos", "politica", "esportes"];
-/* Seções liberadas para quem está vendo (grupos do admin). null = todas. O servidor também bloqueia. */
-let secoesLiberadas = null;
-const radaresVisiveis = () => ORDEM_RADARES.filter((r) => !secoesLiberadas || secoesLiberadas.includes(r));
+
+const ORDEM_RADARES = ["tech", "negocios", "investimentos", "politica", "esportes", "oficina"];
+/* Seções liberadas para quem está vendo (grupos do admin). null = todas (só o Admin recebe null). O servidor também bloqueia.
+   Seções fechadas (Oficina): só aparecem depois que /api/me confirmou que a pessoa as tem (meConferido). */
+let secoesLiberadas = null, meConferido = false;
+const SECOES_FECHADAS = ["oficina"];
+const secaoVisivel = (r) => (secoesLiberadas ? secoesLiberadas.includes(r) : meConferido || !SECOES_FECHADAS.includes(r));
+const radaresVisiveis = () => ORDEM_RADARES.filter(secaoVisivel);
 const LIMITE_POR_TEMA = 5;
 const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
 const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
@@ -3179,7 +3331,10 @@ try {
 const ESCOPOS = [{ id: "todos", nome: "Tudo" }, { id: "nacional", nome: "Nacional" }, { id: "internacional", nome: "Internacional" }];
 let escopo = "todos";
 const escopoDe = (i) => (i.escopo === "nacional" || i.escopo === "internacional" ? i.escopo : (R().escopo ? R().escopo(i) : "nacional"));
-const passaEscopo = (i) => escopo === "todos" || !R().escopo || escopoDe(i) === escopo;
+/* Oficina: o filtro do topo é o Ofício (R().escopos, R().escopoBate); nas outras seções, o Onde de sempre */
+const escoposDe = () => R().escopos || ESCOPOS;
+const escopoBate = (i, id) => (R().escopoBate ? R().escopoBate(i, id) : escopoDe(i) === id);
+const passaEscopo = (i) => escopo === "todos" || !R().escopo || escopoBate(i, escopo);
 try { ordenacao = localStorage.getItem("radar-ordem") || "data"; } catch (e) {}
 if (!ORDENS.some((o) => o.id === ordenacao)) ordenacao = "data";
 let radar = "tech", carregado = false;
@@ -3224,7 +3379,8 @@ function aplicarRadar() {
   temasSel = new Set(salvoTemas.split(",").map((x) => TEMA[x] ? x : GRUPO_DE[x]).filter(Boolean)); subsSel = new Set();
   escopo = "todos";
   try { escopo = localStorage.getItem("radar-escopo" + r.sufixo) || "todos"; } catch (e) {}
-  if (!r.escopo || !ESCOPOS.some((x) => x.id === escopo)) escopo = "todos";
+  if (!r.escopo || !(r.escopos || ESCOPOS).some((x) => x.id === escopo)) escopo = "todos";
+  for (const id of ["rot-escopo-topo", "rot-escopo-painel"]) { const x = document.getElementById(id); if (x) x.textContent = r.rotuloEscopo || "Onde"; }
   if (tipo === "alta") { tipo = "todos"; soRel = true; }
   if (tipo === "youtube") tipo = "video";
   if (!TIPOS.some((t) => t.id === tipo)) tipo = "todos";
@@ -3748,7 +3904,12 @@ function aplicarVisao() {
   $("visoes-tech").hidden = inicio || radar !== "tech";
   $("visao-tech-noticias").setAttribute("aria-pressed", String(!ls));
   $("visao-tech-landscape").setAttribute("aria-pressed", String(ls));
-  const semFeed = bolsa || emRadar() || ls;
+  /* Oficina: Conteúdos (o feed) ou uma das abas de catálogo (public/oficina-ui.js) */
+  const of = typeof emOficinaCat === "function" && emOficinaCat();
+  html.classList.toggle("ofi-ls", of);
+  $("visoes-oficina").hidden = inicio || radar !== "oficina";
+  if (typeof marcarAbasOficina === "function") marcarAbasOficina();
+  const semFeed = bolsa || emRadar() || ls || of;
   document.querySelector(".feed-topo").hidden = semFeed;
   $("feed").hidden = semFeed;
   document.querySelector("footer").hidden = semFeed;
@@ -5531,6 +5692,28 @@ function iconeNoticiaEsporte(i) {
   const e = escudoEl(r.escudo, { sigla: r.sigla || sigla(r.nome), nome: r.nome, tam: 20 });
   return el("span", { class: "item-ic", title: r.nome, role: "img", "aria-label": r.nome }, e);
 }
+/* Oficina (19/11): sem miniatura (nada de rosto de pessoa); o ícone do tipo vai antes do título, e o vídeo mostra a
+   duração quando o campo "duracao" vier (segundos, "MM:SS", "H:MM:SS" ou ISO 8601 "PT12M30S"). O canal é a fonte. */
+function iconeTipoOficina(i) {
+  if (radar !== "oficina" && !String(i._col || "").includes("oficina")) return null;
+  const t = tipoDe(i), ic = (TIPOS_OFICINA.find((x) => x.id === t) || {}).icone || IC_DOC;
+  return el("span", { class: "item-ic item-ic-tipo", role: "img", "aria-label": NOME_TIPO[t] || "Conteúdo", title: NOME_TIPO[t] || "Conteúdo", html: ic });
+}
+function duracaoTxt(i) {
+  const d = i && i.duracao;
+  if (d == null || d === "") return "";
+  let seg = null;
+  if (typeof d === "number" && isFinite(d)) seg = d;
+  else {
+    const t = String(d).trim(), iso = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i.exec(t), rel = /^(?:(\d+):)?(\d{1,2}):(\d{2})$/.exec(t);
+    if (iso && (iso[1] || iso[2] || iso[3])) seg = (+iso[1] || 0) * 3600 + (+iso[2] || 0) * 60 + (+iso[3] || 0);
+    else if (rel) seg = (+rel[1] || 0) * 3600 + +rel[2] * 60 + +rel[3];
+    else if (/^\d+$/.test(t)) seg = +t;
+  }
+  if (seg == null || seg <= 0 || seg > 200 * 3600) return "";
+  const h = Math.floor(seg / 3600), m = Math.floor((seg % 3600) / 60), x = Math.floor(seg % 60);
+  return h ? `${h} h ${String(m).padStart(2, "0")} min` : m ? `${m} min` : `${x} s`;
+}
 function itemEl(i, op = {}) {
   const novo = meta && i.rodada === meta.ultimaRodada;
   const k = i._id || i.url || i.titulo;
@@ -5561,12 +5744,13 @@ function itemEl(i, op = {}) {
   const acoes = i._id ? (op.botaoLida ? el("div", { class: "acoes-item" }, lidaBotao(i), favBotao(i)) : favBotao(i)) : null;
   return el("li", { class: lida ? "item lida" : "item", ...(op.botaoLida && i._id ? { "data-lid": chaveLida(i) } : {}) },
     el("div", { class: "item-topo" },
-      iconeNoticiaEsporte(i),
+      iconeNoticiaEsporte(i), iconeTipoOficina(i),
       aTit,
       acoes),
     el("div", { class: "meta" },
       el("span", { class: "tags" },
         NOME_TIPO[i.tipo] ? el("span", { class: "dd-badge b-" + tipoDe(i) }, NOME_TIPO[i.tipo]) : null,
+        duracaoTxt(i) ? el("span", { class: "dd-badge b-dur", title: "Duração" }, duracaoTxt(i)) : null,
         Number(i.relevancia) >= 3 ? el("span", { class: "dd-badge b-alta" }, "Relevante") : null,
         novo ? el("span", { class: "dd-badge b-novo" }, "Novo") : null,
         i.urgente === true ? el("span", { class: "dd-badge b-urgente" }, "Urgente") : null,
@@ -5727,8 +5911,8 @@ function renderEscopo() {
   const base = fonteItens().filter((i) => passaBusca(i) && passaRel(i) && passaTipo(i, tipo) && passaTema(i));
   for (const id of ["escopo-topo", "escopo-painel"]) {
     const s = $(id); s.textContent = "";
-    ESCOPOS.forEach((o) => {
-      const n = o.id === "todos" ? base.length : base.filter((i) => escopoDe(i) === o.id).length;
+    escoposDe().forEach((o) => {
+      const n = o.id === "todos" ? base.length : base.filter((i) => escopoBate(i, o.id)).length;
       const b = el("button", { type: "button", id: id + "-" + o.id, "aria-pressed": String(escopo === o.id) }, o.nome, el("span", { class: "k" }, String(n)));
       b.addEventListener("click", () => escolherEscopo(o.id));
       s.append(b);
@@ -5789,11 +5973,11 @@ function render() {
   aplicarModo();
   renderEsportes();
   /* no Início só a barra de abas e o card de favoritos dependem do estado geral */
-  if (inicio) { aplicarVisao(); renderLandscape(); renderRadares(); renderCripto(); if (painelMontado) carregarWidget("favoritos"); return; }
+  if (inicio) { aplicarVisao(); renderLandscape(); renderOficina(); renderRadares(); renderCripto(); if (painelMontado) carregarWidget("favoritos"); return; }
   clearTimeout(tBusca); tBusca = 0;
   const foco = document.activeElement && document.activeElement.id;
   for (const id of ["busca", "busca-nav"]) { const x = $(id); if (x.value !== busca) x.value = busca; }
-  aplicarVisao(); renderLandscape(); renderRadares(); renderPregao(); renderCripto(); renderRadarVisao(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
+  aplicarVisao(); renderLandscape(); renderOficina(); renderRadares(); renderPregao(); renderCripto(); renderRadarVisao(); renderUrgente(); renderStatus(); renderAlternancias(); renderTipos(); renderChips(); renderSub(); renderNav(); renderNavTipos(); renderFeed(); renderContador(); renderLateral();
   /* os chips são recriados a cada render: devolve o foco ao botão equivalente */
   if (foco && $(foco) && document.activeElement !== $(foco)) $(foco).focus({ preventScroll: true });
 }
@@ -6392,7 +6576,8 @@ function ligarRadar() {
    /api/q, /api/doc com a cópia em memória de lerMeta, /api/listas, os favoritos já assinados e /api/painel/hoje).
    A grade (ordem, tamanho, o que aparece) fica na conta, em /api/prefs/painel, com cópia em localStorage para a primeira
    pintura. Atualiza a cada 2 min só o que está na tela, e ao voltar para a aba. */
-const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes" };
+const NOME_SECAO = { tech: "Tech", negocios: "Negócios", investimentos: "Investimentos", politica: "Notícias", esportes: "Esportes", oficina: "Oficina" };
+const TITULO_WIDGET = { "destaques-oficina": "Oficina: destaques do dia", "ultimas-oficina": "Oficina: últimos conteúdos" };
 /* O mesmo catálogo de src/painel.js; serve até a resposta do servidor chegar (ela vem já filtrada pelas seções da pessoa) */
 const CATALOGO_LOCAL = [
   { id: "hoje", titulo: "Hoje no Lookout", tamanho: 1, secao: null },
@@ -6402,10 +6587,10 @@ const CATALOGO_LOCAL = [
   { id: "eua", titulo: "EUA", tamanho: 1, secao: "investimentos" },
   { id: "listas", titulo: "Minhas listas", tamanho: 1, secao: "investimentos" },
   { id: "favoritos", titulo: "Favoritos", tamanho: 1, secao: null },
-  ...ORDEM_RADARES.map((s) => ({ id: "destaques-" + s, titulo: "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
-  ...ORDEM_RADARES.map((s) => ({ id: "ultimas-" + s, titulo: "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  ...ORDEM_RADARES.map((s) => ({ id: "destaques-" + s, titulo: TITULO_WIDGET["destaques-" + s] || "Destaques · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  ...ORDEM_RADARES.map((s) => ({ id: "ultimas-" + s, titulo: TITULO_WIDGET["ultimas-" + s] || "Últimas · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   /* Nos fóruns: as seções com subreddit hoje (src/feeds.js); o catálogo do servidor, que já vem filtrado, manda */
-  ...ORDEM_RADARES.map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
+  ...ORDEM_RADARES.filter((s) => s !== "oficina").map((s) => ({ id: "foruns-" + s, titulo: "Fóruns · " + NOME_SECAO[s], tamanho: 1, secao: s })),
   /* Esportes (public/esportes.js): rodada e tabela de cada competição (tênis só a de jogos) e o próximo jogo do time;
      só as ligadas aparecem */
   ...window.Esportes.ORDEM_LIGAS.flatMap((l) => [
@@ -6450,7 +6635,7 @@ try {
   if (s && Array.isArray(s.catalogo)) painelCat = s.catalogo.filter((w) => w && typeof w.id === "string" && typeof w.titulo === "string");
   if (s) painelG = IG.migrar(s);
 } catch (e) {}
-const catalogo = () => (painelCat || CATALOGO_LOCAL).filter((w) => !w.secao || !secoesLiberadas || secoesLiberadas.includes(w.secao));
+const catalogo = () => (painelCat || CATALOGO_LOCAL).filter((w) => !w.secao || secaoVisivel(w.secao));
 const defDe = (id) => catalogo().find((w) => w.id === id);
 const grupoDoWidget = (id) => { const d = defDe(id); return (d && d.grupo) || IG.grupoDe(id); };
 /* padrão em grupos: o do servidor ou, antes da resposta, o daqui na ordem dos grupos padrão */
@@ -12409,6 +12594,8 @@ function archAbasEl() {
   return el("div", { class: "arch-topo" }, el("h2", { class: "arch-titulo" }, "ArchLandscape"), seg);
 }
 if (radarDoHash() === "tech") techDoHash();
+if (radarDoHash() === "oficina") oficinaDoHash();
+ligarAbasOficina();
 const emLandscape = () => !inicio && radar === "tech" && tvisao === "landscape";
 
 function trocarVisaoTech(v) {
@@ -13288,7 +13475,7 @@ corpos["tech-landscape"] = (d, fm = { c: 1, r: 1 }) => {
    do navegador trazer o Início de volta. Entre seções e visões o endereço é só trocado, como antes. */
 function escreverHash(push) {
   const config = !inicio && radar === "esportes" && (espPAberto || partesDoHash()[1] === "config");
-  const alvo = inicio && carteiraVista ? hashCarteira() : inicio ? "#inicio" : config ? "#esportes/config" : radar === "tech" && tvisao === "landscape" ? hashArch() : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
+  const alvo = inicio && carteiraVista ? hashCarteira() : inicio ? "#inicio" : config ? "#esportes/config" : radar === "tech" && tvisao === "landscape" ? hashArch() : radar === "oficina" ? hashOficina() : "#" + radar + (R().mercado && visao !== "bolsa" ? "/" + visao : "");
   if ((location.hash || "") === alvo) return;
   try { history[push ? "pushState" : "replaceState"](null, "", location.pathname + location.search + alvo); }
   catch (e) { try { location.hash = alvo; } catch (e2) {} }
@@ -13304,6 +13491,8 @@ function trocarRadar(id, porHash) {
   visao = porHash && RADARES[id].mercado ? visaoDoHash() : "bolsa";
   /* Tech abre nas notícias, a não ser que o endereço peça o Landscape (#tech/landscape[/id]) */
   if (id === "tech") { if (porHash) techDoHash(); else { tvisao = "noticias"; lsId = null; } }
+  /* Oficina abre em Conteúdos, a não ser que o endereço peça uma aba (#oficina/ferramentas[/id]) */
+  if (id === "oficina") { if (porHash) oficinaDoHash(); else oficinaInicio(); }
   try { localStorage.setItem("radar-atual", id); } catch (e) {}
   if (!porHash) escreverHash(doInicio);
   aplicarRadar();
@@ -13342,6 +13531,7 @@ window.addEventListener("hashchange", () => {
     if (archAntigo) escreverHash();
     return;
   }
+  if (!inicio && h === radar && h === "oficina") { oficinaHashMudou(); return; }
   if (!inicio && h === radar) { if (R().mercado) trocarVisao(visaoDoHash(), true); else if (querConfig) abrirMeusEsportes(); else fecharMeusEsportes(); return; }
   /* seção não liberada: o endereço volta para o radar aberto em vez de ficar apontando para outro */
   if (!radaresVisiveis().includes(h)) { escreverHash(); return; }
@@ -13368,6 +13558,8 @@ if (inicio) entrarInicio();
   lerLidas();
   const me = (await pMe) || {};
   if (Array.isArray(me.secoes)) secoesLiberadas = me.secoes;
+  /* null só para o Admin; sem resposta (erro), as fechadas continuam escondidas */
+  meConferido = !!(me && (me.admin || Array.isArray(me.secoes)));
   meuNome = String(me.nome || "").trim();
   ajustarMenuCarteira(); ajustarMenuEsportes();
   if (espLiberado()) Promise.all([lerPrefsEsportes(), lerTimesEsportes()]).then(() => { if (inicio && !carteiraVista && painelMontado) montarGrade(); renderEsportes(); });

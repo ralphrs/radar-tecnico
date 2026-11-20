@@ -300,6 +300,8 @@ test("relatório: duas consultas ao D1 (nenhum SELECT composto com mais de 5 ter
   const agora = T("2026-11-19T12:10:00Z");
   const DB = d1Falso();
   semear(DB, agora);
+  // Oficina (19/11): curadoria em dia, para não mexer no destaque do resumo
+  DB.db.prepare("INSERT INTO docs (collection, id, data, coletado) VALUES ('meta', 'status-oficina', ?, '')").run(JSON.stringify({ ultimaRodada: iso(agora - 2 * H), novosNaUltima: 3 }));
   const n0 = DB.log.length;
   const r = await relatorio({ DB }, { agora, estadoEspelho: async () => ({ ultima_sincronia: iso(agora - MIN), duracao_ms: 420 }) });
   assert.equal(DB.log.length - n0, 2, "duas consultas");
@@ -330,7 +332,10 @@ test("relatório: duas consultas ao D1 (nenhum SELECT composto com mais de 5 ter
   assert.equal(r.resumo.destaque.nunca, true);
   assert.equal(r.resumo.destaque.idadeMin, 20 * 24 * 60);
   for (const k of ["id", "nome", "estado", "ultimaOk", "ultimoErro", "msg", "esperado", "idadeMin"]) assert.ok(k in w.feeds && k in cur.plantao, k);
-  assert.equal(r.resumo.total, ROTINAS.length + 7, "cinco curadorias, o plantão e os dossiês do ArchLandscape");
+  assert.equal(r.resumo.total, ROTINAS.length + 9, "seis curadorias (com a Oficina), o plantão, os dossiês do ArchLandscape e o levantamento da Oficina");
+  assert.equal(cur["oficina-levantamento"].nome, "Oficina: levantamento das ferramentas");
+  assert.equal(cur["oficina-levantamento"].estado, "em dia", "sem catálogo, nada pendente");
+  assert.equal(cur["curadoria-oficina"].nome, "Oficina: curadoria");
   assert.equal(cur.dossies.estado, "em dia", "sem pedido pendente");
   assert.ok(sqlContagens(agora).sql.split("UNION ALL").length <= 5);
 });
