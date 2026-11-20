@@ -491,12 +491,13 @@ function carregarComparacao(aba, ids) {
 function carregarProfunda(aba, ids, forcar) {
   const k = aba + ":" + ARCH().conjunto(ids);
   if (forcar) { AC.pedidos.delete("p:" + k); AC.prof.delete(k); }
-  umaVez("p:" + k, async () => { try { AC.prof.set(k, await apiLs("GET", "/api/admin/arch/dossies?aba=" + aba + "&ids=" + ids.map(encodeURIComponent).join(","))); } catch (e) { AC.prof.set(k, { erro: e.message }); } reDesenhar(); });
+  // Other Tools pede e lê com "tools": a collection é a mesma (Arch.abaDossie)
+  umaVez("p:" + k, async () => { try { AC.prof.set(k, await apiLs("GET", "/api/admin/arch/dossies?aba=" + ARCH().abaDossie(aba) + "&ids=" + ids.map(encodeURIComponent).join(","))); } catch (e) { AC.prof.set(k, { erro: e.message }); } reDesenhar(); });
 }
 function telaComparar(box, est) {
   const A = ARCH(), aba = est.aba, ids = est.ids || [];
-  // o catálogo da aba, para a regra (mesma subcategoria, 2 a 4, ids que existem)
-  const catalogo = aba === "cloud" ? (AC.dados ? servs() : null) : lsLista;
+  // o catálogo da aba, para a regra (mesma subcategoria, 2 a 4, ids que existem); Tools e Other Tools, só as da aba
+  const catalogo = aba === "cloud" ? (AC.dados ? servs() : null) : lsLista ? LS.daAba(lsLista, A.abaDoc(aba)) : null;
   if (!catalogo) { if (aba === "cloud") carregarCloud(); else carregarLandscape(); box.append(esqueleto(6)); return; }
   const pode = A.podeComparar(ids, catalogo);
   if (!pode.pode) {
@@ -509,8 +510,10 @@ function telaComparar(box, est) {
     return;
   }
   const k = aba + ":" + A.conjunto(ids);
-  const voltar = el("a", { class: "dd-btn dd-btn--link ls-volta", href: aba === "cloud" ? A.escreverHash(cloudEstadoGrade()) : "#arch/tools", id: "ac-cmp-voltar" }, aba === "cloud" ? "← Cloud" : "← Tools");
-  voltar.addEventListener("click", (e) => { e.preventDefault(); if (history.length > 1) history.back(); else irArch(aba === "cloud" ? cloudEstadoGrade() : { aba, tela: "grade" }); });
+  // voltar: a grade da aba que está no endereço (Arch.voltarPara), com os filtros quando é Cloud
+  const vp = A.voltarPara(aba === "cloud" ? cloudEstadoGrade() : { aba });
+  const voltar = el("a", { class: "dd-btn dd-btn--link ls-volta", href: vp.hash, id: "ac-cmp-voltar" }, vp.rotulo);
+  voltar.addEventListener("click", (e) => { e.preventDefault(); if (history.length > 1) history.back(); else irArch(vp.estado); });
   const sub = aba === "cloud" ? A.nomeSub(catsCloud(), pode.subcategoria) : (typeof nomeCat === "function" ? nomeCat((lsLista.find((t) => t.id === ids[0]) || {}).categoria, pode.subcategoria).s : pode.subcategoria);
   document.title = "Comparar " + sub + " · ArchLandscape · Lookout";
   carregarComparacao(aba, ids);
@@ -523,7 +526,7 @@ function telaComparar(box, est) {
     b.addEventListener("click", () => { if (on) return; archEst = { ...archAtual(), profunda: t === "profunda" }; escreverHash(false); renderLandscape(); });
     abas.append(b);
   });
-  box.append(voltar, el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Comparar " + sub), el("p", {}, ids.length + " " + (aba === "cloud" ? "serviços" : "tecnologias") + " da mesma subcategoria")),
+  box.append(voltar, el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Comparar " + sub), el("p", {}, ids.length + " " + (aba === "cloud" ? "serviços" : LS.abaPorHash(aba).varios) + " da mesma subcategoria")),
     el("div", { class: "ls-acoes" }, abas, pronta ? el("span", { class: "dd-badge b-release", id: "ac-selo-profunda" }, "análise profunda pronta") : null)));
   if (est.profunda) return abaProfunda(box, aba, ids, pode.subcategoria, k);
   // Rápida: a tabela com o que o Lookout tem agora
@@ -633,7 +636,8 @@ function abaProfunda(box, aba, ids, sub, k) {
   const p = AC.prof.get(k);
   if (!p) { box.append(esqueleto(5)); return; }
   if (p.erro) { box.append(avisoEl(p.erro, true)); return; }
-  const pedir = async (corpo) => { await apiLs("POST", "/api/admin/arch/dossies", { aba, ids, ...corpo }); AC.profLista = null; carregarProfunda(aba, ids, true); };
+  const abaPedido = ARCH().abaDossie(aba);
+  const pedir = async (corpo) => { await apiLs("POST", "/api/admin/arch/dossies", { aba: abaPedido, ids, ...corpo }); AC.profLista = null; carregarProfunda(aba, ids, true); };
   const quando = (iso) => new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
   // vencida: pede de novo sozinha, uma vez (a rota devolve o pendente se já houver)
   if (p.vencida && !p.pendente && !p.pronta) umaVez("pv:" + k, () => pedir({}).catch((e) => { AC.prof.set(k, { ...p, erroRenovar: e.message }); reDesenhar(); }));
@@ -641,11 +645,11 @@ function abaProfunda(box, aba, ids, sub, k) {
   const chave = "c:" + k;
   vigiaSeguePendente(chave, !!pend);
   if (pend) vigiarPendente(chave, async () => {
-    const j = await apiLs("GET", "/api/admin/arch/dossies?aba=" + aba + "&ids=" + ids.map(encodeURIComponent).join(","));
+    const j = await apiLs("GET", "/api/admin/arch/dossies?aba=" + abaPedido + "&ids=" + ids.map(encodeURIComponent).join(","));
     if (!j.pendente) AC.profLista = null;
     AC.prof.set(k, j); reDesenhar();
   });
-  const cat = aba === "cloud" ? servs() : (lsLista || []);
+  const cat = aba === "cloud" ? servs() : LS.daAba(lsLista || [], ARCH().abaDoc(aba));
   const nomeDe = (id) => (cat.find((x) => x.id === id) || {}).nome || id;
   // botão "Atualizar análise": confirmação dentro da página; pendente, esmaecido com a hora do pedido
   const atualizar = (d, pendente) => {
@@ -698,7 +702,7 @@ function abaProfunda(box, aba, ids, sub, k) {
   b.addEventListener("click", async () => { b.disabled = true; msg.textContent = ""; try { await pedir({ contexto: ctx.value }); } catch (e) { msg.textContent = e.message; msg.classList.add("erro"); b.disabled = false; } });
   // o roteiro que vai no pedido (o mesmo que a rota grava): capacidades, limites, maturidade, dependência, operação e cenários, sem preço
   const subNome = aba === "cloud" ? ARCH().nomeSub(catsCloud(), sub) : sub;
-  const roteiro = () => ARCH().roteiroProfunda(ids.map((id) => cat.find((x) => x.id === id)).filter(Boolean), { aba, provs: provs(), sub, subNome, contexto: ctx.value });
+  const roteiro = () => ARCH().roteiroProfunda(ids.map((id) => cat.find((x) => x.id === id)).filter(Boolean), { aba: abaPedido, provs: provs(), sub, subNome, contexto: ctx.value });
   const pre = el("pre", { class: "ac-roteiro", id: "ac-roteiro" }, roteiro());
   ctx.addEventListener("input", () => { pre.textContent = roteiro(); });
   sec.append(el("label", { class: "rotulo", for: "ac-contexto" }, "Contexto da decisão (opcional)"), ctx, conta,
@@ -891,10 +895,17 @@ function analiseEstruturada(d, aba, titulo) {
 }
 
 /* ---------- lista "Comparações profundas" ---------- */
+/* A aba do endereço de um pedido: Cloud, ou, entre os de "tools", Other Tools quando as opções são de lá */
+function abaHashDoDossie(d) {
+  if (d.aba === "cloud") return "cloud";
+  const t = (lsLista || []).find((x) => (d.ids || []).includes(x.id));
+  return t ? ARCH().abaHashDe(t) : "tools";
+}
 function telaProfundas(box, est) {
   const aba = est.aba;
-  const volta = el("a", { class: "dd-btn dd-btn--link ls-volta", href: est.tela === "profunda" ? "#arch/" + aba + "/profundas" : aba === "cloud" ? ARCH().escreverHash(cloudEstadoGrade()) : "#arch/tools", id: "ac-prof-voltar" }, est.tela === "profunda" ? "← Comparações profundas" : aba === "cloud" ? "← Cloud" : "← Tools");
-  volta.addEventListener("click", (e) => { e.preventDefault(); if (history.length > 1) history.back(); else irArch(est.tela === "profunda" ? { aba, tela: "profundas" } : aba === "cloud" ? cloudEstadoGrade() : { aba, tela: "grade" }); });
+  const vp = ARCH().voltarPara(aba === "cloud" ? cloudEstadoGrade() : { aba });
+  const volta = el("a", { class: "dd-btn dd-btn--link ls-volta", href: est.tela === "profunda" ? "#arch/" + aba + "/profundas" : vp.hash, id: "ac-prof-voltar" }, est.tela === "profunda" ? "← Comparações profundas" : vp.rotulo);
+  volta.addEventListener("click", (e) => { e.preventDefault(); if (history.length > 1) history.back(); else irArch(est.tela === "profunda" ? { aba, tela: "profundas" } : vp.estado); });
   box.append(volta);
   if (!AC.dados) carregarCloud();
   if (!lsLista) carregarLandscape();
@@ -906,8 +917,8 @@ function telaProfundas(box, est) {
     if (d.erro) { box.append(el("p", { class: "ls-vazio" }, d.erro)); return; }
     document.title = "Comparação profunda · ArchLandscape · Lookout";
     const ordem = d.estrutura ? d.estrutura.itens.map((i) => i.id) : d.ids;
-    box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, ordem.map((id) => nome(d.aba, id)).join(" × ")), el("p", {}, (d.aba === "cloud" ? "Cloud" : "Tools") + " · " + estadoTexto(d)))));
-    const abrir = el("a", { class: "dd-btn dd-btn--ghost", href: ARCH().escreverHash({ aba: d.aba, tela: "comparar", ids: d.ids, profunda: false }), id: "ac-prof-abrir" }, "Abrir a comparação");
+    box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, ordem.map((id) => nome(d.aba, id)).join(" × ")), el("p", {}, ARCH().rotuloAba(abaHashDoDossie(d)) + " · " + estadoTexto(d)))));
+    const abrir = el("a", { class: "dd-btn dd-btn--ghost", href: ARCH().escreverHash({ aba: abaHashDoDossie(d), tela: "comparar", ids: d.ids, profunda: false }), id: "ac-prof-abrir" }, "Abrir a comparação");
     const titulo = tituloProfunda(d, (id) => nome(d.aba, id));
     const chave = "d:" + d.id;
     vigiaSeguePendente(chave, d.situacao === "pendente");
@@ -924,14 +935,15 @@ function telaProfundas(box, est) {
     return;
   }
   document.title = "Comparações profundas · ArchLandscape · Lookout";
-  box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Comparações profundas"), el("p", {}, "análises pedidas para ADR, das duas abas"))));
+  box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Comparações profundas"), el("p", {}, "análises pedidas para ADR, de todas as abas"))));
   if (!AC.profLista) { umaVez("pl", async () => { try { AC.profLista = (await apiLs("GET", "/api/admin/arch/dossies")).dossies || []; } catch (e) { AC.profLista = { erro: e.status === 404 ? "Só o Admin vê as comparações profundas." : e.message }; } reDesenhar(); }); box.append(esqueleto(4)); return; }
   if (AC.profLista.erro) { box.append(el("p", { class: "ls-vazio" }, AC.profLista.erro)); return; }
   if (!AC.profLista.length) { box.append(el("p", { class: "ls-vazio" }, "Nenhuma comparação profunda pedida ainda. Abra uma comparação e use a aba Profunda.")); return; }
   box.append(el("ul", { class: "ls-lista ac-prof-lista" }, ...AC.profLista.map((d) => {
-    const a = el("a", { href: "#arch/" + d.aba + "/profundas/" + d.id }, d.ids.map((id) => nome(d.aba, id)).join(" × "));
-    a.addEventListener("click", (e) => { e.preventDefault(); irArch({ aba: d.aba, tela: "profunda", id: d.id }); });
-    return el("li", {}, a, el("div", { class: "n" }, el("span", { class: "dd-badge " + (d.situacao === "pronta" ? "b-release" : d.situacao === "vencida" ? "b-video" : "b-review") }, d.situacao), el("span", {}, d.aba === "cloud" ? "Cloud" : "Tools"), el("span", {}, "pedida em " + dataBR(d.criado)), d.prontoEm ? el("span", {}, "pronta em " + dataBR(d.prontoEm)) : null));
+    const ah = abaHashDoDossie(d);
+    const a = el("a", { href: "#arch/" + ah + "/profundas/" + d.id }, d.ids.map((id) => nome(d.aba, id)).join(" × "));
+    a.addEventListener("click", (e) => { e.preventDefault(); irArch({ aba: ah, tela: "profunda", id: d.id }); });
+    return el("li", {}, a, el("div", { class: "n" }, el("span", { class: "dd-badge " + (d.situacao === "pronta" ? "b-release" : d.situacao === "vencida" ? "b-video" : "b-review") }, d.situacao), el("span", {}, ARCH().rotuloAba(ah)), el("span", {}, "pedida em " + dataBR(d.criado)), d.prontoEm ? el("span", {}, "pronta em " + dataBR(d.prontoEm)) : null));
   })));
 }
 const estadoTexto = (d) => (d.situacao === "pronta" ? "pronta, vale até " + dataBR(d.expiraEm) : d.situacao === "vencida" ? "vencida em " + dataBR(d.expiraEm) : d.situacao === "pendente" ? "pendente desde " + dataBR(d.pedidoEm || d.criado) : "não deu certo");

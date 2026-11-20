@@ -5,6 +5,8 @@
  * src/arch.js) e os testes em Node importam pelo efeito e leem globalThis.Arch. Sem import nem export.
  *
  * Hashes: #arch/tools, #arch/tools/<id>, #arch/tools/comparar/<id>,<id>[/profunda], #arch/cloud[?filtros],
+ *   #arch/languages e #arch/other, com /<id>, /comparar/<id>,<id>[/profunda] e /profundas embaixo (as abas extras de
+ *   Landscape.ABAS, pedido de 19/11, 23h02 e 23h09),
  *   #arch/cloud/<id>, #arch/cloud/comparar/<id>,<id>[/profunda], #arch/<aba>/profundas[/<id>], #arch/stacks[/<id>].
  *   Os antigos #tech/landscape[/<id>] abrem a aba Tools (lerHash marca antigo: true e a página troca o endereço).
  *
@@ -27,6 +29,30 @@
   const ID_STACK = /^s[0-9a-f]{12}$/; /* o mesmo de Stacks.ID_STACK (public/stacks.js) */
   const POR = ["semente", "admin", "curadoria", "dossie"];
   const ABAS = ["tools", "cloud"];
+  /* As abas do endereço: Tools, Cloud e, depois, as abas extras de Landscape.ABAS (Languages, Other Tools), que usam a
+     máquina de Tools (a mesma collection `landscape`, com `aba` no doc). Lidas da tabela na hora (o landscape.js pode
+     carregar depois deste arquivo). ABAS continua sendo a lista das abas de pedido de comparação profunda: as extras
+     pedem com "tools". */
+  const tabelaLs = () => (raiz.Landscape && Array.isArray(raiz.Landscape.ABAS) ? raiz.Landscape.ABAS : [{ id: "tools", rotulo: "Tools", hash: "tools" }]);
+  const abasHash = () => { const l = tabelaLs().map((a) => a.hash); return [l[0], "cloud", ...l.slice(1)]; };
+  const rotuloAba = (aba) => (aba === "cloud" ? "Cloud" : (tabelaLs().find((a) => a.hash === aba) || tabelaLs()[0]).rotulo);
+  /* aba do endereço -> id da aba do doc da tecnologia ("tools", "linguagens", "outras"), e o contrário */
+  const abaDoc = (aba) => (tabelaLs().find((a) => a.hash === aba) || tabelaLs()[0]).id;
+  const abaHashDe = (doc) => {
+    const id = raiz.Landscape ? raiz.Landscape.abaDe(doc) : "tools";
+    return (tabelaLs().find((a) => a.id === id) || tabelaLs()[0]).hash;
+  };
+  /* aba do endereço é de tecnologias (Tools ou uma extra)? */
+  const ehAbaTec = (aba) => aba !== "cloud" && tabelaLs().some((a) => a.hash === aba);
+  /* aba do endereço -> aba do pedido de comparação profunda (arch-dossies só conhece tools e cloud) */
+  const abaDossie = (aba) => (aba === "cloud" ? "cloud" : "tools");
+  /* Voltar do detalhe, da comparação e das comparações profundas: a grade da aba de onde a pessoa veio, que é a aba que
+     está no endereço (Cloud com os filtros). Devolve { estado, hash, rotulo } ("← Other Tools"). */
+  function voltarPara(e) {
+    const aba = e && abasHash().includes(e.aba) ? e.aba : "tools";
+    const estado = { aba, tela: "grade", id: null, ids: [], profunda: false, filtros: aba === "cloud" && e && e.filtros ? e.filtros : FILTROS_VAZIOS() };
+    return { estado, hash: escreverHash(estado), rotulo: "← " + rotuloAba(aba) };
+  }
 
   /* ---------- texto ---------- */
   const semAcento = (s) => String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -452,7 +478,7 @@
       const id = ID_STACK.test(p[2] || "") ? p[2] : null;
       return { aba: "stacks", tela: id ? "stack" : "lista", id, ids: [], profunda: false, filtros: FILTROS_VAZIOS(), antigo: p.length > (id ? 3 : 2) && !!p.slice(id ? 3 : 2).join("") };
     }
-    else if (p[0] === "arch") { aba = p[1] === "cloud" ? "cloud" : "tools"; resto = p.slice(2); antigo = !ABAS.includes(p[1]) && p[1] !== undefined && p[1] !== ""; }
+    else if (p[0] === "arch") { const hs = abasHash(); aba = hs.includes(p[1]) ? p[1] : "tools"; resto = p.slice(2); antigo = !hs.includes(p[1]) && p[1] !== undefined && p[1] !== ""; }
     else return null;
     const out = { aba, tela: "grade", id: null, ids: [], profunda: false, filtros: aba === "cloud" ? lerFiltros(q) : FILTROS_VAZIOS(), antigo };
     const idOk = (x) => ID_SERV.test(x) && x.length <= 160;
@@ -468,7 +494,7 @@
   }
   function escreverHash(e) {
     if (e && e.aba === "stacks") return "#arch/stacks" + (e.tela === "stack" && e.id && ID_STACK.test(e.id) ? "/" + e.id : "");
-    const aba = e && e.aba === "cloud" ? "cloud" : "tools";
+    const aba = e && abasHash().includes(e.aba) ? e.aba : "tools";
     let h = "#arch/" + aba;
     if (e.tela === "detalhe" && e.id) h += "/" + encodeURIComponent(e.id);
     else if (e.tela === "comparar") h += "/comparar/" + (e.ids || []).map(encodeURIComponent).join(",") + (e.profunda ? "/profunda" : "");
@@ -504,7 +530,7 @@
   /* servs: docs completos (com id). ctx: { aba, provs, cats, novidades: { id: [itens] }, roteiro: { id: [itens] }, agora }.
      Só fatos: nada de prós e contras, nota ou vencedor. */
   function montarComparacao(servs, ctx = {}) {
-    const aba = ctx.aba === "tools" ? "tools" : "cloud";
+    const aba = ctx.aba && ctx.aba !== "cloud" && ehAbaTec(ctx.aba) ? "tools" : "cloud";
     const l = Array.isArray(servs) ? servs : [];
     const provs = ctx.provs || [];
     const colunas = l.map((s) => {
@@ -904,7 +930,7 @@
     return `linear-gradient(${direcao === "baixo" ? "to bottom" : "to right"}, ${partes.join(", ")})`;
   }
 
-  raiz.Arch = { DIA, nomeCurto, CORES_PROV, coresDe, faixaCores, MAX_COMPARAR, CONTEXTO_MAX, VALIDADE_DIAS, MARKDOWN_MAX, ID_SERV, ID_PROV, ID_CAT, ID_DOSSIE, POR, ABAS, MOTIVOS, COMUNS, ATRIBUTOS, LINKS,
+  raiz.Arch = { DIA, nomeCurto, CORES_PROV, coresDe, faixaCores, MAX_COMPARAR, CONTEXTO_MAX, VALIDADE_DIAS, MARKDOWN_MAX, ID_SERV, ID_PROV, ID_CAT, ID_DOSSIE, POR, ABAS, abasHash, rotuloAba, abaDoc, abaHashDe, ehAbaTec, abaDossie, voltarPara, MOTIVOS, COMUNS, ATRIBUTOS, LINKS,
     COMUNS_CLOUD, CAPACIDADES, ehCloud, soConhecidas, conferidoDe, roteiroProfunda, GRANDES,
     semAcento, slug, urlOk, isoOk, temPreco, temPalavra, chavesDe, carac, textoCarac, validarCarac, validarAtributos, validarProvedores, validarCategorias,
     nomeSub, catDaSub, idServico, validarServico, provDe, filtrarCloud, agrupar, equivalentes, podeComparar, marcavel, conjunto,

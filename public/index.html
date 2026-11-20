@@ -2219,6 +2219,19 @@ html.tech-ls .barra-linha { display: none; }
 .ls-cat > h3 + .ls-sub { border-top: 0; }
 .ls-sub > h4 { margin: 0; padding-top: 2px; font: 600 11.5px/15px var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .04em; overflow-wrap: anywhere; }
 .ls-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; min-width: 0; }
+/* destaques da subcategoria (19/11, 23h18): os 3 mais populares na frente, cartão largo e mais alto, um por linha */
+.ls-sub-corpo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ls-dest { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
+.ls-card.ls-dest-card { aspect-ratio: auto; flex-direction: row; align-items: flex-start; text-align: left; gap: 12px; min-height: 168px; padding: 16px 14px; }
+.ls-dest-card .ic { margin-top: 2px; }
+.ls-dest-corpo { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1 1 auto; }
+.ls-dest-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
+.ls-card.ls-dest-card .ls-nome { font: 600 15px/19px var(--font-display); min-height: 0; -webkit-line-clamp: 2; }
+.ls-pos { flex: none; padding: 0 6px; font: 600 11px/16px var(--font-mono); background: var(--secondary); color: var(--muted-foreground); border: 1px solid var(--border); }
+.ls-dest-lin { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.ls-dest-card .ls-dado { margin-top: 0; font-size: 12px; }
+.ls-dest-card .ls-dest-ver { display: block; font: 500 11.5px/15px var(--font-mono); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ls-dest-desc { display: block; font: 400 12px/16px var(--font-sans); color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .ls-card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; aspect-ratio: 1 / 1; min-width: 0; padding: 18px 6px 6px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); color: var(--foreground); text-decoration: none; text-align: center; }
 .ls-card:hover { border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); box-shadow: var(--shadow-sm); }
 .ls-card:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
@@ -2233,6 +2246,11 @@ html.tech-ls .barra-linha { display: none; }
 /* ArchLandscape (19/11): abas Tools e Cloud, ícone com o logotipo esmaecido, grade de Cloud, comparar e Profunda */
 .arch-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .arch-titulo { margin: 0; font: 600 13px/1.2 var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; }
+/* quatro abas (Tools · Cloud · Languages · Other Tools): no celular a faixa rola de lado dentro dela, sem alargar a página */
+.arch-abas { max-width: 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.arch-abas::-webkit-scrollbar { display: none; }
+.arch-abas button { white-space: nowrap; }
+@media (max-width: 899px) { .arch-topo > .arch-abas { flex: 1 1 100%; } .arch-abas button { flex: 1 0 auto; } }
 .ic { position: relative; flex: none; display: inline-block; border-radius: 8px; overflow: hidden; background: var(--secondary); }
 .ic-g { border-radius: 12px; } .ic-p, .ic-m { border-radius: 5px; }
 .ic-vazio { position: absolute; inset: 0; display: grid; place-items: center; }
@@ -2522,6 +2540,11 @@ html.tech-ls .barra-linha { display: none; }
 .ls-org-tec { margin-left: 28px; display: flex; gap: 6px; align-items: center; font-size: 13px; min-width: 0; }
 .ls-org-tec span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ls-org-tec select { flex: 0 1 170px; min-width: 0; height: 30px; font-size: 12.5px; }
+/* aba Other Tools: o organizar separa as categorias por aba; a categoria nova escolhe a aba */
+.ls-org-aba { margin: 4px 0 0; font: 600 13px/1.2 var(--font-sans); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: .06em; display: flex; gap: 8px; align-items: center; }
+.ls-org-aba .k { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.ls-org-lin .dd-input.ls-org-aba-sel { flex: 0 1 132px; }
+#ls-vazio-aba .dd-btn { margin-left: 4px; vertical-align: middle; }
 /* widget do Início */
 .wdg-ls li a { display: block; }
 .wdg-ls li a b { font-weight: 600; }
@@ -12290,9 +12313,28 @@ var LS = window.Landscape;
 var tvisao = "noticias", lsId = null, lsLista = null, lsCats = [], lsErro = "", lsCarregando = false, lsAdmin = false, lsEstadoAdmin = null;
 var lsDet = new Map(), lsDetErro = new Map(), lsRolagem = 0, lsDaGrade = false, lsAviso = "", lsConfirmaTirar = false, lsHnOrdem = "pontos";
 var lsLegenda = false;
-var lsF = { busca: "", ling: "", lic: "", modelos: [], usos: [], ordem: "estrelas", modo: "grade" };
+var lsF = { busca: "", ling: "", lic: "", categoria: "", modelos: [], usos: [], ordem: "estrelas", modo: "grade" };
 try { const s = JSON.parse(localStorage.getItem("radar-landscape") || "null"); if (s) { if (["grade", "tabela"].includes(s.modo)) lsF.modo = s.modo; if (["estrelas", "crescimento", "atividade", "nome"].includes(s.ordem)) lsF.ordem = s.ordem; } } catch (e) {}
 const lsGuardar = () => { try { localStorage.setItem("radar-landscape", JSON.stringify({ modo: lsF.modo, ordem: lsF.ordem })); } catch (e) {} };
+/* Abas extras (pedido de 19/11, 23h02 e 23h09): Languages e Other Tools são a mesma máquina de Tools, com `aba` no doc
+   e na categoria (LS.ABAS, LS.abaDe). archAba de tecnologia (Arch.ehAbaTec: tools, languages, other) desenha a grade e
+   o detalhe daqui, cada aba só com as suas; texto da aba (título, subtítulo, vazio) vem da tabela; os filtros são de
+   cada aba (busca, linguagem, licença, categoria, modelo e uso), e o modo e a ordem valem para as duas. */
+var lsFPorAba = { tools: lsF };
+function lsFiltrosDaAba() {
+  const a = lsAbaHash();
+  if (!lsFPorAba[a]) lsFPorAba[a] = { busca: "", ling: "", lic: "", categoria: "", modelos: [], usos: [], ordem: lsF.ordem, modo: lsF.modo };
+  const f = lsFPorAba[a];
+  f.ordem = lsF.ordem; f.modo = lsF.modo;
+  lsF = f;
+  return f;
+}
+const lsAbaDoc = () => window.Arch.abaDoc(archAba);
+const lsDaAba = () => LS.daAba(lsLista || [], lsAbaDoc());
+const lsCatsDaAba = (aba) => LS.daAba(lsCats, aba || lsAbaDoc());
+const lsAbaHash = () => (window.Arch.ehAbaTec(archAba) ? archAba : "tools");
+const lsAbaInfo = () => LS.abaPorHash(lsAbaHash());
+const hashTec = (id) => "#arch/" + lsAbaHash() + "/" + encodeURIComponent(id);
 /* ArchLandscape (pedido de 19/11): a página do Landscape, com as abas Tools (o Landscape de antes) e Cloud.
    Hashes em public/arch.js (Arch.lerHash / Arch.escreverHash): #arch/tools[/id], #arch/cloud[/...]. Os antigos
    #tech/landscape[/id] abrem a aba Tools e o endereço é trocado (replaceState: o Voltar não ganha entrada nova).
@@ -12303,7 +12345,7 @@ function techDoHash() {
   const a = window.Arch.lerHash(location.hash);
   const v = a ? "landscape" : "noticias";
   let id = null;
-  if (a && a.aba === "tools" && a.tela === "detalhe" && LS.ID_OK.test(a.id)) id = a.id;
+  if (a && window.Arch.ehAbaTec(a.aba) && a.tela === "detalhe" && LS.ID_OK.test(a.id)) id = a.id;
   const aba = a ? a.aba : archAba;
   const chave = a ? window.Arch.escreverHash(a) : "";
   const mudou = v !== tvisao || id !== lsId || aba !== archAba || chave !== archChave;
@@ -12313,7 +12355,7 @@ function techDoHash() {
 /* o estado da aba aberta, com o detalhe de Tools (lsId) por cima */
 function archAtual() {
   const e = archEst && archEst.aba === archAba ? { ...archEst } : { aba: archAba, tela: "grade", id: null, ids: [], profunda: false, filtros: window.Arch.FILTROS_VAZIOS() };
-  if (archAba === "tools") { if (lsId) { e.tela = "detalhe"; e.id = lsId; } else if (e.tela === "detalhe") { e.tela = "grade"; e.id = null; } }
+  if (window.Arch.ehAbaTec(archAba)) { if (lsId) { e.tela = "detalhe"; e.id = lsId; } else if (e.tela === "detalhe") { e.tela = "grade"; e.id = null; } }
   return e;
 }
 const hashArch = () => { const h = window.Arch.escreverHash(archAtual()); archChave = h; return h; };
@@ -12321,7 +12363,7 @@ const hashArch = () => { const h = window.Arch.escreverHash(archAtual()); archCh
 function irArch(estado, push = true) {
   if (radar !== "tech" || inicio) return;
   archAba = estado.aba; archEst = { ids: [], profunda: false, filtros: window.Arch.FILTROS_VAZIOS(), id: null, ...estado };
-  lsId = estado.aba === "tools" && estado.tela === "detalhe" ? estado.id : null;
+  lsId = window.Arch.ehAbaTec(estado.aba) && estado.tela === "detalhe" ? estado.id : null;
   lsConfirmaTirar = false;
   if (typeof fecharFolhaLs === "function") fecharFolhaLs();
   escreverHash(push);
@@ -12329,7 +12371,8 @@ function irArch(estado, push = true) {
 }
 function archAbasEl() {
   const seg = el("div", { class: "seg visoes arch-abas", role: "group", "aria-label": "Abas do ArchLandscape" });
-  [["tools", "Tools"], ["cloud", "Cloud"]].forEach(([a, t]) => {
+  /* Tools · Cloud · Languages · Other Tools (Arch.abasHash, pela tabela LS.ABAS) */
+  window.Arch.abasHash().map((a) => [a, window.Arch.rotuloAba(a)]).forEach(([a, t]) => {
     const b = el("button", { type: "button", id: "arch-aba-" + a, "aria-pressed": String(archAba === a) }, t);
     b.addEventListener("click", () => { if (archAba === a && archAtual().tela === "grade") return; irArch(a === "cloud" && typeof cloudEstadoGrade === "function" ? cloudEstadoGrade() : { aba: a, tela: "grade" }); });
     seg.append(b);
@@ -12418,7 +12461,7 @@ function cartao(t) {
   const selos = [];
   if (LS.ehNova(t.adicionado)) selos.push(el("span", { class: "dd-badge b-novo" }, "novo"));
   if (l.release && LS.releaseRecente(l.release)) selos.push(el("span", { class: "dd-badge b-release", title: "Versão nova nesta semana" }, l.release.tag));
-  const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : ""), href: "#arch/tools/" + encodeURIComponent(t.id), id: "ls-c-" + t.id, title: (trLigada && t.descricao_pt) || t.descricao || t.repo },
+  const a = el("a", { class: "ls-card" + (l.coletando ? " coletando" : "") + (l.arquivado ? " arquivado" : ""), href: hashTec(t.id), id: "ls-c-" + t.id, title: (trLigada && t.descricao_pt) || t.descricao || t.repo },
     selos.length ? el("span", { class: "ls-selos" }, ...selos) : null, marcaEl(t), el("span", { class: "ls-nome" }, t.nome || t.repo),
     el("span", { class: "ls-mod-lin" }, modeloEl(t, true)),
     /* opções de uso numa linha miúda que existe sempre (vazia em quem não tem), para os cartões terem a mesma altura */
@@ -12427,10 +12470,27 @@ function cartao(t) {
   a.addEventListener("click", (e) => abrirTec(t.id, e));
   return a;
 }
+/* Cartão de destaque (adendo de 19/11, 23h18): os 3 com mais estrelas de cada subcategoria (LS.destaquesVisiveis), mais
+   largo e mais alto, com o ícone maior, a posição na subcategoria inteira (selo "1º" com texto), as estrelas, o modelo,
+   a última versão e a descrição numa linha só. Mesmo link e mesmo clique do cartão compacto. */
+function cartaoDestaque(t, posicao) {
+  const l = t.leve || {};
+  const desc = (trLigada && t.descricao_pt) || t.descricao || "";
+  const a = el("a", { class: "ls-card ls-dest-card" + (l.arquivado ? " arquivado" : ""), href: hashTec(t.id), id: "ls-c-" + t.id, title: desc || t.repo },
+    marcaEl(t, "g"),
+    el("span", { class: "ls-dest-corpo" },
+      el("span", { class: "ls-dest-topo" }, el("span", { class: "ls-nome" }, t.nome || t.repo),
+        el("span", { class: "dd-badge ls-pos", title: posicao + "º em estrelas na subcategoria" }, el("span", { "aria-hidden": "true" }, posicao + "º"), el("span", { class: "ls-sr" }, ", " + posicao + "º em estrelas na subcategoria"))),
+      el("span", { class: "ls-dest-lin" }, el("span", { class: "ls-dado" }, pontoEl(l.commit), estrelasTxt(l.estrelas)), modeloEl(t, true)),
+      el("span", { class: "ls-dest-lin ls-dest-ver" }, l.release ? "versão " + l.release.tag + (l.release.data ? " · " + fmtRel(l.release.data) : "") : "sem release publicado"),
+      desc ? el("span", { class: "ls-dest-desc" }, desc) : null));
+  a.addEventListener("click", (e) => abrirTec(t.id, e));
+  return a;
+}
 /* a regra do filtro é LS.filtrar (busca, linguagem, licença, categoria e modelos), testada em test/landscape.test.mjs */
-const lsFiltro = (semModelo, semUso) => ({ busca: lsF.busca, ling: lsF.ling, lic: lsF.lic, modelos: semModelo ? [] : lsF.modelos, usos: semUso ? [] : lsF.usos });
+const lsFiltro = (semModelo, semUso) => ({ busca: lsF.busca, ling: lsF.ling, lic: lsF.lic, categoria: lsF.categoria || "", modelos: semModelo ? [] : lsF.modelos, usos: semUso ? [] : lsF.usos });
 function lsFiltradas() {
-  const l = LS.filtrar(lsLista || [], lsFiltro());
+  const l = LS.filtrar(lsDaAba(), lsFiltro());
   const v = (t) => t.leve || {};
   const cmp = {
     estrelas: (a, b) => (v(b).estrelas ?? -1) - (v(a).estrelas ?? -1),
@@ -12447,13 +12507,16 @@ function selectLs(id, rotulo, opcoes, valor, aoMudar) {
   return s;
 }
 /* ---- grade e tabela ---- */
+const lsCabEl = () => { const i = lsAbaInfo(); return el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, i.titulo || i.rotulo), el("p", {}, i.subtitulo))); };
 function desenharGrade(box) {
-  const cab = el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Tools"), el("p", {}, "tecnologias que eu acompanho")));
+  lsFiltrosDaAba();
+  const info = lsAbaInfo(), extra = info.id !== "tools";
+  const cab = lsCabEl();
   const modo = el("div", { class: "seg", role: "group", "aria-label": "Mostrar como" });
   [["grade", "Grade"], ["tabela", "Tabela"]].forEach(([m, t]) => { const b = el("button", { type: "button", id: "ls-modo-" + m, "aria-pressed": String(lsF.modo === m) }, t); b.addEventListener("click", () => { lsF.modo = m; lsGuardar(); renderLandscape(); }); modo.append(b); });
   const acoes = el("div", { class: "ls-acoes" }, modo);
   if (lsAdmin) {
-    const add = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-adicionar", "aria-haspopup": "dialog", "aria-controls": "ls-folha" }, "Adicionar tecnologia");
+    const add = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-adicionar", "aria-haspopup": "dialog", "aria-controls": "ls-folha" }, info.adicionar);
     add.addEventListener("click", () => abrirFolhaLs("adicionar"));
     const org = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ls-organizar", "aria-haspopup": "dialog", "aria-controls": "ls-folha" }, "Organizar categorias");
     org.addEventListener("click", () => abrirFolhaLs("organizar"));
@@ -12469,12 +12532,15 @@ function desenharGrade(box) {
     if (p.length) box.append(el("p", { class: "ls-aviso", role: "status" }, ...p.flatMap((x, i) => (i ? [" · ", x] : [x]))));
   }
   if (lsAviso) box.append(el("p", { class: "ls-aviso", role: "status" }, lsAviso));
-  const todos = lsLista || [];
+  const todos = lsDaAba();
+  const catsAba = lsCatsDaAba();
+  if (lsF.categoria && !catsAba.some((c) => c.id === lsF.categoria)) lsF.categoria = "";
   const lings = [...new Set(todos.map((t) => t.leve && t.leve.linguagem).filter(Boolean))].sort();
   const lics = [...new Set(todos.map((t) => t.leve && t.leve.licenca).filter(Boolean))].sort();
   const busca = el("input", { class: "dd-input", id: "ls-busca", type: "search", placeholder: "Buscar pelo nome", "aria-label": "Buscar tecnologia pelo nome", autocomplete: "off", value: lsF.busca });
   busca.addEventListener("input", () => { lsF.busca = busca.value; pintarConteudo(); });
   box.append(el("div", { class: "ls-ferr", role: "search" }, busca,
+    catsAba.length > 1 ? selectLs("ls-cat", "Categoria", [["", "Toda categoria"], ...catsAba.map((c) => [c.id, c.nome])], lsF.categoria || "", (v) => { lsF.categoria = v; pintarConteudo(); }) : null,
     selectLs("ls-ling", "Linguagem", [["", "Toda linguagem"], ...lings.map((x) => [x, x])], lsF.ling, (v) => { lsF.ling = v; pintarConteudo(); }),
     selectLs("ls-lic", "Licença", [["", "Toda licença"], ...lics.map((x) => [x, x])], lsF.lic, (v) => { lsF.lic = v; pintarConteudo(); }),
     selectLs("ls-ordem", "Ordenar", [["estrelas", "Mais estrelas"], ["crescimento", "Mais crescimento em 30 dias"], ["atividade", "Atividade recente"], ["nome", "Nome"]], lsF.ordem, (v) => { lsF.ordem = v; lsGuardar(); pintarConteudo(); })));
@@ -12531,24 +12597,40 @@ function desenharGrade(box) {
     pintarMods();
     conteudo.textContent = "";
     const l = lsFiltradas();
+    if (!todos.length && extra) {
+      /* aba extra vazia: a frase da tabela e, para o Admin, o adicionar já na aba aberta */
+      const p = el("p", { class: "ls-vazio", id: "ls-vazio-aba" }, info.vazio);
+      if (lsAdmin) { const b = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ls-adicionar-vazio", "aria-haspopup": "dialog", "aria-controls": "ls-folha" }, info.adicionar); b.addEventListener("click", () => abrirFolhaLs("adicionar")); p.append(" ", b); }
+      conteudo.append(p); return;
+    }
     if (!todos.length) { conteudo.append(el("p", { class: "ls-vazio" }, lsAdmin ? "Nenhuma tecnologia ainda. Use Adicionar tecnologia e cole a URL do GitHub." : "Nenhuma tecnologia no landscape ainda.")); return; }
-    if (!l.length) { conteudo.append(el("p", { class: "ls-vazio" }, "Nenhuma tecnologia com esses filtros.")); return; }
+    if (!l.length) { conteudo.append(el("p", { class: "ls-vazio" }, "Nenhum resultado com esses filtros.")); return; }
     if (lsF.modo === "tabela") { conteudo.append(tabelaLs(l)); return; }
     const cats = el("div", { class: "ls-cats-col" });
     const usados = new Set();
-    for (const c of lsCats) {
+    for (const c of catsAba) {
       const subs = c.subcategorias.map((s) => ({ s, ts: l.filter((t) => t.categoria === c.id && t.subcategoria === s.id) })).filter((x) => x.ts.length);
       if (!subs.length) continue;
       const n = subs.reduce((k, x) => k + x.ts.length, 0);
       subs.forEach((x) => x.ts.forEach((t) => usados.add(t.id)));
-      cats.append(el("section", { class: "ls-cat", "aria-label": c.nome }, el("h3", {}, c.nome, el("span", { class: "k" }, String(n))),
-        ...subs.map((x) => el("div", { class: "ls-sub" }, el("h4", {}, x.s.nome), el("div", { class: "ls-grade" }, ...x.ts.map(cartao))))));
+      /* destaques: os 3 com mais estrelas da subcategoria inteira, quando restam 4 ou mais visíveis (LS.destaquesVisiveis) */
+      const subEl = (x) => {
+        const d = LS.destaquesVisiveis(todos.filter((t) => t.categoria === c.id && t.subcategoria === x.s.id), x.ts);
+        const por = new Map(x.ts.map((t) => [t.id, t]));
+        const resto = d.resto.map((id) => por.get(id));
+        return el("div", { class: "ls-sub" + (d.destaques.length ? " com-dest" : "") }, el("h4", {}, x.s.nome), el("div", { class: "ls-sub-corpo" },
+          d.destaques.length ? el("div", { class: "ls-dest", role: "group", "aria-label": "Mais populares em " + x.s.nome }, ...d.destaques.map((k) => cartaoDestaque(por.get(k.id), k.posicao))) : null,
+          resto.length ? el("div", { class: "ls-grade" }, ...resto.map(cartao)) : null));
+      };
+      cats.append(el("section", { class: "ls-cat", "aria-label": c.nome }, el("h3", {}, c.nome, el("span", { class: "k" }, String(n))), ...subs.map(subEl)));
     }
     const soltas = l.filter((t) => !usados.has(t.id));
     if (soltas.length) cats.append(el("section", { class: "ls-cat", "aria-label": "Sem categoria" }, el("h3", {}, "Sem categoria", el("span", { class: "k" }, String(soltas.length))), el("div", { class: "ls-sub" }, el("h4", {}, "Outras"), el("div", { class: "ls-grade" }, ...soltas.map(cartao)))));
     conteudo.append(el("div", { class: "ls-cats" }, cats));
   }
   pintarConteudo();
+  /* aba extra vazia: sem filtros para nada, só a frase (e o botão do Admin) */
+  if (!todos.length && extra) box.querySelectorAll(".ls-ferr").forEach((n) => n.remove());
 }
 function tabelaLs(l) {
   const v = (t) => t.leve || {};
@@ -12565,9 +12647,9 @@ function tabelaLs(l) {
     { id: "uso", rotulo: "Uso", tipo: "texto", valor: (t) => LS.resumoDeUso(t) || null },
     { id: "issues", rotulo: "Issues abertas", tipo: "num", valor: (t) => v(t).issues },
   ];
-  const link = (t) => { const a = el("a", { href: "#arch/tools/" + encodeURIComponent(t.id) }, marcaEl(t, "p"), t.nome); a.addEventListener("click", (e) => abrirTec(t.id, e)); return a; };
+  const link = (t) => { const a = el("a", { href: hashTec(t.id) }, marcaEl(t, "p"), t.nome); a.addEventListener("click", (e) => abrirTec(t.id, e)); return a; };
   const tab = Tabela.criar({
-    id: "landscape", colunas: cols, linhas: l, rotuloConta: "tecnologias", classeTabela: "cot-tab ls-tab", padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 50 },
+    id: "landscape", colunas: cols, linhas: l, rotuloConta: lsAbaInfo().varios, classeTabela: "cot-tab ls-tab", padrao: { ordem: [], filtros: {}, pagina: 1, porPagina: 50 },
     semOrdem: "Sem critério, vale a ordem escolhida em cima.",
     celula: (c, t) => {
       if (c.id === "nome") return el("td", {}, link(t));
@@ -12672,6 +12754,18 @@ function blocoNoticias(d) {
     t.blog && t.blog.length ? el("ul", { class: "ls-lista" }, ...t.blog.slice(0, 6).map((b0) => { const b = lsV(b0, ["titulo"]), a = el("a", { href: b.url, target: "_blank", rel: "noopener" }, b.titulo); return el("li", {}, a, el("div", { class: "n" }, el("span", {}, b.publicado ? dataCurta(b.publicado) : ""), lsTroca(b, "bl:" + b.url, { titulo: a }))); })) : null,
     fonteBloco("Lookout, Hacker News (Algolia)" + (t.feed ? " e o feed do site" : ""), t.em && t.em.hn));
 }
+/* Issues e PRs com mais 👍 em 12 meses (do GitHub), sozinhos: o bloco das abas sem notícias */
+function blocoDestaquesGh(t) {
+  const is = t.gh_destaques || [];
+  return el("section", { class: "ls-bloco largo", "aria-labelledby": "ls-h-gh", id: "ls-destaques-gh" }, el("h3", { id: "ls-h-gh" }, "Destaques do GitHub", el("small", {}, "issues e PRs com mais 👍 em 12 meses")),
+    is.length ? el("ul", { class: "ls-lista" }, ...is.map((i0) => {
+      const i = lsV(i0, ["titulo"]), a = i.url ? el("a", { href: i.url, target: "_blank", rel: "noopener" }, i.titulo) : el("span", {}, i.titulo);
+      return el("li", {}, a,
+        el("div", { class: "n" }, el("span", {}, (i.tipo === "pr" ? "PR" : "issue") + " #" + i.numero), el("span", {}, "👍 " + i.reacoes), el("span", {}, i.comentarios === 1 ? "1 comentário" : i.comentarios + " comentários"), el("span", {}, i.estado), i.autor ? el("span", {}, i.autor) : null, lsTroca(i, "is:" + (i.url || i.numero), { titulo: a })));
+    }))
+      : el("p", { class: "ls-aviso" }, t.em && t.em.issues ? "Nenhuma issue com reações nos últimos 12 meses." : "Ainda não coletado."),
+    fonteBloco("GitHub", t.em && t.em.issues));
+}
 function blocoDizendo(d) {
   const t = d.tec, grupos = (t.hn && t.hn.comentarios) || [], is = t.gh_destaques || [];
   const com = (c0) => { const c = lsV(c0, ["trecho"]), p = el("p", {}, c.trecho); return el("li", {}, p, el("div", { class: "n" }, el("span", {}, c.autor), el("span", {}, c.data ? dataCurta(c.data) : ""), el("span", {}, c.respostas === 1 ? "1 resposta" : c.respostas + " respostas"), el("a", { href: c.url, target: "_blank", rel: "noopener" }, "ver no HN"), lsTroca(c, "cm:" + c.id, { trecho: p }))); };
@@ -12695,15 +12789,15 @@ function blocoDizendo(d) {
 }
 function blocoParecidas(d) {
   const ps = d.parecidas || [];
-  const corpo = ps.length ? el("ul", { class: "ls-lista" }, ...ps.map((p) => { const a = el("a", { href: "#arch/tools/" + encodeURIComponent(p.id) }, p.nome); a.addEventListener("click", (e) => abrirTec(p.id, e));
+  const corpo = ps.length ? el("ul", { class: "ls-lista" }, ...ps.map((p) => { const a = el("a", { href: hashTec(p.id) }, p.nome); a.addEventListener("click", (e) => abrirTec(p.id, e));
     const l = p.leve || {}; return el("li", {}, el("div", { class: "ls-rel" }, marcaEl(p, "p"), a), el("div", { class: "n" }, el("span", {}, estrelasTxt(l.estrelas)), el("span", {}, pontoEl(l.commit), " " + (l.commit ? "commit " + fmtRel(l.commit) : "sem dado")), el("span", {}, l.licenca || "licença ?"))); }))
     : el("p", { class: "ls-aviso" }, "Nenhuma outra tecnologia nesta subcategoria ainda.");
   const t = d.tec, l = t.leve || {};
   /* comparar só com concorrentes (a mesma subcategoria): um botão por parecida e o geral, esmaecido sem nenhuma */
-  if (ps.length) [...corpo.children].forEach((li, k) => li.append(botaoCompararCom("tools", d.id || t.id, ps[k].id, ps[k].nome)));
+  if (ps.length) [...corpo.children].forEach((li, k) => li.append(botaoCompararCom(lsAbaHash(), d.id || t.id, ps[k].id, ps[k].nome)));
   return el("section", { class: "ls-bloco", "aria-labelledby": "ls-h-par" }, el("h3", { id: "ls-h-par" }, "Parecidas", el("small", {}, nomeCat(t.categoria, t.subcategoria).s)),
     ps.length ? el("p", { class: "ls-aviso" }, `Esta: ${estrelasTxt(l.estrelas)} · ${l.licenca || "licença ?"}`) : null, corpo,
-    barraComparar("tools", [d.id || t.id, ...ps.slice(0, 3).map((x) => x.id)], [{ id: d.id || t.id, subcategoria: t.subcategoria }, ...ps]));
+    barraComparar(lsAbaHash(), [d.id || t.id, ...ps.slice(0, 3).map((x) => x.id)], [{ id: d.id || t.id, subcategoria: t.subcategoria }, ...ps]));
 }
 var lsNotas = new Map();
 function blocoNotas(t) {
@@ -12732,7 +12826,8 @@ function blocoNotas(t) {
   return sec;
 }
 function desenharDetalhe(box, id) {
-  const volta = el("a", { class: "dd-btn dd-btn--link ls-volta", href: "#arch/tools", id: "ls-voltar" }, "← Tools");
+  const vp = window.Arch.voltarPara({ aba: lsAbaHash() });
+  const volta = el("a", { class: "dd-btn dd-btn--link ls-volta", href: vp.hash, id: "ls-voltar" }, vp.rotulo);
   volta.addEventListener("click", voltarGrade);
   box.append(volta);
   const d = lsDet.get(id);
@@ -12787,7 +12882,11 @@ function desenharDetalhe(box, id) {
     }
   }
   box.append(topo);
-  const blocos = el("div", { class: "ls-blocos" }, blocoNumeros(t), blocoUso(t), blocoVersoes(t), blocoRoteiroTools(t), blocoSobre(t), blocoParecidas({ ...d, id }), blocoNoticias(d), blocoDizendo(d));
+  /* aba sem notícias (LS.temNoticias, Other Tools): sem Notícias e sem "O que estão dizendo" (HN e fóruns); os destaques
+     do GitHub ficam, num bloco só deles */
+  const comNoticias = LS.temNoticias(t) && !d.semNoticias;
+  const blocos = el("div", { class: "ls-blocos" }, blocoNumeros(t), blocoUso(t), blocoVersoes(t), blocoRoteiroTools(t), blocoSobre(t), blocoParecidas({ ...d, id }),
+    ...(comNoticias ? [blocoNoticias(d), blocoDizendo(d)] : [blocoDestaquesGh(t)]));
   if (lsAdmin) blocos.append(blocoNotas(t));
   box.append(blocos);
 }
@@ -12800,6 +12899,13 @@ function renderLandscape() {
   const real = box;
   box = document.createElement("div");
   document.title = "ArchLandscape · Lookout";
+  /* detalhe de Tools ou Other Tools aberto na aba errada (o Admin trocou a aba dela, ou o endereço era velho): o
+     endereço passa para a aba da tecnologia, sem entrada nova no histórico */
+  if (lsId && window.Arch.ehAbaTec(archAba)) {
+    const t = (lsDet.get(lsId) && lsDet.get(lsId).tec) || (lsLista || []).find((x) => x.id === lsId);
+    const certa = t ? window.Arch.abaHashDe(t) : archAba;
+    if (certa !== archAba) { archAba = certa; if (archEst) archEst = { ...archEst, aba: certa }; escreverHash(false); }
+  }
   box.append(archAbasEl());
   /* aba Cloud e as telas de comparar e de comparações profundas: public/arch-ui.js */
   const est = archAtual();
@@ -12816,7 +12922,7 @@ function renderLandscape() {
     return;
   }
   if (lsErro && !lsLista) { const b = el("button", { class: "dd-btn dd-btn--link", type: "button" }, "Tentar de novo"); b.addEventListener("click", () => { lsErro = ""; carregarLandscape(true); renderLandscape(); }); box.append(el("p", { class: "ls-vazio" }, "Não deu para carregar o landscape agora. ", b)); real.replaceChildren(...box.childNodes); return; }
-  if (!lsLista) { box.append(el("div", { class: "ls-cab" }, el("div", {}, el("h2", {}, "Tools"), el("p", {}, "tecnologias que eu acompanho"))), esqueleto(6)); real.replaceChildren(...box.childNodes); return; }
+  if (!lsLista) { box.append(lsCabEl(), esqueleto(6)); real.replaceChildren(...box.childNodes); return; }
   desenharGrade(box);
   real.replaceChildren(...box.childNodes);
   /* recém-adicionada aparece como "coletando…": relê a lista a cada minuto enquanto houver alguma assim */
@@ -12852,18 +12958,19 @@ function fecharFolhaLs() {
 $("ls-veu").addEventListener("click", fecharFolhaLs);
 $("ls-folha-fechar").addEventListener("click", fecharFolhaLs);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("ls-folha").hidden) { e.preventDefault(); fecharFolhaLs(); } });
-/* categoria e subcategoria: escolher uma que existe ou criar ("Nova…") */
-function camposCategoria(cidIni, sidIni) {
+/* categoria e subcategoria: escolher uma que existe ou criar ("Nova…"); só as categorias da aba (id de LS.ABAS) */
+function camposCategoria(cidIni, sidIni, aba) {
+  const cats = LS.daAba(lsCats, aba);
   const NOVA = "__nova";
   const wrap = el("div", { class: "ls-form" });
   const cSel = el("select", { class: "dd-input", id: "ls-f-cat" }), cNova = el("input", { class: "dd-input", id: "ls-f-cat-nova", placeholder: "Nome da categoria nova", maxlength: "60", hidden: true });
   const sSel = el("select", { class: "dd-input", id: "ls-f-sub" }), sNova = el("input", { class: "dd-input", id: "ls-f-sub-nova", placeholder: "Nome da subcategoria nova", maxlength: "60", hidden: true });
-  lsCats.forEach((c) => cSel.append(el("option", { value: c.id }, c.nome)));
+  cats.forEach((c) => cSel.append(el("option", { value: c.id }, c.nome)));
   cSel.append(el("option", { value: NOVA }, "Nova categoria…"));
-  if (cidIni && lsCats.some((c) => c.id === cidIni)) cSel.value = cidIni; else if (!lsCats.length) cSel.value = NOVA;
+  if (cidIni && cats.some((c) => c.id === cidIni)) cSel.value = cidIni; else if (!cats.length) cSel.value = NOVA;
   const pintarSubs = (sid) => {
     sSel.textContent = "";
-    const c = lsCats.find((x) => x.id === cSel.value);
+    const c = cats.find((x) => x.id === cSel.value);
     (c ? c.subcategorias : []).forEach((s) => sSel.append(el("option", { value: s.id }, s.nome)));
     sSel.append(el("option", { value: NOVA }, "Nova subcategoria…"));
     if (sid && c && c.subcategorias.some((s) => s.id === sid)) sSel.value = sid; else if (!c || !c.subcategorias.length) sSel.value = NOVA;
@@ -12898,7 +13005,24 @@ function desenharFolhaLs() {
       urls = el("textarea", { class: "dd-input", id: "ls-f-urls", placeholder: "https://github.com/dono/repositorio", spellcheck: "false", autocomplete: "off" });
       f.append(el("div", {}, el("label", { class: "rotulo", for: "ls-f-urls" }, "URL do GitHub"), urls, el("p", { class: "dica" }, "Uma por linha para adicionar várias de uma vez. Nome, site e feed só valem quando é uma só; o modelo vale para todas.")));
     }
-    const cat = camposCategoria(ed ? t.categoria : lsCats[0] && lsCats[0].id, ed ? t.subcategoria : null);
+    /* aba (Tools ou Other Tools) antes da categoria: a lista de categorias acompanha a aba escolhida */
+    const abaIni = ed ? LS.abaDe((lsDet.get(t.id) && lsDet.get(t.id).tec) || t) : lsAbaDoc();
+    const abaSel = el("select", { class: "dd-input", id: "ls-f-aba" }, ...LS.ABAS.map((a) => el("option", { value: a.id === "tools" ? "" : a.id }, a.rotulo)));
+    abaSel.value = abaIni === "tools" ? "" : abaIni;
+    const abaDica = el("p", { class: "dica", id: "ls-f-aba-dica" });
+    const catBox = el("div", { class: "ls-f-catbox" });
+    let cat = null;
+    const pintarCat = () => {
+      const aba = abaSel.value || "tools";
+      const primeira = LS.daAba(lsCats, aba)[0];
+      cat = aba === abaIni && ed ? camposCategoria(t.categoria, t.subcategoria, aba) : camposCategoria(primeira && primeira.id, null, aba);
+      catBox.replaceChildren(cat.el);
+      const ai = LS.abaPorId(aba);
+      abaDica.textContent = ai.rotulo + ": " + ai.subtitulo + ". Só categorias desta aba aparecem." + (ai.noticias === false ? " Nesta aba a tecnologia não coleta nem mostra notícias." : "");
+      if (ed && aba !== abaIni) abaDica.textContent += " Para trocar de aba, escolha a categoria da aba nova.";
+    };
+    abaSel.addEventListener("change", pintarCat);
+    pintarCat();
     nome = el("input", { class: "dd-input", id: "ls-f-nome", maxlength: "60", placeholder: ed ? "" : "o nome do repositório, se ficar vazio", value: ed ? t.nome || "" : "" });
     site = el("input", { class: "dd-input", id: "ls-f-site", type: "url", placeholder: "https://", value: ed ? t.site || "" : "" });
     feed = el("input", { class: "dd-input", id: "ls-f-feed", type: "url", placeholder: "https:// do RSS ou Atom do blog", value: ed ? t.feed || "" : "" });
@@ -12917,7 +13041,7 @@ function desenharFolhaLs() {
     const usoNota = el("input", { class: "dd-input", id: "ls-f-uso-nota", maxlength: String(LS.USO_NOTA_MAX), placeholder: "por exemplo: a versão self-hosted não tem o painel de equipes", value: (det0 && det0.uso_nota) || "" });
     const icone = el("input", { class: "dd-input", id: "ls-f-icone", type: "url", placeholder: "https:// (opcional; vazio tenta o avatar e o ícone do site)", value: (det0 && det0.icone) || (ed && t.icone) || "" });
     lsP.uso = () => ({ uso: usoCx.filter((x) => x.c.checked).map((x) => x.u.id), uso_nota: usoNota.value.trim(), icone: icone.value.trim() });
-    f.append(cat.el, el("div", {}, el("label", { class: "rotulo", for: "ls-f-nome" }, "Nome de exibição"), nome),
+    f.append(el("div", {}, el("label", { class: "rotulo", for: "ls-f-aba" }, "Aba"), abaSel, abaDica), catBox, el("div", {}, el("label", { class: "rotulo", for: "ls-f-nome" }, "Nome de exibição"), nome),
       el("div", {}, el("label", { class: "rotulo", for: "ls-f-site" }, "Site oficial (opcional)"), site, el("p", { class: "dica" }, "Vazio usa o site que o GitHub informa.")),
       el("div", { class: "ls-f-mod" }, el("div", {}, el("label", { class: "rotulo", for: "ls-f-modelo" }, "Modelo"), modelo, modDica),
         el("div", {}, el("label", { class: "rotulo", for: "ls-f-modelo-nota" }, "Por que (opcional)"), modNota, el("p", { class: "dica" }, "Aparece no detalhe, logo depois da etiqueta. Sem modelo, a nota sai junto."))),
@@ -12929,15 +13053,15 @@ function desenharFolhaLs() {
     const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-f-salvar" }, ed ? "Salvar" : "Adicionar");
     ok.disabled = lsP.salvando;
     ok.addEventListener("click", async () => {
-      const b = { ...cat.valor(), nome: nome.value.trim(), site: site.value.trim(), feed: feed.value.trim(), modelo: modelo.value, modelo_nota: modelo.value ? modNota.value.trim() : "", ...lsP.uso() };
+      const b = { aba: abaSel.value, ...cat.valor(), nome: nome.value.trim(), site: site.value.trim(), feed: feed.value.trim(), modelo: modelo.value, modelo_nota: modelo.value ? modNota.value.trim() : "", ...lsP.uso() };
       if (!ed) b.urls = urls.value;
       lsP.salvando = true; ok.disabled = true; erroEl.textContent = "";
       try {
         if (ed) {
           const j = await apiLs("PUT", "/api/admin/landscape/" + encodeURIComponent(t.id), b);
           if (j.categorias) lsCats = j.categorias;
-          const x = (lsLista || []).find((y) => y.id === t.id); if (x) Object.assign(x, { nome: j.nome || x.nome, categoria: j.categoria || x.categoria, subcategoria: j.subcategoria || x.subcategoria, site: j.site ?? x.site, modelo: j.modelo ?? x.modelo, uso: j.uso ?? x.uso, icone: j.icone ?? x.icone });
-          const dd = lsDet.get(t.id); if (dd) Object.assign(dd.tec, { nome: j.nome || dd.tec.nome, categoria: j.categoria || dd.tec.categoria, subcategoria: j.subcategoria || dd.tec.subcategoria, site: j.site ?? dd.tec.site, feed: j.feed ?? dd.tec.feed, modelo: j.modelo ?? dd.tec.modelo, modelo_nota: j.modelo_nota ?? dd.tec.modelo_nota, uso: j.uso ?? dd.tec.uso, uso_nota: j.uso_nota ?? dd.tec.uso_nota, icone: j.icone ?? dd.tec.icone });
+          const x = (lsLista || []).find((y) => y.id === t.id); if (x) Object.assign(x, { aba: j.aba || x.aba, nome: j.nome || x.nome, categoria: j.categoria || x.categoria, subcategoria: j.subcategoria || x.subcategoria, site: j.site ?? x.site, modelo: j.modelo ?? x.modelo, uso: j.uso ?? x.uso, icone: j.icone ?? x.icone });
+          const dd = lsDet.get(t.id); if (dd) Object.assign(dd.tec, { aba: j.aba || dd.tec.aba, nome: j.nome || dd.tec.nome, categoria: j.categoria || dd.tec.categoria, subcategoria: j.subcategoria || dd.tec.subcategoria, site: j.site ?? dd.tec.site, feed: j.feed ?? dd.tec.feed, modelo: j.modelo ?? dd.tec.modelo, modelo_nota: j.modelo_nota ?? dd.tec.modelo_nota, uso: j.uso ?? dd.tec.uso, uso_nota: j.uso_nota ?? dd.tec.uso_nota, icone: j.icone ?? dd.tec.icone });
           wDados.delete("tech-landscape");
           fecharFolhaLs(); renderLandscape(); carregarDetalhe(t.id);
         } else {
@@ -12950,7 +13074,9 @@ function desenharFolhaLs() {
           if (j.repetidas.length) partes.push(j.repetidas.length === 1 ? "1 já estava no landscape." : j.repetidas.length + " já estavam no landscape.");
           if (j.recusadas.length) partes.push((j.recusadas.length === 1 ? "1 linha recusada: " : j.recusadas.length + " linhas recusadas: ") + j.recusadas.map((r) => r.linha + " (" + r.erro + ")").join("; "));
           lsAviso = partes.join(" ");
-          fecharFolhaLs(); renderLandscape();
+          /* entrou noutra aba: a grade dessa aba abre, para a recém-adicionada aparecer */
+          const abaH = window.Arch.abaHashDe({ aba: b.aba });
+          if (abaH !== lsAbaHash()) irArch({ aba: abaH, tela: "grade" }); else { fecharFolhaLs(); renderLandscape(); }
           const prim = j.adicionadas[0] && $("ls-c-" + j.adicionadas[0].id); if (prim) prim.scrollIntoView({ block: "center" });
         }
       } catch (e) { lsP.salvando = false; ok.disabled = false; erroEl.textContent = e.message; }
@@ -12971,45 +13097,64 @@ function desenharFolhaLs() {
     s.addEventListener("click", () => mover(arr, i, -1)); d.addEventListener("click", () => mover(arr, i, 1));
     return [s, d];
   };
-  const opcoesSub = () => lsCats.flatMap((c) => c.subcategorias.map((s) => [c.id + "|" + s.id, c.nome + " › " + s.nome]));
-  cats.forEach((c, i) => {
-    const nomeC = el("input", { class: "dd-input", value: c.nome, maxlength: "60", "aria-label": "Nome da categoria" });
-    nomeC.addEventListener("input", () => { c.nome = nomeC.value; });
-    const bloco = el("div", { class: "ls-org-cat" }, el("div", { class: "ls-org-lin" }, nomeC, ...setas(cats, i, c.nome, "ls-oc-" + i)));
-    const subs = el("div", { class: "ls-org-sub" });
-    c.subcategorias.forEach((s, k) => {
-      const nomeS = el("input", { class: "dd-input", value: s.nome, maxlength: "60", "aria-label": "Nome da subcategoria" });
-      nomeS.addEventListener("input", () => { s.nome = nomeS.value; });
-      const techs = (lsLista || []).filter((t) => t.categoria === c.id && t.subcategoria === s.id);
-      const tirar = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon", type: "button", "aria-label": "Tirar a subcategoria " + s.nome, title: techs.length ? "Mova as tecnologias antes de tirar" : "Tirar" }, "×");
-      tirar.disabled = !!techs.length;
-      tirar.addEventListener("click", () => { c.subcategorias.splice(k, 1); desenharFolhaLs(); });
-      subs.append(el("div", { class: "ls-org-lin" }, nomeS, ...setas(c.subcategorias, k, s.nome, "ls-os-" + i + "-" + k), tirar));
-      techs.forEach((t) => {
-        const sel = selectLs("ls-om-" + t.id, "Mover " + t.nome, opcoesSub(), c.id + "|" + s.id, async (v) => {
-          const [cid, sid] = v.split("|");
-          sel.disabled = true;
-          try { await apiLs("PUT", "/api/admin/landscape/" + encodeURIComponent(t.id), { categoria: cid, subcategoria: sid }); t.categoria = cid; t.subcategoria = sid; lsDet.delete(t.id); desenharFolhaLs(); renderLandscape(); }
-          catch (e) { lsP.erro = e.message; desenharFolhaLs(); }
+  /* categorias: sobem e descem entre as da mesma aba (a ordem de uma aba não mexe na outra) */
+  const vizinha = (i, d) => { for (let j = i + d; j >= 0 && j < cats.length; j += d) if (LS.abaDe(cats[j]) === LS.abaDe(cats[i])) return j; return -1; };
+  const setasCat = (i, nome, idb) => {
+    const s = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon", type: "button", "aria-label": "Subir " + nome, title: "Subir", id: idb + "-cima" }, "▲");
+    const d = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon", type: "button", "aria-label": "Descer " + nome, title: "Descer", id: idb + "-baixo" }, "▼");
+    const troca = (dd) => { const j = vizinha(i, dd); if (j < 0) return; [cats[i], cats[j]] = [cats[j], cats[i]]; desenharFolhaLs(); };
+    s.disabled = vizinha(i, -1) < 0; d.disabled = vizinha(i, 1) < 0;
+    s.addEventListener("click", () => troca(-1)); d.addEventListener("click", () => troca(1));
+    return [s, d];
+  };
+  /* mover tecnologia: só para subcategoria da mesma aba */
+  const opcoesSub = (aba) => LS.daAba(lsCats, aba).flatMap((c) => c.subcategorias.map((s) => [c.id + "|" + s.id, c.nome + " › " + s.nome]));
+  for (const aba of LS.ABA_IDS) {
+    const daqui = cats.map((c, i) => [c, i]).filter(([c]) => LS.abaDe(c) === aba);
+    lista.append(el("h3", { class: "ls-org-aba", id: "ls-org-aba-" + aba }, LS.nomeAba(aba), el("span", { class: "k" }, String(daqui.length))));
+    if (!daqui.length) lista.append(el("p", { class: "dica" }, "Nenhuma categoria nesta aba ainda."));
+    daqui.forEach(([c, i]) => {
+      const nomeC = el("input", { class: "dd-input", value: c.nome, maxlength: "60", "aria-label": "Nome da categoria" });
+      nomeC.addEventListener("input", () => { c.nome = nomeC.value; });
+      const bloco = el("div", { class: "ls-org-cat" }, el("div", { class: "ls-org-lin" }, nomeC, ...setasCat(i, c.nome, "ls-oc-" + i)));
+      const subs = el("div", { class: "ls-org-sub" });
+      c.subcategorias.forEach((s, k) => {
+        const nomeS = el("input", { class: "dd-input", value: s.nome, maxlength: "60", "aria-label": "Nome da subcategoria" });
+        nomeS.addEventListener("input", () => { s.nome = nomeS.value; });
+        const techs = (lsLista || []).filter((t) => t.categoria === c.id && t.subcategoria === s.id);
+        const tirar = el("button", { class: "dd-btn dd-btn--ghost dd-btn--icon", type: "button", "aria-label": "Tirar a subcategoria " + s.nome, title: techs.length ? "Mova as tecnologias antes de tirar" : "Tirar" }, "×");
+        tirar.disabled = !!techs.length;
+        tirar.addEventListener("click", () => { c.subcategorias.splice(k, 1); desenharFolhaLs(); });
+        subs.append(el("div", { class: "ls-org-lin" }, nomeS, ...setas(c.subcategorias, k, s.nome, "ls-os-" + i + "-" + k), tirar));
+        techs.forEach((t) => {
+          const sel = selectLs("ls-om-" + t.id, "Mover " + t.nome, opcoesSub(LS.abaDe(t)), c.id + "|" + s.id, async (v) => {
+            const [cid, sid] = v.split("|");
+            sel.disabled = true;
+            try { await apiLs("PUT", "/api/admin/landscape/" + encodeURIComponent(t.id), { categoria: cid, subcategoria: sid }); t.categoria = cid; t.subcategoria = sid; lsDet.delete(t.id); desenharFolhaLs(); renderLandscape(); }
+            catch (e) { lsP.erro = e.message; desenharFolhaLs(); }
+          });
+          subs.append(el("div", { class: "ls-org-tec" }, el("span", { title: t.repo }, t.nome), sel));
         });
-        subs.append(el("div", { class: "ls-org-tec" }, el("span", { title: t.repo }, t.nome), sel));
       });
+      const novaS = el("input", { class: "dd-input", placeholder: "Subcategoria nova", maxlength: "60", "aria-label": "Subcategoria nova em " + c.nome });
+      const addS = el("button", { class: "dd-btn dd-btn--outline", type: "button" }, "Pôr");
+      addS.addEventListener("click", () => { const n = novaS.value.trim(); if (!n) return; c.subcategorias.push({ nome: n }); desenharFolhaLs(); });
+      subs.append(el("div", { class: "ls-org-lin" }, novaS, addS));
+      const tirarC = el("button", { class: "dd-btn dd-btn--link", type: "button" }, "Tirar a categoria");
+      tirarC.disabled = (lsLista || []).some((t) => t.categoria === c.id);
+      tirarC.title = tirarC.disabled ? "Mova as tecnologias antes de tirar" : "";
+      tirarC.addEventListener("click", () => { cats.splice(i, 1); desenharFolhaLs(); });
+      bloco.append(subs, tirarC);
+      lista.append(bloco);
     });
-    const novaS = el("input", { class: "dd-input", placeholder: "Subcategoria nova", maxlength: "60", "aria-label": "Subcategoria nova em " + c.nome });
-    const addS = el("button", { class: "dd-btn dd-btn--outline", type: "button" }, "Pôr");
-    addS.addEventListener("click", () => { const n = novaS.value.trim(); if (!n) return; c.subcategorias.push({ nome: n }); desenharFolhaLs(); });
-    subs.append(el("div", { class: "ls-org-lin" }, novaS, addS));
-    const tirarC = el("button", { class: "dd-btn dd-btn--link", type: "button" }, "Tirar a categoria");
-    tirarC.disabled = (lsLista || []).some((t) => t.categoria === c.id);
-    tirarC.title = tirarC.disabled ? "Mova as tecnologias antes de tirar" : "";
-    tirarC.addEventListener("click", () => { cats.splice(i, 1); desenharFolhaLs(); });
-    bloco.append(subs, tirarC);
-    lista.append(bloco);
-  });
+  }
+  /* categoria nova: o nome e a aba (começa na aba aberta) */
   const novaC = el("input", { class: "dd-input", placeholder: "Categoria nova", maxlength: "60", "aria-label": "Categoria nova" });
-  const addC = el("button", { class: "dd-btn dd-btn--outline", type: "button" }, "Pôr");
-  addC.addEventListener("click", () => { const n = novaC.value.trim(); if (!n) return; cats.push({ nome: n, subcategorias: [] }); desenharFolhaLs(); });
-  lista.append(el("div", { class: "ls-org-lin" }, novaC, addC));
+  const novaAba = el("select", { class: "dd-input ls-org-aba-sel", id: "ls-org-nova-aba", "aria-label": "Aba da categoria nova" }, ...LS.ABAS.map((a) => el("option", { value: a.id === "tools" ? "" : a.id }, a.rotulo)));
+  novaAba.value = lsAbaDoc() === "tools" ? "" : lsAbaDoc();
+  const addC = el("button", { class: "dd-btn dd-btn--outline", type: "button", id: "ls-org-nova-por" }, "Pôr");
+  addC.addEventListener("click", () => { const n = novaC.value.trim(); if (!n) return; cats.push({ nome: n, subcategorias: [], ...LS.campoAba(novaAba.value || "tools") }); desenharFolhaLs(); });
+  lista.append(el("h3", { class: "ls-org-aba" }, "Categoria nova"), el("div", { class: "ls-org-lin ls-org-nova" }, novaC, novaAba, addC));
   corpo.append(el("p", { class: "ls-aviso" }, "Renomeie, mude a ordem e mova cada tecnologia para outra subcategoria (a mudança de lugar vale na hora). Nomes e ordem valem ao salvar."), lista, erroEl);
   const ok = el("button", { class: "dd-btn dd-btn--primary", type: "button", id: "ls-org-salvar" }, "Salvar");
   ok.addEventListener("click", async () => {
@@ -13022,8 +13167,10 @@ function desenharFolhaLs() {
 /* ---- widget do Início: o que mudou nas tecnologias acompanhadas ---- */
 corpos["arch-cloud"] = (d, fm = { c: 1, r: 1 }) => corpoArchCloud(d, fm);
 corpos["tech-landscape"] = (d, fm = { c: 1, r: 1 }) => {
-  const n = LS.novidades((d && d.tecnologias) || [], Date.now(), fm.c > 1 ? 5 : 3);
-  if (!n.length) return [vazioW(d && d.tecnologias && d.tecnologias.length ? "Nada novo nas tecnologias acompanhadas nesta semana." : "Nenhuma tecnologia no landscape ainda.")];
+  /* só as da aba Tools: as de Other Tools ficam fora do widget */
+  const tools = LS.daAba((d && d.tecnologias) || [], "tools");
+  const n = LS.novidades(tools, Date.now(), fm.c > 1 ? 5 : 3);
+  if (!n.length) return [vazioW(tools.length ? "Nada novo nas tecnologias acompanhadas nesta semana." : "Nenhuma tecnologia no landscape ainda.")];
   return [el("ul", { class: "wdg-lista wdg-ls" }, ...n.map((x) => el("li", {}, el("a", { href: "#arch/tools/" + encodeURIComponent(x.id) }, el("b", {}, x.nome), " " + x.texto),
     el("div", { class: "n" }, el("span", {}, x.tipo === "release" ? "release" : x.tipo === "hn" ? "Hacker News" : "estrelas"), el("span", {}, x.tipo === "estrelas" ? "nesta semana" : fmtRel(x.data)), modeloEl(x, true)))))];
 };

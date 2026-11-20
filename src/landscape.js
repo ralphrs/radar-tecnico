@@ -7,9 +7,15 @@
 //
 // Banco (D1, com espelho de leitura como as outras collections):
 // - landscape/<id>: um doc por tecnologia (id = owner--repo em minúsculas). O Admin grava os campos dele (repo, nome,
-//   categoria, subcategoria, site, feed, modelo, adicionado, por) e o cron os dele (gh, releases, sobre, hn, gh_destaques, blog,
+//   categoria, subcategoria, site, feed, modelo, aba, adicionado, por) e o cron os dele (gh, releases, sobre, hn, gh_destaques, blog,
 //   serie, leve, em, atualizado, erro), cada um com json_patch na própria chave: um não apaga o que o outro gravou.
-// - meta/landscape-categorias: a árvore de categorias e a ordem.
+// - meta/landscape-categorias: a árvore de categorias e a ordem. Cada categoria pode ter `aba` (id de Landscape.ABAS).
+// Abas (pedido de 19/11, 23h02, e adendo das 23h09): `aba: "linguagens"` (Languages) ou `aba: "outras"` (Other Tools) no
+// doc põe a tecnologia nessa aba do ArchLandscape; sem o campo, ou com valor fora da tabela, ela é de Tools. Só o Admin
+// grava (json_patch); o cron nunca tem a chave. Tecnologia só fica em categoria da mesma aba.
+// Aba sem notícias (Landscape.temNoticias, adendo das 23h10: Other Tools): o cron só coleta o GitHub dela (sem HN,
+// comentários e blog), e a leitura não procura citações nas notícias e fóruns. Voltando para uma aba com notícias, as
+// partes de notícia ficam vencidas e a coleta delas volta sozinha.
 // - landscape/<email>, id "notas": as notas do Admin (só ele lê e grava).
 // - _sistema/landscape-estado: marcas de cada parte por tecnologia, pausa por host, a última rodada e o limite do GitHub.
 // - _sistema/landscape-semente: marca de que as sete primeiras já entraram (semente idempotente, pelo próprio cron).
@@ -261,7 +267,8 @@ export function vencida(parte, e = {}, agora = Date.now()) {
 }
 // Plano da rodada: recém-adicionada (sem estado) primeiro, inteira na ordem das partes; depois as partes vencidas das
 // outras, a mais atrasada primeiro. Respeita o orçamento total e o do GitHub; host pausado fica de fora.
-export function planejar({ ids, estado, agora = Date.now(), orcamento = ORCAMENTO, github = ORCAMENTO, pausados = new Set() }) {
+// semNoticias: ids das tecnologias de aba sem notícias (Other Tools), que ficam só com as partes do GitHub.
+export function planejar({ ids, estado, agora = Date.now(), orcamento = ORCAMENTO, github = ORCAMENTO, pausados = new Set(), semNoticias = new Set() }) {
   const porId = (estado && estado.porId) || {};
   const novas = ids.filter((id) => !porId[id]);
   const cands = [];
@@ -281,6 +288,7 @@ export function planejar({ ids, estado, agora = Date.now(), orcamento = ORCAMENT
   for (const c of [...cands, ...outras]) {
     const def = PARTES[c.parte];
     if (pausados.has(def.host)) continue;
+    if (semNoticias.has(c.id) && L.PARTES_NOTICIA.includes(c.parte)) continue;
     if (c.parte === "blog" && porId[c.id] && porId[c.id].feed === false) continue;
     if (total + def.custo > orcamento) continue;
     if (def.host === "github" && gh + def.custo > github) continue;
@@ -390,14 +398,15 @@ function mesclar(a, b) {
 // pausa do host em _sistema/landscape-estado. Nunca lança.
 export async function rodadaLandscape(env, { agora = Date.now(), orcamento = ORCAMENTO } = {}) {
   const out = { pedidos: 0, partes: 0, erros: 0, parou: null };
-  const { results } = await env.DB.prepare("SELECT id FROM docs WHERE collection = 'landscape' ORDER BY id").all();
+  const { results } = await env.DB.prepare("SELECT id, json_extract(data, '$.aba') AS aba FROM docs WHERE collection = 'landscape' ORDER BY id").all();
   const ids = (results || []).map((r) => r.id).filter((id) => L.ID_OK.test(id));
+  const semNoticias = new Set((results || []).filter((r) => !L.temNoticias({ aba: r.aba })).map((r) => r.id));
   const estado = await lerEstado(env);
   const temToken = !!env.GITHUB_TOKEN;
   const minuto = new Date(agora).getUTCMinutes();
   const pausados = new Set(Object.entries(estado.pausa).filter(([, p]) => p && Date.parse(p.ate) > agora).map(([h]) => h));
   const github = temToken ? orcamento : minuto % 2 === 0 ? GH_SEM_TOKEN : 0;
-  const plano = planejar({ ids, estado, agora, orcamento, github, pausados });
+  const plano = planejar({ ids, estado, agora, orcamento, github, pausados, semNoticias });
   const sobrando = Object.keys(estado.porId).filter((id) => !ids.includes(id));
   if (!plano.length) {
     if (sobrando.length || estado.semToken !== !temToken) {
@@ -549,7 +558,7 @@ const json = (dados, status = 200) => new Response(JSON.stringify(dados), { stat
 // o resto vem do UNION ALL, com json_object só dos campos da grade (o doc inteiro tem README, série e comentários).
 export const SQL_LEVE = "SELECT id, data FROM docs WHERE 0 UNION ALL SELECT id, json_object('repo', json_extract(data, '$.repo'), 'nome', json_extract(data, '$.nome'), "
   + "'categoria', json_extract(data, '$.categoria'), 'subcategoria', json_extract(data, '$.subcategoria'), 'site', json_extract(data, '$.site'), "
-  + "'adicionado', json_extract(data, '$.adicionado'), 'modelo', json_extract(data, '$.modelo'), 'uso', json(json_extract(data, '$.uso')), 'icone', json_extract(data, '$.icone'), 'descricao', json_extract(data, '$.gh.descricao'), 'descricao_pt', json_extract(data, '$.gh.descricao_pt'), 'erro', json_extract(data, '$.erro'), "
+  + "'adicionado', json_extract(data, '$.adicionado'), 'modelo', json_extract(data, '$.modelo'), 'aba', json_extract(data, '$.aba'), 'uso', json(json_extract(data, '$.uso')), 'icone', json_extract(data, '$.icone'), 'descricao', json_extract(data, '$.gh.descricao'), 'descricao_pt', json_extract(data, '$.gh.descricao_pt'), 'erro', json_extract(data, '$.erro'), "
   + "'leve', json(json_extract(data, '$.leve'))) AS data FROM docs WHERE collection = 'landscape'";
 export async function listaLeve(env, deps) {
   const linhas = await deps.lerLinhas(env, SQL_LEVE, [], "landscape");
@@ -560,7 +569,9 @@ export async function listaLeve(env, deps) {
     if (!d || !L.ID_OK.test(r.id)) continue;
     const leve = d.leve && typeof d.leve === "object" ? { ...d.leve } : { coletando: true };
     if (leve.marca && !L.marcaOk(leve.marca, leve.dono)) leve.marca = "";
-    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", modelo: L.modeloDe(d) ? L.modeloDe(d).id : "", uso: L.usoDe(d), ...(typeof d.icone === "string" && L.urlOk(d.icone) ? { icone: d.icone } : {}), adicionado: d.adicionado || null, descricao: d.descricao || "", ...(d.descricao_pt ? { descricao_pt: d.descricao_pt } : {}), erro: d.erro || "", leve });
+    // aba sem notícias: nada de Hacker News no resumo (pode ter sobrado de quando a tecnologia estava noutra aba)
+    if (!L.temNoticias(d)) delete leve.hn;
+    out.push({ id: r.id, repo: d.repo || L.repoDoId(r.id), nome: d.nome || "", categoria: d.categoria || "", subcategoria: d.subcategoria || "", site: d.site || "", aba: L.abaDe(d), modelo: L.modeloDe(d) ? L.modeloDe(d).id : "", uso: L.usoDe(d), ...(typeof d.icone === "string" && L.urlOk(d.icone) ? { icone: d.icone } : {}), adicionado: d.adicionado || null, descricao: d.descricao || "", ...(d.descricao_pt ? { descricao_pt: d.descricao_pt } : {}), erro: d.erro || "", leve });
   }
   out.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
   return out;
@@ -570,7 +581,7 @@ export async function lerCategorias(env, deps) {
   let d = null;
   try { d = r ? JSON.parse(r.data) : null; } catch { d = null; }
   const v = L.validarCategorias(d || { categorias: [] });
-  return v.categorias || [];
+  return (v.categorias || []).map((c) => ({ ...c, aba: L.abaDe(c) }));
 }
 
 // Notícias que o Lookout já publicou citando a tecnologia: uma consulta por collection de itens liberada, pela faixa
@@ -649,18 +660,22 @@ export async function rotaLandscape(request, env, quem, resto, deps) {
   tec.modelo = L.modeloDe(tec) ? L.modeloDe(tec).id : "";
   if (!tec.modelo || typeof tec.modelo_nota !== "string") delete tec.modelo_nota;
   tec.uso = L.usoDe(tec);
+  tec.aba = L.abaDe(tec);
   if (typeof tec.uso_nota !== "string") delete tec.uso_nota;
   if (tec.icone && !L.urlOk(tec.icone)) delete tec.icone;
   if (tec.gh && !L.marcaOk(tec.gh.marca, tec.gh.dono && tec.gh.dono.tipo)) tec.gh = { ...tec.gh, marca: "" };
   if (tec.gh && tec.gh.dono) tec.gh = { ...tec.gh, dono: { login: tec.gh.dono.login, tipo: tec.gh.dono.tipo } };
   const ref = { repo: tec.repo || L.repoDoId(id), nome: tec.nome, site: tec.site || (tec.gh && tec.gh.site) || "" };
   const secoes = quem.secoes ?? null;
+  // aba sem notícias: sem as consultas de citação e sem o que a coleta de notícia deixou no doc
+  const comNoticias = L.temNoticias(tec);
+  if (!comNoticias) { delete tec.hn; delete tec.blog; }
   const [lista, categorias, noticias, reddit] = await Promise.all([
     listaLeve(env, deps), lerCategorias(env, deps),
-    citacoes(env, deps, ref, { secoes }).catch(() => []), citacoes(env, deps, ref, { secoes, forum: true }).catch(() => []),
+    comNoticias ? citacoes(env, deps, ref, { secoes }).catch(() => []) : [], comNoticias ? citacoes(env, deps, ref, { secoes, forum: true }).catch(() => []) : [],
   ]);
-  const parecidas = lista.filter((x) => x.id !== id && x.categoria === tec.categoria && x.subcategoria === tec.subcategoria);
-  return json({ id, tec, noticias, reddit, parecidas, categorias, admin: !!quem.admin });
+  const parecidas = lista.filter((x) => x.id !== id && x.aba === tec.aba && x.categoria === tec.categoria && x.subcategoria === tec.subcategoria);
+  return json({ id, tec, noticias, reddit, parecidas, categorias, admin: !!quem.admin, ...(comNoticias ? {} : { semNoticias: true }) });
 }
 
 // ---------- o que vem por aí (ArchLandscape, 19/11) ----------
@@ -736,8 +751,9 @@ async function gravarCategorias(env, deps, categorias, quando) {
   deps.gravarNoEspelho(env, [{ collection: "meta", id: "landscape-categorias", data, coletado: "", atualizado: quando }]);
 }
 // Categoria e subcategoria do corpo: { categoria, subcategoria } com ids que existem, ou { novaCategoria, novaSubcategoria }
-// (nomes) para criar. Devolve { categorias, cid, sid, mudou } ou { erro }.
-export function escolherCategoria(cats, b) {
+// (nomes) para criar. A categoria precisa ser da `aba` (um id de Landscape.ABAS); a nova nasce nela.
+// Devolve { categorias, cid, sid, mudou } ou { erro }.
+export function escolherCategoria(cats, b, aba = "tools") {
   const lista = cats.map((c) => ({ ...c, subcategorias: c.subcategorias.slice() }));
   let c = null;
   const nc = L.nomeLimpo(b.novaCategoria), ns = L.nomeLimpo(b.novaSubcategoria);
@@ -746,9 +762,11 @@ export function escolherCategoria(cats, b) {
     const id = L.slug(nc);
     if (!L.ID_CAT.test(id)) return { erro: "Nome de categoria inválido." };
     c = lista.find((x) => x.id === id);
-    if (!c) { if (lista.length >= 30) return { erro: "Até 30 categorias." }; c = { id, nome: nc, subcategorias: [] }; lista.push(c); mudou = true; }
+    if (!c) { if (lista.length >= 30) return { erro: "Até 30 categorias." }; c = { id, nome: nc, subcategorias: [], ...L.campoAba(aba) }; lista.push(c); mudou = true; }
   } else c = lista.find((x) => x.id === b.categoria);
   if (!c) return { erro: "Escolha a categoria." };
+  const daAba = L.categoriaDaAba(c, aba);
+  if (daAba.erro) return { erro: daAba.erro };
   let s = null;
   if (ns) {
     const id = L.slug(ns);
@@ -778,12 +796,15 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
     const v = L.validarCategorias(b);
     if (v.erro) return json({ erro: v.erro }, 400);
     // categoria ou subcategoria com tecnologia dentro não sai
-    const { results } = await env.DB.prepare("SELECT id, json_extract(data, '$.categoria') AS c, json_extract(data, '$.subcategoria') AS s, json_extract(data, '$.nome') AS nome FROM docs WHERE collection = 'landscape'").all();
+    const { results } = await env.DB.prepare("SELECT id, json_extract(data, '$.categoria') AS c, json_extract(data, '$.subcategoria') AS s, json_extract(data, '$.nome') AS nome, json_extract(data, '$.aba') AS a FROM docs WHERE collection = 'landscape'").all();
     for (const t of results || []) {
-      if (!L.acharCategoria(v.categorias, t.c, t.s)) return json({ erro: `Ainda há tecnologia nessa subcategoria (${t.nome || t.id}). Mova antes de tirar.` }, 409);
+      const achou = L.acharCategoria(v.categorias, t.c, t.s);
+      if (!achou) return json({ erro: `Ainda há tecnologia nessa subcategoria (${t.nome || t.id}). Mova antes de tirar.` }, 409);
+      // trocar a aba de uma categoria com tecnologia da outra aba dentro deixaria a tecnologia no lugar errado
+      if (L.abaDe(achou.categoria) !== L.abaDe({ aba: t.a })) return json({ erro: `A categoria ${achou.categoria.nome} tem tecnologia da aba ${L.nomeAba(L.abaDe({ aba: t.a }))} (${t.nome || t.id}). Mova antes de trocar a aba.` }, 409);
     }
     await gravarCategorias(env, deps, v.categorias, quando);
-    return json({ ok: true, categorias: v.categorias });
+    return json({ ok: true, categorias: v.categorias.map((c) => ({ ...c, aba: L.abaDe(c) })) });
   }
   if (!id) {
     if (request.method === "GET") {
@@ -800,8 +821,12 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
     const lidas = L.lerUrls(b.urls);
     if (lidas.erro) return json({ erro: lidas.erro }, 400);
     if (!lidas.validas.length) return json({ erro: lidas.recusadas.length ? lidas.recusadas[0].erro : "Cole a URL do GitHub.", recusadas: lidas.recusadas }, 400);
+    // aba: id de Landscape.ABAS ("linguagens", "outras") ou vazio (Tools); a categoria precisa ser da mesma aba
+    const aba = L.validarAba(b.aba);
+    if (aba.erro) return json({ erro: aba.erro }, 400);
+    const abaNova = aba.mexe ? aba.aba : "tools";
     const cats = await lerCategoriasD1(env);
-    const cat = escolherCategoria(cats, b);
+    const cat = escolherCategoria(cats, b, abaNova);
     if (cat.erro) return json({ erro: cat.erro }, 400);
     const site = L.urlOk(b.site), feed = L.urlOk(b.feed);
     if (site === null) return json({ erro: "O site precisa ser um endereço http(s)." }, 400);
@@ -822,14 +847,14 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
     if (ja.size + novas.length > L.MAX_TECNOLOGIAS) return json({ erro: `O landscape guarda até ${L.MAX_TECNOLOGIAS} tecnologias.` }, 400);
     const umaSo = lidas.validas.length === 1;
     const nome = L.nomeLimpo(b.nome);
-    const docs = novas.map((x) => ({ id: x.id, doc: { repo: x.repo, nome: (umaSo && nome) || x.repo.split("/")[1], categoria: cat.cid, subcategoria: cat.sid, site: umaSo ? site : "", feed: umaSo ? feed : "", ...(mod.modelo ? { modelo: mod.modelo } : {}), ...(mod.modelo && notaMod.nota ? { modelo_nota: notaMod.nota } : {}), ...(uso.uso ? { uso: uso.uso } : {}), ...(usoNota.nota ? { uso_nota: usoNota.nota } : {}), ...(umaSo && icone ? { icone } : {}), adicionado: quando, por: "admin", atualizado: quando } }));
+    const docs = novas.map((x) => ({ id: x.id, doc: { repo: x.repo, nome: (umaSo && nome) || x.repo.split("/")[1], categoria: cat.cid, subcategoria: cat.sid, site: umaSo ? site : "", feed: umaSo ? feed : "", ...L.campoAba(abaNova), ...(mod.modelo ? { modelo: mod.modelo } : {}), ...(mod.modelo && notaMod.nota ? { modelo_nota: notaMod.nota } : {}), ...(uso.uso ? { uso: uso.uso } : {}), ...(usoNota.nota ? { uso_nota: usoNota.nota } : {}), ...(umaSo && icone ? { icone } : {}), adicionado: quando, por: "admin", atualizado: quando } }));
     if (cat.mudou) await gravarCategorias(env, deps, cat.categorias, quando);
     if (docs.length) {
       await env.DB.batch(docs.map((d) => env.DB.prepare("INSERT OR IGNORE INTO docs (collection, id, data, coletado, atualizado) VALUES ('landscape', ?, ?, '', ?)").bind(d.id, JSON.stringify(d.doc), quando)));
       deps.gravarNoEspelho(env, docs.map((d) => ({ collection: "landscape", id: d.id, data: JSON.stringify(d.doc), coletado: "", atualizado: quando })));
     }
-    return json({ ok: true, adicionadas: docs.map((d) => ({ id: d.id, repo: d.doc.repo, nome: d.doc.nome, categoria: d.doc.categoria, subcategoria: d.doc.subcategoria, site: d.doc.site, modelo: d.doc.modelo || "", uso: d.doc.uso || [], ...(d.doc.icone ? { icone: d.doc.icone } : {}), adicionado: quando, leve: { coletando: true } })),
-      repetidas, recusadas: lidas.recusadas, categorias: cat.categorias });
+    return json({ ok: true, adicionadas: docs.map((d) => ({ id: d.id, repo: d.doc.repo, nome: d.doc.nome, categoria: d.doc.categoria, subcategoria: d.doc.subcategoria, site: d.doc.site, aba: L.abaDe(d.doc), modelo: d.doc.modelo || "", uso: d.doc.uso || [], ...(d.doc.icone ? { icone: d.doc.icone } : {}), adicionado: quando, leve: { coletando: true } })),
+      repetidas, recusadas: lidas.recusadas, categorias: cat.categorias.map((c) => ({ ...c, aba: L.abaDe(c) })) });
   }
   if (!L.ID_OK.test(id) || id.length > 160) return json({ erro: "id" }, 400);
   const atual = await lerDoc(env, "landscape", id);
@@ -861,16 +886,24 @@ export async function rotaAdminLandscape(request, env, quem, alvo, id, deps) {
   if (uso.mexe) patch.uso = uso.uso;
   if (usoNota.mexe) patch.uso_nota = usoNota.nota;
   if (b.icone !== undefined) { const ic = L.urlOk(b.icone); if (ic === null) return json({ erro: "O ícone precisa ser um endereço http(s)." }, 400); patch.icone = ic || null; }
+  // aba: id de Landscape.ABAS ou vazio, pelo mesmo json_patch (vazio vira null, que tira a chave). Trocar de aba pede a categoria da
+  // aba nova no mesmo corpo; categoria sem troca de aba precisa ser da aba que a tecnologia já tem.
+  const aba = L.validarAba(b.aba);
+  if (aba.erro) return json({ erro: aba.erro }, 400);
+  const abaAntes = L.abaDe(atual), abaDepois = aba.mexe ? aba.aba : abaAntes;
+  const escolheCat = b.categoria !== undefined || b.novaCategoria;
+  if (abaDepois !== abaAntes && !escolheCat) return json({ erro: `Para passar para a aba ${L.nomeAba(abaDepois)}, escolha uma categoria dessa aba.` }, 400);
+  if (aba.mexe) patch.aba = L.campoAba(abaDepois).aba || null;
   let cats = null;
-  if (b.categoria !== undefined || b.subcategoria !== undefined || b.novaCategoria || b.novaSubcategoria) {
-    const cat = escolherCategoria(await lerCategoriasD1(env), { categoria: b.categoria ?? atual.categoria, subcategoria: b.subcategoria, novaCategoria: b.novaCategoria, novaSubcategoria: b.novaSubcategoria });
+  if (escolheCat || b.subcategoria !== undefined || b.novaSubcategoria) {
+    const cat = escolherCategoria(await lerCategoriasD1(env), { categoria: b.categoria ?? atual.categoria, subcategoria: b.subcategoria, novaCategoria: b.novaCategoria, novaSubcategoria: b.novaSubcategoria }, abaDepois);
     if (cat.erro) return json({ erro: cat.erro }, 400);
     patch.categoria = cat.cid; patch.subcategoria = cat.sid;
-    if (cat.mudou) { await gravarCategorias(env, deps, cat.categorias, quando); cats = cat.categorias; }
+    if (cat.mudou) { await gravarCategorias(env, deps, cat.categorias, quando); cats = cat.categorias.map((c) => ({ ...c, aba: L.abaDe(c) })); }
   }
   if (!Object.keys(patch).length) return json({ erro: "Nada para mudar." }, 400);
   await patchDoc(env, id, patch, quando);
   const r = await env.DB.prepare("SELECT data, coletado, atualizado FROM docs WHERE collection = 'landscape' AND id = ?").bind(id).first();
   if (r) deps.gravarNoEspelho(env, [{ collection: "landscape", id, data: r.data, coletado: r.coletado || "", atualizado: r.atualizado }]);
-  return json({ ok: true, ...patch, ...("modelo" in patch ? { modelo: patch.modelo || "" } : {}), ...("modelo_nota" in patch ? { modelo_nota: patch.modelo_nota || "" } : {}), ...("uso" in patch ? { uso: patch.uso || [] } : {}), ...("uso_nota" in patch ? { uso_nota: patch.uso_nota || "" } : {}), ...("icone" in patch ? { icone: patch.icone || "" } : {}), ...(cats ? { categorias: cats } : {}) });
+  return json({ ok: true, ...patch, ...("modelo" in patch ? { modelo: patch.modelo || "" } : {}), ...("modelo_nota" in patch ? { modelo_nota: patch.modelo_nota || "" } : {}), ...("uso" in patch ? { uso: patch.uso || [] } : {}), ...("uso_nota" in patch ? { uso_nota: patch.uso_nota || "" } : {}), ...("icone" in patch ? { icone: patch.icone || "" } : {}), ...("aba" in patch ? { aba: patch.aba || "tools" } : {}), ...(cats ? { categorias: cats } : {}) });
 }

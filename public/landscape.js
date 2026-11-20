@@ -5,9 +5,9 @@
  * Sem import nem export, nem nada do navegador ou do Worker.
  *
  * Tecnologia (collection `landscape`, id `owner--repo` em minúsculas): { repo: "Owner/Repo", nome, categoria, subcategoria,
- *   site, feed, modelo?, adicionado, por, gh: {...}, releases: [...], sobre, hn: { historias, comentarios }, gh_destaques: [...],
+ *   site, feed, modelo?, aba?: "outras" | "linguagens", adicionado, por, gh: {...}, releases: [...], sobre, hn: { historias, comentarios }, gh_destaques: [...],
  *   serie: [[AAAA-MM-DD, estrelas], ...], leve: {...}, em: { <parte>: iso }, atualizado, erro? }
- * Categorias (meta/landscape-categorias): { categorias: [{ id, nome, subcategorias: [{ id, nome }] }], atualizado }
+ * Categorias (meta/landscape-categorias): { categorias: [{ id, nome, aba?: "outras" | "linguagens", subcategorias: [{ id, nome }] }], atualizado }
  * Notas do Admin (landscape/<email>, id `notas`): { porId: { <id>: { situacao, nota, link, atualizado } }, atualizado }
  *
  * Imagens: a marca do cartão é o avatar do dono no GitHub só quando o dono é uma organização (marcaOk). Pessoa (User)
@@ -157,6 +157,31 @@
       return true;
     });
   }
+  /* ---------- destaques da subcategoria (adendo de 19/11, 23h18) ----------
+     Na grade por subcategoria das abas de tecnologia, os 3 itens com mais estrelas (leve.estrelas; empate pelo nome)
+     ganham o cartão de destaque. Só quando a subcategoria tem 4 itens ou mais (com até 3, não há "mais populares").
+     Item sem estrelas coletadas não entra. Devolve os ids em ordem (1º, 2º, 3º). */
+  const DESTAQUES = 3, DESTAQUE_MIN = 4;
+  function destaquesDaSub(itens) {
+    const l = Array.isArray(itens) ? itens.filter(Boolean) : [];
+    if (l.length < DESTAQUE_MIN) return [];
+    const est = (t) => { const n = t && t.leve && !t.leve.coletando ? t.leve.estrelas : null; return typeof n === "number" && Number.isFinite(n) ? n : null; };
+    return l.filter((t) => est(t) != null)
+      .sort((a, b) => est(b) - est(a) || String(a.nome || a.repo || "").localeCompare(String(b.nome || b.repo || ""), "pt-BR", { sensitivity: "base" }) || String(a.id).localeCompare(String(b.id)))
+      .slice(0, DESTAQUES).map((t) => t.id);
+  }
+  /* Na tela, com busca ou filtro: o destaque vale só se restarem 4 ou mais visíveis na subcategoria, e a posição é a da
+     subcategoria inteira. Devolve { destaques: [{ id, posicao }], resto: [ids na ordem de `visiveis`] }. */
+  function destaquesVisiveis(todosDaSub, visiveis) {
+    const vis = Array.isArray(visiveis) ? visiveis.filter(Boolean) : [];
+    const rank = destaquesDaSub(todosDaSub);
+    if (vis.length < DESTAQUE_MIN || !rank.length) return { destaques: [], resto: vis.map((t) => t.id) };
+    const ids = new Set(vis.map((t) => t.id));
+    const destaques = rank.map((id, i) => ({ id, posicao: i + 1 })).filter((d) => ids.has(d.id));
+    const fora = new Set(destaques.map((d) => d.id));
+    return { destaques, resto: vis.map((t) => t.id).filter((id) => !fora.has(id)) };
+  }
+
   /* Chips do filtro: só os modelos que aparecem na lista, na ordem da tabela, com a contagem */
   function contarModelos(lista) {
     const n = new Map();
@@ -164,8 +189,52 @@
     return MODELOS.filter((m) => n.has(m.id)).map((m) => ({ ...m, n: n.get(m.id) }));
   }
 
+  /* ---------- abas (pedido de 19/11, 23h02, e adendo das 23h09) ----------
+     O ArchLandscape tem Tools (as tecnologias de arquitetura) e abas extras com a mesma máquina (collection `landscape`,
+     coleta, detalhe, comparação): Languages (linguagens e frameworks por tipo de uso) e Other Tools (ferramentas que o
+     Admin acompanha fora da arquitetura). O que separa é o campo `aba` no doc da tecnologia e em cada categoria de
+     meta/landscape-categorias, com o id de uma linha desta tabela. Sem o campo, ou com valor fora dela, é "tools".
+     Só o Admin grava; o cron de coleta nunca tem a chave.
+     Uma tabela só: id (o que vai no banco), rótulo (a aba, em inglês como o dono pediu), hash (#arch/<hash>), título e
+     subtítulo da grade, o nome de um e de vários itens, a frase da aba vazia e `noticias` (adendo das 23h10: false em
+     Other Tools, onde a tecnologia não coleta nem mostra Hacker News, comentários, blog, notícias do Lookout e fóruns). A ordem é a das abas na página, com Cloud
+     logo depois de Tools. Aba nova no futuro: mais uma linha aqui. */
+  const ABAS = [
+    { id: "tools", rotulo: "Tools", hash: "tools", subtitulo: "tecnologias que eu acompanho", um: "tecnologia", varios: "tecnologias", vazio: "Nenhuma tecnologia no landscape ainda.", adicionar: "Adicionar tecnologia", noticias: true },
+    { id: "linguagens", rotulo: "Languages", hash: "languages", titulo: "Linguagens e frameworks", subtitulo: "linguagens e frameworks por tipo de uso", um: "item", varios: "itens", vazio: "Nenhuma linguagem ou framework aqui ainda.", adicionar: "Adicionar linguagem ou framework", noticias: true },
+    { id: "outras", rotulo: "Other Tools", hash: "other", subtitulo: "outras ferramentas que eu acompanho, fora da arquitetura", um: "ferramenta", varios: "ferramentas", vazio: "Nenhuma ferramenta aqui ainda.", adicionar: "Adicionar ferramenta", noticias: false },
+  ];
+  const ABA_IDS = ABAS.map((a) => a.id);
+  /* A linha da tabela pelo id (ou pelo hash); id desconhecido é Tools */
+  const abaPorId = (id) => ABAS.find((a) => a.id === id) || ABAS[0];
+  const abaPorHash = (h) => ABAS.find((a) => a.hash === h) || ABAS[0];
+  const abaDe = (doc) => (doc && typeof doc === "object" && typeof doc.aba === "string" && ABA_IDS.includes(doc.aba) ? doc.aba : "tools");
+  const nomeAba = (id) => abaPorId(id).rotulo;
+  /* A tecnologia (ou a aba) tem notícias? false só nas abas com noticias: false */
+  const temNoticias = (doc) => abaPorId(abaDe(doc)).noticias !== false;
+  /* As partes da coleta que são de notícia: o cron pula para quem não tem notícias */
+  const PARTES_NOTICIA = ["hn", "comentarios", "blog"];
+  const normAba = (id) => abaPorId(id).id;
+  /* Só as da aba (tecnologias ou categorias) */
+  const daAba = (lista, aba) => (Array.isArray(lista) ? lista : []).filter((x) => x && abaDe(x) === normAba(aba));
+  /* Corpo do Admin: undefined não mexe; "" ou null é Tools (no json_patch vira null, que apaga a chave); id da tabela grava */
+  function validarAba(v) {
+    if (v === undefined) return { mexe: false };
+    if (v === null || v === "") return { mexe: true, aba: "tools" };
+    if (typeof v === "string" && ABA_IDS.includes(v)) return { mexe: true, aba: v };
+    return { erro: "Aba desconhecida: use " + ABA_IDS.filter((x) => x !== "tools").map((x) => '"' + x + '"').join(" ou ") + ", ou deixe vazio para Tools." };
+  }
+  /* O que vai no doc para a aba: Tools não grava o campo */
+  const campoAba = (aba) => (normAba(aba) === "tools" ? {} : { aba: normAba(aba) });
+  /* A categoria escolhida serve para a aba? { ok } ou { erro } com a frase da tela */
+  function categoriaDaAba(cat, aba) {
+    if (!cat) return { erro: "Escolha a categoria." };
+    if (abaDe(cat) === normAba(aba)) return { ok: true };
+    return { erro: `A categoria ${cat.nome || cat.id} é da aba ${nomeAba(abaDe(cat))}. Escolha uma categoria da aba ${nomeAba(aba)}.` };
+  }
+
   /* ---------- ids e URLs ---------- */
-  const idDe = (repo) => String(repo || "").toLowerCase().replace("/", "--");
+  const idDe =(repo) => String(repo || "").toLowerCase().replace("/", "--");
   /* o "--" não aparece em login do GitHub, então o primeiro "--" separa dono e repositório */
   const repoDoId = (id) => { const i = String(id || "").indexOf("--"); return i > 0 ? id.slice(0, i) + "/" + id.slice(i + 2) : ""; };
 
@@ -432,7 +501,8 @@
         sids.add(sid);
         so.push({ id: sid, nome: sn });
       }
-      out.push({ id, nome, subcategorias: so });
+      /* aba: só a de uma aba extra fica gravada; sem o campo, a categoria é de Tools */
+      out.push({ id, nome, subcategorias: so, ...campoAba(abaDe(c)) });
     }
     return { categorias: out };
   }
@@ -501,5 +571,6 @@
     somarPonto, ganho, entidades, textoPuro, trecho, textoDoReadme, cita, temPalavra, nomeDistinto, escolherComentarios,
     slug, nomeLimpo, validarCategorias, acharCategoria, validarNotas, leveDe, novidades, semAcento,
     MODELOS, MODELO_ANTIGO, NOTA_MODELO_MAX, modeloDe, porQueModelo, validarModelo, validarNotaModelo, filtrar, contarModelos,
-    USOS, USO_NOTA_MAX, usoDe, resumoDeUso, perguntasDeUso, validarUso, validarUsoNota, contarUsos };
+    USOS, USO_NOTA_MAX, usoDe, resumoDeUso, perguntasDeUso, validarUso, validarUsoNota, contarUsos,
+    DESTAQUES, DESTAQUE_MIN, destaquesDaSub, destaquesVisiveis, ABAS, ABA_IDS, abaPorId, abaPorHash, abaDe, nomeAba, temNoticias, PARTES_NOTICIA, daAba, validarAba, campoAba, categoriaDaAba };
 })(typeof globalThis !== "undefined" ? globalThis : this);
