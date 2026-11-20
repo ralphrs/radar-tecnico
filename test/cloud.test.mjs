@@ -11,7 +11,7 @@ import "../public/arch.js";
 import { PROVEDORES, CATEGORIAS, SERVICOS, SEMENTE_EM } from "../src/cloud-semente.js";
 import { CAPS, CONFERIDO_EM } from "../src/cloud-capacidades.js";
 import { semearCloud, patchSemente, rotaCloud, rotaAdminCloud, listaLeve, lerFeedProvedor, citacoesServico, CACHE_FEED_MS, FEEDS_CLOUD, CLOUD_PARA_SONDAR, SQL_LEVE } from "../src/cloud.js";
-import { rotaDossies, limparDossies, SQL_PENDENTES, SQL_FECHAR, MAX_PENDENTES, MAX_POR_DIA } from "../src/arch.js";
+import { rotaDossies, limparDossies, SQL_PENDENTES, SQL_FECHAR, MAX_PENDENTES, MAX_POR_DIA, relogioDoBanco } from "../src/arch.js";
 import { rotaRoteiro, lerMilestones, semearLandscape } from "../src/landscape.js";
 import { rotaIcone, iconeDaPagina, dominiosPermitidos, MAX_ICONE } from "../src/icone.js";
 import { relatorio, estadoDossies } from "../src/rotinas.js";
@@ -716,4 +716,16 @@ test("dossiês: o GET devolve a estrutura já saneada; doc antigo, só com Markd
   env.DB.db.prepare("INSERT INTO docs (collection, id, data) VALUES ('arch-dossies', ?, ?)").run(antigo, JSON.stringify({ aba: "cloud", ids: ["aws--amazon-ec2", "gcp--compute-engine"], estado: "pronto", criado: new Date(AGORA).toISOString(), prontoEm: new Date(AGORA).toISOString(), markdown: "## Análise\n\n| | A | B |\n|---|---|---|\n| x | 1 | 2 |", fontes: [] }));
   const o = await corpoDe(rotaDossies(req("GET"), env, ADMIN, antigo, dep, { agora: AGORA + HORA }));
   assert.equal(o.j.dossie.estrutura, null); assert.match(o.j.dossie.markdown, /\| x \| 1 \| 2 \|/); assert.equal(o.j.dossie.situacao, "pronta");
+});
+
+test("comparação profunda: a data da análise pronta vem do relógio do banco, não do que a tarefa escreveu", () => {
+  const banco = "2026-11-20T01:48:00.000Z";
+  const d = relogioDoBanco({ estado: "pronto", prontoEm: "2026-11-20T12:25:00.000Z", expiraEm: "2026-12-20T12:25:00.000Z", iniciadoEm: "2026-11-20T12:00:00.000Z" }, banco);
+  assert.equal(d.prontoEm, banco);
+  assert.equal(d.expiraEm, "2026-12-20T01:48:00.000Z");
+  assert.equal(d.iniciadoEm, undefined);
+  const p = { estado: "pendente", prontoEm: "2026-11-19T20:15:00.000Z" };
+  assert.deepEqual(relogioDoBanco(p, banco), p);
+  assert.equal(relogioDoBanco({ estado: "pronto", prontoEm: "x" }, "").prontoEm, "x");
+  assert.equal(relogioDoBanco(null, banco), null);
 });

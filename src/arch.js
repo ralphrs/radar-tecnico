@@ -30,11 +30,22 @@ export const SQL_FECHAR = "UPDATE docs SET data = json_patch(data, ?), atualizad
 const json = (dados, status = 200) => new Response(JSON.stringify(dados), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 const parse = (s) => { try { return JSON.parse(s); } catch { return null; } };
 const agoraIso = (t = Date.now()) => new Date(t).toISOString();
+/* A tarefa que escreve a análise não tem relógio confiável (já gravou "pronto" com a hora de 11 horas à frente). A hora
+   certa é a da coluna `atualizado`, que o próprio UPDATE de fechamento grava com o relógio do banco. Numa análise pronta,
+   `prontoEm` passa a ser essa hora, `expiraEm` os 30 dias a partir dela, e `iniciadoEm` nunca fica depois dela. */
+export function relogioDoBanco(data, atualizado) {
+  if (!data || typeof data !== "object" || data.estado !== "pronto") return data;
+  const t = Date.parse(atualizado || "");
+  if (!Number.isFinite(t)) return data;
+  const out = { ...data, prontoEm: new Date(t).toISOString(), expiraEm: new Date(t + 30 * DIA).toISOString() };
+  if (out.iniciadoEm && !(Date.parse(out.iniciadoEm) <= t)) delete out.iniciadoEm;
+  return out;
+}
 const novoId = () => { const b = new Uint8Array(8); crypto.getRandomValues(b); return "d" + [...b].map((x) => x.toString(16).padStart(2, "0")).join(""); };
 
 export async function todos(env) {
-  const { results } = await env.DB.prepare("SELECT id, data FROM docs WHERE collection = 'arch-dossies'").all();
-  return (results || []).map((r) => ({ id: r.id, data: parse(r.data) })).filter((d) => d.data && A.ID_DOSSIE.test(d.id));
+  const { results } = await env.DB.prepare("SELECT id, data, atualizado FROM docs WHERE collection = 'arch-dossies'").all();
+  return (results || []).map((r) => ({ id: r.id, data: relogioDoBanco(parse(r.data), r.atualizado) })).filter((d) => d.data && A.ID_DOSSIE.test(d.id));
 }
 // O que a tela mostra de cada um: o estado de hoje (pronta, vencida...) e a validade calculada
 // Inteiro (o doc aberto): com o Markdown e a `estrutura` já saneada (Arch.estruturaOk; null quando não dá para usar).
@@ -50,8 +61,8 @@ export async function rotaDossies(request, env, quem, id, deps, { agora = Date.n
   if (!quem || !quem.admin) return json({ erro: "rota" }, 404);
   if (id) {
     if (!A.ID_DOSSIE.test(id)) return json({ erro: "id" }, 400);
-    const r = await env.DB.prepare("SELECT data FROM docs WHERE collection = 'arch-dossies' AND id = ?").bind(id).first();
-    const d = r ? parse(r.data) : null;
+    const r = await env.DB.prepare("SELECT data, atualizado FROM docs WHERE collection = 'arch-dossies' AND id = ?").bind(id).first();
+    const d = r ? relogioDoBanco(parse(r.data), r.atualizado) : null;
     if (!d) return json({ erro: "nao-encontrado" }, 404);
     if (request.method === "GET") return json({ dossie: vista({ id, data: d }, agora, true) });
     if (request.method === "DELETE") { await env.DB.prepare("DELETE FROM docs WHERE collection = 'arch-dossies' AND id = ?").bind(id).run(); return json({ ok: true }); }
